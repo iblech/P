@@ -35,7 +35,7 @@
             private set;
         }
 
-        public List<P_Root.InterfaceEventDecl> InterfaceEvents
+        public List<P_Root.InterfaceTypeEventDecl> InterfaceEvents
         {
             get;
             private set;
@@ -260,7 +260,7 @@
             Transitions = new List<P_Root.TransDecl>();
             Functions = new List<P_Root.FunDecl>();
             Observes = new List<P_Root.ObservesDecl>();
-            InterfaceEvents = new List<P_Root.InterfaceEventDecl>();
+            InterfaceEvents = new List<P_Root.InterfaceTypeEventDecl>();
             MachineReceivesDecl = new List<P_Root.MachineReceivesDecl>();
             ModuleDecl = new List<P_Root.ModuleDecl>();
             ModuleCreatesDecl = new List<P_Root.ModuleCreatesDecl>();

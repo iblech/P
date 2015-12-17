@@ -12,6 +12,7 @@ domain PData
 	TypeDef         ::= new (name: String, type: any TypeExpr).
 
     //// The BaseType REAL is the type of real machines.
+	//// NameType can be typedefs or interface type
 	NameType        ::= new (name: String).
     BaseType        ::= new ({ NULL, BOOL, INT, EVENT, REAL, FOREIGN, ANY }).
     TupType         ::= new (hd: any TypeExpr, tl: any TupType + { NIL }).
@@ -62,54 +63,49 @@ domain PData
     Stmt ::= NewStmt + Raise + Send + Monitor + FunStmt + NulStmt + UnStmt + BinStmt + Return + While + Ite + Seq + Receive. 
 
 	/*************************************************************/
-    /****************  Module Declarations    *************/
+    /***************  Module System Declarations  ****************/
     /*************************************************************/
-	InterfaceEventDecl ::= new (interface: any InterfaceType, ev: String).
-
+	////Interface type
+	InterfaceTypeEventDecl ::= new (it: any InterfaceType, ev: String).
 	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: String).
 
+	////Module 
 	ModuleDecl ::= new (name : any String).
 	ModuleSendsDecl ::= new (mod: any ModuleDecl, ev: String).
 	ModulePrivateDecl ::= new (mod: any ModuleDecl, ev: String).
-	ModuleCreatesDecl ::= new (mod : any ModuleDecl, inter: any InterfaceType).
+	ModuleCreatesDecl ::= new (mod : any ModuleDecl, it: any InterfaceType).
 	
-	ImplementationModules ::= new (mL: any ModuleList).
-	SpecificationModules ::= new (sL: any ModuleList).
-	RefinesTestDecl ::= fun (name: String -> imp: any ModuleList, spec: any ModuleList).
-	MonitorsTestDecl ::= fun (name: String -> imp: any ModuleList, monitors: any MonitorList).
-	NoFailureTestDecl ::= fun (name: String -> imp: any ModuleList).
+	////Compositional imp and tests
+	ImplementationModules ::= new (modL: any ModuleList).
+	SpecificationModules ::= new (modL: any ModuleList).
+	RefinesTestDecl ::= fun (name: String -> modL: any ModuleList, spec: any ModuleList).
+	SafetyTestDecl ::= fun (name: String -> modL: any ModuleList).
+	LivenessTestDecl ::= fun (name: String -> modL: any ModuleList).
 
 	ModuleList ::= new (mod: any Module, tail: any ModuleList + {NIL}).
-	Hide ::= new (ei: any EventsOrInterfaces, modL: any ModuleList).
-	PrivateMonitor ::= new (mon: String, mod: any ModuleDecl).
-	MonitorList ::= new (mon: any MonitorKind, tail: any MonitorList + {NIL}).
+	Hide ::= new (evset: any EventList, modL: any ModuleList).
 	EventList ::= new (ev: String, tail: any EventList + {NIL}).
-	InterfaceList ::= new (inter: any InterfaceType, tail: any InterfaceList + {NIL}).
 	
 	//combining value types (used in PToZing)
 	Module ::= ModuleDecl + Hide.
-	EventsOrInterfaces ::= EventList + InterfaceList.
-	MonitorKind ::= String + PrivateMonitor. //String represents the global monitor name
-
+	
     /*************************************************************/
     /****************  State Machine Declarations    *************/
     /*************************************************************/
 
     EventDecl      ::= fun (name: String -> card: any QueueConstraint, type: any TypeExpr + { NIL }).    
-    MachineDecl    ::= fun (name: String, mod: any ModuleDecl + {NIL} -> kind: { REAL, MODEL, MONITOR }, card: any QueueConstraint, start: any QualifiedName, isMain: Boolean).
-
+    MachineDecl    ::= fun (name: String, mod: any ModuleDecl -> kind: { REAL, MODEL, MONITOR }, card: any QueueConstraint, start: any QualifiedName, isMain: Boolean).
 	ObservesDecl   ::= new (monitor: MachineDecl, ev: String).
-
     VarDecl        ::= fun (name: String, owner: MachineDecl -> type: any TypeExpr).
-    
     FunDecl        ::= fun (name: String, owner: MachineDecl + { NIL } -> kind: { REAL, MODEL }, params: any NmdTupType + { NIL },  return: any TypeExpr + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt).
     AnonFunDecl    ::= new (owner: MachineDecl + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt, envVars: any NmdTupType).
-    
     StateDecl      ::= fun (name: any QualifiedName, owner: MachineDecl -> entryAction: any AnonFunDecl + String, exitFun: any AnonFunDecl + String, temperature: { HOT, WARM, COLD }).
     TransDecl      ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> dst: any QualifiedName, action: any { PUSH } + AnonFunDecl + String).
     DoDecl         ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> action: any { DEFER, IGNORE } + AnonFunDecl + String).
 
-    PDecl          ::= EventDecl + MachineDecl + VarDecl + AnonFunDecl + FunDecl + StateDecl + TransDecl + DoDecl + ObservesDecl + InterfaceEventDecl + MachineReceivesDecl + ModuleDecl + ModuleSendsDecl + ModulePrivateDecl + ModuleCreatesDecl + ImplementationModules + SpecificationModules + RefinesTestDecl + MonitorsTestDecl + NoFailureTestDecl + InterfaceType.            
+    PDecl          ::= EventDecl + MachineDecl + VarDecl + AnonFunDecl + FunDecl + StateDecl + TransDecl + DoDecl + ObservesDecl + 
+					   InterfaceTypeEventDecl + MachineReceivesDecl + ModuleDecl + ModuleSendsDecl + ModulePrivateDecl + ModuleCreatesDecl + 
+					   ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl + InterfaceType.            
 
     AssumeMaxInstances ::= new (bound: Natural).
     AssertMaxInstances ::= new (bound: Natural).
@@ -137,7 +133,7 @@ domain PData
 	//all machines in implementation modules list
 	AllImpModules ::= sub (imodL: ImplementationModules, mod: ModuleDecl).
 	ImpMachine ::= (mach: MachineDecl).
-	ImpMachine(m) :- AllImpModules(modl, mod), m is MachineDecl(_, mod, _, _, _, _).
+	ImpMachine(m) :- AllImpModules(modl, mod), m is MachineDecl(_, mod, _, _, _, _), m.kind != MONITOR.
 }
 
 domain PStructuralTyping extends PData
@@ -224,11 +220,11 @@ domain PStructuralTyping extends PData
 
 	//event in interface type 
 	[rule_Classes = '"error, msg: unknown event in interface declaration"']
-	OneDeclError(inter) :- inter is InterfaceEventDecl(_, e), no EventDecl(e, _, _).
+	OneDeclError(inter) :- inter is InterfaceTypeEventDecl(_, e), no EventDecl(e, _, _).
 
 	//interface type in variable decl.
 	[rule_Classes = '"error, msg: unknown type in variable declaration"']
-	OneDeclError(varD) :- varD is VarDecl(_, _, tp), tp : InterfaceType, no InterfaceEventDecl(tp, _).
+	OneDeclError(varD) :- varD is VarDecl(_, _, tp), tp : InterfaceType, no InterfaceTypeEventDecl(tp, _).
 
 	//event in receives of a machine
 	[rule_Classes = '"error, msg: event in receives is not declared"']
@@ -244,7 +240,7 @@ domain PStructuralTyping extends PData
 
 	//interface type in creates declaration
 	[rule_Classes = '"error, msg: interface type in creates is not declared"']
-	OneDeclError(creates) :- creates is ModuleCreatesDecl(_, i), no InterfaceEventDecl(i, _).
+	OneDeclError(creates) :- creates is ModuleCreatesDecl(_, i), no InterfaceTypeEventDecl(i, _).
 	
 	CompDecls ::= ImplementationModules + SpecificationModules + RefinesTestDecl + MonitorsTestDecl + NoFailureTestDecl.
 	VariousList ::= ModuleList + EventList + MonitorList.
@@ -261,15 +257,13 @@ domain PStructuralTyping extends PData
 	//interface type not declared
 	allInterfaceTypes ::= sub(i: InterfaceType).
 	[rule_Classes = '"error, msg: undeclared interface type"']
-	OneDeclError(i) :- allInterfaceTypes(i), no InterfaceEventDecl(i, _).
+	OneDeclError(i) :- allInterfaceTypes(i), no InterfaceTypeEventDecl(i, _).
 	
 	//monitor is declared
 	[rule_Classes = '"error, msg: monitor is undeclared"']
 	OneDeclError(c) :- SubVL(c, ml), ml = MonitorList(s, _), s : String, no MachineDecl(s, _, MONITOR, _, _, _);
 					   SubVL(c, ml), ml = MonitorList(m, _), m = PrivateMonitor(s, _), no MachineDecl(s, _, MONITOR, _, _, _).
 	
-	
-
 	//module in private monitor is declared
 	[rule_Classes = '"error, msg: undeclared module in private monitor declaration"']
 	OneDeclError(c) :- SubVL(c, ml), ml = MonitorList(m, _), m = PrivateMonitor(_, ModuleDecl(s)), no ModuleDecl(s).
@@ -414,15 +408,15 @@ domain PStaticTyping extends PData
 
 	//interfaces in creates are disjoint
 	[rule_Classes = '"error, msg: interfaces in creates list are not disjoint"']
-	ModuleLevelTypingError(c) :- c is ModuleCreatesDecl(m, i1), ModuleCreatesDecl(m, i2), InterfaceEventDecl(i1, ev), InterfaceEventDecl(i2, ev), i1 != i2.
+	ModuleLevelTypingError(c) :- c is ModuleCreatesDecl(m, i1), ModuleCreatesDecl(m, i2), InterfaceTypeEventDecl(i1, ev), InterfaceTypeEventDecl(i2, ev), i1 != i2.
 
 	//a create interface is either disjoint or equal to the public events in receives
 	//relation between creates interfaces and 
 	NotDisjointOrEqual ::= (m: ModuleDecl, i:InterfaceType, mr: MachineReceivesDecl).
 	NotDisjointOrEqual(m, i, mr) :- ModuleCreatesDecl(m, i), mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _),
-									count({ev1 | InterfaceEventDecl(i, ev1), no MachineReceivesDecl(mach, ev1), no ModulePrivateDecl(m, ev1), InterfaceEventDecl(i, ev2), MachineReceivesDecl(mach, ev2), no ModulePrivateDecl(m, ev2)}) > 0;
+									count({ev1 | InterfaceTypeEventDecl(i, ev1), no MachineReceivesDecl(mach, ev1), no ModulePrivateDecl(m, ev1), InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(mach, ev2), no ModulePrivateDecl(m, ev2)}) > 0;
 									ModuleCreatesDecl(m, i), mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _),
-									count({ev1 | no InterfaceEventDecl(i, ev1), MachineReceivesDecl(mach, ev1), no ModulePrivateDecl(m, ev1), InterfaceEventDecl(i, ev2), MachineReceivesDecl(mach, ev2), no ModulePrivateDecl(m, ev2)}) > 0.
+									count({ev1 | no InterfaceTypeEventDecl(i, ev1), MachineReceivesDecl(mach, ev1), no ModulePrivateDecl(m, ev1), InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(mach, ev2), no ModulePrivateDecl(m, ev2)}) > 0.
 
 
 	[rule_Classes = '"error, msg: interface type in creates is not equal to or disjoint from the public events in receives of the module"']
@@ -431,7 +425,7 @@ domain PStaticTyping extends PData
 
 	//no private event in the creates interfaces
 	[rule_Classes = '"error, msg: interface in creates cannot have private events"']
-	ModuleLevelTypingError(c) :- ModulePrivateDecl(m, ev), c is ModuleCreatesDecl(m, i), InterfaceEventDecl(i, ev).
+	ModuleLevelTypingError(c) :- ModulePrivateDecl(m, ev), c is ModuleCreatesDecl(m, i), InterfaceTypeEventDecl(i, ev).
 	
 
 	/***************************************************************/
@@ -481,7 +475,7 @@ domain PStaticTyping extends PData
 	ImpInterfaceToMachineMap ::= (ie: InterfaceType, mach: MachineDecl).
 
 	//compute the interface map
-	InterfaceToMachineMap(ml, i, mach) :-  ComposedModules(ml), SubModule(ml, m1), SubModule(ml, m2), CreatesForModule(m1, i), ReceivesForModule(m2, rd), InterfaceEventDecl(i, rd.ev), mach = rd.mach.
+	InterfaceToMachineMap(ml, i, mach) :-  ComposedModules(ml), SubModule(ml, m1), SubModule(ml, m2), CreatesForModule(m1, i), ReceivesForModule(m2, rd), InterfaceTypeEventDecl(i, rd.ev), mach = rd.mach.
 
 	//map for implementation modules
 	ImpInterfaceToMachineMap(i, mc) :- ImplementationModules(ml), InterfaceToMachineMap(ml, i, mc).
@@ -491,12 +485,12 @@ domain PStaticTyping extends PData
 	/************************************************************/
 	HiddenEvents ::= (mdl: ModuleList, md: ModuleDecl, evl : EventList + {NIL}).
 	HiddenEvents(ml, mod, evl) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), evl : EventList, SubModule(hml, mod), no ImplementationModules(ml);
-							      ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), inl : InterfaceList, SubModule(hml, mod), evl = toList(#EventList, NIL, {ev | SubInterface(inl, i), InterfaceEventDecl(i, ev)}), no ImplementationModules(ml).
+							      ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), inl : InterfaceList, SubModule(hml, mod), evl = toList(#EventList, NIL, {ev | SubInterface(inl, i), InterfaceTypeEventDecl(i, ev)}), no ImplementationModules(ml).
 	
 	//compute events hidden in an hide operation
 	HiddenEventsInOp ::= (h: Hide, ev: String).
 	HiddenEventsInOp (h, ev) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), evl : EventList, SubEvents(evl, ev);
-								ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), inl : InterfaceList, SubModule(hml, mod), evl = toList(#EventList, NIL, {ev | SubInterface(inl, i), InterfaceEventDecl(i, ev)}), SubEvents(evl, ev).
+								ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), inl : InterfaceList, SubModule(hml, mod), evl = toList(#EventList, NIL, {ev | SubInterface(inl, i), InterfaceTypeEventDecl(i, ev)}), SubEvents(evl, ev).
 
 	/***************************************************************/
 	/*	Generate sends, private and creates for ModuleList		   */
@@ -546,12 +540,12 @@ domain PStaticTyping extends PData
 	//get the private list for the hide module
 	PrivateForModule(hm, ev) :-  GenInterfaceForHideMod(hm), PrivateForModuleList(hm.modL, ev);
 							     GenInterfaceForHideMod(hm), hm = Hide(eL, _), eL : EventList, SubEvents(eL, ev);
-								 GenInterfaceForHideMod(hm), hm = Hide(iL, _), iL : InterfaceList, SubInterface(iL, i), InterfaceEventDecl(i, ev);
+								 GenInterfaceForHideMod(hm), hm = Hide(iL, _), iL : InterfaceList, SubInterface(iL, i), InterfaceTypeEventDecl(i, ev);
 								 ModulePrivateDecl(hm, ev).
 
 	//get the creates list for the hide module
 	CreatesForModule(hm, i) :-  GenInterfaceForHideMod(hm), hm = Hide(eL, modL), eL : EventList, CreatesForModuleList(modL, i);
-								GenInterfaceForHideMod(hm), hm = Hide(iL, modL), iL : InterfaceList, SubInterface(iL, i), CreatesForModuleList(modL, i), count({ev | InterfaceEventDecl(i, ev), PrivateForModule(hm, ev)}) = 0;
+								GenInterfaceForHideMod(hm), hm = Hide(iL, modL), iL : InterfaceList, SubInterface(iL, i), CreatesForModuleList(modL, i), count({ev | InterfaceTypeEventDecl(i, ev), PrivateForModule(hm, ev)}) = 0;
 								ModuleCreatesDecl(hm, i).
 	/**************************************************************/
 	/*                      Legal Composition                   */
@@ -581,19 +575,19 @@ domain PStaticTyping extends PData
 
 	//interfaces in creates are disjoint
 	[rule_Classes = '"error, msg: interfaces in creates list are not disjoint after composition"']
-	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), CreatesForModule(m1, i1), CreatesForModuleList(m2, i2), InterfaceEventDecl(i1, ev), InterfaceEventDecl(i2, ev).
+	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), CreatesForModule(m1, i1), CreatesForModuleList(m2, i2), InterfaceTypeEventDecl(i1, ev), InterfaceTypeEventDecl(i2, ev).
 
 	//a create interface is either disjoint or equal to the public events in receives
 	[rule_Classes = '"error, msg: interface type in creates is not equal to or disjoint from the public events in receives after composition"']
 	IllegalComposition(ml) :- 
 	ComposeModWithModList(ml, m1, m2), CreatesForModuleList(ml, i), 
-	count({ev1 | InterfaceEventDecl(i, ev1), no ReceivesForModuleList(ml, ed1), no PrivateForModuleList(ml, ev1), rd1.ev = ev1, InterfaceEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), no PrivateForModuleList(ml, ev2),rd2.ev = ev2, rd1.mach = rd2.mach}) > 0;
+	count({ev1 | InterfaceTypeEventDecl(i, ev1), no ReceivesForModuleList(ml, ed1), no PrivateForModuleList(ml, ev1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), no PrivateForModuleList(ml, ev2),rd2.ev = ev2, rd1.mach = rd2.mach}) > 0;
 	ComposeModWithModList(ml, m1, m2), CreatesForModuleList(ml, i), 
-	count({ev1 | no InterfaceEventDecl(i, ev1), ReceivesForModuleList(ml, rd1), rd1.ev = ev1, no PrivateForModuleList(ml, ev1), InterfaceEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), rd2.ev = ev2, no PrivateForModuleList(ml, ev2), rd1.mach = rd2.mach}) > 0.
+	count({ev1 | no InterfaceTypeEventDecl(i, ev1), ReceivesForModuleList(ml, rd1), rd1.ev = ev1, no PrivateForModuleList(ml, ev1), InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), rd2.ev = ev2, no PrivateForModuleList(ml, ev2), rd1.mach = rd2.mach}) > 0.
 
 	//no private event in the creates interfaces
 	[rule_Classes = '"error, msg: interface in creates has private event after composition"']
-	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), PrivateForModuleList(ml, ev), CreatesForModuleList(ml, i), InterfaceEventDecl(i, ev).
+	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), PrivateForModuleList(ml, ev), CreatesForModuleList(ml, i), InterfaceTypeEventDecl(i, ev).
 	
 	//no duplicates in the sends list
 	[rule_Classes = '"error, msg: multiple modules have the same event in the sends list after composition"']
@@ -615,7 +609,7 @@ domain PStaticTyping extends PData
 	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), PrivateForModuleList(hml, ev).
 
 	[rule_Classes = '"error, msg: hide operation cannot be performed on an event present in the creates interface"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), CreatesForModuleList(hml, i), InterfaceEventDecl(i, ev).
+	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), CreatesForModuleList(hml, i), InterfaceTypeEventDecl(i, ev).
 	
 	[rule_Classes = '"error, msg: hide operation can be performed on a public event present in receives of an implemented machine"']
 	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), count({rd | ReceivesForModuleList(hml, rd), rd.ev = ev}) != 1.
@@ -626,15 +620,15 @@ domain PStaticTyping extends PData
 	2) I is equals to implements of one of the machines in P. Implements is the set of public events in the receives set of the machine.
 	*/
 	[rule_Classes = '"error, msg: hide operation cannot be performed on an interface with private event"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), SubInterface(inl, i), PrivateForModuleList(hml, ev), InterfaceEventDecl(i, ev).
+	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), SubInterface(inl, i), PrivateForModuleList(hml, ev), InterfaceTypeEventDecl(i, ev).
 
 	[rule_Classes = '"error, msg: hide operation can be performed on an interface that contains all public events of one of the receives"']
 	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), SubInterface(inl, i), 
-							   no ReceivesForModuleList(hml, rd), rd is MachineReceivesDecl, count({ev | InterfaceEventDecl(i, ev), MachineReceivesDecl(rd.mach, ev)}) > 0;
+							   no ReceivesForModuleList(hml, rd), rd is MachineReceivesDecl, count({ev | InterfaceTypeEventDecl(i, ev), MachineReceivesDecl(rd.mach, ev)}) > 0;
 							   ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), SubInterface(inl, i), 
-							   ReceivesForModuleList(hml, rd), count({ev1 | InterfaceEventDecl(i, ev1), MachineReceivesDecl(rd.mach, ev1), InterfaceEventDecl(i, ev2), no MachineReceivesDecl(rd.mach, ev2)}) > 0;
+							   ReceivesForModuleList(hml, rd), count({ev1 | InterfaceTypeEventDecl(i, ev1), MachineReceivesDecl(rd.mach, ev1), InterfaceTypeEventDecl(i, ev2), no MachineReceivesDecl(rd.mach, ev2)}) > 0;
 							   ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), SubInterface(inl, i), 
-							   ReceivesForModuleList(hml, rd), count({ev1 | InterfaceEventDecl(i, ev1), MachineReceivesDecl(rd.mach, ev1), no InterfaceEventDecl(i, ev2), MachineReceivesDecl(rd.mach, ev2)}) > 0.
+							   ReceivesForModuleList(hml, rd), count({ev1 | InterfaceTypeEventDecl(i, ev1), MachineReceivesDecl(rd.mach, ev1), no InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(rd.mach, ev2)}) > 0.
 
 
 	/**************************************************************/
@@ -668,7 +662,7 @@ domain PStaticTyping extends PData
 
 	//generate a warning that implementations is not closed.
 	[rule_Classes = '"warning, msg: implementation list is not closed with respect to creates interfaces"']
-	SoundCompositionWarning(ml) :- ImplementationModules(ml), CreatesForModuleList(ml, i), no ReceivesForModuleList(ml, rd), rd is MachineReceivesDecl, InterfaceEventDecl(i, ev), rd.ev = ev.
+	SoundCompositionWarning(ml) :- ImplementationModules(ml), CreatesForModuleList(ml, i), no ReceivesForModuleList(ml, rd), rd is MachineReceivesDecl, InterfaceTypeEventDecl(i, ev), rd.ev = ev.
 
 	//TODO add other warnings for other modulelists
 
@@ -680,8 +674,6 @@ domain PStaticTyping extends PData
     //// (1) The types of nullary expressions
     TypeOf(c, e, BaseType(NULL))  :- SubSE(c, e), e = NulApp(NULL).
     TypeOf(c, e, BaseType(EVENT)) :- SubSE(c, e), e = NulApp(HALT).
-	
-	TypeOf(c, e, t) :- SubSE(c, e), e = NulApp(PAYLOAD), PayloadType(c, t).
 	
 	//THIS is not allowed in static functions
 	// Type of THIS is the receive set implemented by the machine.
@@ -1521,8 +1513,8 @@ domain PStaticTyping extends PData
 	// Subtype relation between interface types.
 	SubSetRelation ::= (interface1: InterfaceType, interface2: InterfaceType).
 	NoSubSetRelation ::= (interface1: InterfaceType, interface2: InterfaceType).
-	SubSetRelation(n1, n2) :- x is InterfaceEventDecl(n1, _), y is InterfaceEventDecl(n2, _), n1 != n2, no { e | InterfaceEventDecl(n1, e), no InterfaceEventDecl(n2, e)}. 
-	NoSubSetRelation(n1, n2) :- x is InterfaceEventDecl(n1, _), y is InterfaceEventDecl(n2, _), n1 != n2, count({ e | InterfaceEventDecl(n1, e), no InterfaceEventDecl(n2, e), InterfaceEventDecl(n2, ee), no InterfaceEventDecl(n1, ee)}) > 0.
+	SubSetRelation(n1, n2) :- x is InterfaceTypeEventDecl(n1, _), y is InterfaceTypeEventDecl(n2, _), n1 != n2, no { e | InterfaceTypeEventDecl(n1, e), no InterfaceTypeEventDecl(n2, e)}. 
+	NoSubSetRelation(n1, n2) :- x is InterfaceTypeEventDecl(n1, _), y is InterfaceTypeEventDecl(n2, _), n1 != n2, count({ e | InterfaceTypeEventDecl(n1, e), no InterfaceTypeEventDecl(n2, e), InterfaceTypeEventDecl(n2, ee), no InterfaceTypeEventDecl(n1, ee)}) > 0.
 	
 	
 	TypeRel(s, t, SUB) :- CompTypeRel(s, t), s : InterfaceType, t : InterfaceType, s != t, SubSetRelation(t, s).

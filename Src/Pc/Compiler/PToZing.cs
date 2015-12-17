@@ -641,7 +641,7 @@ namespace Microsoft.Pc
                 }
             }
 
-            terms = GetBin(factBins, "InterfaceEventDecl");
+            terms = GetBin(factBins, "InterfaceTypeEventDecl");
             foreach (var term in terms)
             {
                 using (var it = term.Node.Args.GetEnumerator())

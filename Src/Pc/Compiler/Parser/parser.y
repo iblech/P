@@ -410,11 +410,7 @@ Type
 	| MACHINE                               { PushTypeExpr(MkBaseType(P_Root.UserCnstKind.REAL,    ToSpan(@1))); }						
 	| FOREIGN                               { PushTypeExpr(MkBaseType(P_Root.UserCnstKind.FOREIGN, ToSpan(@1))); }						
 	| ANY                                   { PushTypeExpr(MkBaseType(P_Root.UserCnstKind.ANY,     ToSpan(@1))); }
-<<<<<<< HEAD
 	| ID                                    { PushNameType($1.str, ToSpan(@1)); }
-=======
-	| ID									{ PushInterfaceType($1.str, ToSpan(@1)); }
->>>>>>> interfaceType
 	| SEQ LBRACKET Type RBRACKET            { PushSeqType(ToSpan(@1)); }
 	| MAP LBRACKET Type COMMA Type RBRACKET { PushMapType(ToSpan(@1)); }
 	| LPAREN TupTypeList RPAREN	

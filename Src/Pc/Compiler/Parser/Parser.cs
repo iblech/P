@@ -337,7 +337,11 @@
                 errorMessage = string.Format("A test case with name {0} already declared", name);
                 error = true;
             }
-
+            else if (topDeclNames.typeNames.Contains(name))
+            {
+                errorMessage = string.Format("A type with name {0} already declared", name);
+                error = true;
+            }
             if (error)
             {
                 var errFlag = new Flag(
@@ -445,6 +449,10 @@
 
         private void PushNameType(string name, Span span)
         {
+            if(IsValidName(name, span))
+            {
+                topDeclNames.typeNames.Add(name);
+            }
             var nameType = P_Root.MkNameType(MkString(name, span));
             nameType.Span = span;
             typeExprStack.Push(nameType);
@@ -501,14 +509,6 @@
             }
 
             typeExprStack.Push(tupType);
-        }
-
-        private void PushInterfaceType(string name, Span span)
-        {
-            var interfaceType = P_Root.MkInterfaceType();
-            interfaceType.name = (P_Root.IArgType_InterfaceType__0)MkString(name, span);
-            interfaceType.Span = span;
-            typeExprStack.Push(interfaceType);
         }
 
         private void PushMapType(Span span)
@@ -1716,10 +1716,10 @@
                 var interfaceType = new P_Root.InterfaceType();
                 interfaceType.Span = nameSpan;
                 interfaceType.name = (P_Root.IArgType_InterfaceType__0)MkString(name, nameSpan);
-                var interfaceDecl = new P_Root.InterfaceEventDecl();
+                var interfaceDecl = new P_Root.InterfaceTypeEventDecl();
                 interfaceDecl.Span = ev.Span;
-                interfaceDecl.@interface = (P_Root.IArgType_InterfaceEventDecl__0)interfaceType;
-                interfaceDecl.ev = (P_Root.IArgType_InterfaceEventDecl__1)ev;
+                interfaceDecl.@interface = (P_Root.IArgType_InterfaceTypeEventDecl__0)interfaceType;
+                interfaceDecl.ev = (P_Root.IArgType_InterfaceTypeEventDecl__1)ev;
                 parseProgram.InterfaceEvents.Add(interfaceDecl);
             }
             crntEventList.Clear();
@@ -1947,10 +1947,10 @@
                     var interfaceType = new P_Root.InterfaceType();
                     interfaceType.Span = nameSpan;
                     interfaceType.name = (P_Root.IArgType_InterfaceType__0)MkString(name, nameSpan);
-                    var interfaceDecl = new P_Root.InterfaceEventDecl();
+                    var interfaceDecl = new P_Root.InterfaceTypeEventDecl();
                     interfaceDecl.Span = e.Span;
-                    interfaceDecl.@interface = (P_Root.IArgType_InterfaceEventDecl__0)interfaceType;
-                    interfaceDecl.ev = (P_Root.IArgType_InterfaceEventDecl__1)e;
+                    interfaceDecl.@interface = (P_Root.IArgType_InterfaceTypeEventDecl__0)interfaceType;
+                    interfaceDecl.ev = (P_Root.IArgType_InterfaceTypeEventDecl__1)e;
                     parseProgram.InterfaceEvents.Add(interfaceDecl);
                 }
                 
@@ -2139,7 +2139,6 @@
                                         MkString(string.Empty, span),
                                         MkUserCnst(P_Root.UserCnstKind.NIL, span));
             crntMachDecl.start.Span = span;
-            crntMachDecl.mod = MkUserCnst(P_Root.UserCnstKind.NIL, span);
             return crntMachDecl;
         }
 
