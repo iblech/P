@@ -1,18 +1,16 @@
 ﻿namespace Microsoft.Pc
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics.Contracts;
-    using System.IO;
-    using System.Reflection;
-    using System.Text;
-    using System.Threading.Tasks;
-
     using Microsoft.Formula.API;
     using Microsoft.Formula.API.ASTQueries;
     using Microsoft.Formula.API.Nodes;
     using Microsoft.Formula.Common;
     using Microsoft.Formula.Compiler;
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics.Contracts;
+    using System.IO;
+    using System.Reflection;
+    using System.Threading.Tasks;
 
     public enum LivenessOption { None, Standard, Mace };
 
@@ -25,6 +23,7 @@
         public HashSet<string> moduleNames;
         public HashSet<string> testNames;
         public HashSet<string> typeNames;
+
         public TopDeclNames()
         {
             eventNames = new HashSet<string>();
@@ -88,12 +87,15 @@
                 case SeverityKind.Info:
                     Console.ForegroundColor = ConsoleColor.Cyan;
                     break;
+
                 case SeverityKind.Warning:
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     break;
+
                 case SeverityKind.Error:
                     Console.ForegroundColor = ConsoleColor.Red;
                     break;
+
                 default:
                     Console.ForegroundColor = ConsoleColor.White;
                     break;
@@ -197,12 +199,12 @@
             if (options.shortFileNames)
             {
                 envParams = new EnvParams(
-                    new Tuple<EnvParamKind, object>(EnvParamKind.Msgs_SuppressPaths, true));    
+                    new Tuple<EnvParamKind, object>(EnvParamKind.Msgs_SuppressPaths, true));
             }
 
             CompilerEnv = new Env(envParams);
             InitEnv(CompilerEnv);
-         }
+        }
 
         public Compiler(bool shortFileNames)
         {
@@ -210,7 +212,7 @@
             EnvParams envParams = null;
             if (shortFileNames)
             {
-                envParams = new EnvParams(new Tuple<EnvParamKind, object>(EnvParamKind.Msgs_SuppressPaths, true));    
+                envParams = new EnvParams(new Tuple<EnvParamKind, object>(EnvParamKind.Msgs_SuppressPaths, true));
             }
             CompilerEnv = new Env(envParams);
             InitEnv(CompilerEnv);
@@ -332,7 +334,7 @@
                                             Formula.API.Factory.Instance.MkModRef(
                                                 MkSafeModuleName(kvp.Key),
                                                 null,
-                                                kvp.Value.ToString()));                                              
+                                                kvp.Value.ToString()));
                         }
                     }
 
@@ -375,7 +377,7 @@
             }
 
             //// Step 3. Generate outputs
-            return GenerateC(flags) & GenerateZing(flags); 
+            return GenerateC(flags) & GenerateZing(flags);
         }
 
         public bool GenerateZing()
@@ -404,10 +406,9 @@
 
             AST<Model> zingModel = MkZingOutputModel();
 
-            
             string fileName = Path.GetFileNameWithoutExtension(RootFileName);
             List<string> FileNames = new List<string>();
-                      
+
             string outputDirName = Options.outputDir == null ? Environment.CurrentDirectory : Options.outputDir;
 
             new PToZing(this, AllModels, (AST<Model>)modelWithTypes).GenerateZing(ref FileNames, ref zingModel);
@@ -420,7 +421,7 @@
                 var zcProcessInfo = new System.Diagnostics.ProcessStartInfo(Path.Combine(binPath.FullName, "zc.exe"));
                 string zFile = File + ".zing";
                 string zingFileNameFull = Path.Combine(outputDirName, zFile);
-                string dllFileName = File + ".dll"; 
+                string dllFileName = File + ".dll";
                 zcProcessInfo.Arguments = string.Format("/nowarn:292 /out:{0}\\{1} {2}", outputDirName, dllFileName, zingFileNameFull);
                 zcProcessInfo.UseShellExecute = false;
                 zcProcessInfo.CreateNoWindow = true;
@@ -435,7 +436,6 @@
                     return false;
                 }
             }
-
 
             return true;
         }
@@ -492,7 +492,6 @@
                 {
                     success = PrintZingFile(n, outputDirName) && success;
                 });
-
 
             InstallResult uninstallResult;
             var uninstallDidStart = CompilerEnv.Uninstall(new ProgramName[] { progName }, out uninstallResult);
@@ -609,7 +608,6 @@
             AddErrors(task.Result, "TypeDefError(_)", errors, 0);
             AddErrors(task.Result, "DomOfMapUnSafe(_)", errors, 0);
 
-
             //// Enumerate structural errors
             AddErrors(task.Result, "OneDeclError(_)", errors, 0);
             AddErrors(task.Result, "TwoDeclError(_, _)", errors, 1);
@@ -681,9 +679,9 @@
         }
 
         private void AddTerms(
-            QueryResult result, 
-            string termPattern, 
-            SortedSet<Flag> flags, 
+            QueryResult result,
+            string termPattern,
+            SortedSet<Flag> flags,
             SeverityKind severity,
             int msgCode,
             string msgPrefix,
@@ -754,7 +752,6 @@
                 if (cls.StartsWith(MsgPrefix))
                 {
                     return cls.Substring(MsgPrefix.Length).Trim();
-
                 }
             }
 
@@ -762,14 +759,14 @@
         }
 
         private static AST<Program> MkProgWithSettings(
-            ProgramName name, 
+            ProgramName name,
             params KeyValuePair<string, object>[] settings)
         {
             var prog = Factory.Instance.MkProgram(name);
 
-            var configQuery = new NodePred[] 
-            { 
-                NodePredFactory.Instance.MkPredicate(NodeKind.Program), 
+            var configQuery = new NodePred[]
+            {
+                NodePredFactory.Instance.MkPredicate(NodeKind.Program),
                 NodePredFactory.Instance.MkPredicate(NodeKind.Config)
             };
 
@@ -889,7 +886,7 @@
 
                 return mangledName;
             }
-            catch 
+            catch
             {
                 return "unknown";
             }
@@ -992,7 +989,7 @@
 
             var cProgram = extractTask.Result;
             Contract.Assert(cProgram != null);
-            
+
             //// Set the renderer of the C program so terms can be converted to text.
             var cProgramConfig = (AST<Config>)cProgram.FindAny(new NodePred[]
                 {
@@ -1042,7 +1039,7 @@
                     success = PrintFile(string.Empty, n, flags) && success;
                 });
 
-            InstallResult uninstallResult; 
+            InstallResult uninstallResult;
             var uninstallDidStart = CompilerEnv.Uninstall(new ProgramName[] { progName }, out uninstallResult);
             // Contract.Assert(uninstallDidStart && uninstallResult.Succeeded);
 
@@ -1099,7 +1096,7 @@
                 ComposeKind.Extends);
 
             var conf = (AST<Config>)mod.FindAny(
-                new NodePred[] 
+                new NodePred[]
                 {
                     NodePredFactory.Instance.MkPredicate(NodeKind.AnyNodeKind),
                     NodePredFactory.Instance.MkPredicate(NodeKind.Config)

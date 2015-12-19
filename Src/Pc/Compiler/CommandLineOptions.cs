@@ -1,16 +1,5 @@
 ﻿namespace Microsoft.Pc
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Text;
-    using System.Threading.Tasks;
-
-    using Domains;
-    using Microsoft.Formula.API;
-    using Microsoft.Formula.API.Generators;
-    using Microsoft.Formula.API.Nodes;
-
     public class CommandLineOptions
     {
         public bool analyzeOnly;

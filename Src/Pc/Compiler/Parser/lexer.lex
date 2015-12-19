@@ -114,15 +114,18 @@
 			 keywords.Add("receives", (int)Tokens.RECEIVES);
 			 keywords.Add("module", (int)Tokens.MODULE);
 			 keywords.Add("creates", (int)Tokens.CREATES);
-			 keywords.Add("private", (int)Tokens.PRIVATE);
 			 keywords.Add("test", (int)Tokens.TEST);
 			 keywords.Add("refines", (int)Tokens.REFINES);
 			 keywords.Add("satisfies", (int)Tokens.SATISFIES);
 			 keywords.Add("implementation", (int)Tokens.IMPLEMENTATION);
 			 keywords.Add("specification", (int)Tokens.SPECIFICATION);
-			 keywords.Add("hidee", (int)Tokens.HIDEE);
-			 keywords.Add("hidei", (int)Tokens.HIDEI);
-
+			 keywords.Add("hide", (int)Tokens.HIDE);
+			 keywords.Add("spec", (int)Tokens.SPEC);
+			 keywords.Add("driver", (int)Tokens.DRIVER);
+			 keywords.Add("safety", (int)Tokens.SAFETY);
+			 keywords.Add("liveness", (int)Tokens.LIVENESS);
+			 keywords.Add("por", (int)Tokens.POR);
+			 keywords.Add("eventlist", (int)Tokens.EVENTLIST);
 		 }
 
          int GetIdToken(string txt)

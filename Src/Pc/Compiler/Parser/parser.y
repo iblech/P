@@ -20,8 +20,9 @@
 
 %token TRUE FALSE
 
-%token INTERFACE MODULE SENDS CREATES PRIVATE RECEIVES
-%token TEST REFINES SATISFIES IMPLEMENTATION SPECIFICATION HIDEE HIDEI
+%token SPEC DRIVER MODULE SENDS CREATES RECEIVES INTERFACE 
+%token TEST REFINES SATISFIES SAFETY LIVENESS IMPLEMENTATION SPECIFICATION HIDE
+%token POR EVENTLIST
 
 %token ASSIGN REMOVE INSERT
 %token EQ NE LT GT LE GE IN
@@ -57,11 +58,11 @@ TopDeclList
 TopDecl
     : IncludeDecl
 	| TypeDefDecl
+	| EventListDecl
+	| ModuleListDecl
 	| EventDecl
-	| StaticFunDecl
 	| InterfaceDecl
 	| ModuleDecl
-	| MonitorDecl
 	| TestDecl
 	| ImplementationDecl
 	| SpecificationDecl
@@ -91,45 +92,70 @@ TypeDefDecl
 	: TYPE ID ASSIGN Type SEMICOLON   { AddTypeDef($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
+/******************* EventList and ModuleList Declarations **********************/
+EventListDecl
+	: EVENTLIST ID ASSIGN NonDefaultEventList SEMICOLON   { AddNameEventList($2.str, ToSpan(@2), ToSpan(@1)); }
+	;
+
+ModuleListDecl
+	: MODULE ID ASSIGN NonDefaultEventList SEMICOLON   { AddNameModuleList($2.str, ToSpan(@2), ToSpan(@1)); }
+	;
+
+/******************* Partial Order Over Events ********************************/
+PORDecl
+	: POR ID GT NonDefaultEventList SEMICOLON		  { AddPOR($2.str, ToSpan(@2), ToSpan(@1)); }
+	;
+
 /******************* Include Declarations *******************/ 
 IncludeDecl
 	: INCLUDE STR { parseIncludedFileNames.Add($2.str.Substring(1,$2.str.Length-2)); }
 	;
+
 /****************** Interface Declarations ******************/
 InterfaceDecl
-	: INTERFACE ID NonDefaultEventList SEMICOLON				{ AddInterface($2.str, ToSpan(@2), ToSpan(@2)); } 
+	: INTERFACE ID NonDefaultEventList SEMICOLON				{ AddInterfaceType($2.str, ToSpan(@2), ToSpan(@2)); } 
 	;
+
 /***************** Module Declarations *********************/
 ModuleDecl
-	: MODULE ID Private Sends Creates LCBRACE ModuleBody RCBRACE		{ AddModule($2.str, ToSpan(@2), ToSpan(@1));}
+	: SPEC MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE		{ AddModule(P_Root.UserCnstKind.SPEC, $3.str, ToSpan(@3), ToSpan(@1)); }
+	| DRIVER MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE		{ AddModule(P_Root.UserCnstKind.DRIVER, $3.str, ToSpan(@3), ToSpan(@1)); }
+	| MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE			{ AddModule(P_Root.UserCnstKind.IMP, $3.str, ToSpan(@3), ToSpan(@1)); }
 	;
 
 ModuleBody
+	: ModuleBodyItem
+	| ModuleBodyItem ModuleBody 
+	;
+
+ModuleBodyItem
 	: MachineDecl
-	| ModuleBody MachineDecl
+	| StaticFunDecl
+	| MonitorDecl
 	;
 
-Sends
-	: SENDS NonDefaultNonHaltEventList			{ crntSendsList.AddRange(crntEventList); crntEventList.Clear();}
+SendsList
+	: SENDS NonDefaultEventList			{ crntSendsList.AddRange(crntEventList); crntEventList.Clear();}
 	|
 	;
 
-Private
-	: PRIVATE NonDefaultNonHaltEventList		{ crntPrivateList.AddRange(crntEventList); crntEventList.Clear(); }
-	|
-	;
-
-Creates
+CreatesList
 	: CREATES InterfaceList
 	|
-	;		
+	;
+
+InterfaceList
+	: ID						{ AddToInterfaceList($1.str, ToSpan(@1));}
+	| ID COMMA InterfaceList	{ AddToInterfaceList($1.str, ToSpan(@1));}
+	;
+		
 /***************** Monitor Declaration *********************/
 MonitorDecl
 	: MONITOR ID ObservesList MachAnnotOrNone LCBRACE MachineBody RCBRACE			   { AddMachine(P_Root.UserCnstKind.MONITOR, $2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
 ObservesList
-	: OBSERVES NonDefaultNonHaltEventList { crntObservesList.AddRange(crntEventList); crntEventList.Clear(); }
+	: OBSERVES NonDefaultEventList { crntObservesList.AddRange(crntEventList); crntEventList.Clear(); }
 	;
 
 
@@ -157,36 +183,22 @@ EventAnnotOrNone
 /******************  TEST Declarations **********************/
 TestDecl
 	: TEST ID ModuleList REFINES ModuleList SEMICOLON				{ AddRefinesTest($2.str, ToSpan(@2), ToSpan(@1));   }	
-	| TEST ID ModuleList SATISFIES MonitorList SEMICOLON			{ AddMonitorsTest($2.str, ToSpan(@2), ToSpan(@1));  }
-	| TEST ID ModuleList SEMICOLON									{ AddNoFailureTest($2.str, ToSpan(@2), ToSpan(@1));    }
+	| TEST LIVENESS ID ModuleList SATISFIES ID SEMICOLON			{ AddLivenessTest($3.str, ToSpan(@3), $6.str, ToSpan(@6), ToSpan(@1));  }
+	| TEST SAFETY ID ModuleList SEMICOLON							{ AddSafetyTest($3.str, ToSpan(@3), ToSpan(@1)); }
 	;
 
 Hide
-	: HideEventsOrInterfaces IN LPAREN ModuleList	RPAREN	{ PushHideModule(ToSpan(@1)); }
-	;
-
-HideEventsOrInterfaces
-	: HIDEE NonDefaultNonHaltEventList						{ PushEventList(ToSpan(@1)); }
-	| HIDEI InterfaceList									{ PushInterfaceList(ToSpan(@1)); }
+	: HIDE NonDefaultEventList IN LPAREN ModuleList RPAREN	{ PushHideModule(ToSpan(@1)); }
 	;
 
 Module
 	: Hide
 	| ID															{ PushModule($1.str, ToSpan(@1)); }		
 	;
+
 ModuleList
 	: Module														{ PushModuleList(ToSpan(@1), true); }
 	| Module COMMA ModuleList										{ PushModuleList(ToSpan(@1), false);}
-	;
-
-MonitorList
-	: Monitor															
-	| Monitor COMMA MonitorList											
-	;
-
-Monitor
-	: ID															{ AddToCrntMonitorList($1.str, ToSpan(@1)); }
-	| ID OBSERVES ID												{ AddToCrntMonitorList($1.str, $3.str, ToSpan(@1), ToSpan(@3)); }
 	;
 
 /***************** Implementation and Specification **********/
@@ -206,7 +218,7 @@ MachineDecl
 	
 
 Receives
-	: RECEIVES NonDefaultNonHaltEventList           { crntReceivesList.AddRange(crntEventList); crntEventList.Clear(); }
+	: RECEIVES NonDefaultEventList           { crntReceivesList.AddRange(crntEventList); crntEventList.Clear(); }
 	|
 	;
 
@@ -268,6 +280,7 @@ PayloadVarDeclOrNone
 	: LPAREN ID COLON Type RPAREN { localVarStack.AddPayloadVar($2.str, ToSpan(@2)); localVarStack.Push(); }
 	|                             { localVarStack.AddPayloadVar(); localVarStack.Push(); }
 	;
+
 /******************* Function Declarations *******************/
 Static 
 	: STATIC { isStaticFun = true; }
@@ -364,10 +377,6 @@ OnEventList
 	: ON EventList				{ onEventList = new List<P_Root.EventLabel>(crntEventList); crntEventList.Clear(); }
 	;
 
-NonDefaultNonHaltEventList
-	: ID									 { AddToEventList($1.str, ToSpan(@1)); }
-	| ID COMMA NonDefaultNonHaltEventList    { AddToEventList($1.str, ToSpan(@1)); }
-	;
 
 NonDefaultEventList
 	: NonDefaultEventId
@@ -388,11 +397,6 @@ EventId
 NonDefaultEventId
 	: ID        { AddToEventList($1.str, ToSpan(@1));                      }
 	| HALT      { AddToEventList(P_Root.UserCnstKind.HALT, ToSpan(@1));    }
-	;
-
-InterfaceList
-	: ID						{ AddToInterfaceList($1.str, ToSpan(@1));}
-	| ID COMMA InterfaceList	{ AddToInterfaceList($1.str, ToSpan(@1));}
 	;
 
 TrigAnnotOrNone

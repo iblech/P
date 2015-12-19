@@ -1,17 +1,14 @@
 ﻿namespace Microsoft.Pc.Parser
 {
-    using System;
-    using System.Collections.Generic;
-    using System.Diagnostics.Contracts;
-    using System.Linq;
-    using QUT.Gppg;
-
     using Domains;
     using Microsoft.Formula.API;
     using Microsoft.Formula.API.Generators;
     using Microsoft.Formula.API.Nodes;
-
-   
+    using QUT.Gppg;
+    using System;
+    using System.Collections.Generic;
+    using System.Diagnostics.Contracts;
+    using System.Linq;
 
     internal partial class Parser : ShiftReduceParser<LexValue, LexLocation>
     {
@@ -62,11 +59,12 @@
         private Stack<P_Root.Module> moduleStack = new Stack<P_Root.Module>();
         private Stack<P_Root.EventsOrInterfaces> evtOrInterListStack = new Stack<P_Root.EventsOrInterfaces>();
 
-        class LocalVarStack
+        private class LocalVarStack
         {
             private Parser parser;
 
             private P_Root.IArgType_NmdTupType__1 contextLocalVarDecl;
+
             public P_Root.IArgType_NmdTupType__1 ContextLocalVarDecl
             {
                 get
@@ -75,21 +73,22 @@
                     return contextStack.Peek();
                 }
             }
+
             private Stack<P_Root.IArgType_NmdTupType__1> contextStack;
 
             private List<string> crntLocalVarList;
             private P_Root.IArgType_NmdTupType__1 localVarDecl;
+
             public P_Root.IArgType_NmdTupType__1 LocalVarDecl
             {
                 get { return localVarDecl; }
             }
+
             private Stack<P_Root.IArgType_NmdTupType__1> localStack;
 
             private Stack<List<P_Root.EventLabel>> caseEventStack;
 
             private P_Root.IArgType_Cases__2 casesList;
-
-
 
             private Stack<P_Root.IArgType_Cases__2> casesListStack;
 
@@ -115,7 +114,7 @@
                 this.localVarDecl = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
                 this.localStack = new Stack<P_Root.IArgType_NmdTupType__1>();
                 this.caseEventStack = new Stack<List<P_Root.EventLabel>>();
-                this.casesList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL); 
+                this.casesList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
                 this.casesListStack = new Stack<P_Root.IArgType_Cases__2>();
             }
 
@@ -124,12 +123,14 @@
                 casesListStack.Push(casesList);
                 casesList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
             }
+
             public P_Root.IArgType_Cases__2 PopCasesList()
             {
                 var currCasesList = casesList;
                 casesList = casesListStack.Pop();
                 return currCasesList;
             }
+
             public void Push()
             {
                 contextStack.Push(contextLocalVarDecl);
@@ -158,7 +159,6 @@
                 crntLocalVarList.Add(name);
             }
 
-
             public void AddPayloadVar(string name, Span span)
             {
                 Contract.Assert(parser.typeExprStack.Count > 0);
@@ -172,8 +172,8 @@
             public void AddPayloadVar()
             {
                 var field = P_Root.MkNmdTupTypeField(
-                                    P_Root.MkString(string.Format("_payload_{0}", parser.GetNextPayloadVarLabel())), 
-                                    (P_Root.IArgType_NmdTupTypeField__1) parser.MkBaseType(P_Root.UserCnstKind.ANY, Span.Unknown));
+                                    P_Root.MkString(string.Format("_payload_{0}", parser.GetNextPayloadVarLabel())),
+                                    (P_Root.IArgType_NmdTupTypeField__1)parser.MkBaseType(P_Root.UserCnstKind.ANY, Span.Unknown));
                 contextLocalVarDecl = P_Root.MkNmdTupType(field, contextLocalVarDecl);
             }
 
@@ -190,7 +190,8 @@
                 crntLocalVarList.Clear();
             }
         }
-        LocalVarStack localVarStack;
+
+        private LocalVarStack localVarStack;
 
         public P_Root.TypeExpr Debug_PeekTypeStack
         {
@@ -203,7 +204,7 @@
             localVarStack = new LocalVarStack(this);
         }
 
-        CommandLineOptions Options;
+        private CommandLineOptions Options;
 
         internal bool ParseFile(
             ProgramName file,
@@ -262,8 +263,8 @@
         }
 
         internal bool ParseText(
-            ProgramName file, 
-            string programText, 
+            ProgramName file,
+            string programText,
             out List<Flag> flags,
             out PProgram program)
         {
@@ -307,27 +308,27 @@
         {
             string errorMessage = "";
             bool error = false;
-            if(topDeclNames.eventNames.Contains(name))
+            if (topDeclNames.eventNames.Contains(name))
             {
                 errorMessage = string.Format("An event with name {0} already declared", name);
                 error = true;
             }
-            else if(topDeclNames.interfaceNames.Contains(name))
+            else if (topDeclNames.interfaceNames.Contains(name))
             {
                 errorMessage = string.Format("An interface with name {0} already declared", name);
                 error = true;
             }
-            else if(topDeclNames.machineNames.Contains(name))
+            else if (topDeclNames.machineNames.Contains(name))
             {
                 errorMessage = string.Format("A machine with name {0} already declared", name);
                 error = true;
             }
-            else if(topDeclNames.moduleNames.Contains(name))
+            else if (topDeclNames.moduleNames.Contains(name))
             {
                 errorMessage = string.Format("A module with name {0} already declared", name);
                 error = true;
             }
-            else if(topDeclNames.staticFunNames.Contains(name))
+            else if (topDeclNames.staticFunNames.Contains(name))
             {
                 errorMessage = string.Format("A static function with name {0} already declared", name);
                 error = true;
@@ -352,11 +353,9 @@
                                          parseSource);
                 parseFailed = true;
                 parseFlags.Add(errFlag);
-                
             }
 
             return !error;
-
         }
 
         #region Pushers
@@ -390,7 +389,7 @@
             ModuleListStack.Push(ModuleList);
         }
 
-        void PushEventList(Span span)
+        private void PushEventList(Span span)
         {
             var evList = P_Root.MkEventList();
             evList.ev = (P_Root.IArgType_EventList__0)crntEventList[0];
@@ -407,7 +406,7 @@
             crntEventList.Clear();
         }
 
-        void PushInterfaceList(Span span)
+        private void PushInterfaceList(Span span)
         {
             var inList = P_Root.MkInterfaceList();
             var interfaceType = P_Root.MkInterfaceType(MkString((string)crntInterfaceList[0].Symbol, crntInterfaceList[0].Span));
@@ -426,7 +425,7 @@
             crntInterfaceList.Clear();
         }
 
-        void PushHideModule(Span span)
+        private void PushHideModule(Span span)
         {
             var hideModule = P_Root.MkHide();
             hideModule.Span = span;
@@ -434,8 +433,8 @@
             hideModule.ei = (P_Root.IArgType_Hide__0)evtOrInterListStack.Pop();
             hideModule.modL = ModuleListStack.Pop();
             moduleStack.Push(hideModule);
-            
         }
+
         private void PushAnnotationSet()
         {
             crntAnnotStack.Push(crntAnnotList);
@@ -449,7 +448,7 @@
 
         private void PushNameType(string name, Span span)
         {
-            if(IsValidName(name, span))
+            if (IsValidName(name, span))
             {
                 topDeclNames.typeNames.Add(name);
             }
@@ -519,7 +518,6 @@
             mapType.k = (P_Root.IArgType_MapType__0)typeExprStack.Pop();
             mapType.Span = span;
             typeExprStack.Push(mapType);
-            
         }
 
         private void PushSend(bool hasArgs, Span span)
@@ -728,7 +726,7 @@
             {
                 fullExprs = P_Root.MkExprs(arg, (P_Root.Exprs)exprsStack.Pop());
             }
-            
+
             var tuple = P_Root.MkTuple(fullExprs);
             fullExprs.Span = arg.Span;
             tuple.Span = arg.Span;
@@ -744,13 +742,13 @@
             {
                 fullExprs = P_Root.MkNamedExprs(
                     MkString(name, span),
-                    arg, 
+                    arg,
                     MkUserCnst(P_Root.UserCnstKind.NIL, arg.Span));
             }
             else
             {
                 fullExprs = P_Root.MkNamedExprs(
-                    MkString(name, span),                    
+                    MkString(name, span),
                     arg,
                     (P_Root.NamedExprs)exprsStack.Pop());
             }
@@ -770,7 +768,7 @@
             if (oldExprs.Symbol != TheDefaultExprs.Symbol)
             {
                 var coercedExprs = P_Root.MkExprs(
-                    (P_Root.IArgType_Exprs__0)oldExprs, 
+                    (P_Root.IArgType_Exprs__0)oldExprs,
                     MkUserCnst(P_Root.UserCnstKind.NIL, oldExprs.Span));
                 coercedExprs.Span = oldExprs.Span;
                 oldExprs = coercedExprs;
@@ -1065,15 +1063,15 @@
                 crntStateTargetName = P_Root.MkQualifiedName(
                     MkString(name, span),
                     crntStateTargetName);
-
             }
 
             crntStateTargetName.Span = span;
         }
 
-        #endregion
+        #endregion Pushers
 
         #region Node setters
+
         private void SetEventCard(string cardStr, bool isAssert, Span span)
         {
             var evDecl = GetCurrentEventDecl(span);
@@ -1159,7 +1157,7 @@
             Contract.Assert(!isStmtBlock || stmtStack.Count > 0);
             P_Root.IArgType_StateDecl__2 entry;
             P_Root.StateDecl state;
-            if(isStmtBlock)
+            if (isStmtBlock)
             {
                 var stmt = (P_Root.IArgType_AnonFunDecl__2)stmtStack.Pop();
                 state = GetCurrentStateDecl(stmt.Span);
@@ -1174,7 +1172,7 @@
                 state = GetCurrentStateDecl(actionSpan);
             }
 
-            if (IsSkipFun((P_Root.GroundTerm)state.entryAction))            
+            if (IsSkipFun((P_Root.GroundTerm)state.entryAction))
             {
                 state.entryAction = (P_Root.IArgType_StateDecl__2)entry;
             }
@@ -1264,9 +1262,11 @@
             var funDecl = GetCurrentFunDecl(span);
             funDecl.@return = (P_Root.IArgType_FunDecl__4)typeExprStack.Pop();
         }
-        #endregion
+
+        #endregion Node setters
 
         #region Adders
+
         private void AddTypeDef(string name, Span nameSpan, Span typeDefSpan)
         {
             var type = (P_Root.IArgType_TypeDef__1)typeExprStack.Pop();
@@ -1306,10 +1306,8 @@
 
         private void AddToEventList(string name, Span span)
         {
-
             if (crntEventList.Where(e => ((string)e.Symbol == name)).Count() >= 1)
             {
-                
                 var errFlag = new Flag(
                                      SeverityKind.Error,
                                      span,
@@ -1323,15 +1321,12 @@
             {
                 crntEventList.Add(MkString(name, span));
             }
-            
         }
 
         private void AddToInterfaceList(string name, Span span)
         {
-
             if (crntInterfaceList.Where(e => ((string)e.Symbol == name)).Count() >= 1)
             {
-
                 var errFlag = new Flag(
                                      SeverityKind.Error,
                                      span,
@@ -1345,9 +1340,7 @@
             {
                 crntInterfaceList.Add(MkString(name, span));
             }
-
         }
-
 
         private void AddToEventList(P_Root.UserCnstKind kind, Span span)
         {
@@ -1384,7 +1377,7 @@
             crntEventList.Clear();
         }
 
-        private void AddTransitionWithAction (bool isAnonymous, string actName, Span actNameSpan, Span span)
+        private void AddTransitionWithAction(bool isAnonymous, string actName, Span actNameSpan, Span span)
         {
             Contract.Assert(onEventList.Count > 0);
             Contract.Assert(crntStateTargetName != null);
@@ -1484,7 +1477,7 @@
                     kv.Item1,
                     (P_Root.IArgType_Annotation__2)kv.Item2);
                 annot.Span = span;
-                parseProgram.Annotations.Add(annot);  
+                parseProgram.Annotations.Add(annot);
             }
         }
 
@@ -1529,10 +1522,10 @@
         private void AddCaseAnonyAction(Span span)
         {
             var stmt = (P_Root.IArgType_AnonFunDecl__2)stmtStack.Pop();
-            P_Root.IArgType_AnonFunDecl__0 owner = 
-                isStaticFun 
-                ? (P_Root.IArgType_AnonFunDecl__0) P_Root.MkUserCnst(P_Root.UserCnstKind.NIL) 
-                : (P_Root.IArgType_AnonFunDecl__0) GetCurrentMachineDecl(span);
+            P_Root.IArgType_AnonFunDecl__0 owner =
+                isStaticFun
+                ? (P_Root.IArgType_AnonFunDecl__0)P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)
+                : (P_Root.IArgType_AnonFunDecl__0)GetCurrentMachineDecl(span);
             var anonAction = P_Root.MkAnonFunDecl(owner, (P_Root.IArgType_AnonFunDecl__1)localVarStack.LocalVarDecl, stmt, (P_Root.IArgType_AnonFunDecl__3)localVarStack.ContextLocalVarDecl);
             anonAction.Span = stmt.Span;
             parseProgram.AnonFunctions.Add(anonAction);
@@ -1636,7 +1629,7 @@
                 state.name = P_Root.MkQualifiedName(MkString(name, nameSpan), groupStack.Peek());
                 state.name.Span = nameSpan;
             }
-            
+
             if (isStart)
             {
                 var machDecl = GetCurrentMachineDecl(span);
@@ -1673,7 +1666,7 @@
             {
                 crntStateNames.Add(stateName);
             }
-            
+
             crntState = null;
         }
 
@@ -1705,13 +1698,13 @@
 
             crntVarList.Clear();
         }
+
         private void AddInterface(string name, Span nameSpan, Span span)
         {
-
-            if(IsValidName(name, nameSpan))
+            if (IsValidName(name, nameSpan))
                 topDeclNames.interfaceNames.Add(name);
-            
-            foreach(var ev in crntEventList)
+
+            foreach (var ev in crntEventList)
             {
                 var interfaceType = new P_Root.InterfaceType();
                 interfaceType.Span = nameSpan;
@@ -1817,48 +1810,6 @@
             parseProgram.ImplementationModules.Add(impsDecl);
         }
 
-        private void AddToCrntMonitorList(string name, Span nameSpan)
-        {
-            if (crntMonitorList.Where(n => (string)n.Symbol == name).Count() > 0)
-            {
-                var errFlag = new Flag(
-                                     SeverityKind.Error,
-                                     nameSpan,
-                                     Constants.BadSyntax.ToString(string.Format("A monitor with name {0} already in the list", name)),
-                                     Constants.BadSyntax.Code,
-                                     parseSource);
-                parseFailed = true;
-                parseFlags.Add(errFlag);
-            }
-            else
-            {
-                crntMonitorList.Add(MkString(name, nameSpan));
-            }
-        }
-
-        private void AddToCrntMonitorList(string monitorName, string moduleName, Span monitorSpan, Span moduleSpan)
-        {
-            if (crntMonitorList.Where(n => (string)n.Symbol == monitorName).Count() > 0)
-            {
-                var errFlag = new Flag(
-                                     SeverityKind.Error,
-                                     monitorSpan,
-                                     Constants.BadSyntax.ToString(string.Format("A monitor with name {0} already in the list", monitorName)),
-                                     Constants.BadSyntax.Code,
-                                     parseSource);
-                parseFailed = true;
-                parseFlags.Add(errFlag);
-            }
-            else
-            {
-                var arg1 = MkString(monitorName, monitorSpan);
-                var arg2 = P_Root.MkModuleDecl(MkString(moduleName, moduleSpan));
-                var privateMonitor = P_Root.MkPrivateMonitor(arg1, arg2);
-                privateMonitor.Span = monitorSpan;
-                crntMonitorList.Add(privateMonitor);
-            }
-        }
-
         private void AddModule(string name, Span nameSpan, Span span)
         {
             var moduleDecl = GetCurrentModuleDecl(span);
@@ -1872,7 +1823,7 @@
             parseProgram.ModuleDecl.Add(moduleDecl);
 
             //initialize the sends set for the module.
-            foreach(var sEvent in crntSendsList)
+            foreach (var sEvent in crntSendsList)
             {
                 var sends = new P_Root.ModuleSendsDecl();
                 sends.Span = sEvent.Span;
@@ -1931,18 +1882,17 @@
                     observes.Span = e.Span;
                     parseProgram.Observes.Add(observes);
                 }
-                
             }
             else
             {
-                foreach(var e in crntReceivesList)
+                foreach (var e in crntReceivesList)
                 {
                     var rec = P_Root.MkMachineReceivesDecl(machDecl, (P_Root.IArgType_MachineReceivesDecl__1)e);
                     rec.Span = e.Span;
                     parseProgram.MachineReceivesDecl.Add(rec);
                 }
                 //create the interface-type with machine name
-                foreach(var e in crntReceivesList)
+                foreach (var e in crntReceivesList)
                 {
                     var interfaceType = new P_Root.InterfaceType();
                     interfaceType.Span = nameSpan;
@@ -1953,10 +1903,9 @@
                     interfaceDecl.ev = (P_Root.IArgType_InterfaceTypeEventDecl__1)e;
                     parseProgram.InterfaceEvents.Add(interfaceDecl);
                 }
-                
             }
             parseProgram.Machines.Add(machDecl);
-            if(IsValidName(name, nameSpan))
+            if (IsValidName(name, nameSpan))
             {
                 topDeclNames.machineNames.Add(name);
             }
@@ -1982,7 +1931,7 @@
                     (P_Root.IArgType_Annotation__2)kv.Item2);
                 annot.Span = span;
                 parseProgram.Annotations.Add(annot);
-            }            
+            }
         }
 
         private void AddStateAnnots(Span span)
@@ -2036,17 +1985,17 @@
         private void AddFunction(string name, Span nameSpan, Span span, bool isGlobal)
         {
             Contract.Assert(stmtStack.Count > 0);
-            
+
             var funDecl = GetCurrentFunDecl(span);
             funDecl.Span = span;
             funDecl.name = MkString(name, nameSpan);
-            funDecl.owner = isGlobal ? (P_Root.IArgType_FunDecl__1) MkUserCnst(P_Root.UserCnstKind.NIL, span) 
-                                     : (P_Root.IArgType_FunDecl__1) GetCurrentMachineDecl(span);
+            funDecl.owner = isGlobal ? (P_Root.IArgType_FunDecl__1)MkUserCnst(P_Root.UserCnstKind.NIL, span)
+                                     : (P_Root.IArgType_FunDecl__1)GetCurrentMachineDecl(span);
             funDecl.locals = (P_Root.IArgType_FunDecl__5)localVarStack.LocalVarDecl;
             funDecl.body = (P_Root.IArgType_FunDecl__6)stmtStack.Pop();
             parseProgram.Functions.Add(funDecl);
             localVarStack = new LocalVarStack(this);
-            
+
             if (crntFunNames.Contains(name))
             {
                 var errFlag = new Flag(
@@ -2060,7 +2009,7 @@
             }
             else if (IsValidName(name, nameSpan))
             {
-                if(isGlobal)
+                if (isGlobal)
                 {
                     topDeclNames.staticFunNames.Add(name);
                 }
@@ -2068,22 +2017,22 @@
                 {
                     crntFunNames.Add(name);
                 }
-                
-                
             }
             crntFunDecl = null;
             isStaticFun = false;
         }
-        #endregion
+
+        #endregion Adders
 
         #region Node getters
+
         private P_Root.EventDecl GetCurrentEventDecl(Span span)
         {
             if (crntEventDecl != null)
             {
                 return crntEventDecl;
             }
-            
+
             crntEventDecl = P_Root.MkEventDecl();
             crntEventDecl.card = MkUserCnst(P_Root.UserCnstKind.NIL, span);
             crntEventDecl.type = MkUserCnst(P_Root.UserCnstKind.NIL, span);
@@ -2122,7 +2071,7 @@
             crntState.temperature = MkUserCnst(P_Root.UserCnstKind.WARM, span);
             return crntState;
         }
-        
+
         private P_Root.MachineDecl GetCurrentMachineDecl(Span span)
         {
             if (crntMachDecl != null)
@@ -2154,9 +2103,11 @@
             crntModuleDecl.Span = span;
             return crntModuleDecl;
         }
-        #endregion
+
+        #endregion Node getters
 
         #region Helpers
+
         private static bool IsSkipFun(P_Root.GroundTerm term)
         {
             P_Root.NulStmt nulStmt = null;
@@ -2184,6 +2135,7 @@
         {
             return nextPayloadVarLabel++;
         }
+
         private P_Root.AnonFunDecl MkSkipFun(P_Root.MachineDecl owner, Span span)
         {
             var stmt = P_Root.MkNulStmt(MkUserCnst(P_Root.UserCnstKind.SKIP, span));
@@ -2191,7 +2143,7 @@
             var field = P_Root.MkNmdTupTypeField(
                                    P_Root.MkString("_payload_skip"),
                                    (P_Root.IArgType_NmdTupTypeField__1)MkBaseType(P_Root.UserCnstKind.ANY, Span.Unknown));
-            var decl = P_Root.MkAnonFunDecl(owner, P_Root.MkUserCnst(P_Root.UserCnstKind.NIL), stmt, (P_Root.IArgType_AnonFunDecl__3)P_Root.MkNmdTupType(field, P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))); 
+            var decl = P_Root.MkAnonFunDecl(owner, P_Root.MkUserCnst(P_Root.UserCnstKind.NIL), stmt, (P_Root.IArgType_AnonFunDecl__3)P_Root.MkNmdTupType(field, P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)));
 
             decl.Span = span;
             parseProgram.AnonFunctions.Add(decl);
@@ -2271,6 +2223,7 @@
             ModuleListStack.Clear();
             moduleStack.Clear();
         }
-        #endregion
+
+        #endregion Helpers
     }
 }
