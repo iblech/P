@@ -30,6 +30,7 @@ domain PData
     Name       ::= new (name: String).
     New        ::= new (name: String, arg: any Expr + { NIL }).
     FunApp     ::= new (name: String, args: any Exprs + { NIL }).
+	StaticFunApp     ::= new (name: String, mod: ModuleDecl, args: any Exprs + { NIL }).
     NulApp     ::= new (op: Integer + Boolean + { THIS, NONDET, FAIRNONDET, NULL, HALT }).
     UnApp      ::= new (op: { NOT, NEG, KEYS, VALUES, SIZEOF }, arg1: any Expr).
     BinApp     ::= new (op: { ADD, SUB, MUL, INTDIV, AND, OR, EQ, NEQ, LT, LE, GT, GE, IDX, IN }, arg1: any Expr, arg2: any Expr).
@@ -49,6 +50,7 @@ domain PData
     Send     ::= new (dest: any Expr, ev: any Expr, arg: any Expr + { NIL }).
     Monitor  ::= new (ev: any Expr, arg: any Expr + { NIL }).
     FunStmt  ::= new (name: String, args: any Exprs + { NIL }, aout: any Name + { NIL }, label: Natural).
+	StaticFunStmt  ::= new (name: String, mod: ModuleDecl, args: any Exprs + { NIL }, aout: any Name + { NIL }, label: Natural).
     NulStmt  ::= new (op: { SKIP, POP }).
     UnStmt   ::= new (op: { ASSERT }, arg1: any Expr).
     BinStmt  ::= new (op: { REMOVE, ASSIGN, INSERT }, arg1: any Expr, arg2: any Expr).
@@ -276,7 +278,7 @@ domain PStaticTyping extends PData
 	conforms no DomOfMapUnSafe(_).
 	conforms no ModuleLevelTypingError(_).
 	conforms no IllegalMainMachine(_).
-	//conforms no IllegalComposition(_).
+	conforms no IllegalComposition(_).
 	conforms no IllegalHideOperation(_).
 	conforms no IllegalRefinesTestCase(_).
     /*************************************************************/
@@ -525,10 +527,21 @@ domain PStaticTyping extends PData
 	
 	IllegalComposition ::= (modL: ModuleList).
 
+	/****** Compute Partial Order and downward closure for sends list **************/
+	//interface type in the payload of an event
+	NameTypeInEventDecl ::= sub(evd: EventDecl, nt: NameType).
+	
+	PartialOrderRel(ev1.name, ev2name) :- NameTypeInEventDecl(ev1, nt), InterfaceTypeEventDecl(InterfaceType(nt.name), ev2name).
+
+	DownClosureSendsForModuleList ::= (ml: ModuleList, ev: String).
+	DownClosureSendsForModuleList(ml, ev') :- SendsForModuleList(ml, ev), no HiddenEventsForModuleList(ml, ev), PartialOrderRel(ev, ev');
+											  DownClosureSendsForModuleList(ml, ev), PartialOrderRel(ev, ev').
+
+	/******************************************************************************/
+
 	//sends and privates in the modulelist are disjoint
-	[rule_Classes = '"error, msg: sends and private are not disjoint after composition"']
-	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), SendsForModule(m1, ev), HiddenEventsForModuleList(m2, ev), no HiddenEventsForModule(m1, ev);
-							  ComposeModWithModList(ml, m1, m2), SendsForModuleList(m2, ev), HiddenEventsForModule(m1, ev), no HiddenEventsForModuleList(m2, ev).
+	[rule_Classes = '"error, msg: down closure of public sends and hidden events are not disjoint after composition"']
+	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), DownClosureSendsForModuleList(ml, ev), HiddenEventsForModule(m1, ev).
 
 
 	//public events in the receives must be disjoint
@@ -560,40 +573,26 @@ domain PStaticTyping extends PData
 	/*************************************************************/
 	/*					Illegal Hide Operation					*/
 	/*************************************************************/
+	
+
 	IllegalHideOperation::= (hideOp: Hide).
-	/*
+	
 	/*
 	Hide E in P is legal only if :
 	1) E is not a private event of P. 
-	2) E is not present in any of the creates interfaces of P.
+	2) E is either disjoint or equal to the interface in the creates list
 	3) E is in the receives list of one of the implemented machines of P.
-	
+	*/
 
 	[rule_Classes = '"error, msg: hide operation cannot be performed on private event"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), PrivateForModuleList(hml, ev).
+	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), HiddenEventsForModuleList(hml, ev).
 
-	[rule_Classes = '"error, msg: hide operation cannot be performed on an event present in the creates interface"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), CreatesForModuleList(hml, i), InterfaceTypeEventDecl(i, ev).
+	[rule_Classes = '"error, msg: events in hide operation must be either disjoint or equal to interfaces in the creates list"']
+	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), CreatesForModuleList(hml, i), InterfaceTypeEventDecl(i, ev),
+							   count({ev' | InterfaceTypeEventDecl(i, ev'), no SubEvents(evl, ev')}) > 0.
 	
-	[rule_Classes = '"error, msg: hide operation can be performed on a public event present in receives of an implemented machine"']
+	[rule_Classes = '"error, msg: hide operation can be performed on an event present in receives of an implemented machine"']
 	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), count({rd | ReceivesForModuleList(hml, rd), rd.ev = ev}) != 1.
-
-	/*
-	Hide I in P is legal only if:
-	1) I has no private events of P.
-	2) I is equals to implements of one of the machines in P. Implements is the set of public events in the receives set of the machine.
-	
-	[rule_Classes = '"error, msg: hide operation cannot be performed on an interface with private event"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), SubInterface(inl, i), PrivateForModuleList(hml, ev), InterfaceTypeEventDecl(i, ev).
-
-	[rule_Classes = '"error, msg: hide operation can be performed on an interface that contains all public events of one of the receives"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), SubInterface(inl, i), 
-							   no ReceivesForModuleList(hml, rd), rd is MachineReceivesDecl, count({ev | InterfaceTypeEventDecl(i, ev), MachineReceivesDecl(rd.mach, ev)}) > 0;
-							   ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), SubInterface(inl, i), 
-							   ReceivesForModuleList(hml, rd), count({ev1 | InterfaceTypeEventDecl(i, ev1), MachineReceivesDecl(rd.mach, ev1), InterfaceTypeEventDecl(i, ev2), no MachineReceivesDecl(rd.mach, ev2)}) > 0;
-							   ComposedModules(ml), SubHide(ml, h), h = Hide(inl, hml), SubInterface(inl, i), 
-							   ReceivesForModuleList(hml, rd), count({ev1 | InterfaceTypeEventDecl(i, ev1), MachineReceivesDecl(rd.mach, ev1), no InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(rd.mach, ev2)}) > 0.
-	*/
 
 	/**************************************************************/
 	/*			Type checking rules for refinement checking		 */
