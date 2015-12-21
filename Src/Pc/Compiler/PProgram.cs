@@ -1,13 +1,12 @@
 ﻿namespace Microsoft.Pc
 {
+    using Domains;
+    using Microsoft.Formula.API.Generators;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-
-    using Domains;
-    using Microsoft.Formula.API.Generators;
 
     public class PProgram
     {
@@ -28,7 +27,7 @@
             get;
             private set;
         }
-        
+
         public List<P_Root.ObservesDecl> Observes
         {
             get;
@@ -59,12 +58,6 @@
             private set;
         }
 
-        public List<P_Root.ModulePrivateDecl> ModulePrivateDecl
-        {
-            get;
-            private set;
-        }
-
         public List<P_Root.ModuleCreatesDecl> ModuleCreatesDecl
         {
             get;
@@ -77,13 +70,13 @@
             private set;
         }
 
-        public List<P_Root.MonitorsTestDecl> MonitorsTestDecl
+        public List<P_Root.SafetyTestDecl> SafetyTestDecl
         {
             get;
             private set;
         }
 
-        public List<P_Root.NoFailureTestDecl> NoFailureTestDecl
+        public List<P_Root.LivenessTestDecl> LivenessTestDecl
         {
             get;
             private set;
@@ -151,7 +144,7 @@
                 {
                     yield return td;
                 }
-                
+
                 foreach (var ed in Events)
                 {
                     yield return ed;
@@ -207,43 +200,39 @@
                     yield return inter;
                 }
 
-                foreach(var mRec in MachineReceivesDecl)
+                foreach (var mRec in MachineReceivesDecl)
                 {
                     yield return mRec;
                 }
-                foreach(var m in ModuleDecl)
+                foreach (var m in ModuleDecl)
                 {
                     yield return m;
                 }
-                foreach(var sm in ModuleSendsDecl)
+                foreach (var sm in ModuleSendsDecl)
                 {
                     yield return sm;
                 }
-                foreach(var rm in ModulePrivateDecl)
-                {
-                    yield return rm;
-                }
-                foreach(var cm in ModuleCreatesDecl)
+                foreach (var cm in ModuleCreatesDecl)
                 {
                     yield return cm;
                 }
-                foreach(var rT in RefinesTestDecl)
+                foreach (var rT in RefinesTestDecl)
                 {
                     yield return rT;
                 }
-                foreach(var mt in MonitorsTestDecl)
+                foreach (var mt in SafetyTestDecl)
                 {
                     yield return mt;
                 }
-                foreach(var nft in NoFailureTestDecl)
+                foreach (var nft in LivenessTestDecl)
                 {
                     yield return nft;
                 }
-                foreach(var imp in ImplementationModules)
+                foreach (var imp in ImplementationModules)
                 {
                     yield return imp;
                 }
-                foreach(var spec in SpecificationModules)
+                foreach (var spec in SpecificationModules)
                 {
                     yield return spec;
                 }
@@ -264,13 +253,12 @@
             MachineReceivesDecl = new List<P_Root.MachineReceivesDecl>();
             ModuleDecl = new List<P_Root.ModuleDecl>();
             ModuleCreatesDecl = new List<P_Root.ModuleCreatesDecl>();
-            ModulePrivateDecl = new List<P_Root.ModulePrivateDecl>();
             ModuleSendsDecl = new List<P_Root.ModuleSendsDecl>();
             ImplementationModules = new List<P_Root.ImplementationModules>();
             SpecificationModules = new List<P_Root.SpecificationModules>();
             RefinesTestDecl = new List<P_Root.RefinesTestDecl>();
-            NoFailureTestDecl = new List<P_Root.NoFailureTestDecl>();
-            MonitorsTestDecl = new List<P_Root.MonitorsTestDecl>();
+            LivenessTestDecl = new List<P_Root.LivenessTestDecl>();
+            SafetyTestDecl = new List<P_Root.SafetyTestDecl>();
             AnonFunctions = new List<P_Root.AnonFunDecl>();
             Dos = new List<P_Root.DoDecl>();
             Annotations = new List<P_Root.Annotation>();

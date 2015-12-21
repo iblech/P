@@ -40,11 +40,11 @@
         private List<P_Root.EventLabel> crntObservesList = new List<P_Root.EventLabel>();
         private List<P_Root.EventLabel> crntSendsList = new List<P_Root.EventLabel>();
         private List<P_Root.EventLabel> crntPrivateList = new List<P_Root.EventLabel>();
-        private List<P_Root.MonitorKind> crntMonitorList = new List<P_Root.MonitorKind>();
         private List<P_Root.EventLabel> crntReceivesList = new List<P_Root.EventLabel>();
 
         private HashSet<string> crntStateNames = new HashSet<string>();
-        private HashSet<string> crntFunNames = new HashSet<string>();
+        private HashSet<string> crntLocalFunNames = new HashSet<string>();
+        private HashSet<string> crntStaticFunNames = new HashSet<string>();
         private HashSet<string> crntVarNames = new HashSet<string>();
         private TopDeclNames topDeclNames;
 
@@ -57,7 +57,7 @@
         private int nextPayloadVarLabel = 0;
         private Stack<P_Root.ModuleList> ModuleListStack = new Stack<P_Root.ModuleList>();
         private Stack<P_Root.Module> moduleStack = new Stack<P_Root.Module>();
-        private Stack<P_Root.EventsOrInterfaces> evtOrInterListStack = new Stack<P_Root.EventsOrInterfaces>();
+        private Stack<P_Root.EventList> eventListStack = new Stack<P_Root.EventList>();
 
         private class LocalVarStack
         {
@@ -328,11 +328,6 @@
                 errorMessage = string.Format("A module with name {0} already declared", name);
                 error = true;
             }
-            else if (topDeclNames.staticFunNames.Contains(name))
-            {
-                errorMessage = string.Format("A static function with name {0} already declared", name);
-                error = true;
-            }
             else if (topDeclNames.testNames.Contains(name))
             {
                 errorMessage = string.Format("A test case with name {0} already declared", name);
@@ -341,6 +336,16 @@
             else if (topDeclNames.typeNames.Contains(name))
             {
                 errorMessage = string.Format("A type with name {0} already declared", name);
+                error = true;
+            }
+            else if (topDeclNames.moduleListNames.Contains(name))
+            {
+                errorMessage = string.Format("A module list with name {0} already declared", name);
+                error = true;
+            }
+            else if (topDeclNames.eventListNames.Contains(name))
+            {
+                errorMessage = string.Format("A event list with name {0} already declared", name);
                 error = true;
             }
             if (error)
@@ -394,43 +399,24 @@
             var evList = P_Root.MkEventList();
             evList.ev = (P_Root.IArgType_EventList__0)crntEventList[0];
             evList.tail = MkUserCnst(P_Root.UserCnstKind.NIL, span);
-            evtOrInterListStack.Push(evList);
+            eventListStack.Push(evList);
             crntEventList.RemoveAt(0);
             foreach (var ev in crntEventList)
             {
                 evList = P_Root.MkEventList();
                 evList.ev = (P_Root.IArgType_EventList__0)ev;
-                evList.tail = (P_Root.IArgType_EventList__1)evtOrInterListStack.Pop();
-                evtOrInterListStack.Push(evList);
+                evList.tail = (P_Root.IArgType_EventList__1)eventListStack.Pop();
+                eventListStack.Push(evList);
             }
             crntEventList.Clear();
-        }
-
-        private void PushInterfaceList(Span span)
-        {
-            var inList = P_Root.MkInterfaceList();
-            var interfaceType = P_Root.MkInterfaceType(MkString((string)crntInterfaceList[0].Symbol, crntInterfaceList[0].Span));
-            inList.inter = (P_Root.IArgType_InterfaceList__0)interfaceType;
-            inList.tail = MkUserCnst(P_Root.UserCnstKind.NIL, span);
-            evtOrInterListStack.Push(inList);
-            crntInterfaceList.RemoveAt(0);
-            foreach (var I in crntInterfaceList)
-            {
-                inList = P_Root.MkInterfaceList();
-                interfaceType = P_Root.MkInterfaceType(MkString((string)crntInterfaceList[0].Symbol, crntInterfaceList[0].Span));
-                inList.inter = (P_Root.IArgType_InterfaceList__0)interfaceType;
-                inList.tail = (P_Root.IArgType_InterfaceList__1)evtOrInterListStack.Pop();
-                evtOrInterListStack.Push(inList);
-            }
-            crntInterfaceList.Clear();
         }
 
         private void PushHideModule(Span span)
         {
             var hideModule = P_Root.MkHide();
             hideModule.Span = span;
-            Contract.Assert(evtOrInterListStack.Count > 0);
-            hideModule.ei = (P_Root.IArgType_Hide__0)evtOrInterListStack.Pop();
+            Contract.Assert(eventListStack.Count > 0);
+            hideModule.evL = (P_Root.IArgType_Hide__0)eventListStack.Pop();
             hideModule.modL = ModuleListStack.Pop();
             moduleStack.Push(hideModule);
         }
@@ -695,6 +681,27 @@
             stmtStack.Push(funStmt);
         }
 
+        private void PushStaticFunStmt(string modName, Span modNameSpan, string funName, Span funNameSpan, bool hasArgs, Span span)
+        {
+            Contract.Assert(!hasArgs || exprsStack.Count > 0);
+            var staticFunStmt = P_Root.MkStaticFunStmt();
+            staticFunStmt.name = MkString(funName, funNameSpan);
+            staticFunStmt.mod = MkString(modName, modNameSpan);
+            staticFunStmt.aout = MkUserCnst(P_Root.UserCnstKind.NIL, span);
+            staticFunStmt.Span = span;
+            staticFunStmt.label = P_Root.MkNumeric(GetNextTrampolineLabel());
+            if (hasArgs)
+            {
+                staticFunStmt.args = (P_Root.Exprs)exprsStack.Pop();
+            }
+            else
+            {
+                staticFunStmt.args = MkUserCnst(P_Root.UserCnstKind.NIL, span);
+            }
+
+            stmtStack.Push(staticFunStmt);
+        }
+
         private void PushFunExpr(string name, bool hasArgs, Span span)
         {
             Contract.Assert(!hasArgs || exprsStack.Count > 0);
@@ -711,6 +718,25 @@
             }
 
             valueExprStack.Push(funExpr);
+        }
+
+        private void PushStaticFunExpr(string modName, Span modNameSpan, string funName, Span funNameSpan, bool hasArgs, Span span)
+        {
+            Contract.Assert(!hasArgs || exprsStack.Count > 0);
+            var staticFunExpr = P_Root.MkStaticFunApp();
+            staticFunExpr.name = MkString(funName, funNameSpan);
+            staticFunExpr.mod = MkString(modName, modNameSpan);
+            staticFunExpr.Span = span;
+            if (hasArgs)
+            {
+                staticFunExpr.args = (P_Root.Exprs)exprsStack.Pop();
+            }
+            else
+            {
+                staticFunExpr.args = MkUserCnst(P_Root.UserCnstKind.NIL, span);
+            }
+
+            valueExprStack.Push(staticFunExpr);
         }
 
         private void PushTupleExpr(bool isUnaryTuple)
@@ -1699,7 +1725,7 @@
             crntVarList.Clear();
         }
 
-        private void AddInterface(string name, Span nameSpan, Span span)
+        private void AddInterfaceType(string name, Span nameSpan, Span span)
         {
             if (IsValidName(name, nameSpan))
                 topDeclNames.interfaceNames.Add(name);
@@ -1711,7 +1737,7 @@
                 interfaceType.name = (P_Root.IArgType_InterfaceType__0)MkString(name, nameSpan);
                 var interfaceDecl = new P_Root.InterfaceTypeEventDecl();
                 interfaceDecl.Span = ev.Span;
-                interfaceDecl.@interface = (P_Root.IArgType_InterfaceTypeEventDecl__0)interfaceType;
+                interfaceDecl.it = (P_Root.IArgType_InterfaceTypeEventDecl__0)interfaceType;
                 interfaceDecl.ev = (P_Root.IArgType_InterfaceTypeEventDecl__1)ev;
                 parseProgram.InterfaceEvents.Add(interfaceDecl);
             }
@@ -1742,54 +1768,38 @@
             var refinesDecl = P_Root.MkRefinesTestDecl();
             refinesDecl.name = (P_Root.IArgType_RefinesTestDecl__0)MkString(name, nameSpan);
             refinesDecl.Span = span;
-            refinesDecl.spec = ModuleListStack.Pop();
-            refinesDecl.imp = ModuleListStack.Pop();
+            refinesDecl.smodL = ModuleListStack.Pop();
+            refinesDecl.imodL = ModuleListStack.Pop();
             parseProgram.RefinesTestDecl.Add(refinesDecl);
         }
 
-        private void AddNoFailureTest(string name, Span nameSpan, Span span)
+        private void AddSafetyTest(string name, Span nameSpan, Span span)
         {
             if (IsValidName(name, nameSpan))
             {
                 topDeclNames.testNames.Add(name);
             }
             Contract.Assert(ModuleListStack.Count() == 1);
-            var noFailure = P_Root.MkNoFailureTestDecl();
-            noFailure.Span = span;
-            noFailure.name = (P_Root.IArgType_NoFailureTestDecl__0)MkString(name, nameSpan);
-            noFailure.imp = ModuleListStack.Pop();
-            parseProgram.NoFailureTestDecl.Add(noFailure);
+            var safetyTest = P_Root.MkSafetyTestDecl();
+            safetyTest.Span = span;
+            safetyTest.name = (P_Root.IArgType_SafetyTestDecl__0)MkString(name, nameSpan);
+            safetyTest.modL = ModuleListStack.Pop();
+            parseProgram.SafetyTestDecl.Add(safetyTest);
         }
 
-        private void AddMonitorsTest(string name, Span nameSpan, Span span)
+        private void AddLivenessTest(string testName, Span testNameSpan, string monName, Span monNameSpan, Span span)
         {
-            if (IsValidName(name, nameSpan))
+            if (IsValidName(testName, testNameSpan))
             {
-                topDeclNames.testNames.Add(name);
+                topDeclNames.testNames.Add(testName);
             }
             Contract.Assert(ModuleListStack.Count() == 1);
-            var monitorsTest = P_Root.MkMonitorsTestDecl();
-            monitorsTest.Span = span;
-            monitorsTest.name = (P_Root.IArgType_MonitorsTestDecl__0)MkString(name, nameSpan);
-            monitorsTest.imp = ModuleListStack.Pop();
-
-            Stack<P_Root.MonitorList> monitorLStack = new Stack<P_Root.MonitorList>();
-            var monitorList = P_Root.MkMonitorList();
-            monitorList.mon = (P_Root.IArgType_MonitorList__0)crntMonitorList[0];
-            monitorList.tail = MkUserCnst(P_Root.UserCnstKind.NIL, span);
-            monitorLStack.Push(monitorList);
-            crntMonitorList.RemoveAt(0);
-            foreach (var mon in crntMonitorList)
-            {
-                monitorList = P_Root.MkMonitorList();
-                monitorList.mon = (P_Root.IArgType_MonitorList__0)mon;
-                monitorList.tail = monitorLStack.Pop();
-                monitorLStack.Push(monitorList);
-            }
-            monitorsTest.monitors = monitorLStack.Pop();
-            parseProgram.MonitorsTestDecl.Add(monitorsTest);
-
-            crntMonitorList.Clear();
+            var livenessTest = P_Root.MkLivenessTestDecl();
+            livenessTest.Span = span;
+            livenessTest.name = (P_Root.IArgType_LivenessTestDecl__0)MkString(testName, testNameSpan);
+            livenessTest.modL = ModuleListStack.Pop();
+            livenessTest.mon = (P_Root.IArgType_LivenessTestDecl__2)MkString(monName, monNameSpan);
+            parseProgram.LivenessTestDecl.Add(livenessTest);
         }
 
         private void AddSpecificationList(Span span)
@@ -1797,7 +1807,7 @@
             Contract.Assert(ModuleListStack.Count == 1);
             var specDecl = P_Root.MkSpecificationModules();
             specDecl.Span = span;
-            specDecl.sL = ModuleListStack.Pop();
+            specDecl.modL = ModuleListStack.Pop();
             parseProgram.SpecificationModules.Add(specDecl);
         }
 
@@ -1806,15 +1816,16 @@
             Contract.Assert(ModuleListStack.Count == 1);
             var impsDecl = P_Root.MkImplementationModules();
             impsDecl.Span = span;
-            impsDecl.mL = ModuleListStack.Pop();
+            impsDecl.modL = ModuleListStack.Pop();
             parseProgram.ImplementationModules.Add(impsDecl);
         }
 
-        private void AddModule(string name, Span nameSpan, Span span)
+        private void AddModule(P_Root.UserCnstKind kind, string name, Span nameSpan, Span span)
         {
             var moduleDecl = GetCurrentModuleDecl(span);
             moduleDecl.Span = span;
             moduleDecl.name = MkString(name, nameSpan);
+            moduleDecl.kind = MkUserCnst(kind, span);
             //add the module decl
             if (IsValidName(name, nameSpan))
             {
@@ -1832,16 +1843,6 @@
                 parseProgram.ModuleSendsDecl.Add(sends);
             }
 
-            //initialize the private set for the module.
-            foreach (var rEvent in crntPrivateList)
-            {
-                var privates = new P_Root.ModulePrivateDecl();
-                privates.Span = rEvent.Span;
-                privates.mod = (P_Root.IArgType_ModulePrivateDecl__0)moduleDecl;
-                privates.ev = (P_Root.IArgType_ModulePrivateDecl__1)rEvent;
-                parseProgram.ModulePrivateDecl.Add(privates);
-            }
-
             //initialize the creates set for the module.
             foreach (var cI in crntInterfaceList)
             {
@@ -1851,7 +1852,7 @@
                 var interfaceType = new P_Root.InterfaceType();
                 interfaceType.Span = cI.Span;
                 interfaceType.name = (P_Root.IArgType_InterfaceType__0)cI;
-                creates.inter = (P_Root.IArgType_ModuleCreatesDecl__1)interfaceType;
+                creates.it = (P_Root.IArgType_ModuleCreatesDecl__1)interfaceType;
                 parseProgram.ModuleCreatesDecl.Add(creates);
             }
 
@@ -1899,7 +1900,7 @@
                     interfaceType.name = (P_Root.IArgType_InterfaceType__0)MkString(name, nameSpan);
                     var interfaceDecl = new P_Root.InterfaceTypeEventDecl();
                     interfaceDecl.Span = e.Span;
-                    interfaceDecl.@interface = (P_Root.IArgType_InterfaceTypeEventDecl__0)interfaceType;
+                    interfaceDecl.it = (P_Root.IArgType_InterfaceTypeEventDecl__0)interfaceType;
                     interfaceDecl.ev = (P_Root.IArgType_InterfaceTypeEventDecl__1)e;
                     parseProgram.InterfaceEvents.Add(interfaceDecl);
                 }
@@ -1911,7 +1912,7 @@
             }
             crntMachDecl = null;
             crntStateNames.Clear();
-            crntFunNames.Clear();
+            crntLocalFunNames.Clear();
             crntVarNames.Clear();
             crntEventList.Clear();
             crntReceivesList.Clear();
@@ -1982,21 +1983,21 @@
             }
         }
 
-        private void AddFunction(string name, Span nameSpan, Span span, bool isGlobal)
+        private void AddFunction(string name, Span nameSpan, Span span, bool isStatic)
         {
             Contract.Assert(stmtStack.Count > 0);
 
             var funDecl = GetCurrentFunDecl(span);
             funDecl.Span = span;
             funDecl.name = MkString(name, nameSpan);
-            funDecl.owner = isGlobal ? (P_Root.IArgType_FunDecl__1)MkUserCnst(P_Root.UserCnstKind.NIL, span)
+            funDecl.owner = isStatic ? (P_Root.IArgType_FunDecl__1)GetCurrentModuleDecl(span)
                                      : (P_Root.IArgType_FunDecl__1)GetCurrentMachineDecl(span);
             funDecl.locals = (P_Root.IArgType_FunDecl__5)localVarStack.LocalVarDecl;
             funDecl.body = (P_Root.IArgType_FunDecl__6)stmtStack.Pop();
             parseProgram.Functions.Add(funDecl);
             localVarStack = new LocalVarStack(this);
 
-            if (crntFunNames.Contains(name))
+            if (crntLocalFunNames.Contains(name))
             {
                 var errFlag = new Flag(
                                      SeverityKind.Error,
@@ -2009,13 +2010,13 @@
             }
             else if (IsValidName(name, nameSpan))
             {
-                if (isGlobal)
+                if (isStatic)
                 {
                     topDeclNames.staticFunNames.Add(name);
                 }
                 else
                 {
-                    crntFunNames.Add(name);
+                    crntLocalFunNames.Add(name);
                 }
             }
             crntFunDecl = null;
@@ -2211,17 +2212,17 @@
             nextTrampolineLabel = 0;
             nextPayloadVarLabel = 0;
             crntStateNames.Clear();
-            crntFunNames.Clear();
+            crntLocalFunNames.Clear();
+            crntStaticFunNames.Clear();
             crntVarNames.Clear();
             crntObservesList.Clear();
             crntSendsList.Clear();
             crntReceivesList.Clear();
             crntPrivateList.Clear();
             crntInterfaceList.Clear();
-            crntMonitorList.Clear();
-            evtOrInterListStack.Clear();
             ModuleListStack.Clear();
             moduleStack.Clear();
+            eventListStack.Clear();
         }
 
         #endregion Helpers

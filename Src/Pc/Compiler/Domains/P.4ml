@@ -30,7 +30,7 @@ domain PData
     Name       ::= new (name: String).
     New        ::= new (name: String, arg: any Expr + { NIL }).
     FunApp     ::= new (name: String, args: any Exprs + { NIL }).
-	StaticFunApp     ::= new (name: String, mod: ModuleDecl, args: any Exprs + { NIL }).
+	StaticFunApp     ::= new (name: String, mod: String, args: any Exprs + { NIL }).
     NulApp     ::= new (op: Integer + Boolean + { THIS, NONDET, FAIRNONDET, NULL, HALT }).
     UnApp      ::= new (op: { NOT, NEG, KEYS, VALUES, SIZEOF }, arg1: any Expr).
     BinApp     ::= new (op: { ADD, SUB, MUL, INTDIV, AND, OR, EQ, NEQ, LT, LE, GT, GE, IDX, IN }, arg1: any Expr, arg2: any Expr).
@@ -41,7 +41,7 @@ domain PData
     NamedTuple ::= new (body: any NamedExprs).
     Exprs      ::= new (head: any Expr, tail: any Exprs + { NIL }).              
     NamedExprs ::= new (field: String, exp: any Expr, tail: any NamedExprs + { NIL }).
-    Expr       ::= Name + New + FunApp + NulApp + UnApp + BinApp + Field + Default + Cast + Tuple + NamedTuple.
+    Expr       ::= Name + New + FunApp +StaticFunApp + NulApp + UnApp + BinApp + Field + Default + Cast + Tuple + NamedTuple.
     ExprsExt   ::= Expr + Exprs + NamedExprs.
 
     //// Statements
@@ -50,7 +50,7 @@ domain PData
     Send     ::= new (dest: any Expr, ev: any Expr, arg: any Expr + { NIL }).
     Monitor  ::= new (ev: any Expr, arg: any Expr + { NIL }).
     FunStmt  ::= new (name: String, args: any Exprs + { NIL }, aout: any Name + { NIL }, label: Natural).
-	StaticFunStmt  ::= new (name: String, mod: ModuleDecl, args: any Exprs + { NIL }, aout: any Name + { NIL }, label: Natural).
+	StaticFunStmt  ::= new (name: String, mod: String, args: any Exprs + { NIL }, aout: any Name + { NIL }, label: Natural).
     NulStmt  ::= new (op: { SKIP, POP }).
     UnStmt   ::= new (op: { ASSERT }, arg1: any Expr).
     BinStmt  ::= new (op: { REMOVE, ASSIGN, INSERT }, arg1: any Expr, arg2: any Expr).
@@ -61,7 +61,7 @@ domain PData
 	Cases	 ::= new (trig: String + { NULL, HALT }, action: any AnonFunDecl, cases: any Cases + { NIL }).
 	Receive  ::= new (cases: any Cases, label: Natural).
 
-    Stmt ::= NewStmt + Raise + Send + Monitor + FunStmt + NulStmt + UnStmt + BinStmt + Return + While + Ite + Seq + Receive. 
+    Stmt ::= NewStmt + Raise + Send + Monitor + FunStmt + StaticFunStmt + NulStmt + UnStmt + BinStmt + Return + While + Ite + Seq + Receive. 
 
 	/*************************************************************/
     /***************  Module System Declarations  ****************/

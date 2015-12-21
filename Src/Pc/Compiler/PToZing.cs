@@ -1838,13 +1838,6 @@ namespace Microsoft.Pc
                 fields.Add(MkZingVarDecl(GetSendPrivateSetNameForModule(moduleName), Factory.Instance.MkCnst(PToZing.SM_EVENT_SET), ZingData.Cnst_Static));
             }
 
-            //declare the private send set for each module
-            foreach (var module in GetModulesFromModuleList(currentModuleList.Node as FuncTerm))
-            {
-                string moduleName = allModules[module].moduleName;
-                fields.Add(MkZingVarDecl(GetHiddenPrivateSetNameForModule(moduleName), Factory.Instance.MkCnst(PToZing.SM_EVENT_SET), ZingData.Cnst_Static));
-            }
-
             List<AST<Node>> methods = new List<AST<Node>>();
             foreach (var machineName in allMachinesInModuleList)
             {
@@ -4044,8 +4037,6 @@ namespace Microsoft.Pc
                     MkZingAssign(MkZingIdentifier(objectName), MkZingNew(Factory.Instance.MkCnst(ZingMachineClassName(machineName)), ZingData.Cnst_Nil)),
                     MkInitializers(machineName, objectName),
                     MkZingAssign(MkZingDot(objectName, "SPSet"), MkZingDot("Main", GetSendPrivateSetNameForModule(GetModuleName(machineName)))),
-                    MkZingAssign(MkZingDot(objectName, "HPSet"),
-                                 MkZingDot("Main", GetHiddenPrivateSetNameForModule(GetModuleName(machineName)))),
                     MkZingAssign(MkZingDot(objectName, "myHandle"),
                                  MkZingCall(MkZingDot("SM_HANDLE", "Construct"), MkZingDot("Machine", string.Format("_{0}", machineName)), machineInstance, Factory.Instance.MkCnst(allMachines[machineName].maxQueueSize))),
                     MkZingAssign(MkZingDot("SM_HANDLE", "enabled"), MkZingAdd(MkZingDot("SM_HANDLE", "enabled"), MkZingDot(objectName, "myHandle"))),
