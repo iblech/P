@@ -108,12 +108,9 @@ class PRT_VALUE {
 			trace(")");
 		}
 	}
-	static void PrtAssertIsLegalPayload(SM_EVENT ev, PRT_VALUE p, SM_EVENT_SET hpset)
+	static void PrtAssertEventsPO(SM_EVENT ev, PRT_VALUE p, SM_EVENT_SET hpset)
 	{
-		if(!(ev in hpset))
-		{
-			PRT_TYPE.NoPrivateInterface(p.type, hpset);
-		}
+		assert(false);
 	}
 	
     static PRT_VALUE PrtMkDefaultValue(PRT_TYPE type) {
@@ -327,7 +324,6 @@ class PRT_VALUE {
 		b = PrtInhabitsType(value, type);
         assert (b, "value must be a member of type");
 		newValue = PrtCloneValue(value);
-		value.type = type;
 		return newValue;
     }
 
