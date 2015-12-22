@@ -94,6 +94,24 @@
             private set;
         }
 
+        public List<P_Root.PartialOrderRel> EventsPartialOrder
+        {
+            get;
+            private set;
+        }
+
+        public List<P_Root.NameEventList> NameEventList
+        {
+            get;
+            private set;
+        }
+
+        public List<P_Root.NameModuleList> NameModuleList
+        {
+            get;
+            private set;
+        }
+
         public List<P_Root.StateDecl> States
         {
             get;
@@ -236,6 +254,18 @@
                 {
                     yield return spec;
                 }
+                foreach (var po in EventsPartialOrder)
+                {
+                    yield return po;
+                }
+                foreach (var ne in NameEventList)
+                {
+                    yield return ne;
+                }
+                foreach (var ne in NameModuleList)
+                {
+                    yield return ne;
+                }
             }
         }
 
@@ -256,6 +286,9 @@
             ModuleSendsDecl = new List<P_Root.ModuleSendsDecl>();
             ImplementationModules = new List<P_Root.ImplementationModules>();
             SpecificationModules = new List<P_Root.SpecificationModules>();
+            EventsPartialOrder = new List<P_Root.PartialOrderRel>();
+            NameEventList = new List<P_Root.NameEventList>();
+            NameModuleList = new List<P_Root.NameModuleList>();
             RefinesTestDecl = new List<P_Root.RefinesTestDecl>();
             LivenessTestDecl = new List<P_Root.LivenessTestDecl>();
             SafetyTestDecl = new List<P_Root.SafetyTestDecl>();

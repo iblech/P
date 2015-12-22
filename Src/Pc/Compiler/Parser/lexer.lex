@@ -124,7 +124,7 @@
 			 keywords.Add("driver", (int)Tokens.DRIVER);
 			 keywords.Add("safety", (int)Tokens.SAFETY);
 			 keywords.Add("liveness", (int)Tokens.LIVENESS);
-			 keywords.Add("por", (int)Tokens.POR);
+			 keywords.Add("po", (int)Tokens.PO);
 			 keywords.Add("eventlist", (int)Tokens.EVENTLIST);
 		 }
 
