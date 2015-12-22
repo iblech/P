@@ -22,7 +22,7 @@
 
 %token SPEC DRIVER MODULE SENDS CREATES RECEIVES INTERFACE 
 %token TEST REFINES SATISFIES SAFETY LIVENESS IMPLEMENTATION SPECIFICATION HIDE
-%token POR EVENTLIST
+%token PO EVENTLIST
 
 %token ASSIGN REMOVE INSERT
 %token EQ NE LT GT LE GE IN
@@ -60,6 +60,7 @@ TopDecl
 	| TypeDefDecl
 	| EventListDecl
 	| ModuleListDecl
+	| PODecl
 	| EventDecl
 	| InterfaceDecl
 	| ModuleDecl
@@ -98,12 +99,12 @@ EventListDecl
 	;
 
 ModuleListDecl
-	: MODULE ID ASSIGN NonDefaultEventList SEMICOLON   { AddNameModuleList($2.str, ToSpan(@2), ToSpan(@1)); }
+	: MODULE ID ASSIGN ModuleList SEMICOLON   { AddNameModuleList($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
 /******************* Partial Order Over Events ********************************/
-PORDecl
-	: POR ID GT NonDefaultEventList SEMICOLON		  { AddPOR($2.str, ToSpan(@2), ToSpan(@1)); }
+PODecl
+	: PO ID GT NonDefaultEventList SEMICOLON		  { AddEventsPO($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
 /******************* Include Declarations *******************/ 
@@ -120,7 +121,7 @@ InterfaceDecl
 ModuleDecl
 	: SPEC MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE		{ AddModule(P_Root.UserCnstKind.SPEC, $3.str, ToSpan(@3), ToSpan(@1)); }
 	| DRIVER MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE		{ AddModule(P_Root.UserCnstKind.DRIVER, $3.str, ToSpan(@3), ToSpan(@1)); }
-	| MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE			{ AddModule(P_Root.UserCnstKind.IMP, $3.str, ToSpan(@3), ToSpan(@1)); }
+	| MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE			{ AddModule(P_Root.UserCnstKind.IMPL, $3.str, ToSpan(@3), ToSpan(@1)); }
 	;
 
 ModuleBody

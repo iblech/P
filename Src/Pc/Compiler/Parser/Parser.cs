@@ -394,8 +394,9 @@
             ModuleListStack.Push(ModuleList);
         }
 
-        private void PushEventList(Span span)
+        private void PushHideModule(Span span)
         {
+            //create eventlist
             var evList = P_Root.MkEventList();
             evList.ev = (P_Root.IArgType_EventList__0)crntEventList[0];
             evList.tail = MkUserCnst(P_Root.UserCnstKind.NIL, span);
@@ -409,10 +410,8 @@
                 eventListStack.Push(evList);
             }
             crntEventList.Clear();
-        }
 
-        private void PushHideModule(Span span)
-        {
+            //create hide
             var hideModule = P_Root.MkHide();
             hideModule.Span = span;
             Contract.Assert(eventListStack.Count > 0);
@@ -666,6 +665,7 @@
             Contract.Assert(!hasArgs || exprsStack.Count > 0);
             var funStmt = P_Root.MkFunStmt();
             funStmt.name = MkString(name, span);
+            funStmt.modName = MkUserCnst(P_Root.UserCnstKind.NIL, span);
             funStmt.aout = MkUserCnst(P_Root.UserCnstKind.NIL, span);
             funStmt.Span = span;
             funStmt.label = P_Root.MkNumeric(GetNextTrampolineLabel());
@@ -684,9 +684,9 @@
         private void PushStaticFunStmt(string modName, Span modNameSpan, string funName, Span funNameSpan, bool hasArgs, Span span)
         {
             Contract.Assert(!hasArgs || exprsStack.Count > 0);
-            var staticFunStmt = P_Root.MkStaticFunStmt();
+            var staticFunStmt = P_Root.MkFunStmt();
             staticFunStmt.name = MkString(funName, funNameSpan);
-            staticFunStmt.mod = MkString(modName, modNameSpan);
+            staticFunStmt.modName = MkString(modName, modNameSpan);
             staticFunStmt.aout = MkUserCnst(P_Root.UserCnstKind.NIL, span);
             staticFunStmt.Span = span;
             staticFunStmt.label = P_Root.MkNumeric(GetNextTrampolineLabel());
@@ -707,6 +707,7 @@
             Contract.Assert(!hasArgs || exprsStack.Count > 0);
             var funExpr = P_Root.MkFunApp();
             funExpr.name = MkString(name, span);
+            funExpr.modName = MkUserCnst(P_Root.UserCnstKind.NIL, span);
             funExpr.Span = span;
             if (hasArgs)
             {
@@ -723,9 +724,9 @@
         private void PushStaticFunExpr(string modName, Span modNameSpan, string funName, Span funNameSpan, bool hasArgs, Span span)
         {
             Contract.Assert(!hasArgs || exprsStack.Count > 0);
-            var staticFunExpr = P_Root.MkStaticFunApp();
+            var staticFunExpr = P_Root.MkFunApp();
             staticFunExpr.name = MkString(funName, funNameSpan);
-            staticFunExpr.mod = MkString(modName, modNameSpan);
+            staticFunExpr.modName = MkString(modName, modNameSpan);
             staticFunExpr.Span = span;
             if (hasArgs)
             {
@@ -991,8 +992,9 @@
                 P_Root.FunApp funCall = arg2 as P_Root.FunApp;
                 var funStmt = P_Root.MkFunStmt();
                 funStmt.name = (P_Root.IArgType_FunStmt__0)funCall.name;
-                funStmt.args = (P_Root.IArgType_FunStmt__1)funCall.args;
-                funStmt.aout = (P_Root.IArgType_FunStmt__2)aout;
+                funStmt.modName = (P_Root.IArgType_FunStmt__1)funCall.modName;
+                funStmt.args = (P_Root.IArgType_FunStmt__2)funCall.args;
+                funStmt.aout = (P_Root.IArgType_FunStmt__3)aout;
                 funStmt.label = MkNumeric(GetNextTrampolineLabel(), span);
                 funStmt.Span = span;
                 stmtStack.Push(funStmt);
@@ -1725,6 +1727,54 @@
             crntVarList.Clear();
         }
 
+        private void AddNameEventList(string elName, Span nameSpan, Span span)
+        {
+            //create eventlist
+            var evList = P_Root.MkEventList();
+            evList.ev = (P_Root.IArgType_EventList__0)crntEventList[0];
+            evList.tail = MkUserCnst(P_Root.UserCnstKind.NIL, span);
+            eventListStack.Push(evList);
+            crntEventList.RemoveAt(0);
+            foreach (var ev in crntEventList)
+            {
+                evList = P_Root.MkEventList();
+                evList.ev = (P_Root.IArgType_EventList__0)ev;
+                evList.tail = (P_Root.IArgType_EventList__1)eventListStack.Pop();
+                eventListStack.Push(evList);
+            }
+            crntEventList.Clear();
+
+            //create name eventlist
+            var nameEvList = new P_Root.NameEventList();
+            nameEvList.Span = span;
+            nameEvList.name = (P_Root.IArgType_NameEventList__0)MkString(elName, nameSpan);
+            nameEvList.evL = (P_Root.IArgType_NameEventList__1)eventListStack.Pop();
+            parseProgram.NameEventList.Add(nameEvList);
+        }
+
+        private void AddNameModuleList(string mlName, Span nameSpan, Span span)
+        {
+            //create name eventlist
+            var namemodList = new P_Root.NameModuleList();
+            namemodList.Span = span;
+            namemodList.name = (P_Root.IArgType_NameModuleList__0)MkString(mlName, nameSpan);
+            namemodList.modL = (P_Root.IArgType_NameModuleList__1)ModuleListStack.Pop();
+            parseProgram.NameModuleList.Add(namemodList);
+        }
+
+        private void AddEventsPO(string evName, Span nameSpan, Span span)
+        {
+            foreach (var ev in crntEventList)
+            {
+                var porel = new P_Root.PartialOrderRel();
+                porel.Span = span;
+                porel.ev1 = (P_Root.IArgType_PartialOrderRel__0)MkString(evName, nameSpan);
+                porel.ev2 = (P_Root.IArgType_PartialOrderRel__1)ev;
+                parseProgram.EventsPartialOrder.Add(porel);
+            }
+            crntEventList.Clear();
+        }
+
         private void AddInterfaceType(string name, Span nameSpan, Span span)
         {
             if (IsValidName(name, nameSpan))
@@ -1997,7 +2047,7 @@
             parseProgram.Functions.Add(funDecl);
             localVarStack = new LocalVarStack(this);
 
-            if (crntLocalFunNames.Contains(name))
+            if (crntLocalFunNames.Contains(name) || crntStaticFunNames.Contains(name))
             {
                 var errFlag = new Flag(
                                      SeverityKind.Error,
@@ -2012,7 +2062,7 @@
             {
                 if (isStatic)
                 {
-                    topDeclNames.staticFunNames.Add(name);
+                    crntStaticFunNames.Add(name);
                 }
                 else
                 {

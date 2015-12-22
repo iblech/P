@@ -1,13 +1,12 @@
 ﻿namespace Microsoft.Pc
 {
+    using Microsoft.Formula.API;
+    using Microsoft.Formula.API.Nodes;
     using System;
     using System.Collections.Generic;
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
-
-    using Microsoft.Formula.API;
-    using Microsoft.Formula.API.Nodes;
 
     public static class PData
     {
@@ -50,7 +49,8 @@
         /// <summary>
         /// Expressions
         /// </summary>
-        public static readonly AST<Id> Cnst_Nil = Factory.Instance.MkId("NIL");        
+        public static readonly AST<Id> Cnst_Nil = Factory.Instance.MkId("NIL");
+
         public static readonly AST<Id> Con_Name = Factory.Instance.MkId("Name");
         public static readonly AST<Id> Con_Exprs = Factory.Instance.MkId("Exprs");
         public static readonly AST<Id> Con_NamedExprs = Factory.Instance.MkId("NamedExprs");
@@ -69,6 +69,7 @@
         /// Statements
         /// </summary>
         public static readonly AST<Id> Con_NewStmt = Factory.Instance.MkId("NewStmt");
+
         public static readonly AST<Id> Con_Raise = Factory.Instance.MkId("Raise");
         public static readonly AST<Id> Con_Send = Factory.Instance.MkId("Send");
         public static readonly AST<Id> Con_Monitor = Factory.Instance.MkId("Monitor");
@@ -84,6 +85,7 @@
 
         //// Types
         public static readonly AST<Id> Cnst_Bool = Factory.Instance.MkId("BOOL");
+
         public static readonly AST<Id> Cnst_Int = Factory.Instance.MkId("INT");
         public static readonly AST<Id> Cnst_Any = Factory.Instance.MkId("ANY");
         public static readonly AST<Id> Con_BaseType = Factory.Instance.MkId("BaseType");
@@ -95,6 +97,7 @@
 
         //// Machine declarations
         public static readonly AST<Id> Con_MachType = Factory.Instance.MkId("MachType");
+
         public static readonly AST<Id> Con_MachineDecl = Factory.Instance.MkId("MachineDecl");
         public static readonly AST<Id> Con_EventDecl = Factory.Instance.MkId("EventDecl");
         public static readonly AST<Id> Con_StateDecl = Factory.Instance.MkId("StateDecl");
