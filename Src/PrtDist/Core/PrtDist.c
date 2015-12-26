@@ -2,9 +2,8 @@
 #include ".\PrtDistIDL_s.c"
 #include "PrtDistInternals.h"
 
-
 /***********************************************************************************************************/
-//Create remote machine 
+//Create remote machine
 PRT_MACHINEINST * PRT_CALL_CONV PrtMkMachineRemote(
 	_Inout_ PRT_PROCESS *process,
 	_In_ PRT_UINT32 instanceOf,
@@ -19,11 +18,10 @@ PRT_MACHINEINST * PRT_CALL_CONV PrtMkMachineRemote(
 
 	RpcTryExcept
 	{
-
 		c_PrtDistMkMachine(handle, instanceOf, serial_params, &retVal);
 		//c_PrtDistSendEx(handle, serial_target, serial_event, serial_payload);
 	}
-	RpcExcept(1)
+		RpcExcept(1)
 	{
 		unsigned long ulCode;
 		ulCode = RpcExceptionCode();
@@ -35,8 +33,8 @@ PRT_MACHINEINST * PRT_CALL_CONV PrtMkMachineRemote(
 		exit(1);
 	}
 	RpcEndExcept
-	
-	PRT_MACHINEINST_PRIV *context;
+
+		PRT_MACHINEINST_PRIV *context;
 	context = (PRT_MACHINEINST_PRIV*)PrtMalloc(sizeof(PRT_MACHINEINST_PRIV));
 	context->id = PrtDistDeserializeValue(retVal);
 	return (PRT_MACHINEINST*)context;
@@ -47,7 +45,7 @@ void s_PrtDistMkMachine(
 	PRT_INT32 instanceOf,
 	PRT_VALUE* params,
 	PRT_VALUE** retVal
-)
+	)
 {
 	PRT_VALUE* deserial_params = PrtDistDeserializeValue(params);
 	PRT_MACHINEINST* newContext = PrtMkMachine(ContainerProcess, instanceOf, deserial_params);
@@ -108,8 +106,6 @@ PRT_VALUE* target
 	if (status)
 		exit(status);
 
-
-
 	// Validates the format of the string binding handle and converts
 	// it to a binding handle.
 	// Connection is not done here either.
@@ -124,9 +120,6 @@ PRT_VALUE* target
 	}
 	return handle;
 }
-
-
-
 
 //Function to create a RPC server and wait, should be called using a worker thread.
 DWORD WINAPI PrtDistCreateRPCServerForEnqueueAndWait(LPVOID portNumber)
@@ -153,7 +146,7 @@ DWORD WINAPI PrtDistCreateRPCServerForEnqueueAndWait(LPVOID portNumber)
 		NULL, // Use the MIDL generated entry-point vector.
 		NULL, // Use the MIDL generated entry-point vector.
 		RPC_IF_ALLOW_CALLBACKS_WITH_NO_AUTH, // Forces use of security callback.
-		RPC_C_LISTEN_MAX_CALLS_DEFAULT, // sequential RPC 
+		RPC_C_LISTEN_MAX_CALLS_DEFAULT, // sequential RPC
 		(unsigned)-1, // Infinite max size of incoming data blocks.
 		NULL); // Naive security callback.
 
@@ -178,12 +171,9 @@ DWORD WINAPI PrtDistCreateRPCServerForEnqueueAndWait(LPVOID portNumber)
 	}
 
 	return -1;
-
 }
 
 /***********************************************************************************************************/
-
-
 
 /***********************************************************************************************************
 * Implementation of all the model functions
@@ -193,6 +183,19 @@ PRT_VALUE *P_FUN_SEND_IMPL(PRT_MACHINEINST *context)
 {
 	PRT_FUNSTACK_INFO frame;
 	PrtPopFrame((PRT_MACHINEINST_PRIV*)context, &frame);
+
+	//log
+	PRT_STRING payloadString;
+	PRT_MACHINEINST_PRIV * c = (PRT_MACHINEINST_PRIV *)context;
+	PRT_UINT32 eventIndex;
+	PRT_STRING eventName;
+	eventIndex = PrtPrimGetEvent(frame.locals[1U]);
+	eventName = c->process->program->events[eventIndex].name;
+	payloadString = PrtToStringValue(frame.locals[0U]);
+	char log[MAX_LOG_SIZE];
+	sprintf_s(log, MAX_LOG_SIZE, "Enqueued event <%s, %s> in remote machine", eventName, payloadString);
+	PrtDistLog(log);
+
 	PRT_VALUE* target = frame.locals[2U];
 	PrtDistSend(context->id, target, frame.locals[1U], frame.locals[0U]);
 	PrtFreeLocals((PRT_MACHINEINST_PRIV*)context, &frame);
@@ -201,7 +204,6 @@ PRT_VALUE *P_FUN_SEND_IMPL(PRT_MACHINEINST *context)
 
 PRT_VALUE *P_FUN_SEND_REL_IMPL(PRT_MACHINEINST *context)
 {
-	
 	PRT_VALUE* result = PrtMkBoolValue(PRT_FALSE);
 
 	static PRT_VALUE* processAlive = NULL;
@@ -242,7 +244,7 @@ PRT_VALUE *P_FUN_SEND_REL_IMPL(PRT_MACHINEINST *context)
 PRT_VALUE *P_FUN_CREATECONTAINER_IMPL(PRT_MACHINEINST *context)
 {
 	PRT_FUNSTACK_INFO frame;
-	PrtPopFrame((PRT_MACHINEINST_PRIV*) context, &frame);
+	PrtPopFrame((PRT_MACHINEINST_PRIV*)context, &frame);
 	//first step is to get the nodeId from central node.
 	int newNodeId;
 	while (TRUE != PrtDistGetNextNodeId(&newNodeId));
@@ -250,20 +252,18 @@ PRT_VALUE *P_FUN_CREATECONTAINER_IMPL(PRT_MACHINEINST *context)
 	//send message to the node manager on the new node to create container.
 
 	int newContainerId;
-	while(TRUE != PrtDistCreateContainer(newNodeId, &newContainerId));
+	while (TRUE != PrtDistCreateContainer(newNodeId, &newContainerId));
 
 	PRT_VALUE* containerMachine = PrtMkDefaultValue(PrtMkPrimitiveType(PRT_KIND_MACHINE));
 	containerMachine->valueUnion.mid->machineId = 1; //the first machine.
 	containerMachine->valueUnion.mid->processId.data1 = newContainerId;
 	containerMachine->valueUnion.mid->processId.data2 = newNodeId;
 
-
 	PrtFreeLocals((PRT_MACHINEINST_PRIV*)context, &frame);
 	return containerMachine;
 }
 
 /***********************************************************************************************************/
-
 
 /***********************************************************************************************************
 * RPC Related Functions

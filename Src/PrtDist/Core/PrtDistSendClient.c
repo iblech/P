@@ -57,5 +57,5 @@ PRT_BOOLEAN PrtDistSend(
 		return PRT_FALSE;
 	}
 	RpcEndExcept
-	return PRT_TRUE;
+		return PRT_TRUE;
 }
