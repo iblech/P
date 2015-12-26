@@ -3796,7 +3796,7 @@ namespace Microsoft.Pc
                 //Monitor can be applied on the private event
                 ctxt.AddSideEffect(MkZingAssert(MkZingNot(MkZingIn(eventExpr, MkZingDot(Factory.Instance.MkCnst("myHandle"), "moduleSendsSet"))), "monitored event is not in the send set of the module"));
                 //Monitor can only have interface that is less than the event
-                ctxt.AddSideEffect(MkZingCallStmt(PrtAssertEventsPO, eventExpr, tmpVar));
+                ctxt.AddSideEffect(MkZingCallStmt(PrtAssertEventsPO, eventExpr, MkZingDot(tmpVar, "type")));
 
                 List<AST<Node>> stmts = new List<AST<Node>>();
                 //generate invoke monitor only in case of private monitors

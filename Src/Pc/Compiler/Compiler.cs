@@ -623,6 +623,8 @@
             AddErrors(task.Result, "IllegalRefinesTestCase(_)", errors, 0);
             AddErrors(task.Result, "SoundCompositionWarning(_)", errors, 0);
             AddErrors(task.Result, "IllegalMainMachine(_)", errors, 0);
+            AddErrors(task.Result, "StaticFunctionUsageError(_, _)", errors, 0);
+            AddErrors(task.Result, "StaticFunctionUsageError(_, _)", errors, 1);
 
             if (Options.printTypeInference)
             {

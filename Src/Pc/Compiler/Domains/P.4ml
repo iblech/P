@@ -132,14 +132,16 @@ domain PData
 						  f is FunDecl( _, mod, _, _, _, _, _), mod is ModuleDecl, m is ModuleDecl, mod.kind = m.kind, m.kind = IMPL;
 						  f is FunDecl( _, mod, _, _, _, _, _), mod is ModuleDecl, m is ModuleDecl, m.kind != IMPL.
 	
-   	GenerateFunctions ::= (f: FunDecl).
-	GenerateFunctions(f) :- f is FunDecl( _, mod, _, _, _, _, _),  AllImpModules(modl, mod); 
-							f is FunDecl, f.owner.kind = REAL.
+   	ImplFunction ::= (f: FunDecl + AnonFunDecl).
+	ImplFunction(f) :- f is FunDecl( _, mod, _, _, _, _, _),  AllImplModules(modl, mod); 
+					  f is FunDecl, f.owner.kind = REAL, ImplMachine(f.owner);
+					  f is AnonFunDecl(mod, _, _, _),  AllImplModules(modl, mod); 
+					  f is AnonFunDecl, f.owner.kind = REAL, ImplMachine(f.owner).
 	
 	//all machines in implementation modules list
-	AllImpModules ::= sub (imodL: ImplementationModules, mod: ModuleDecl).
-	ImpMachine ::= (mach: MachineDecl).
-	ImpMachine(m) :- AllImpModules(modl, mod), m is MachineDecl(_, mod, _, _, _, _), m.kind != MONITOR.
+	AllImplModules ::= sub (imodL: ImplementationModules, mod: ModuleDecl).
+	ImplMachine ::= (mach: MachineDecl).
+	ImplMachine(m) :- AllImplModules(modl, mod), m is MachineDecl(_, mod, _, _, _, _), m.kind != MONITOR.
 }
 
 domain PStructuralTyping extends PData
@@ -285,6 +287,7 @@ domain PStaticTyping extends PData
 	conforms no TypeDefError(_).
 	conforms no DomOfMapUnSafe(_).
 	conforms no ModuleLevelTypingError(_).
+	conforms no StaticFunctionUsageError(_, _).
 	conforms no IllegalMainMachine(_).
 	conforms no IllegalComposition(_).
 	conforms no IllegalHideOperation(_).
@@ -480,6 +483,7 @@ domain PStaticTyping extends PData
 	
 	[ rule_Classes = '"error, msg: static function creates interface that is not in the creates list of the module"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = FunApp(n, m, _), sF is FunDecl(n, ModuleDecl(m, _),  _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(c.owner.mod, i).
+	[ rule_Classes = '"error, msg: static function creates interface that is not in the creates list of the module"']
 	TypeOf(c, e, ERROR)            :- SubSE(c, e), e = FunStmt(n, m, _, _, _), sF is FunDecl(n, ModuleDecl(m, _),  _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(c.owner.mod, i).
 
 	/***************************************************************/
@@ -550,6 +554,15 @@ domain PStaticTyping extends PData
 	ComposeModWithModList(ml, m1, m2) :- AllModList(ml), ml = ModuleList(m1, m2), m2 : ModuleList. // add m2 is a legal compositions
 	
 	IllegalComposition ::= (modL: ModuleList).
+
+	/****** Static functions usage is correct **************/
+	StaticFunctionUsageError ::= (ml: ModuleList, e: FunCall).
+	[rule_Classes = '"error, msg: static function not defined in the module list (missing module)"']
+	StaticFunctionUsageError(ml, e) :- SubSE(c, e), e = FunApp(n, m, _), sF is FunDecl(n, mod,  _, _, _, _, _), mod is ModuleDecl(m, _), ComposedModules(ml), no SubModule(ml, mod). 
+	[rule_Classes = '"error, msg: static function not defined in the module list (missing module)"']
+	StaticFunctionUsageError(ml, e) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), sF is FunDecl(n, mod,  _, _, _, _, _), mod is ModuleDecl(m, _), ComposedModules(ml), no SubModule(ml, mod).
+	/*******************************************************/
+
 
 	/****** Compute Partial Order and downward closure for sends list **************/
 	//interface type in the payload of an event

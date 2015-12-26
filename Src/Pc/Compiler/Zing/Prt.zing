@@ -137,9 +137,49 @@ class SM_HANDLE {
 		stack = stack.next;
     }
 	
-	void PrtAssertEventsPO(SM_EVENT ev, PRT_VALUE p)
+	void PrtAssertEventsPO(SM_EVENT ev, PRT_TYPE t)
 	{
-		assert(false);
+		PRT_TYPE_KIND kind = t.typeKind;
+		int i;
+		if(
+		kind == PRT_TYPE_KIND.PRT_KIND_BOOL ||
+		kind == PRT_TYPE_KIND.PRT_KIND_EVENT ||
+		kind == PRT_TYPE_KIND.PRT_KIND_REAL ||
+		kind == PRT_TYPE_KIND.PRT_KIND_INT)
+		{
+			return;
+		}
+		
+		if(kind == PRT_TYPE_KIND.PRT_KIND_SEQ)
+		{
+			PrtAssertEventsPO(ev, t.innerType);
+		}
+		if(kind == PRT_TYPE_KIND.PRT_KIND_TUPLE || kind == PRT_TYPE_KIND.PRT_KIND_NMDTUP)
+		{
+			i = 0;
+			while (i < t.arity)
+			{
+ 				PrtAssertEventsPO(ev, t.fieldTypes[i]);
+				i = i + 1;
+			}
+		}
+		if (kind == PRT_TYPE_KIND.PRT_KIND_MAP)
+		{
+			PrtAssertEventsPO(ev, t.domType);
+			PrtAssertEventsPO(ev, t.codType);
+		}
+		if(kind == PRT_TYPE_KIND.PRT_KIND_INTERFACE)
+		{
+			foreach(SM_EVENT e in t.interfaceSet)
+			{
+				if(!(e in ev.poEvents))
+				{
+					trace("Payload has an interface type with event {0} that is not less than (partial order) the event {1}.\n", e.name, ev.name);
+					assert(false);
+				}
+			}
+		}
+		
 	}
 	
     void EnqueueEvent(SM_EVENT e, PRT_VALUE arg, SM_HANDLE source) {
@@ -153,7 +193,7 @@ class SM_HANDLE {
 			assert(false);
 		}
 		//module system: assert that the all events in payload-interface are less than event sent
-		PrtAssertEventsPO(e, arg);
+		PrtAssertEventsPO(e, arg.type);
 		
     	assert(e != null, "Enqueued event must be non-null");
 		//assertion to check if argument passed inhabits the payload type.

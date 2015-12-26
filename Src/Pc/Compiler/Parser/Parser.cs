@@ -1552,7 +1552,7 @@
             var stmt = (P_Root.IArgType_AnonFunDecl__2)stmtStack.Pop();
             P_Root.IArgType_AnonFunDecl__0 owner =
                 isStaticFun
-                ? (P_Root.IArgType_AnonFunDecl__0)P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)
+                ? (P_Root.IArgType_AnonFunDecl__0)GetCurrentModuleDecl(span)
                 : (P_Root.IArgType_AnonFunDecl__0)GetCurrentMachineDecl(span);
             var anonAction = P_Root.MkAnonFunDecl(owner, (P_Root.IArgType_AnonFunDecl__1)localVarStack.LocalVarDecl, stmt, (P_Root.IArgType_AnonFunDecl__3)localVarStack.ContextLocalVarDecl);
             anonAction.Span = stmt.Span;
