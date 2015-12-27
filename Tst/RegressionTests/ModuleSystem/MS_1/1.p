@@ -1,29 +1,44 @@
-event x;
+event x : K1;
 event y;
 event z;
 event a;
 interface K1 x, y;
 interface K2 a, z;
-test testName Mod1, hide x in (Mod1, hide a in (Mod2)) refines Mod1;
 
-module Mod1
+test safety testcase_1 Mod1, Mod2;
+implementation Mod1, Mod2;
+
+driver module Mod1
 creates K2
 {
 	main machine M1
-	implements K1
+	receives x, y
 	{
 		start state S 
 		{
+			entry {
+				new K2();
+				Mod2.SFUN();
+			}
+			
 		}
 	}
 }
 
 module Mod2 {
+	static fun SFUN()
+	{
+		
+	}
+	
 	machine M2
-	implements K2
+	receives a, z
 	{
 		start state S 
 		{
+			entry {
+				
+			}
 		}
 	}
 }

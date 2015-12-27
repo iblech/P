@@ -619,8 +619,7 @@
             AddErrors(task.Result, "ModuleLevelTypingError(_)", errors, 0);
             AddErrors(task.Result, "IllegalComposition(_)", errors, 0);
             AddErrors(task.Result, "IllegalHideOperation(_)", errors, 0);
-            AddErrors(task.Result, "IllegalMonitorTestCase(_)", errors, 0);
-            AddErrors(task.Result, "IllegalRefinesTestCase(_)", errors, 0);
+            AddErrors(task.Result, "IllegalTestCase(_)", errors, 0);
             AddErrors(task.Result, "SoundCompositionWarning(_)", errors, 0);
             AddErrors(task.Result, "IllegalMainMachine(_)", errors, 0);
             AddErrors(task.Result, "StaticFunctionUsageError(_, _)", errors, 0);

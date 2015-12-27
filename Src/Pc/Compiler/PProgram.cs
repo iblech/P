@@ -52,6 +52,12 @@
             private set;
         }
 
+        public List<P_Root.ModuleType> ModuleType
+        {
+            get;
+            private set;
+        }
+
         public List<P_Root.ModuleSendsDecl> ModuleSendsDecl
         {
             get;
@@ -226,6 +232,10 @@
                 {
                     yield return m;
                 }
+                foreach (var m in ModuleType)
+                {
+                    yield return m;
+                }
                 foreach (var sm in ModuleSendsDecl)
                 {
                     yield return sm;
@@ -282,6 +292,7 @@
             InterfaceEvents = new List<P_Root.InterfaceTypeEventDecl>();
             MachineReceivesDecl = new List<P_Root.MachineReceivesDecl>();
             ModuleDecl = new List<P_Root.ModuleDecl>();
+            ModuleType = new List<P_Root.ModuleType>();
             ModuleCreatesDecl = new List<P_Root.ModuleCreatesDecl>();
             ModuleSendsDecl = new List<P_Root.ModuleSendsDecl>();
             ImplementationModules = new List<P_Root.ImplementationModules>();

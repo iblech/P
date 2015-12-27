@@ -433,10 +433,6 @@
 
         private void PushNameType(string name, Span span)
         {
-            if (IsValidName(name, span))
-            {
-                topDeclNames.typeNames.Add(name);
-            }
             var nameType = P_Root.MkNameType(MkString(name, span));
             nameType.Span = span;
             typeExprStack.Push(nameType);
@@ -1297,6 +1293,10 @@
 
         private void AddTypeDef(string name, Span nameSpan, Span typeDefSpan)
         {
+            if (IsValidName(name, nameSpan))
+            {
+                topDeclNames.typeNames.Add(name);
+            }
             var type = (P_Root.IArgType_TypeDef__1)typeExprStack.Pop();
             var typeDef = P_Root.MkTypeDef(MkString(name, nameSpan), type);
             typeDef.Span = typeDefSpan;
@@ -1875,13 +1875,18 @@
             var moduleDecl = GetCurrentModuleDecl(span);
             moduleDecl.Span = span;
             moduleDecl.name = MkString(name, nameSpan);
-            moduleDecl.kind = MkUserCnst(kind, span);
+
             //add the module decl
             if (IsValidName(name, nameSpan))
             {
                 topDeclNames.moduleNames.Add(name);
             }
             parseProgram.ModuleDecl.Add(moduleDecl);
+            var moduleType = P_Root.MkModuleType();
+            moduleType.mod = moduleDecl;
+            moduleType.kind = MkUserCnst(kind, span);
+            moduleType.Span = span;
+            parseProgram.ModuleType.Add(moduleType);
 
             //initialize the sends set for the module.
             foreach (var sEvent in crntSendsList)

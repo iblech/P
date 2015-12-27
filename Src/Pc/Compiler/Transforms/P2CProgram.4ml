@@ -138,15 +138,15 @@ transform P2CProgram (in:: P) returns (out:: C)
 	DeclId(d, id, cn) :- d is FunDecl, ImplFunction(d), toSymbol(d.owner) = #ModuleDecl,
 	                     id = 1 + count({ d' | d' is AnonFunDecl, ImplFunction(d'), toSymbol(d'.owner) = #ModuleDecl }) 
 						        + toOrdinal(d, 0, { d' | d' is FunDecl, ImplFunction(d'), toSymbol(d'.owner) = #ModuleDecl }), 
-	                     cn = strJoin("P_FUN_", strJoin(d.owner.name, d.name)).
+	                     cn = strJoin("P_FUN_", strJoin(d.owner.name, strJoin("_", d.name))).
 
-	DeclId(d, id, cn) :- d is AnonFunDecl, ImplFunction(d),
+	DeclId(d, id, cn) :- d is AnonFunDecl, ImplFunction(d), toSymbol(d.owner) = #MachineDecl,
 	                     id = 1 + count({ d' | d' is AnonOrNamedFun, ImplFunction(d'), toSymbol(d'.owner) = #ModuleDecl }) 
 								+ toOrdinal(d, 0, { d' | d' is AnonFunDecl, ImplFunction(d'), d'.owner = d.owner }), 
 	                     num = toOrdinal(d, 0, { d' | d' is AnonFunDecl, ImplFunction(d'), d'.owner = d.owner }),
 						 cn = strJoin("P_FUN_", strJoin(d.owner.name, strJoin("_ANON", toString(num)))).
 
-	DeclId(d, id, cn) :- d is FunDecl, ImplFunction(d),
+	DeclId(d, id, cn) :- d is FunDecl, ImplFunction(d), toSymbol(d.owner) = #MachineDecl,
 	                     id = 1 + count({ d' | d' is AnonOrNamedFun, ImplFunction(d'), toSymbol(d'.owner) = #ModuleDecl }) 
 						        + count({ d' | d' is AnonFunDecl, ImplFunction(d'), d'.owner = d.owner }) 
 						        + toOrdinal(d, 0, { d' | d' is FunDecl, ImplFunction(d'), d'.owner = d.owner }), 
@@ -1496,7 +1496,7 @@ transform P2CProgram (in:: P) returns (out:: C)
 									Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(0, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), Args(Ident("NULL"), NIL))))));
 
 									RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), 
-									e = in.FunApp(name, modName, NIL), DeclId(funDecl, funIndex, funName), FunAvailable(funDecl, c.owner), funDecl.name = name, funDecl.owner = ModuleDecl(modName, _), ec = out.FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(0, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), Args(Ident("NULL"), NIL)))))).
+									e = in.FunApp(name, modName, NIL), DeclId(funDecl, funIndex, funName), FunAvailable(funDecl, c.owner), funDecl.name = name, funDecl.owner = ModuleDecl(modName), ec = out.FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(0, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), Args(Ident("NULL"), NIL)))))).
 
 	RhsTrans(c, s, i, j', trans) :- RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), 
 									e = in.FunApp(name, NIL, args), args != NIL, 
@@ -1507,7 +1507,7 @@ transform P2CProgram (in:: P) returns (out:: C)
 									ec = out.FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(0, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), Args(argsTuple, NIL))))));
 
 									RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), 
-									e = in.FunApp(name, modName, args), args != NIL, DeclId(funDecl, funIndex, funName), funDecl.name = name, funDecl.owner = ModuleDecl(modName, _), funDecl.params = type, FunAvailable(funDecl, c.owner), 
+									e = in.FunApp(name, modName, args), args != NIL, DeclId(funDecl, funIndex, funName), funDecl.name = name, funDecl.owner = ModuleDecl(modName), funDecl.params = type, FunAvailable(funDecl, c.owner), 
 									TypeId(typeIndex, type), typeName = strJoin("P_GEND_TYPE_", toString(typeIndex)), 
 									ExprsTrans(c, s, i, args, ecs),
 									argsTuple = out.FunApp(Ident(strJoin("P_TUPLE_", toString(lstLength(in.#Exprs, args) - 1))), Args(out.UnApp(ADDR, Ident(typeName)), ecs)),
@@ -1883,7 +1883,7 @@ transform P2CProgram (in:: P) returns (out:: C)
 						   cs = out.Lbl(strJoin("L", toString(label)), Seq(funcall, Seq(blocked, Seq(exception, cleanup))));
 
 						   SubSE(c, s), context = Ident("context"),
-						   s = in.FunStmt(name, modName, NIL, _, label), DeclId(funDecl, funIndex, funName), FunAvailable(funDecl, c.owner), funDecl.name = name, funDecl.owner = ModuleDecl(modName, _),
+						   s = in.FunStmt(name, modName, NIL, _, label), DeclId(funDecl, funIndex, funName), FunAvailable(funDecl, c.owner), funDecl.name = name, funDecl.owner = ModuleDecl(modName),
 						   ret = Ident("p_tmp_funstmt_ret"),
 						   funcall = out.BinApp(ASN, ret, FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(label, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), Args(Ident("NULL"), NIL))))))),
 						   blocked = out.ITE(BinApp(NEQ, BinApp(PFLD, Ident("p_tmp_mach_priv"), Ident("receive")), Ident("NULL")), Return(ret), NIL),
@@ -1906,7 +1906,7 @@ transform P2CProgram (in:: P) returns (out:: C)
 						   context = Ident("context");
 
 						   FunStmtRhs(c, s, size, tail), s = in.FunStmt(name, modName, args, _, label), args != NIL, 
-	                       FunDeclNames(fn, funIndex, funName, prmsTypeName), FunAvailable(fn, c.owner), fn.name = name, fn.owner = ModuleDecl(modName, _),
+	                       FunDeclNames(fn, funIndex, funName, prmsTypeName), FunAvailable(fn, c.owner), fn.name = name, fn.owner = ModuleDecl(modName),
 						   ExprsTrans(c, s, 0, args, ecs),
 						   cs = out.Seq(paramAssign, Lbl(strJoin("L", toString(label)), Seq(funCall, Seq(blocked, Seq(exception, cleanup))))),
 						   argsTuple = out.FunApp(Ident(strJoin("P_TUPLE_", toString(lstLength(in.#Exprs, args) - 1))), Args(UnApp(ADDR, Ident(prmsTypeName)), ecs)),

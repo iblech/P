@@ -121,7 +121,7 @@ InterfaceDecl
 ModuleDecl
 	: SPEC MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE		{ AddModule(P_Root.UserCnstKind.SPEC, $3.str, ToSpan(@3), ToSpan(@1)); }
 	| DRIVER MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE		{ AddModule(P_Root.UserCnstKind.DRIVER, $3.str, ToSpan(@3), ToSpan(@1)); }
-	| MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE			{ AddModule(P_Root.UserCnstKind.IMPL, $3.str, ToSpan(@3), ToSpan(@1)); }
+	| MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE			{ AddModule(P_Root.UserCnstKind.IMPL, $2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
 ModuleBody
