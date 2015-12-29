@@ -108,6 +108,8 @@ class SM_HANDLE {
     PRT_VALUE currentArg;
 	SM_EVENT_SET receiveSet;
 	SM_EVENT_SET moduleSendsSet;
+	Module mod;
+	
     static SM_HANDLE Construct(Machine mName, int inst, int maxBSize) {
     	SM_HANDLE handle;
 		PRT_TYPE prtType;

@@ -1927,8 +1927,7 @@
                 kind = P_Root.UserCnstKind.REAL;
             }
             machDecl.kind = MkUserCnst(kind, span);
-            if (kind != P_Root.UserCnstKind.MONITOR)
-                machDecl.mod = GetCurrentModuleDecl(span);
+            machDecl.mod = GetCurrentModuleDecl(span);
 
             if (kind == P_Root.UserCnstKind.MONITOR)
             {

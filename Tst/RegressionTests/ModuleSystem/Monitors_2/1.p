@@ -1,51 +1,44 @@
-event x : K1;
+event x;
 event y;
 event z;
 event a;
+type KK = int;
 interface K1 a;
-interface K2 y, x;
+interface K2 y;
 
-test t1 Mod1, Mod2 satisfies Mon1, Mon2 monitors Mod1;
+test safety t1 Mod1, Mod2, Driver;
 
 module Mod1
-private a
 sends x
-creates K1, K2
+creates K2
 {
-	main machine M1
-	implements K1
+	machine M1
+	receives a
 	{
 		var id: machine;
+		var i : any;
+		var y : int;
 		start state S 
 		{
 			entry {
+				i = 0;
+				y = i as KK;
 				id = new K2();
-				send id as K2, x, this;
+				send id as K2, x;
 			}
 		}
 	}
-}
-
-spec Mon1 monitors x 
-{
-	start state S1
-	{
-		entry {
-		
-		}
-		on x do {};
-	}
-}
-
-spec Mon2 monitors x 
-{
-	start state S1
-	{
-		entry {
-		
-		}
-	}
 	
+	monitor Mon1 observes x 
+	{
+		start state S1
+		{
+			entry {
+			
+			}
+			on x do { };
+		}
+	}
 }
 
 
@@ -53,7 +46,7 @@ module Mod2
 sends y
 {
 	machine M2
-	implements K2
+	receives y
 	{
 		start state S1
 		{
@@ -67,6 +60,21 @@ sends y
 			entry {
 				assert(false);
 			}
+		}
+	}
+}
+
+driver module Driver
+creates M1
+{
+	main machine TESTD
+	{
+		start state S1
+		{
+			entry {
+				new M1();
+			}
+			
 		}
 	}
 }
