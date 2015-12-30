@@ -21,7 +21,7 @@ domain PWithInferredTypes extends PData
 	MaxNumLocals ::= new (ctxt: TypingContext + Stmt + Cases, n: Natural).
 
 	//// The map from interface type to the machine implementing it for a given module-list
-	InterfaceToMachineMap ::= new (ml: ModuleList, i: InterfaceType, m: MachineDecl).
+	NewToMachineMap ::= new (ml: ModuleList, typingCtxt: TypingContext, n: New + NewStmt, mach: MachineDecl).
 
 	//// Partial Order between events
 	PartialOrderRel ::= new (ev1: any String, ev2: any String).
@@ -33,6 +33,6 @@ transform P2PWithInferredTypes (in:: P) returns (out:: PWithInferredTypes)
 	out.TypeOf(c, e, t) :- in.TypeOf(c, e, t).
 	out.TypeExpansion(type, eType) :- in.TypeExpansion(type, eType).
 	out.MaxNumLocals(c, n) :- in.MaxNumLocals(c, n).
-	out.InterfaceToMachineMap(ml, i, m) :- in.InterfaceToMachineMap(ml, i, m).
+	out.NewToMachineMap(ml, c, e, m) :- in.NewToMachineMap(ml, c, e, m).
 	out.PartialOrderRel(ev1, ev2) :- in.PartialOrderRel(ev1, ev2).
 }

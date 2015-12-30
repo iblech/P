@@ -288,7 +288,7 @@ domain PStaticTyping extends PData
 	conforms no TypeDefError(_).
 	conforms no DomOfMapUnSafe(_).
 	conforms no ModuleLevelTypingError(_).
-	conforms no StaticFunctionUsageError(_, _).
+	conforms no StaticFunctionError(_, _).
 	conforms no IllegalMainMachine(_).
 	conforms no IllegalComposition(_).
 	conforms no IllegalHideOperation(_).
@@ -420,6 +420,10 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: monitor can observe event in sends or implemented interfaces"']
 	ModuleLevelTypingError(obs) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), obs is ObservesDecl(mach, ev), no ModuleSendsDecl(mod, ev), mach' is MachineDecl, no MachineReceivesDecl(mach', ev), mach'.mod = mod. 
 
+	//if there is an empty interface in the creates list then that machine should be implemented in the module
+	[rule_Classes = '"error, msg: empty interface in the creates list must be implemented in the module"']
+	ModuleLevelTypingError(c) :- c is ModuleCreatesDecl(m, i), no InterfaceTypeEventDecl(i, _), no MachineDecl(i.name, m, _, _, _, _). 
+
 	
 	/***************************************************************/
 	/***********    All the subterm operations ********************/
@@ -431,7 +435,7 @@ domain PStaticTyping extends PData
 	//get all nested modulelists
 	SubModList ::= sub(mod: ModuleList, mod': ModuleList).
 	//get all events in EventList
-	SubEvents ::= sub(evl: EventList, ev : String).
+	SubEvent ::= sub(evl: EventList, ev : String).
 
 	/**************** Illegal Main Machines ************************/
 	//Main machine is allowed only in the driver module
@@ -464,18 +468,30 @@ domain PStaticTyping extends PData
 	/*************************************************************/
 	/*				Map from interface to machine				 */
 	/*************************************************************/
+	//get all new calls per modulelist
+	AllNewCallsInModuleList ::= (ml: ModuleList, typingCtxt: TypingContext, n: NewCall).
+	AllNewCallsInModuleList(ml, c, e) :- ComposedModules(ml), SubSE(c, e), e: NewCall, c.owner = MachineDecl(_, mod, _, _, _, _), SubModule(ml, mod);
+										 ComposedModules(ml), SubSE(c, e), e: NewCall, c.owner = mod, SubModule(ml, mod).
+
+	NewToMachineMap ::= (ml: ModuleList, typingCtxt: TypingContext, n: NewCall, mach: MachineDecl).
+
+	NewToMachineMap(ml, c, e, mach) :- 
+									//empty interfaces should be matched to the local machines
+									AllNewCallsInModuleList(ml, c, e), e: NewCall, no InterfaceTypeEventDecl(InterfaceType(e.name), _), mach is MachineDecl(e.name, mod, _, _, _, _), SubModule(ml, mod), ModuleCreatesDecl(mod, InterfaceType(e.name));
+									//interfaces in the creates list can be resolved directly
+									AllNewCallsInModuleList(ml, c, e), e: NewCall, CreatesForModuleList(ml, InterfaceType(e.name)), InterfaceTypeEventDecl(InterfaceType(e.name), ev), no HiddenEventsForModuleList(ml, ev), MachineReceivesDecl(mach, ev), SubModule(ml, mach.mod);
+									//Interfaces that are completely hidden needs to be resolved separately
+									AllNewCallsInModuleList(ml, c, e), e: NewCall, count({ev | InterfaceTypeEventDecl(InterfaceType(e.name), ev), no HiddenEventsForModuleList(ml, ev)}) = 0,
+									SubHide(ml, hm), count({ev| InterfaceTypeEventDecl(InterfaceType(e.name), ev), no SubEvent(hm.evL, ev)}) = 0,
+									SubModule(hm.modL, mach.mod), MachineReceivesDecl(mach, ev'), InterfaceTypeEventDecl(InterfaceType(e.name), ev').
+
 	
-	InterfaceToMachineMap ::= (ml: ModuleList, ie: InterfaceType, mach: MachineDecl).
-	ImpInterfaceToMachineMap ::= (ie: InterfaceType, mach: MachineDecl).
-
-	//compute the interface map
-	InterfaceToMachineMap(ml, i, mach) :-  ComposedModules(ml), SubModule(ml, m1), SubModule(ml, m2), CreatesForModule(m1, i), ReceivesForModule(m2, rd), InterfaceTypeEventDecl(i, rd.ev), mach = rd.mach.
-
 	//map for implementation modules
-	ImpInterfaceToMachineMap(i, mc) :- ImplementationModules(ml), InterfaceToMachineMap(ml, i, mc).
+	ImpNewToMachineMap ::= (typingCtxt: TypingContext, n: New + NewStmt, mach: MachineDecl).
+	ImpNewToMachineMap(c, n, m) :- ImplementationModules(ml), NewToMachineMap(ml, c, n, m).
 
 	/***************************************************************/
-	/*				Legal creates in static function			   */
+	/*				 Static function					  */
 	/**************************************************************/
 	NewCall ::= New + NewStmt.
 	FunCall ::= FunApp + FunStmt.
@@ -483,13 +499,26 @@ domain PStaticTyping extends PData
 	FunCallInFunDecl ::= sub(sF: FunDecl, sf: FunCall).
 
 	StaticFunctionCreates ::= (staticFun: FunDecl, it: InterfaceType).
-	StaticFunctionCreates(sF, i) :- FunctionDeclNewCall(sF, n), i = InterfaceType(n.name), sF is FunDecl(_, owner, _, _, _, _, _), owner is ModuleDecl;
+	StaticFunctionCreates(sF, i) :- FunctionDeclNewCall(sF, n), i = InterfaceType(n.name), sF is FunDecl(_, owner, _, _, _, _, _), owner is ModuleDecl, InterfaceTypeEventDecl(i, _);
 									FunCallInFunDecl(sF, calleeSF), sF' is FunDecl(calleeSF.name, ModuleDecl(calleeSF.modName), _, _, _, _, _), StaticFunctionCreates(sF', i).
 	
+	//creates in static function is illegal
 	[ rule_Classes = '"error, msg: static function creates interface that is not in the creates list of the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = FunApp(n, m, _), sF is FunDecl(n, ModuleDecl(m),  _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(c.owner.mod, i).
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), c.owner = MachineDecl(_, mod, _, _, _, _), e = FunApp(n, m, _), sF is FunDecl(n, ModuleDecl(m),  _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(mod, i).
 	[ rule_Classes = '"error, msg: static function creates interface that is not in the creates list of the module"']
-	TypeOf(c, e, ERROR)            :- SubSE(c, e), e = FunStmt(n, m, _, _, _), sF is FunDecl(n, ModuleDecl(m),  _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(c.owner.mod, i).
+	TypeOf(c, e, ERROR)            :- SubSE(c, e), c.owner = MachineDecl(_, mod, _, _, _, _), e = FunStmt(n, m, _, _, _), sF is FunDecl(n, ModuleDecl(m),  _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(mod, i).
+
+	//static functions are not defined for the modulelist
+	StaticFunctionError ::= (ml: ModuleList, e: FunCall + FunDecl).
+	[rule_Classes = '"error, msg: static function not defined in the module list (missing module)"']
+	StaticFunctionError(ml, e) :- SubSE(c, e), e = FunApp(n, m, _), sF is FunDecl(n, mod,  _, _, _, _, _), mod = ModuleDecl(m), ComposedModules(ml), no SubModule(ml, mod). 
+	[rule_Classes = '"error, msg: static function not defined in the module list (missing module)"']
+	StaticFunctionError(ml, e) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), sF is FunDecl(n, mod,  _, _, _, _, _), mod = ModuleDecl(m), ComposedModules(ml), no SubModule(ml, mod).
+
+	//static functions can create only public interfaces (not hidden)
+	[rule_Classes = '"error, msg: static function can create only public interfaces"']
+	StaticFunctionError(ml, fd) :- ComposedModules(ml), fd is FunDecl(_, mod,  _, _, _, _, _), SubModule(ml, mod), StaticFunctionCreates(fd, i),
+								   InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev).
 
 	/***************************************************************/
 	/*	Generate sends, private and creates for ModuleList		   */
@@ -538,7 +567,7 @@ domain PStaticTyping extends PData
 
 	//get the private list for the module
 	HiddenEventsForModule(hm, ev) :-  AllHideModules(hm), HiddenEventsForModuleList(hm.modL, ev);
-									  AllHideModules(hm), SubEvents(hm.evL, ev).
+									  AllHideModules(hm), SubEvent(hm.evL, ev).
 
 	//get the creates list for the module
 	CreatesForModule(hm, i) :-  AllHideModules(hm), CreatesForModuleList(hm.modL, i);
@@ -560,15 +589,7 @@ domain PStaticTyping extends PData
 	
 	IllegalComposition ::= (modL: ModuleList).
 
-	/****** Static functions usage is correct **************/
-	StaticFunctionUsageError ::= (ml: ModuleList, e: FunCall).
-	[rule_Classes = '"error, msg: static function not defined in the module list (missing module)"']
-	StaticFunctionUsageError(ml, e) :- SubSE(c, e), e = FunApp(n, m, _), sF is FunDecl(n, mod,  _, _, _, _, _), mod = ModuleDecl(m), ComposedModules(ml), no SubModule(ml, mod). 
-	[rule_Classes = '"error, msg: static function not defined in the module list (missing module)"']
-	StaticFunctionUsageError(ml, e) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), sF is FunDecl(n, mod,  _, _, _, _, _), mod = ModuleDecl(m), ComposedModules(ml), no SubModule(ml, mod).
-	
-
-	/****** Compute Partial Order and downward closure for sends list **************/
+	//Compute Partial Order and downward closure for sends list
 	//interface type in the payload of an event
 	NameTypeInEventDecl ::= sub(evd: EventDecl, nt: NameType).
 	
@@ -577,8 +598,6 @@ domain PStaticTyping extends PData
 	DownClosureSendsForModuleList ::= (ml: ModuleList, ev: String).
 	DownClosureSendsForModuleList(ml, ev') :- SendsForModuleList(ml, ev), no HiddenEventsForModuleList(ml, ev), PartialOrderRel(ev, ev');
 											  DownClosureSendsForModuleList(ml, ev), PartialOrderRel(ev, ev').
-
-	/******************************************************************************/
 
 	//sends and privates in the modulelist are disjoint
 	[rule_Classes = '"error, msg: down closure of public sends and hidden events are not disjoint after composition"']
@@ -610,11 +629,19 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: multiple modules have the same event in the sends list after composition"']
 	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), SendsForModule(m1, ev), SendsForModuleList(m2, ev), no HiddenEventsForModuleList(ml, ev).
 	
-	
+	//Extra check: Call a leaf module open if (created – implemented) for it is nonempty.  
+	//A module expression M may include an open leaf module P only if P has a unique path to the root of M.
+
+	OpenModule ::= (m: ModuleDecl).
+	OpenModule(m) :- m is ModuleDecl, ModuleCreatesDecl(m, i), count({ev | InterfaceTypeEventDecl(i, ev), MachineReceivesDecl(mach, ev), mach.mod = m }) = 0.
+
+	[rule_Classes = '"error, msg: one of the open leaf module does not have a unique path to the root"']
+	IllegalComposition(ml) :- ComposedModules(ml), SubModule(ml, mod), OpenModule(mod), SubModList(ml, path1), SubModList(ml, path2),
+							  no SubModList(path1, path2), no SubModList(path2, path1), SubModule(path1, mod), SubModule(path2, mod).
+
 	/*************************************************************/
 	/*					Illegal Hide Operation					*/
 	/*************************************************************/
-	
 
 	IllegalHideOperation::= (hideOp: Hide).
 	
@@ -626,28 +653,39 @@ domain PStaticTyping extends PData
 	*/
 
 	[rule_Classes = '"error, msg: hide operation cannot be performed on private event"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), HiddenEventsForModuleList(hml, ev).
+	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvent(evl, ev), HiddenEventsForModuleList(hml, ev).
 
 	[rule_Classes = '"error, msg: events in hide operation must be either disjoint or equal to interfaces in the creates list"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), CreatesForModuleList(hml, i), InterfaceTypeEventDecl(i, ev),
-							   count({ev' | InterfaceTypeEventDecl(i, ev'), no SubEvents(evl, ev')}) > 0.
+	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvent(evl, ev), CreatesForModuleList(hml, i), InterfaceTypeEventDecl(i, ev),
+							   count({ev' | InterfaceTypeEventDecl(i, ev'), no SubEvent(evl, ev')}) > 0.
 	
 	[rule_Classes = '"error, msg: hide operation can be performed on an event present in receives of an implemented machine"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvents(evl, ev), count({rd | ReceivesForModuleList(hml, rd), rd.ev = ev}) != 1.
+	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvent(evl, ev), count({rd | ReceivesForModuleList(hml, rd), rd.ev = ev}) != 1.
 
 	/**************************************************************/
-	/*				Type checking rules for test cases			 */
+	/* Type checking rules for test cases and implementation  	 */
 	/*************************************************************/
-	IllegalTestCase ::= (ml: ModuleList).
+	IllegalTestOrImplementation ::= (ml: ModuleList).
 
 	//illegal liveness test case
 	[rule_Classes = '"error, msg: monitor not defined in the modulelist"']
-	IllegalTestCase(modL) :- LivenessTestDecl(_, modL, mon), count({mach | mach is MachineDecl(mon, mod, _, _, _, _), SubModule(modL, mod)}) = 0.
+	IllegalTestOrImplementation(modL) :- LivenessTestDecl(_, modL, mon), count({mach | mach is MachineDecl(mon, mod, _, _, _, _), SubModule(modL, mod)}) = 0.
 
 	//illegal liveness test case
 	[rule_Classes = '"error, msg: monitor must be a liveness monitor"']
-	IllegalTestCase(modL) :- LivenessTestDecl(_, modL, mon), no StateDecl(_, mach, _, _, COLD), no StateDecl(_, mach, _, _, HOT), mach is MachineDecl(mon, mod, MONITOR, _, _, _), SubModule(modL, mod).
+	IllegalTestOrImplementation(modL) :- LivenessTestDecl(_, modL, mon), no StateDecl(_, mach, _, _, COLD), no StateDecl(_, mach, _, _, HOT), mach is MachineDecl(mon, mod, MONITOR, _, _, _), SubModule(modL, mod).
 
+	//implementation is closed with respect to creates
+	[rule_Classes = '"error, msg: the module list is not closed with respect to creates, all created interfaces are not implemented"']
+	IllegalTestOrImplementation(modL) :- ComposedModules(modL), no SpecificationModules(modL), CreatesForModuleList(modL, i), InterfaceTypeEventDecl(i, ev), no ReceivesForModuleList(modL, rd), rd.ev = ev;
+	
+	[rule_Classes = '"error, msg: implementation module list must have only implementation modules"']
+	IllegalTestOrImplementation(modL) :- ImplementationModules(modL), SubModule(modL, mod), ModuleType(mod, kind), kind != IMPL;
+	
+	[rule_Classes = '"error, msg: specification module list must have only spec modules"']
+	IllegalTestOrImplementation(modL) :- SpecificationModules(modL), SubModule(modL, mod), ModuleType(mod, kind), kind != SPEC;
+	
+							 
 	//TODO: Add type checking rules for the refinement checking relations
 
 	/**************************************************************/
@@ -656,9 +694,11 @@ domain PStaticTyping extends PData
 	SoundCompositionWarning ::= (ml: ModuleList).
 
 	//generate a warning that implementations is not closed.
-	[rule_Classes = '"warning, msg: implementation list is not closed with respect to creates interfaces"']
-	SoundCompositionWarning(ml) :- ImplementationModules(ml), CreatesForModuleList(ml, i), no ReceivesForModuleList(ml, rd), rd is MachineReceivesDecl, InterfaceTypeEventDecl(i, ev), rd.ev = ev.
+	[rule_Classes = '"warning, msg: module list is not input closed (creates) with respect to the implemented interfaces"']
+	SoundCompositionWarning(ml) :- ComposedModules(ml), no CreatesForModuleList(ml, i), ReceivesForModuleList(ml, rd), InterfaceTypeEventDecl(i, rd.ev).
 
+	[rule_Classes = '"warning, msg: module list is not input closed (sends) with respect to the receives"']
+	SoundCompositionWarning(ml) :- ComposedModules(ml), ReceivesForModuleList(ml, rd), count({ev | no SendsForModuleList(modL, rd.ev)}) > 0.
 
 
     /*************************************************************/
@@ -729,14 +769,17 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Cast can never succeed"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k = EMPTY.
 
-    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), ModuleCreatesDecl(c.owner.mod, t), t = InterfaceType(n).
+    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _).
 
 	[ rule_Classes = '"error, msg: Monitors cannot be created with "new""']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), MachineDecl(n, _, MONITOR, _, _, _).
 
 	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), no ModuleCreatesDecl(c.owner.mod, InterfaceType(n)).
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
 	
+	[ rule_Classes = '"error, msg: static function cannot create empty interface"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), no InterfaceTypeEventDecl(InterfaceType(n), _).
+
     TypeOf(c, e, t2)               :- TypeOfArg2(c, e, _, t2), e : Field, t2 != ERROR.
 	[ rule_Classes = '"error, msg: Bad field name"']
     TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, _, t2), e : Field, t2 = ERROR.
@@ -860,10 +903,13 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: "while (...)" expects a boolean value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : While, t1 != BaseType(BOOL).
                
-    TypeOf(c, e, NIL)              :- SubSE(c, e), e = NewStmt(n, _), ModuleCreatesDecl(c.owner.mod, t), t = InterfaceType(n).
+    TypeOf(c, e, NIL)              :- SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _).
 	
 	[ rule_Classes = '"error, msg: interface is not in the creates set of the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), no ModuleCreatesDecl(c.owner.mod, InterfaceType(n)).
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
+
+	[ rule_Classes = '"error, msg: static function cannot create empty interface"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), no InterfaceTypeEventDecl(InterfaceType(n), _).
 
 	[ rule_Classes = '"error, msg: monitor cannot be created dynamically using new"']
 	TypeOf(c, e, ERROR)              :- SubSE(c, e), e = NewStmt(n, _), MachineDecl(n, _, MONITOR, _, _, _).

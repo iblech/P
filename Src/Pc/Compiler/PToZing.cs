@@ -123,6 +123,7 @@ namespace Microsoft.Pc
         public Node body;
         public int numFairChoices;
         public Dictionary<AST<Node>, FuncTerm> typeInfo;
+        public Dictionary<AST<Node>, Dictionary<AST<Node>, string>> NewExprMachineName; //map modList -> (newExpr-> machineName)
         public int maxNumLocals;
         public HashSet<Node> invokeSchedulerFuns;
         public HashSet<Node> invokePluginFuns;
@@ -151,6 +152,7 @@ namespace Microsoft.Pc
             this.localNames = new List<string>();
             this.numFairChoices = 0;
             this.typeInfo = new Dictionary<AST<Node>, FuncTerm>();
+            this.NewExprMachineName = new Dictionary<AST<Node>, Dictionary<AST<Node>, string>>();
             this.maxNumLocals = 0;
             this.invokeSchedulerFuns = new HashSet<Node>();
             this.invokePluginFuns = new HashSet<Node>();
@@ -207,8 +209,6 @@ namespace Microsoft.Pc
         }
     }
 
-    internal enum ModuleType { SPEC, DRIVER, IMPL };
-
     internal class ModuleInfo
     {
         public string moduleName;
@@ -244,7 +244,6 @@ namespace Microsoft.Pc
         public RefinesTestInfo(AST<Node> imp, AST<Node> spec)
             : base(imp)
         {
-            impModList = imp;
             specModList = spec;
         }
     }
@@ -403,11 +402,11 @@ namespace Microsoft.Pc
         public Dictionary<string, EventInfo> allEvents;
         public Dictionary<string, MachineInfo> allMachines;
         public Dictionary<string, List<string>> allInterfaces;
-        public Dictionary<AST<Node>, ModuleListInfo> allModuleLists;
         public AllTestCasesInfo allTestCasesInfo;
         public TestCaseType crntTestCaseType;
         public List<string> crntMachinesInModuleList;
         public List<string> crntModulesInModuleList;
+        public AST<Node> crntModuleList;
         public Dictionary<string, ModuleInfo> allModules;
         public Dictionary<string, List<string>> allEventsPartialOrder;
 
@@ -537,7 +536,6 @@ namespace Microsoft.Pc
             allMachines = new Dictionary<string, MachineInfo>();
             typeExpansion = new Dictionary<AST<FuncTerm>, FuncTerm>();
             allInterfaces = new Dictionary<string, List<string>>();
-            allModuleLists = new Dictionary<AST<Node>, ModuleListInfo>();
             allTestCasesInfo = new AllTestCasesInfo();
             allModules = new Dictionary<string, ModuleInfo>();
             allEventsPartialOrder = new Dictionary<string, List<string>>();
@@ -674,12 +672,8 @@ namespace Microsoft.Pc
                     var testName = ((Cnst)it.Current).GetStringValue();
                     it.MoveNext();
                     var impList = Factory.Instance.ToAST(it.Current);
-                    //add modulelist
-                    allModuleLists[impList] = new ModuleListInfo();
                     it.MoveNext();
                     var specList = Factory.Instance.ToAST(it.Current);
-                    //add modulelist
-                    allModuleLists[specList] = new ModuleListInfo();
                     allTestCasesInfo.allRefinesTests[testName] = new RefinesTestInfo(impList, specList);
                 }
             }
@@ -694,8 +688,6 @@ namespace Microsoft.Pc
                     var testName = ((Cnst)it.Current).GetStringValue();
                     it.MoveNext();
                     var impList = Factory.Instance.ToAST(it.Current);
-                    //add modulelist
-                    allModuleLists[impList] = new ModuleListInfo();
                     allTestCasesInfo.allSafetyTests[testName] = new SafetyTestInfo(impList);
                 }
             }
@@ -712,8 +704,6 @@ namespace Microsoft.Pc
                     var impList = Factory.Instance.ToAST(it.Current);
                     it.MoveNext();
                     var livenessMon = ((Cnst)it.Current).GetStringValue();
-                    //add modulelist
-                    allModuleLists[impList] = new ModuleListInfo();
                     allTestCasesInfo.allLivenessTests[testName] = new LivenessTestInfo(impList, livenessMon);
                 }
             }
@@ -1136,7 +1126,7 @@ namespace Microsoft.Pc
                 }
             }
 
-            terms = GetBin(factBins, "InterfaceToMachineMap");
+            terms = GetBin(factBins, "NewToMachineMap");
             foreach (var term in terms)
             {
                 using (var it = term.Node.Args.GetEnumerator())
@@ -1144,11 +1134,54 @@ namespace Microsoft.Pc
                     it.MoveNext();
                     var moduleList = Factory.Instance.ToAST(it.Current);
                     it.MoveNext();
-                    string interfaceName = GetName(it.Current as FuncTerm, 0);
+                    var typingContext = (FuncTerm)it.Current;
+                    it.MoveNext();
+                    var newExpr = Factory.Instance.ToAST(it.Current);
                     it.MoveNext();
                     string machineName = GetName(it.Current as FuncTerm, 0);
-                    if (allModuleLists.ContainsKey(moduleList))
-                        allModuleLists[moduleList].interfaceToMachineMap.Add(interfaceName, machineName);
+
+                    string typingContextKind = ((Id)typingContext.Function).Name;
+                    FunInfo functionInfo;
+                    if (typingContextKind == "FunDecl")
+                    {
+                        var ownerName = GetOwnerName(typingContext, 1);
+                        string ownerKind = GetOwnerKind(typingContext, 1);
+                        string funName = GetName(typingContext, 0);
+
+                        if (ownerKind == "ModuleDecl")
+                        {
+                            functionInfo = allModules[ownerName].staticFunNameToFunInfo[funName];
+                        }
+                        else
+                        {
+                            functionInfo = allMachines[ownerName].funNameToFunInfo[funName];
+                        }
+                    }
+                    else
+                    {
+                        // typingContextKind == "AnonFunDecl"
+                        var ownerName = GetOwnerName(typingContext, 0);
+                        string ownerKind = GetOwnerKind(typingContext, 0);
+                        string funName = anonFunToName[Factory.Instance.ToAST(typingContext)];
+                        if (ownerKind == "ModuleDecl")
+                        {
+                            functionInfo = allModules[ownerName].staticFunNameToFunInfo[funName];
+                        }
+                        else
+                        {
+                            functionInfo = allMachines[ownerName].funNameToFunInfo[funName];
+                        }
+                    }
+
+                    if (functionInfo.NewExprMachineName.ContainsKey(moduleList))
+                    {
+                        functionInfo.NewExprMachineName[moduleList].Add(newExpr, machineName);
+                    }
+                    else
+                    {
+                        functionInfo.NewExprMachineName.Add(moduleList, new Dictionary<AST<Node>, string>());
+                        functionInfo.NewExprMachineName[moduleList].Add(newExpr, machineName);
+                    }
                 }
             }
 
@@ -1621,6 +1654,9 @@ namespace Microsoft.Pc
 
                 List<AST<Node>> elements = new List<AST<Node>>();
 
+                //current modulelist
+                crntModuleList = safetyTestCase.Value.impModList;
+
                 //generate implementation modules
                 crntModulesInModuleList = GetModulesFromModuleList(safetyTestCase.Value.impModList.Node as FuncTerm);
                 //union of all the machines names in the implementation modules
@@ -1645,6 +1681,8 @@ namespace Microsoft.Pc
                 string zFileName = FileName + ".zing";
                 List<AST<Node>> elements = new List<AST<Node>>();
 
+                //current modulelist
+                crntModuleList = livenessTestCase.Value.impModList;
                 //generate implementation modules
                 crntModulesInModuleList = GetModulesFromModuleList(livenessTestCase.Value.impModList.Node as FuncTerm);
                 foreach (var module in crntModulesInModuleList)
@@ -1706,6 +1744,9 @@ namespace Microsoft.Pc
                 string FileName = refinesTestCases.Key;
                 string zFileName = FileName + "_imp.zing";
                 List<AST<Node>> elements = new List<AST<Node>>();
+
+                //current modulelist
+                crntModuleList = refinesTestCases.Value.impModList;
 
                 crntModulesInModuleList = GetModulesFromModuleList(refinesTestCases.Value.impModList.Node as FuncTerm);
 
@@ -3041,8 +3082,7 @@ namespace Microsoft.Pc
 
         private ZingTranslationInfo FoldNew(FuncTerm ft, IEnumerable<ZingTranslationInfo> children, ZingFoldContext ctxt)
         {
-            var interfaceName = GetName(ft, 0);
-            var typeName = allModuleLists.First().Value.interfaceToMachineMap[interfaceName];
+            var machineName = LookupMachineName(ctxt, Factory.Instance.ToAST(ft));
             using (var it = children.GetEnumerator())
             {
                 it.MoveNext();
@@ -3059,10 +3099,10 @@ namespace Microsoft.Pc
                 }
 
                 AST<Node> retVal;
-                MachineInfo machineInfo = allMachines[typeName];
+                MachineInfo machineInfo = allMachines[machineName];
 
                 var newMachine = ctxt.GetTmpVar(SmHandle, "newMachine");
-                ctxt.AddSideEffect(MkZingAssign(newMachine, MkZingCall(MkZingDot("Main", string.Format("CreateMachine_{0}", typeName)), tmpVar)));
+                ctxt.AddSideEffect(MkZingAssign(newMachine, MkZingCall(MkZingDot("Main", string.Format("CreateMachine_{0}", machineName)), tmpVar)));
                 string afterLabel = ctxt.GetFreshLabel();
                 ctxt.AddSideEffect(MkZingCallStmt(MkZingCall(MkZingDot("entryCtxt", "NewMachine"), Factory.Instance.MkCnst(ctxt.LabelToId(afterLabel)), MkZingIdentifier("locals"), newMachine)));
                 ctxt.AddSideEffect(MkZingReturn(ZingData.Cnst_Nil));
@@ -4157,6 +4197,11 @@ namespace Microsoft.Pc
         private FuncTerm LookupType(ZingFoldContext ctxt, Node node)
         {
             return ctxt.entityInfo.typeInfo[Factory.Instance.ToAST(node)];
+        }
+
+        private string LookupMachineName(ZingFoldContext ctxt, AST<Node> newExpr)
+        {
+            return ctxt.entityInfo.NewExprMachineName[crntModuleList][newExpr];
         }
 
         private TypeTranslationContext typeContext;
