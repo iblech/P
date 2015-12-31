@@ -1,14 +1,13 @@
 ﻿domain P extends PStaticTyping, PStructuralTyping
 {
-
 }
 
 domain PData
-{        
+{
     /*************************************************************/
     /****************          Type Language          ************/
-    /*************************************************************/    
-    
+    /*************************************************************/
+
 	TypeDef         ::= new (name: String, type: any TypeExpr).
 
     //// The BaseType REAL is the type of real machines.
@@ -18,14 +17,14 @@ domain PData
     NmdTupType      ::= new (hd: any NmdTupTypeField, tl: any NmdTupType + { NIL }).
     SeqType         ::= new (x: any TypeExpr).
     MapType         ::= new (k: any TypeExpr, v: any TypeExpr).
-    NmdTupTypeField ::= new (name: any String, type: any TypeExpr). 
+    NmdTupTypeField ::= new (name: any String, type: any TypeExpr).
 	InterfaceType	::= new (name: any String).
     TypeExpr        ::= NameType + BaseType + TupType + NmdTupType + SeqType + MapType + InterfaceType.
-        
+
     /*************************************************************/
     /****************          Action Language        ************/
-    /*************************************************************/    
-                               
+    /*************************************************************/
+
     //// Expressions
     Name       ::= new (name: String).
     New        ::= new (name: String, arg: any Expr + { NIL }).
@@ -34,11 +33,11 @@ domain PData
     UnApp      ::= new (op: { NOT, NEG, KEYS, VALUES, SIZEOF }, arg1: any Expr).
     BinApp     ::= new (op: { ADD, SUB, MUL, INTDIV, AND, OR, EQ, NEQ, LT, LE, GT, GE, IDX, IN }, arg1: any Expr, arg2: any Expr).
     Field      ::= new (arg: any Expr, name: String + Natural).
-    Default    ::= new (type: any TypeExpr). 
-    Cast       ::= new (arg: any Expr, type: any TypeExpr). 
+    Default    ::= new (type: any TypeExpr).
+    Cast       ::= new (arg: any Expr, type: any TypeExpr).
     Tuple      ::= new (body: any Exprs).
     NamedTuple ::= new (body: any NamedExprs).
-    Exprs      ::= new (head: any Expr, tail: any Exprs + { NIL }).              
+    Exprs      ::= new (head: any Expr, tail: any Exprs + { NIL }).
     NamedExprs ::= new (field: String, exp: any Expr, tail: any NamedExprs + { NIL }).
     Expr       ::= Name + New + FunApp + NulApp + UnApp + BinApp + Field + Default + Cast + Tuple + NamedTuple.
     ExprsExt   ::= Expr + Exprs + NamedExprs.
@@ -59,7 +58,7 @@ domain PData
 	Cases	 ::= new (trig: String + { NULL, HALT }, action: any AnonFunDecl, cases: any Cases + { NIL }).
 	Receive  ::= new (cases: any Cases, label: Natural).
 
-    Stmt ::= NewStmt + Raise + Send + Monitor + FunStmt + NulStmt + UnStmt + BinStmt + Return + While + Ite + Seq + Receive. 
+    Stmt ::= NewStmt + Raise + Send + Monitor + FunStmt + NulStmt + UnStmt + BinStmt + Return + While + Ite + Seq + Receive.
 
 	/*************************************************************/
     /***************  Module System Declarations  ****************/
@@ -68,12 +67,12 @@ domain PData
 	InterfaceTypeEventDecl ::= new (it: any InterfaceType, ev: String).
 	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: String).
 
-	////Module 
+	////Module
 	ModuleDecl ::= new (name : any String).
 	ModuleType ::= new (mod : ModuleDecl, kind: {IMPL, SPEC, DRIVER}).
 	ModuleSendsDecl ::= new (mod: any ModuleDecl, ev: String).
 	ModuleCreatesDecl ::= new (mod : any ModuleDecl, it: any InterfaceType).
-	
+
 	////Compositional imp and tests
 	ImplementationModules ::= new (modL: any ModuleList).
 	SpecificationModules ::= new (modL: any ModuleList).
@@ -87,19 +86,19 @@ domain PData
 	PartialOrderRel ::= new (ev1: any String, ev2: any String).
 	EventList ::= new (ev: String, tail: any EventList + {NIL}).
 	NameEventList ::= new (name: String, evL: any EventList).
-	
+
 	//combining value types (used in PToZing)
 	Module ::= ModuleDecl + Hide.
-	
+
     /*************************************************************/
     /****************  State Machine Declarations    *************/
     /*************************************************************/
 
-    EventDecl      ::= fun (name: String -> card: any QueueConstraint, type: any TypeExpr + { NIL }).    
+    EventDecl      ::= fun (name: String -> card: any QueueConstraint, type: any TypeExpr + { NIL }).
     MachineDecl    ::= fun (name: String, mod: any ModuleDecl -> kind: { REAL, MODEL, MONITOR }, card: any QueueConstraint, start: any QualifiedName, isMain: Boolean).
 	ObservesDecl   ::= new (monitor: MachineDecl, ev: String).
     VarDecl        ::= fun (name: String, owner: MachineDecl -> type: any TypeExpr).
-    FunDecl        ::= fun (name: String, owner: MachineDecl + ModuleDecl -> kind: { REAL, MODEL }, params: any NmdTupType + { NIL },  return: any TypeExpr + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt).
+    FunDecl        ::= fun (name: String, owner: MachineDecl + ModuleDecl -> kind: { REAL, MODEL }, params: any NmdTupType + { NIL },  return: any TypeExpr + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt, isPublic: Boolean).
     AnonFunDecl    ::= new (owner: MachineDecl + ModuleDecl, locals: any NmdTupType + { NIL }, body: any Stmt, envVars: any NmdTupType).
     StateDecl      ::= fun (name: any QualifiedName, owner: MachineDecl -> entryAction: any AnonFunDecl + String, exitFun: any AnonFunDecl + String, temperature: { HOT, WARM, COLD }).
     TransDecl      ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> dst: any QualifiedName, action: any { PUSH } + AnonFunDecl + String).
@@ -107,7 +106,7 @@ domain PData
 
     PDecl          ::= EventDecl + MachineDecl + VarDecl + AnonFunDecl + FunDecl + StateDecl + TransDecl + DoDecl + ObservesDecl + InterfaceTypeEventDecl +
 					   MachineReceivesDecl + ModuleDecl + ModuleSendsDecl + ModuleCreatesDecl + PartialOrderRel + NameEventList + NameModuleList +
-					   ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl + InterfaceType + NameType.            
+					   ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl + InterfaceType + NameType.
 
     AssumeMaxInstances ::= new (bound: Natural).
     AssertMaxInstances ::= new (bound: Natural).
@@ -127,18 +126,20 @@ domain PData
 	// Impl modules can access static functions in other Impl modules.
 	// Spec and driver modules can access all static functions.
 	FunAvailable ::= (f: FunDecl, m: MachineDecl + ModuleDecl).
-    FunAvailable(f, m) :- f is FunDecl( _, m, _, _, _, _, _), m is MachineDecl;
-						  f is FunDecl( _, mod, _, _, _, _, _), mod is ModuleDecl, m is MachineDecl, ModuleType(mod, IMPL), ModuleType(m.mod, IMPL);
-						  f is FunDecl( _, mod, _, _, _, _, _), mod is ModuleDecl, m is MachineDecl, ModuleType(m.mod, kind), kind != IMPL;
-						  f is FunDecl( _, mod, _, _, _, _, _), mod is ModuleDecl, m is ModuleDecl, ModuleType(mod, IMPL), ModuleType(m, IMPL);
-						  f is FunDecl( _, mod, _, _, _, _, _), mod is ModuleDecl, m is ModuleDecl, ModuleType(m, kind), kind != IMPL.
-	
+    FunAvailable(f, m) :- f is FunDecl( _, m, _, _, _, _, _, _), m is MachineDecl;
+						  f is FunDecl( _, mod, _, _, _, _, _, TRUE), mod is ModuleDecl, m is MachineDecl, ModuleType(mod, IMPL), ModuleType(m.mod, IMPL);
+						  f is FunDecl( _, mod, _, _, _, _, _, TRUE), mod is ModuleDecl, m is MachineDecl, ModuleType(m.mod, kind), kind != IMPL;
+						  f is FunDecl( _, mod, _, _, _, _, _, FALSE), mod is ModuleDecl, m is MachineDecl, m.mod = mod;
+						  f is FunDecl( _, mod, _, _, _, _, _, TRUE), mod is ModuleDecl, m is ModuleDecl, ModuleType(mod, IMPL), ModuleType(m, IMPL);
+						  f is FunDecl( _, mod, _, _, _, _, _, TRUE), mod is ModuleDecl, m is ModuleDecl, ModuleType(m, kind), kind != IMPL;
+						  f is FunDecl( _, mod, _, _, _, _, _, FALSE), m = mod.
+
    	ImplFunction ::= (f: FunDecl + AnonFunDecl).
-	ImplFunction(f) :- f is FunDecl( _, mod, _, _, _, _, _),  AllImplModules(modl, mod); 
-					  f is FunDecl, f.owner.kind = REAL, ImplMachine(f.owner);
-					  f is AnonFunDecl(mod, _, _, _),  AllImplModules(modl, mod); 
-					  f is AnonFunDecl, f.owner.kind = REAL, ImplMachine(f.owner).
-	
+	ImplFunction(f) :- f is FunDecl( _, mod, _, _, _, _, _, _),  AllImplModules(modl, mod);
+					   f is FunDecl, f.owner.kind = REAL, ImplMachine(f.owner);
+					   f is AnonFunDecl(mod, _, _, _),  AllImplModules(modl, mod);
+					   f is AnonFunDecl, f.owner.kind = REAL, ImplMachine(f.owner).
+
 	//all machines in implementation modules list
 	AllImplModules ::= sub (imodL: ImplementationModules, mod: ModuleDecl).
 	ImplMachine ::= (mach: MachineDecl).
@@ -162,54 +163,54 @@ domain PStructuralTyping extends PData
 	TwoDeclError(t1, t2) :- t1 != t2, t1 is TransDecl, t2 is TransDecl, t1.src = t2.src, t1.trig = t2.trig.
 	[ rule_Classes = '"error, msg: Multiple actions over the same event"']
 	TwoDeclError(a1, a2) :- a1 != a2, a1 is DoDecl(state, owner, _), a2 is DoDecl(state, owner, _), a1.src = a2.src, a1.trig = a2.trig.
-	
+
 	//// there should be a start state in each state machine.
 	[ rule_Classes = '"error, msg: no start state in machine"']
 	OneDeclError(m) :- m is MachineDecl, no StateDecl(s, m , _, _, _), m.start = s.
-	
+
 	//Valid TransDecl
 	[ rule_Classes = '"error, msg: transition on an undefined event"']
 	OneDeclError(trns) :- trns is TransDecl, no EventDecl(trns.trig, _, _), trns.trig != NULL, trns.trig != HALT.
 	[rule_Classes = '"error, msg: transition to an undefined state"']
 	OneDeclError(trns) :- trns is TransDecl, no StateDecl(trns.dst, trns.src.owner, _, _, _).
-	
+
 	[rule_Classes = '"error, msg: transition function not defined"']
-	OneDeclError(trns) :- trns is TransDecl(_, _, _, act), act : String, 
-	                      no FunDecl(act, trns.src.owner, _, _, _, _, _), no FunDecl(act, trns.src.owner.mod, _, _, _, _, _).
-	
+	OneDeclError(trns) :- trns is TransDecl(_, _, _, act), act : String,
+	                      no FunDecl(act, trns.src.owner, _, _, _, _, _, _), no FunDecl(act, trns.src.owner.mod, _, _, _, _, _, _).
+
 	[rule_Classes = '"error, msg: function cannot take arguments"']
-	OneDeclError(trns) :- trns is TransDecl(_, _, _, act), act : String, FunDecl(act, trns.src.owner, _, p, _, _, _), p != NIL;
-	                      trns is TransDecl(_, _, _, act), act : String, FunDecl(act, trns.src.owner.mod, _, p, _, _, _), p != NIL.
-	
+	OneDeclError(trns) :- trns is TransDecl(_, _, _, act), act : String, FunDecl(act, trns.src.owner, _, p, _, _, _, _), p != NIL;
+	                      trns is TransDecl(_, _, _, act), act : String, FunDecl(act, trns.src.owner.mod, _, p, _, _, _, _), p != NIL.
+
 	//Valid DoDecl
 	[ rule_Classes = '"error, msg: action on an undefined event"']
 	OneDeclError(doD) :- doD is DoDecl, no EventDecl(doD.trig, _, _), doD.trig != HALT, doD.trig != NULL.
-	
+
 	[rule_Classes = '"error, msg: function not defined"']
-	OneDeclError(trns) :- trns is DoDecl(_, _, act), act : String, 
-	                      no FunDecl(act, trns.src.owner, _, _, _, _, _), no FunDecl(act, trns.src.owner.mod, _, _, _, _, _).
-	
+	OneDeclError(trns) :- trns is DoDecl(_, _, act), act : String,
+	                      no FunDecl(act, trns.src.owner, _, _, _, _, _, _), no FunDecl(act, trns.src.owner.mod, _, _, _, _, _, _).
+
 	[rule_Classes = '"error, msg: function cannot take arguments"']
-	OneDeclError(trns) :- trns is DoDecl(_, _, act), act : String , FunDecl(act, trns.src.owner, _, p, _, _, _), p != NIL;
-	                      trns is DoDecl(_, _, act), act : String , FunDecl(act, trns.src.owner.mod, _, p, _, _, _), p != NIL.
-	
+	OneDeclError(trns) :- trns is DoDecl(_, _, act), act : String , FunDecl(act, trns.src.owner, _, p, _, _, _, _), p != NIL;
+	                      trns is DoDecl(_, _, act), act : String , FunDecl(act, trns.src.owner.mod, _, p, _, _, _, _), p != NIL.
+
 	//Entry Exit Functions
 	[rule_Classes = '"error, msg: undefined function for entry"']
-	DeclFunError(s, eF) :- s is StateDecl(_, _, eF, _, _), eF : String, 
-	                       no FunDecl(eF, s.owner, _, _, _, _, _), no FunDecl(eF, s.owner.mod, _, _, _, _, _). 
+	DeclFunError(s, eF) :- s is StateDecl(_, _, eF, _, _), eF : String,
+	                       no FunDecl(eF, s.owner, _, _, _, _, _, _), no FunDecl(eF, s.owner.mod, _, _, _, _, _, _).
 
 	[rule_Classes = '"error, msg: undefined function for exit"']
-	DeclFunError(s, eF) :- s is StateDecl(_, _, _, eF, _), eF : String, 
-	                       no FunDecl(eF, s.owner, _, _, _, _, _), no FunDecl(eF, s.owner.mod, _, _, _, _, _).
-	
+	DeclFunError(s, eF) :- s is StateDecl(_, _, _, eF, _), eF : String,
+	                       no FunDecl(eF, s.owner, _, _, _, _, _, _), no FunDecl(eF, s.owner.mod, _, _, _, _, _, _).
+
 	[rule_Classes = '"error, msg: function cannot take arguments"']
-	DeclFunError(s, eF) :- s is StateDecl(_, _, eF, _, _), eF : String , FunDecl(eF, s.owner, _, p, _, _, _), p != NIL;
-	                       s is StateDecl(_, _, eF, _, _), eF : String , FunDecl(eF, s.owner.mod, _, p, _, _, _), p != NIL.
-	
+	DeclFunError(s, eF) :- s is StateDecl(_, _, eF, _, _), eF : String , FunDecl(eF, s.owner, _, p, _, _, _, _), p != NIL;
+	                       s is StateDecl(_, _, eF, _, _), eF : String , FunDecl(eF, s.owner.mod, _, p, _, _, _, _), p != NIL.
+
 	[rule_Classes = '"error, msg: function cannot take arguments"']
-	DeclFunError(s, eF) :- s is StateDecl(_, _, _, eF, _), eF : String , FunDecl(eF, s.owner, _, p, _, _, _), p != NIL;
-	                       s is StateDecl(_, _, _, eF, _), eF : String , FunDecl(eF, s.owner.mod, _, p, _, _, _), p != NIL.
-	
+	DeclFunError(s, eF) :- s is StateDecl(_, _, _, eF, _), eF : String , FunDecl(eF, s.owner, _, p, _, _, _, _), p != NIL;
+	                       s is StateDecl(_, _, _, eF, _), eF : String , FunDecl(eF, s.owner.mod, _, p, _, _, _, _), p != NIL.
+
 	//cannot have null in Monitors
 	[rule_Classes = '"error, msg: null transitions not allowed in monitors"']
 	OneDeclError(t) :- t is TransDecl(s, NULL, _, _), s.owner.kind = MONITOR.
@@ -218,13 +219,13 @@ domain PStructuralTyping extends PData
 
 	//no defer in monitors
 	[rule_Classes = '"error, msg: defer not allowed in monitor"']
-	OneDeclError(d) :- d is DoDecl(s, _, DEFER), s.owner.kind = MONITOR.	
+	OneDeclError(d) :- d is DoDecl(s, _, DEFER), s.owner.kind = MONITOR.
 
 	//event in observes is declared
 	[rule_Classes = '"error, msg: event in observes set is not declared"']
-	OneDeclError(obs) :- obs is ObservesDecl, obs.monitor.kind = MONITOR, no EventDecl(obs.ev, _, _).	
+	OneDeclError(obs) :- obs is ObservesDecl, obs.monitor.kind = MONITOR, no EventDecl(obs.ev, _, _).
 
-	//event in interface type 
+	//event in interface type
 	[rule_Classes = '"error, msg: unknown event in interface declaration"']
 	OneDeclError(inter) :- inter is InterfaceTypeEventDecl(_, e), no EventDecl(e, _, _).
 
@@ -239,7 +240,7 @@ domain PStructuralTyping extends PData
 	//interface type in creates declaration
 	[rule_Classes = '"error, msg: interface type in creates is not declared"']
 	OneDeclError(creates) :- creates is ModuleCreatesDecl(_, i), no InterfaceTypeEventDecl(i, _).
-	
+
 	TopLevelDecls ::= ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl + PartialOrderRel + NameEventList + NameModuleList.
 	EventAndModule ::= ModuleDecl + EventList.
 
@@ -247,7 +248,7 @@ domain PStructuralTyping extends PData
 	SubEML ::= sub (c: TopLevelDecls, mem: EventAndModule).
 	[rule_Classes = '"error, msg: module in the list is not declared"']
 	OneDeclError(c) :- SubEML(c, mod), no ModuleDecl(mod.name).
-	
+
 	//event in hide is declared
 	[rule_Classes = '"error, msg: event used in hide operation is not declared"']
 	OneDeclError(c) :- SubEML(c, ml), ml = EventList(ev, _), no EventDecl(ev, _, _).
@@ -256,18 +257,18 @@ domain PStructuralTyping extends PData
 	allNameTypes ::= sub(nt: NameType).
 	[rule_Classes = '"error, msg: undeclared type"']
 	OneDeclError(nt) :- allNameTypes(nt), no InterfaceTypeEventDecl(InterfaceType(nt.name), _), no TypeDef(nt.name, _).
-	
+
 	//only driver module can have a main machine
 	[rule_Classes = '"error, msg: only driver module can have a main machine"']
-	OneDeclError(mod) :- mach is MachineDecl(_, mod, _, _, _, TRUE), ModuleType(mod, kind), kind != DRIVER. 
+	OneDeclError(mod) :- mach is MachineDecl(_, mod, _, _, _, TRUE), ModuleType(mod, kind), kind != DRIVER.
 
 	//only one implementation list declaration
 	[rule_Classes = '"error, msg: atmost one implementation module list is allowed"']
-	OneDeclError(ml1) :- ml1 is ImplementationModules, ml2 is ImplementationModules, ml1 != ml2. 
+	OneDeclError(ml1) :- ml1 is ImplementationModules, ml2 is ImplementationModules, ml1 != ml2.
 
 	//only one specification list declaration
 	[rule_Classes = '"error, msg: atmost one specification module list is allowed"']
-	OneDeclError(ml1) :- ml1 is SpecificationModules, ml2 is SpecificationModules, ml1 != ml2. 
+	OneDeclError(ml1) :- ml1 is SpecificationModules, ml2 is SpecificationModules, ml1 != ml2.
 }
 
 domain PStaticTyping extends PData
@@ -278,7 +279,7 @@ domain PStaticTyping extends PData
 */
 {
     /*************************************************************/
-	conforms no TypeOf(_, _, ERROR). 
+	conforms no TypeOf(_, _, ERROR).
 	conforms no DupNmdSubE(_, _, _, _).
 	conforms no PurityError(_, _).
 	conforms no MonitorError(_, _).
@@ -292,7 +293,7 @@ domain PStaticTyping extends PData
 	conforms no IllegalMainMachine(_).
 	conforms no IllegalComposition(_).
 	conforms no IllegalHideOperation(_).
-	conforms no IllegalTestCase(_).
+	conforms no IllegalTestOrImplementation(_).
     /*************************************************************/
 
 	//// Check that TypeDef's are used properly
@@ -335,24 +336,23 @@ domain PStaticTyping extends PData
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = SeqType(x), TypeExpansion(x, x'), eType = SeqType(x').
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = MapType(k, v), TypeExpansion(k, k'), TypeExpansion(v, v'), eType = MapType(k', v').
 
-
     /*************************************************************/
 
     //// The declarations that may contain expressions or statements that should be typed.
     TypingContext ::= FunDecl + AnonFunDecl.
-    
+
     //// The set of typeable expressions and statements.
     Typeable ::= Expr + Stmt + Exprs + NamedExprs + Cases.
-    
+
     //// The type judgement. NIL is a placeholder for untyped constructs.
     TypeOf ::= (cntxt: TypingContext, expr: Typeable, type: TypeExpr + { ERROR, NIL }).
 
     //// All typing contexts anywhere in the input program.
 	SubCntxt ::= sub (cntxt: TypingContext).
-    
+
 	SubSE ::= (cntxt: TypingContext, typeable: Typeable).
 	SubSE(cntxt, typeable) :- SubCntxt(cntxt), cntxt = AnonFunDecl(_, _, typeable, _).
-	SubSE(cntxt, typeable) :- SubCntxt(cntxt), cntxt = FunDecl(_, _, _, _,  _, _, typeable).
+	SubSE(cntxt, typeable) :- SubCntxt(cntxt), cntxt = FunDecl(_, _, _, _,  _, _, typeable, _).
 	SubSE(c, e), SubSE(c, s) :- SubSE(c, While(e, s)).
 	SubSE(c, e), SubSE(c, s1), SubSE(c, s2) :- SubSE(c, Ite(e, s1, s2)).
 	SubSE(c, s1), SubSE(c, s2) :- SubSE(c, Seq(s1, s2)).
@@ -389,7 +389,7 @@ domain PStaticTyping extends PData
 	/**************************************************************/
 	/*			  Per module level typing error					*/
 	/**************************************************************/
-	
+
 	Permissions ::= ModuleCreatesDecl + ModuleSendsDecl + MachineReceivesDecl + ObservesDecl + MachineDecl.
 	ModuleLevelTypingError ::= (p: Permissions).
 
@@ -409,26 +409,24 @@ domain PStaticTyping extends PData
 									ModuleCreatesDecl(m, i), mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _),
 									count({ev1 | no InterfaceTypeEventDecl(i, ev1), MachineReceivesDecl(mach, ev1), InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(mach, ev2)}) > 0.
 
-
 	[rule_Classes = '"error, msg: interface type in creates is not equal to or disjoint from the implemented interfaces in the module"']
-	ModuleLevelTypingError(c) :- mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _), 
-								  c is ModuleCreatesDecl(m, i), NotDisjointOrEqual(m, i, mr). 
+	ModuleLevelTypingError(c) :- mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _),
+								  c is ModuleCreatesDecl(m, i), NotDisjointOrEqual(m, i, mr).
 
 	[rule_Classes = '"error, msg: monitor not allowed in specification or driver module"']
-	ModuleLevelTypingError(mach) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), ModuleType(mod, kind), kind != IMPL. 
+	ModuleLevelTypingError(mach) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), ModuleType(mod, kind), kind != IMPL.
 
 	[rule_Classes = '"error, msg: monitor can observe event in sends or implemented interfaces"']
-	ModuleLevelTypingError(obs) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), obs is ObservesDecl(mach, ev), no ModuleSendsDecl(mod, ev), mach' is MachineDecl, no MachineReceivesDecl(mach', ev), mach'.mod = mod. 
+	ModuleLevelTypingError(obs) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), obs is ObservesDecl(mach, ev), no ModuleSendsDecl(mod, ev), mach' is MachineDecl, no MachineReceivesDecl(mach', ev), mach'.mod = mod.
 
 	//if there is an empty interface in the creates list then that machine should be implemented in the module
 	[rule_Classes = '"error, msg: empty interface in the creates list must be implemented in the module"']
-	ModuleLevelTypingError(c) :- c is ModuleCreatesDecl(m, i), no InterfaceTypeEventDecl(i, _), no MachineDecl(i.name, m, _, _, _, _). 
+	ModuleLevelTypingError(c) :- c is ModuleCreatesDecl(m, i), no InterfaceTypeEventDecl(i, _), no MachineDecl(i.name, m, _, _, _, _).
 
-	
 	/***************************************************************/
 	/***********    All the subterm operations ********************/
 	/***************************************************************/
-	//get leaf modules in ModuleList 
+	//get leaf modules in ModuleList
 	SubModule ::= sub (modL: ModuleList, mod: ModuleDecl).
 	//get all the hide modules in ModuleList
 	SubHide ::= sub (mdl: ModuleList, h: Hide).
@@ -456,7 +454,7 @@ domain PStaticTyping extends PData
 	/**************************************************************/
 	/******* Get all high level module compositions ****************/
 	/**************************************************************/
-	//get all the high level modules list 
+	//get all the high level modules list
 	//ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl.
 	ComposedModules ::= (m: ModuleList).
 	ComposedModules(mL) :- SafetyTestDecl(_, mL);
@@ -475,7 +473,7 @@ domain PStaticTyping extends PData
 
 	NewToMachineMap ::= (ml: ModuleList, typingCtxt: TypingContext, n: NewCall, mach: MachineDecl).
 
-	NewToMachineMap(ml, c, e, mach) :- 
+	NewToMachineMap(ml, c, e, mach) :-
 									//empty interfaces should be matched to the local machines
 									AllNewCallsInModuleList(ml, c, e), e: NewCall, no InterfaceTypeEventDecl(InterfaceType(e.name), _), mach is MachineDecl(e.name, mod, _, _, _, _), SubModule(ml, mod), ModuleCreatesDecl(mod, InterfaceType(e.name));
 									//interfaces in the creates list can be resolved directly
@@ -485,13 +483,12 @@ domain PStaticTyping extends PData
 									SubHide(ml, hm), count({ev| InterfaceTypeEventDecl(InterfaceType(e.name), ev), no SubEvent(hm.evL, ev)}) = 0,
 									SubModule(hm.modL, mach.mod), MachineReceivesDecl(mach, ev'), InterfaceTypeEventDecl(InterfaceType(e.name), ev').
 
-	
 	//map for implementation modules
 	ImpNewToMachineMap ::= (typingCtxt: TypingContext, n: New + NewStmt, mach: MachineDecl).
 	ImpNewToMachineMap(c, n, m) :- ImplementationModules(ml), NewToMachineMap(ml, c, n, m).
 
 	/***************************************************************/
-	/*				 Static function					  */
+	/*				 Static functions					  */
 	/**************************************************************/
 	NewCall ::= New + NewStmt.
 	FunCall ::= FunApp + FunStmt.
@@ -499,31 +496,30 @@ domain PStaticTyping extends PData
 	FunCallInFunDecl ::= sub(sF: FunDecl, sf: FunCall).
 
 	StaticFunctionCreates ::= (staticFun: FunDecl, it: InterfaceType).
-	StaticFunctionCreates(sF, i) :- FunctionDeclNewCall(sF, n), i = InterfaceType(n.name), sF is FunDecl(_, owner, _, _, _, _, _), owner is ModuleDecl, InterfaceTypeEventDecl(i, _);
-									FunCallInFunDecl(sF, calleeSF), sF' is FunDecl(calleeSF.name, ModuleDecl(calleeSF.modName), _, _, _, _, _), StaticFunctionCreates(sF', i).
-	
+	StaticFunctionCreates(sF, i) :- FunctionDeclNewCall(sF, n), i = InterfaceType(n.name), sF is FunDecl(_, owner, _, _, _, _, _, TRUE), owner is ModuleDecl, InterfaceTypeEventDecl(i, _);
+									FunCallInFunDecl(sF, calleeSF), sF' is FunDecl(calleeSF.name, ModuleDecl(calleeSF.modName), _, _, _, _, _, TRUE), StaticFunctionCreates(sF', i).
+
 	//creates in static function is illegal
 	[ rule_Classes = '"error, msg: static function creates interface that is not in the creates list of the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), c.owner = MachineDecl(_, mod, _, _, _, _), e = FunApp(n, m, _), sF is FunDecl(n, ModuleDecl(m),  _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(mod, i).
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), c.owner = MachineDecl(_, mod, _, _, _, _), e = FunApp(n, m, _), sF is FunDecl(n, ModuleDecl(m),  _, _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(mod, i).
 	[ rule_Classes = '"error, msg: static function creates interface that is not in the creates list of the module"']
-	TypeOf(c, e, ERROR)            :- SubSE(c, e), c.owner = MachineDecl(_, mod, _, _, _, _), e = FunStmt(n, m, _, _, _), sF is FunDecl(n, ModuleDecl(m),  _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(mod, i).
+	TypeOf(c, e, ERROR)            :- SubSE(c, e), c.owner = MachineDecl(_, mod, _, _, _, _), e = FunStmt(n, m, _, _, _), sF is FunDecl(n, ModuleDecl(m),  _, _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(mod, i).
+	[ rule_Classes = '"error, msg: static function creates interface that is not in the creates list of the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), c is FunDecl(_, mod, _, _, _, _, _, FALSE), mod is ModuleDecl, e = FunApp(n, m, _), sF is FunDecl(n, ModuleDecl(m),  _, _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(mod, i).
+	[ rule_Classes = '"error, msg: static function creates interface that is not in the creates list of the module"']
+	TypeOf(c, e, ERROR)            :- SubSE(c, e), c is FunDecl(_, mod, _, _, _, _, _, FALSE), mod is ModuleDecl, e = FunStmt(n, m, _, _, _), sF is FunDecl(n, ModuleDecl(m),  _, _, _, _, _, _), StaticFunctionCreates(sF, i), no ModuleCreatesDecl(mod, i).
 
 	//static functions are not defined for the modulelist
 	StaticFunctionError ::= (ml: ModuleList, e: FunCall + FunDecl).
-	[rule_Classes = '"error, msg: static function not defined in the module list (missing module)"']
-	StaticFunctionError(ml, e) :- SubSE(c, e), e = FunApp(n, m, _), sF is FunDecl(n, mod,  _, _, _, _, _), mod = ModuleDecl(m), ComposedModules(ml), no SubModule(ml, mod). 
-	[rule_Classes = '"error, msg: static function not defined in the module list (missing module)"']
-	StaticFunctionError(ml, e) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), sF is FunDecl(n, mod,  _, _, _, _, _), mod = ModuleDecl(m), ComposedModules(ml), no SubModule(ml, mod).
-
-	//static functions can create only public interfaces (not hidden)
-	[rule_Classes = '"error, msg: static function can create only public interfaces"']
-	StaticFunctionError(ml, fd) :- ComposedModules(ml), fd is FunDecl(_, mod,  _, _, _, _, _), SubModule(ml, mod), StaticFunctionCreates(fd, i),
-								   InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev).
+	[rule_Classes = '"error, msg: static function not defined in the module list (missing implementation)"']
+	StaticFunctionError(ml, e) :- SubSE(c, e), e = FunApp(n, m, _), sF is FunDecl(n, mod,  _, _, _, _, _, _), mod = ModuleDecl(m), ComposedModules(ml), no SubModule(ml, mod).
+	[rule_Classes = '"error, msg: static function not defined in the module list (missing implementation)"']
+	StaticFunctionError(ml, e) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), sF is FunDecl(n, mod,  _, _, _, _, _, _), mod = ModuleDecl(m), ComposedModules(ml), no SubModule(ml, mod).
 
 	/***************************************************************/
 	/*	Generate sends, private and creates for ModuleList		   */
 	/***************************************************************/
-	
+
 	AllModList ::= (modL: ModuleList).
 	SendsForModuleList ::= (ml: ModuleList, ev: String).
 	HiddenEventsForModuleList ::= (ml: ModuleList, ev: String).
@@ -541,13 +537,13 @@ domain PStaticTyping extends PData
 	ReceivesForModuleList(ml, rd) :- AllModList(ml), SubModule(ml, mod), rd is MachineReceivesDecl(mach, _), mach.mod = mod.
 
 	//get the hidden events list for the moduleList
-	HiddenEventsForModuleList(ml, ev) :- AllModList(ml), ml = ModuleList(m, _), HiddenEventsForModule(m, ev);						
+	HiddenEventsForModuleList(ml, ev) :- AllModList(ml), ml = ModuleList(m, _), HiddenEventsForModule(m, ev);
 										 AllModList(ml), ml = ModuleList(_, m2), HiddenEventsForModuleList(m2, ev), m2 != NIL.
 
 	//get the creates list for the ModuleList, remove interfaces that have private events in them
-	CreatesForModuleList(ml, i) :- AllModList(ml), ml = ModuleList(m, _), CreatesForModule(m, i);						
+	CreatesForModuleList(ml, i) :- AllModList(ml), ml = ModuleList(m, _), CreatesForModule(m, i);
 								   AllModList(ml), ml = ModuleList(_, m2), CreatesForModuleList(m2, i), m2 != NIL.
-	
+
 	//Generate signature for the all modules (module + hide)
 	AllHideModules ::= (h : Hide).
 	AllHideModules(hm) :- ComposedModules(cml), SubHide(cml, hm).
@@ -572,7 +568,7 @@ domain PStaticTyping extends PData
 	//get the creates list for the module
 	CreatesForModule(hm, i) :-  AllHideModules(hm), CreatesForModuleList(hm.modL, i);
 								ModuleCreatesDecl(hm, i).
-	
+
 	/**************************************************************/
 	/*                      Legal Composition                   */
 	/*************************************************************/
@@ -582,17 +578,17 @@ domain PStaticTyping extends PData
 	/**************************************************************/
 	/*                      Illegal Composition                   */
 	/*************************************************************/
-	
+
 	//Get all modulelist compositions
 	ComposeModWithModList ::= (ml: ModuleList, m1: Module, m2:ModuleList).
 	ComposeModWithModList(ml, m1, m2) :- AllModList(ml), ml = ModuleList(m1, m2), m2 : ModuleList. // add m2 is a legal compositions
-	
+
 	IllegalComposition ::= (modL: ModuleList).
 
 	//Compute Partial Order and downward closure for sends list
 	//interface type in the payload of an event
 	NameTypeInEventDecl ::= sub(evd: EventDecl, nt: NameType).
-	
+
 	PartialOrderRel(ev1.name, ev2name) :- NameTypeInEventDecl(ev1, nt), InterfaceTypeEventDecl(InterfaceType(nt.name), ev2name).
 
 	DownClosureSendsForModuleList ::= (ml: ModuleList, ev: String).
@@ -603,11 +599,9 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: down closure of public sends and hidden events are not disjoint after composition"']
 	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), DownClosureSendsForModuleList(ml, ev), HiddenEventsForModule(m1, ev).
 
-
 	//public events in the receives must be disjoint
 	[rule_Classes = '"error, msg: public events in receives are not disjoint after composition"']
 	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), ReceivesForModule(m1, rd1), ReceivesForModuleList(m2, rd2), rd1.ev = rd2.ev, ml = ModuleList(m1, m2), no HiddenEventsForModuleList(ml, ev), rd1.ev = ev.
-
 
 	//interfaces in creates are disjoint
 	[rule_Classes = '"error, msg: interfaces in creates list are not disjoint after composition"']
@@ -615,7 +609,7 @@ domain PStaticTyping extends PData
 
 	//a create interface is either disjoint or equal to the public events in receives
 	[rule_Classes = '"error, msg: interface type in creates is not equal to or disjoint from the public events in receives after composition"']
-	IllegalComposition(ml) :- 
+	IllegalComposition(ml) :-
 	ComposeModWithModList(ml, m1, m2), CreatesForModuleList(ml, i), count({ev | InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev)}) = 0,
 	count({ev1 | InterfaceTypeEventDecl(i, ev1), no ReceivesForModuleList(ml, ed1), no HiddenEventsForModuleList(ml, ev1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), no HiddenEventsForModuleList(ml, ev2),rd2.ev = ev2, rd1.mach = rd2.mach}) > 0;
 	ComposeModWithModList(ml, m1, m2), CreatesForModuleList(ml, i), count({ev | InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev)}) = 0,
@@ -624,12 +618,12 @@ domain PStaticTyping extends PData
 	//no private event in the creates interfaces
 	[rule_Classes = '"error, msg: interface in creates has private/hidden event after composition"']
 	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), HiddenEventsForModuleList(ml, ev), CreatesForModuleList(ml, i), InterfaceTypeEventDecl(i, ev).
-	
+
 	//no duplicates in the sends list
 	[rule_Classes = '"error, msg: multiple modules have the same event in the sends list after composition"']
 	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), SendsForModule(m1, ev), SendsForModuleList(m2, ev), no HiddenEventsForModuleList(ml, ev).
-	
-	//Extra check: Call a leaf module open if (created – implemented) for it is nonempty.  
+
+	//Extra check: Call a leaf module open if (created – implemented) for it is nonempty.
 	//A module expression M may include an open leaf module P only if P has a unique path to the root of M.
 
 	OpenModule ::= (m: ModuleDecl).
@@ -644,10 +638,10 @@ domain PStaticTyping extends PData
 	/*************************************************************/
 
 	IllegalHideOperation::= (hideOp: Hide).
-	
+
 	/*
 	Hide E in P is legal only if :
-	1) E is not a private event of P. 
+	1) E is not a private event of P.
 	2) E is either disjoint or equal to the interface in the creates list
 	3) E is in the receives list of one of the implemented machines of P.
 	*/
@@ -658,7 +652,7 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: events in hide operation must be either disjoint or equal to interfaces in the creates list"']
 	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvent(evl, ev), CreatesForModuleList(hml, i), InterfaceTypeEventDecl(i, ev),
 							   count({ev' | InterfaceTypeEventDecl(i, ev'), no SubEvent(evl, ev')}) > 0.
-	
+
 	[rule_Classes = '"error, msg: hide operation can be performed on an event present in receives of an implemented machine"']
 	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvent(evl, ev), count({rd | ReceivesForModuleList(hml, rd), rd.ev = ev}) != 1.
 
@@ -677,16 +671,24 @@ domain PStaticTyping extends PData
 
 	//implementation is closed with respect to creates
 	[rule_Classes = '"error, msg: the module list is not closed with respect to creates, all created interfaces are not implemented"']
-	IllegalTestOrImplementation(modL) :- ComposedModules(modL), no SpecificationModules(modL), CreatesForModuleList(modL, i), InterfaceTypeEventDecl(i, ev), no ReceivesForModuleList(modL, rd), rd.ev = ev;
-	
+	IllegalTestOrImplementation(modL) :- ComposedModules(modL), no SpecificationModules(modL), CreatesForModuleList(modL, i), InterfaceTypeEventDecl(i, ev), rd is MachineReceivesDecl, no ReceivesForModuleList(modL, rd), rd.ev = ev.
+
 	[rule_Classes = '"error, msg: implementation module list must have only implementation modules"']
-	IllegalTestOrImplementation(modL) :- ImplementationModules(modL), SubModule(modL, mod), ModuleType(mod, kind), kind != IMPL;
-	
+	IllegalTestOrImplementation(modL) :- ImplementationModules(modL), SubModule(modL, mod), ModuleType(mod, kind), kind != IMPL.
+
 	[rule_Classes = '"error, msg: specification module list must have only spec modules"']
-	IllegalTestOrImplementation(modL) :- SpecificationModules(modL), SubModule(modL, mod), ModuleType(mod, kind), kind != SPEC;
-	
-							 
-	//TODO: Add type checking rules for the refinement checking relations
+	IllegalTestOrImplementation(modL) :- SpecificationModules(modL), SubModule(modL, mod), ModuleType(mod, kind), kind != SPEC.
+
+	[rule_Classes = '"error, msg: public events (sends or receives) in the rhs of refines is not a subset of lhs events"']
+	IllegalTestOrImplementation(rhs) :- RefinesTestDecl(_, lhs, rhs), SendsForModuleList(rhs, ev), no HiddenEventsForModuleList(rhs, ev), no SendsForModuleList(lhs, ev);
+										 RefinesTestDecl(_, lhs, rhs), ReceivesForModuleList(rhs, rd), no HiddenEventsForModuleList(rhs, rd.ev), no		  ReceivesForModuleList(lhs, rd'), rd' is MachineReceivesDecl, rd'.ev = rd.ev.
+	[rule_Classes = '"error, msg: public event (sends or receives) in the rhs of refines is hidden in the lhs"']
+	IllegalTestOrImplementation(rhs) :- RefinesTestDecl(_, lhs, rhs), SendsForModuleList(rhs, ev), no HiddenEventsForModuleList(rhs, ev), SendsForModuleList(lhs, ev), HiddenEventsForModuleList(lhs, ev);
+										 RefinesTestDecl(_, lhs, rhs), ReceivesForModuleList(rhs, rd), no HiddenEventsForModuleList(rhs, rd.ev), ReceivesForModuleList(lhs, rd'), rd'.ev = rd.ev, HiddenEventsForModuleList(lhs, rd'.ev).
+	[rule_Classes = '"error, msg: public creates interfaces in the rhs of refines is not a subset of lhs creates set"']
+	IllegalTestOrImplementation(rhs) :- RefinesTestDecl(_, lhs, rhs), CreatesForModuleList(rhs, i), no HiddenEventsForModuleList(rhs, ev), InterfaceTypeEventDecl(i, ev), no CreatesForModuleList(lhs, i).
+	[rule_Classes = '"error, msg: public creates interface in the rhs of refines is hidden in the lhs"']
+	IllegalTestOrImplementation(rhs) :- RefinesTestDecl(_, lhs, rhs), CreatesForModuleList(rhs, i), no HiddenEventsForModuleList(rhs, ev), InterfaceTypeEventDecl(i, ev), CreatesForModuleList(lhs, i), HiddenEventsForModuleList(lhs, ev).
 
 	/**************************************************************/
 	/*						Sound Composition		 			 */
@@ -698,72 +700,71 @@ domain PStaticTyping extends PData
 	SoundCompositionWarning(ml) :- ComposedModules(ml), no CreatesForModuleList(ml, i), ReceivesForModuleList(ml, rd), InterfaceTypeEventDecl(i, rd.ev).
 
 	[rule_Classes = '"warning, msg: module list is not input closed (sends) with respect to the receives"']
-	SoundCompositionWarning(ml) :- ComposedModules(ml), ReceivesForModuleList(ml, rd), count({ev | no SendsForModuleList(modL, rd.ev)}) > 0.
-
+	SoundCompositionWarning(ml) :- ComposedModules(ml), ReceivesForModuleList(ml, rd), no SendsForModuleList(modL, rd.ev).
 
     /*************************************************************/
     /*                      Types of Expressions                 */
     /*************************************************************/
-    
+
     //// (1) The types of nullary expressions
     TypeOf(c, e, BaseType(NULL))  :- SubSE(c, e), e = NulApp(NULL).
     TypeOf(c, e, BaseType(EVENT)) :- SubSE(c, e), e = NulApp(HALT).
-	
+
 	//THIS is not allowed in static functions
 	// Type of THIS is the receive set implemented by the machine.
-    TypeOf(c, e, i)  :- SubSE(c, e), e = NulApp(THIS), i = InterfaceType(c.owner.name), c is FunDecl(_, owner, _, _, _, _, _), owner is MachineDecl;
+    TypeOf(c, e, i)  :- SubSE(c, e), e = NulApp(THIS), i = InterfaceType(c.owner.name), c is FunDecl(_, owner, _, _, _, _, _, _), owner is MachineDecl;
 						SubSE(c, e), e = NulApp(THIS), i = InterfaceType(c.owner.name), c is AnonFunDecl(owner, _, _, _), owner is MachineDecl.
 
     [ rule_Classes = '"error, msg: (this) is not allowed inside static functions"']
-    TypeOf(c, e, ERROR)           :- SubSE(c, e), e = NulApp(THIS), c is FunDecl(_, owner, _, _, _, _, _), owner is ModuleDecl;
+    TypeOf(c, e, ERROR)           :- SubSE(c, e), e = NulApp(THIS), c is FunDecl(_, owner, _, _, _, _, _, _), owner is ModuleDecl;
 									 SubSE(c, e), e = NulApp(THIS), c is AnonFunDecl(owner, _, _, _), owner is ModuleDecl.
 
 	TypeOf(c, e, BaseType(BOOL))  :- SubSE(c, e), e = NulApp(NONDET).
 
     TypeOf(c, e, BaseType(BOOL))  :- SubSE(c, e), e = NulApp(FAIRNONDET).
-	    
+
     TypeOf(c, e, BaseType(INT))   :- SubSE(c, e), e = NulApp(v), v : Integer.
-    TypeOf(c, e, BaseType(BOOL))  :- SubSE(c, e), e = NulApp(v), v : Boolean.          
-    
+    TypeOf(c, e, BaseType(BOOL))  :- SubSE(c, e), e = NulApp(v), v : Boolean.
+
     //// (2) The types of unary expressions
-    TypeOf(c, e, t)               :- SubSE(c, e), e = Default(t). 
-	    
-    TypeOf(c, e, t1)              :- TypeOfArg1(c, e, t1), e : Tuple.     
+    TypeOf(c, e, t)               :- SubSE(c, e), e = Default(t).
+
+    TypeOf(c, e, t1)              :- TypeOfArg1(c, e, t1), e : Tuple.
 
     TypeOf(c, e, t1)              :- TypeOfArg1(c, e, t1), e : NamedTuple.
 
 	// Names can hide other names in the following order: local variable hides machine variable hides event
 	TypeOf(c, e, et)              :- SubSE(c, e), e = Name(n), TypeOfLocalVar(c, n, t), TypeExpansion(t, et).
-    TypeOf(c, e, et)              :- SubSE(c, e), e = Name(n), VarDecl(n, c.owner, t), TypeExpansion(t, et), no TypeOfLocalVar(c, n, _). 
-    TypeOf(c, e, BaseType(EVENT)) :- SubSE(c, e), e = Name(n), EventDecl(n, _, _), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _). 
+    TypeOf(c, e, et)              :- SubSE(c, e), e = Name(n), VarDecl(n, c.owner, t), TypeExpansion(t, et), no TypeOfLocalVar(c, n, _).
+    TypeOf(c, e, BaseType(EVENT)) :- SubSE(c, e), e = Name(n), EventDecl(n, _, _), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _).
 
-    IsEventCnst(c, e, BaseType(NULL)) :- SubSE(c, e), e = Name(n), EventDecl(n, _, NIL), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _). 
-    IsEventCnst(c, e, pt)             :- SubSE(c, e), e = Name(n), EventDecl(n, _, pt), pt : TypeExpr, no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _). 
+    IsEventCnst(c, e, BaseType(NULL)) :- SubSE(c, e), e = Name(n), EventDecl(n, _, NIL), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _).
+    IsEventCnst(c, e, pt)             :- SubSE(c, e), e = Name(n), EventDecl(n, _, pt), pt : TypeExpr, no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _).
 
 	[ rule_Classes = '"error, msg: Undefined symbol"']
-    TypeOf(c, e, ERROR)           :- SubSE(c, e), e = Name(n), no EventDecl(n, _, _), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _). 
-    
-    TypeOf(c, e, BaseType(BOOL))  :- TypeOfArg1(c, e, t1), e = UnApp(NOT, _), t1 = BaseType(BOOL). 
+    TypeOf(c, e, ERROR)           :- SubSE(c, e), e = Name(n), no EventDecl(n, _, _), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _).
+
+    TypeOf(c, e, BaseType(BOOL))  :- TypeOfArg1(c, e, t1), e = UnApp(NOT, _), t1 = BaseType(BOOL).
 	[ rule_Classes = '"error, msg: Operator expected a boolean value"']
-    TypeOf(c, e, ERROR)           :- TypeOfArg1(c, e, t1), e = UnApp(NOT, _), t1 != BaseType(BOOL). 
-    
-    TypeOf(c, e, BaseType(INT))   :- TypeOfArg1(c, e, t1), e = UnApp(NEG, _), t1 = BaseType(INT). 
+    TypeOf(c, e, ERROR)           :- TypeOfArg1(c, e, t1), e = UnApp(NOT, _), t1 != BaseType(BOOL).
+
+    TypeOf(c, e, BaseType(INT))   :- TypeOfArg1(c, e, t1), e = UnApp(NEG, _), t1 = BaseType(INT).
 	[ rule_Classes = '"error, msg: Operator expected an integer value"']
-    TypeOf(c, e, ERROR)           :- TypeOfArg1(c, e, t1), e = UnApp(NEG, _), t1 != BaseType(INT). 
-    
-    TypeOf(c, e, SeqType(dom))    :- TypeOfArg1(c, e, t1), e = UnApp(KEYS, _), t1 = MapType(dom, _). 
-	[ rule_Classes = '"error, msg: Operator expected a map value"']
-    TypeOf(c, e, ERROR)           :- TypeOfArg1(c, e, t1), e = UnApp(KEYS, _), toSymbol(t1) != #MapType. 
+    TypeOf(c, e, ERROR)           :- TypeOfArg1(c, e, t1), e = UnApp(NEG, _), t1 != BaseType(INT).
 
-    TypeOf(c, e, SeqType(cod))    :- TypeOfArg1(c, e, t1), e = UnApp(VALUES, _), t1 = MapType(_, cod). 
+    TypeOf(c, e, SeqType(dom))    :- TypeOfArg1(c, e, t1), e = UnApp(KEYS, _), t1 = MapType(dom, _).
 	[ rule_Classes = '"error, msg: Operator expected a map value"']
-    TypeOf(c, e, ERROR)           :- TypeOfArg1(c, e, t1), e = UnApp(VALUES, _), toSymbol(t1) != #MapType. 
+    TypeOf(c, e, ERROR)           :- TypeOfArg1(c, e, t1), e = UnApp(KEYS, _), toSymbol(t1) != #MapType.
 
-    TypeOf(c, e, BaseType(INT))   :- TypeOfArg1(c, e, t1), e = UnApp(SIZEOF, _), t1 : MapType. 
-    TypeOf(c, e, BaseType(INT))   :- TypeOfArg1(c, e, t1), e = UnApp(SIZEOF, _), t1 : SeqType. 
+    TypeOf(c, e, SeqType(cod))    :- TypeOfArg1(c, e, t1), e = UnApp(VALUES, _), t1 = MapType(_, cod).
+	[ rule_Classes = '"error, msg: Operator expected a map value"']
+    TypeOf(c, e, ERROR)           :- TypeOfArg1(c, e, t1), e = UnApp(VALUES, _), toSymbol(t1) != #MapType.
+
+    TypeOf(c, e, BaseType(INT))   :- TypeOfArg1(c, e, t1), e = UnApp(SIZEOF, _), t1 : MapType.
+    TypeOf(c, e, BaseType(INT))   :- TypeOfArg1(c, e, t1), e = UnApp(SIZEOF, _), t1 : SeqType.
 	[ rule_Classes = '"error, msg: Operator expected a map or sequence value"']
-    TypeOf(c, e, ERROR)           :- TypeOfArg1(c, e, t1), e = UnApp(SIZEOF, _), toSymbol(t1) != #MapType, toSymbol(t1) != #SeqType. 
-    
+    TypeOf(c, e, ERROR)           :- TypeOfArg1(c, e, t1), e = UnApp(SIZEOF, _), toSymbol(t1) != #MapType, toSymbol(t1) != #SeqType.
+
     //// (3) The types of binary expressions
     TypeOf(c, e, t2')               :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k != EMPTY.
 	[ rule_Classes = '"error, msg: Cast can never succeed"']
@@ -776,37 +777,39 @@ domain PStaticTyping extends PData
 
 	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
-	
-	[ rule_Classes = '"error, msg: static function cannot create empty interface"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), no InterfaceTypeEventDecl(InterfaceType(n), _).
+
+	[ rule_Classes = '"error, msg: public static function cannot create empty interface"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, no InterfaceTypeEventDecl(InterfaceType(n), _).
+	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, no ModuleCreatesDecl(mod, InterfaceType(n)).
 
     TypeOf(c, e, t2)               :- TypeOfArg2(c, e, _, t2), e : Field, t2 != ERROR.
 	[ rule_Classes = '"error, msg: Bad field name"']
     TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, _, t2), e : Field, t2 = ERROR.
 	[ rule_Classes = '"error, msg: Operator expected a (named) tuple value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Field, toSymbol(t1) != #TupType, toSymbol(t1) != #NmdTupType.
-    
+
     PureIntOp ::= { ADD, SUB, MUL, INTDIV }.
     TypeOf(c, e, bint)             :- TypeOfArg2(c, e, t1, t2), e = BinApp(op, _, _), op : PureIntOp, t1 = bint, t2 = bint, bint = BaseType(INT).
 	[ rule_Classes = '"error, msg: Operator expected first argument to be an integer value"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = BinApp(op, _, _), op : PureIntOp, t1 != BaseType(INT).    
+    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = BinApp(op, _, _), op : PureIntOp, t1 != BaseType(INT).
 	[ rule_Classes = '"error, msg: Operator expected second argument to be an integer value"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = BinApp(op, _, e2), op : PureIntOp, TypeOf(c, e2, t2), t2 != BaseType(INT).     
-    
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = BinApp(op, _, e2), op : PureIntOp, TypeOf(c, e2, t2), t2 != BaseType(INT).
+
     PureIntRel ::= { LT, LE, GT, GE }.
     TypeOf(c, e, BaseType(BOOL))   :- TypeOfArg2(c, e, t1, t2), e = BinApp(op, e', e''), op : PureIntRel, t1 = bint, t2 = bint, bint = BaseType(INT).
 	[ rule_Classes = '"error, msg: Operator expected first argument to be an integer value"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = BinApp(op, _, _), op : PureIntRel, t1 != BaseType(INT).    
+    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = BinApp(op, _, _), op : PureIntRel, t1 != BaseType(INT).
 	[ rule_Classes = '"error, msg: Operator expected second argument to be an integer value"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = BinApp(op, _, e2), TypeOf(c, e2, t2), op : PureIntRel, t2 != BaseType(INT).    
-    
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = BinApp(op, _, e2), TypeOf(c, e2, t2), op : PureIntRel, t2 != BaseType(INT).
+
     PureBoolOp ::= { AND, OR }.
     TypeOf(c, e, BaseType(BOOL))   :- TypeOfArg2(c, e, t1, t2), e = BinApp(op, _, _), op : PureBoolOp, t1 = bbool, t2 = bbool, bbool = BaseType(BOOL).
 	[ rule_Classes = '"error, msg: Operator expected first argument to be a boolean value"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = BinApp(op, _, _), op : PureBoolOp, t1 != BaseType(BOOL).    
+    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = BinApp(op, _, _), op : PureBoolOp, t1 != BaseType(BOOL).
 	[ rule_Classes = '"error, msg: Operator expected second argument to be a boolean value"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = BinApp(op, _, e2), TypeOf(c, e2, t2), op : PureBoolOp, t2 != BaseType(BOOL).    
-    
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = BinApp(op, _, e2), TypeOf(c, e2, t2), op : PureBoolOp, t2 != BaseType(BOOL).
+
     PolyRel ::= { EQ, NEQ }.
     TypeOf(c, e, BaseType(BOOL))   :- TypeOfArg2(c, e, t1, t2), e = BinApp(op, _, _), op : PolyRel, TypeRel(t1, t2, k), k != EMPTY.
 	[ rule_Classes = '"error, msg: Values cannot be compared because their types are incompatible"']
@@ -814,7 +817,7 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Values of type machine or interface cannot be compared"']
     TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(op, _, _), op : PolyRel, TypeRel(t1, BaseType(REAL), SUB), t1 != BaseType(NULL);
 									  TypeOfArg2(c, e, t1, t2), e = BinApp(op, _, _), op : PolyRel, TypeRel(t2, BaseType(REAL), SUB), t2 != BaseType(NULL).
-    
+
     TypeOf(c, e, inner)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(IDX, _, _), t1 = SeqType(inner), t2 = BaseType(INT).
     TypeOf(c, e, cod)              :- TypeOfArg2(c, e, t1, t2), e = BinApp(IDX, _, _), t1 = MapType(dom, cod), TypeRel(t2, dom, SUB).
 	[ rule_Classes = '"error, msg: Indexer must be applied to a sequence or map"']
@@ -823,52 +826,54 @@ domain PStaticTyping extends PData
     TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(IDX, _, _), t1 : SeqType, t2 != BaseType(INT).
 	[ rule_Classes = '"error, msg: Index may not be in the domain of the map"']
     TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(IDX, _, _), t1 = MapType(dom, _), TypeRel(t2, dom, k), t2 != dom, k != SUB.
-    
+
     TypeOf(c, e, BaseType(BOOL))   :- TypeOfArg2(c, e, t1, t2), e = BinApp(IN, _, _), t2 = SeqType(inner), TypeRel(t1, inner, k), k != EMPTY.
-    TypeOf(c, e, BaseType(BOOL))   :- TypeOfArg2(c, e, t1, t2), e = BinApp(IN, _, _), t2 = MapType(dom, _), TypeRel(t1, dom, k), k != EMPTY.        
+    TypeOf(c, e, BaseType(BOOL))   :- TypeOfArg2(c, e, t1, t2), e = BinApp(IN, _, _), t2 = MapType(dom, _), TypeRel(t1, dom, k), k != EMPTY.
 	[ rule_Classes = '"error, msg: Value can never be in the sequence"']
     TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(IN, _, _), t2 = SeqType(inner), TypeRel(t1, inner, EMPTY).
 	[ rule_Classes = '"error, msg: Value can never be in the map"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(IN, _, _),  t2 = MapType(dom, _), TypeRel(t1, dom, EMPTY).        
+    TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(IN, _, _),  t2 = MapType(dom, _), TypeRel(t1, dom, EMPTY).
 	[ rule_Classes = '"error, msg: "in" expects a map"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = BinApp(IN, _, e2),  TypeOf(c, e2, t2), toSymbol(t2) != #MapType.
-    
+
 	///// (4) Exprs produces a tuple type
 	TypeOf(c, e, t) :- TypeOfArg1(c, e, t1), e = Exprs(_, NIL), t = TupType(t1, NIL).
 	TypeOf(c, e, t) :- TypeOfArg2(c, e, t1, t2), e : Exprs, t2 : TupType, t = TupType(t1, t2).
-		
+
 	//// (5) NamedExprs produces a named tuple type.
 	TypeOf(c, e, t) :- TypeOfArg1(c, e, t1), e = NamedExprs(n, _, NIL), t = NmdTupType(NmdTupTypeField(n, t1), NIL).
 	TypeOf(c, e, t) :- TypeOfArg2(c, e, t1, t2), e = NamedExprs(n, _, _), t2 : NmdTupType, t = NmdTupType(NmdTupTypeField(n, t1), t2).
-	
-	//// (6) FunApps must refer to a defined function that has a non-NIL return type and args must be sub-types of function signature. 
-	TypeOf(c, e, et) :- SubSE(c, e), e = FunApp(n, NIL, NIL), decl = FunDecl(n, c.owner, _, NIL, t, _, _), FunAvailable(decl, c.owner), t != NIL, TypeExpansion(t, et);
-						SubSE(c, e), e = FunApp(n, m, NIL), m : String, decl = FunDecl(n, ModuleDecl(m), _, NIL, t, _, _), FunAvailable(decl, c.owner), t != NIL, TypeExpansion(t, et).
+
+	//// (6) FunApps must refer to a defined function that has a non-NIL return type and args must be sub-types of function signature.
+	TypeOf(c, e, et) :- SubSE(c, e), e = FunApp(n, NIL, NIL), decl = FunDecl(n, c.owner, _, NIL, t, _, _, _), FunAvailable(decl, c.owner), t != NIL, TypeExpansion(t, et);
+						SubSE(c, e), e = FunApp(n, m, NIL), m : String, decl = FunDecl(n, ModuleDecl(m), _, NIL, t, _, _, _), FunAvailable(decl, c.owner), t != NIL, TypeExpansion(t, et).
 	TypeOf(c, e, et) :- TypeOfArg1(c, e, t1), e = FunApp(n, NIL, _), FuncSigTupleType(decl, inpt), decl.name = n, decl.return = t, decl.owner = c.owner, FunAvailable(decl, c.owner), TypeRel(t1, inpt, SUB), t != NIL, TypeExpansion(t, et);
 						TypeOfArg1(c, e, t1), e = FunApp(n, m, _), m : String, FuncSigTupleType(decl, inpt), decl.name = n, decl.owner = ModuleDecl(m), decl.return = t, FunAvailable(decl, c.owner), TypeRel(t1, inpt, SUB), t != NIL, TypeExpansion(t, et).
 
 	[ rule_Classes = '"error, msg: function not defined"']
-	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, NIL, _), no FunDecl(n, c.owner, _, _, _, _, _).
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, NIL, _), no FunDecl(n, c.owner, _, _, _, _, _, _).
 	[ rule_Classes = '"error, msg: static function can only call other static funtions"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, NIL, _), toSymbol(c.owner) = #ModuleDecl.
+	[ rule_Classes = '"error, msg: public static function can only call other public static funtions"']
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, m, _), m : String, c is FunDecl(_, owner, _, _, _, _, _, TRUE), FunDecl(n, ModuleDecl(m), _, _, _, _, _, FALSE).
 	[ rule_Classes = '"error, msg: static function not defined"']
-	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, m, _), m : String, no FunDecl(n, ModuleDecl(m), _, _, _, _, _).
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, m, _), m : String, no FunDecl(n, ModuleDecl(m), _, _, _, _, _, _).
 	[ rule_Classes = '"error, msg: module not declared"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, m, _), m : String, no ModuleDecl(m).
 	[ rule_Classes = '"error, msg: implementation module can call static functions declared in implementation modules"']
-	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, m, _), m : String, FunDecl(n, mod, _, _, _, _, _), mod = ModuleDecl(m), ModuleType(mod, kind), kind != IMPL, ModuleType(c.owner, IMPL);
-						   SubSE(c, e), e = FunApp(n, m, _), m : String, FunDecl(n, mod, _, _, _, _, _), mod = ModuleDecl(m), ModuleType(mod, kind), kind != IMPL, ModuleType(c.owner.mod, IMPL).
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, m, _), m : String, FunDecl(n, mod, _, _, _, _, _, _), mod = ModuleDecl(m), ModuleType(mod, kind), kind != IMPL, ModuleType(c.owner, IMPL);
+						   SubSE(c, e), e = FunApp(n, m, _), m : String, FunDecl(n, mod, _, _, _, _, _, _), mod = ModuleDecl(m), ModuleType(mod, kind), kind != IMPL, ModuleType(c.owner.mod, IMPL).
 
 	[ rule_Classes = '"error, msg: function does not return a value"']
-	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, NIL, _), FunDecl(n, c.owner, _, _, NIL, _, _);
-	                       SubSE(c, e), e = FunApp(n, m, _), m : String, FunDecl(n, ModuleDecl(m), _, _, NIL, _, _).
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, NIL, _), FunDecl(n, c.owner, _, _, NIL, _, _, _);
+	                       SubSE(c, e), e = FunApp(n, m, _), m : String, FunDecl(n, ModuleDecl(m), _, _, NIL, _, _, _).
 	[ rule_Classes = '"error, msg: function requires arguments"']
-	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, NIL, NIL), FunDecl(n, c.owner, _, params, _, _, _), params != NIL;
-	                       SubSE(c, e), e = FunApp(n, m, NIL), m : String, FunDecl(n, ModuleDecl(m), _, params, _, _, _), params != NIL.
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, NIL, NIL), FunDecl(n, c.owner, _, params, _, _, _, _), params != NIL;
+	                       SubSE(c, e), e = FunApp(n, m, NIL), m : String, FunDecl(n, ModuleDecl(m), _, params, _, _, _, _), params != NIL.
 	[ rule_Classes = '"error, msg: function arguments have incorrect types"']
 	TypeOf(c, e, ERROR) :- TypeOfArg1(c, e, t1), e = FunApp(n, NIL, _), FuncSigTupleType(decl, inpt), decl.name = n, decl.owner = c.owner, FunAvailable(decl, c.owner), TypeRel(t1, inpt, k), t1 != inpt, k != SUB;
 						   TypeOfArg1(c, e, t1), e = FunApp(n, m, _), m : String, FuncSigTupleType(decl, inpt), decl.name = n, decl.owner = ModuleDecl(m), FunAvailable(decl, c.owner), TypeRel(t1, inpt, k), t1 != inpt, k != SUB.
-	
+
     /*************************************************************/
     /*                      Types of Statements                  */
     /*************************************************************/
@@ -878,60 +883,61 @@ domain PStaticTyping extends PData
     TypeOf(c, e, NIL)              :- SubSE(c, e), e = NulStmt(POP).
 
 	//// (2) Return statement
-    TypeOf(c, e, NIL)              :- SubSE(c, e), e = Return(NIL), c = FunDecl(_, _, _, _, NIL, _, _). 
+    TypeOf(c, e, NIL)              :- SubSE(c, e), e = Return(NIL), c = FunDecl(_, _, _, _, NIL, _, _, _).
     TypeOf(c, e, NIL)              :- SubSE(c, e), e = Return(NIL), c : AnonFunDecl.
-    TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e : Return, c = FunDecl(_, _, _, _, t, _, _), TypeRel(t1, t, SUB).
+    TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e : Return, c = FunDecl(_, _, _, _, t, _, _, _), TypeRel(t1, t, SUB).
 	[ rule_Classes = '"error, msg: function must return a value"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Return(NIL), c = FunDecl(_, _, _, _, t, _, _), t != NIL. 
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Return(NIL), c = FunDecl(_, _, _, _, t, _, _, _), t != NIL.
 	[ rule_Classes = '"error, msg: return value has incorrect type"' ]
-    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Return, c = FunDecl(_, _, _, _, t, _, _), TypeRel(t1, t, k), t1 != t, k != SUB.
+    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Return, c = FunDecl(_, _, _, _, t, _, _, _), TypeRel(t1, t, k), t1 != t, k != SUB.
 	[ rule_Classes = '"error, msg: anonymous function cannot return a value"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Return(e1), c : AnonFunDecl, e1 != NIL. 
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Return(e1), c : AnonFunDecl, e1 != NIL.
 
 	//// (3) Non-mutating statements
     TypeOf(c, e, NIL)              :- SubSE(c, e), e = Seq(_, _).
-    
+
     TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e = UnStmt(ASSERT, _), t1 = BaseType(BOOL).
 	[ rule_Classes = '"error, msg: "assert" expects a boolean value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = UnStmt(ASSERT, _), t1 != BaseType(BOOL).
-    
+
     TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e : Ite, t1 = BaseType(BOOL).
 	[ rule_Classes                                   = '"error, msg: "if (...)" expects a boolean value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Ite, t1 != BaseType(BOOL).
-    
+
     TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e : While, t1 = BaseType(BOOL).
 	[ rule_Classes = '"error, msg: "while (...)" expects a boolean value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : While, t1 != BaseType(BOOL).
-               
-    TypeOf(c, e, NIL)              :- SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _).
-	
-	[ rule_Classes = '"error, msg: interface is not in the creates set of the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
 
-	[ rule_Classes = '"error, msg: static function cannot create empty interface"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), no InterfaceTypeEventDecl(InterfaceType(n), _).
+    TypeOf(c, e, NIL)              :- SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _).
+
+	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
+	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, no ModuleCreatesDecl(mod, InterfaceType(n)).
+
+	[ rule_Classes = '"error, msg: public static function cannot create empty interface"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, no InterfaceTypeEventDecl(InterfaceType(n), _).
 
 	[ rule_Classes = '"error, msg: monitor cannot be created dynamically using new"']
 	TypeOf(c, e, ERROR)              :- SubSE(c, e), e = NewStmt(n, _), MachineDecl(n, _, MONITOR, _, _, _).
-
 
 	//// Rules for raise.
     TypeOf(c, e, NIL)              :- CommStmtPLType(c, e, plt), e = Raise(_, NIL),              ///// < raise has NIL payload,
 	                                  TypeRel(BaseType(NULL), plt, SUB).                          ///// < event type contains null.
 
-    TypeOf(c, e, NIL)              :- CommStmtPLType(c, e, plt), e = Raise(_, p), p != NIL,      ///// < raise has non-NIL payload,             
+    TypeOf(c, e, NIL)              :- CommStmtPLType(c, e, plt), e = Raise(_, p), p != NIL,      ///// < raise has non-NIL payload,
 	                                  TypeOf(c, p, pt), TypeRel(pt, plt, SUB).                    ///// < and pt is a subtype of evt.
 
 	//// Error rules for raise.
 	[ rule_Classes = '"error, msg: argument 1 of "raise" expects an event value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Raise, t1 != BaseType(EVENT).
-	
+
     [ rule_Classes = '"error, msg: invalid payload type in raise (cannot send null value)"']
     TypeOf(c, e, ERROR)            :- CommStmtPLType(c, e, plt), e = Raise(_, NIL), null = BaseType(NULL),  ///// < raise has NIL payload,
 									  TypeRel(null, plt, k), k != SUB, null != plt.                         ///// < and null not in event type.
 
     [ rule_Classes = '"error, msg: invalid payload type in raise"']
-    TypeOf(c, e, ERROR)            :- CommStmtPLType(c, e, plt), e = Raise(_, p), p != NIL,       ///// < p has non-NIL payload,             
+    TypeOf(c, e, ERROR)            :- CommStmtPLType(c, e, plt), e = Raise(_, p), p != NIL,       ///// < p has non-NIL payload,
 									  TypeOf(c, p, pt), TypeRel(pt, plt, k), k != SUB, pt != plt. ///// < and pt is not a subtype of plt.
 
 	//// Rules for send.
@@ -939,28 +945,27 @@ domain PStaticTyping extends PData
 	                                  TypeRel(t1, BaseType(REAL), SUB), t1 != BaseType(NULL),              ///// < arg1 is a interface or machine type,
 	                                  CommStmtPLType(c, e, plt), TypeRel(BaseType(NULL), plt, SUB).        ///// < arg2 event type contains null.
 
-    TypeOf(c, e, NIL)              :- TypeOfArg3(c, e, t1, t2, t3), e : Send,                             ///// < send has non-NIL payload,             
+    TypeOf(c, e, NIL)              :- TypeOfArg3(c, e, t1, t2, t3), e : Send,                             ///// < send has non-NIL payload,
 	                                  TypeRel(t1, BaseType(REAL), SUB), t1 != BaseType(NULL),             ///// < arg1 is a interface type,
 	                                  CommStmtPLType(c, e, plt), TypeRel(t3, evt, SUB).                   ///// < and t3 is a subtype of plt.
 
 	//// Error rules for send.
 	[ rule_Classes = '"error, msg: argument 1 of "send" expects an interface value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Send, toSymbol(t1) != #InterfaceType, t1 != BaseType(REAL).
-	
+
 	[ rule_Classes = '"error, msg: argument 2 of "send" expects an event value"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Send(_, e2, _), TypeOf(c, e2, t2), t2 != BaseType(EVENT).
 
-	//// Error rules for send with constant event expression. 	
+	//// Error rules for send with constant event expression.
     [ rule_Classes = '"error, msg: invalid payload type in send (cannot send null value)"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Send(_, _, NIL), null = BaseType(NULL),   ///// < send has NIL payload,
 	                                  CommStmtPLType(c, e, plt),                                  ///// < constant event expression
 									  TypeRel(null, plt, k), k != SUB, null != plt.               ///// < and null not in event type.
 
     [ rule_Classes = '"error, msg: invalid payload type in send"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg3(c, e, t1, t2, t3), e : Send,                     ///// < p has non-NIL payload,             
+    TypeOf(c, e, ERROR)            :- TypeOfArg3(c, e, t1, t2, t3), e : Send,                     ///// < p has non-NIL payload,
 	                                  CommStmtPLType(c, e, plt),                                  ///// < constant event expression
 									  TypeRel(t3, plt, k), k != SUB, t3 != plt.                   ///// < and pt is not a subtype of plt.
-	
 
 	//// Rules for monitor.
     TypeOf(c, e, NIL)              :- SubSE(c, e), e = Monitor(_, NIL),                           ///// < monitor has NIL payload,
@@ -974,76 +979,77 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: argument 1 of "monitor" expects an event value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Monitor, t1 != BaseType(EVENT).
 
-	//// Error rules for monitor. 	
+	//// Error rules for monitor.
     [ rule_Classes = '"error, msg: invalid payload type in monitor (cannot send null value)"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Monitor(_, NIL), null = BaseType(NULL), ///// < monitor has NIL payload,
 	                                  CommStmtPLType(c, e, plt),                                  ///// < constant event expression
 									  TypeRel(null, plt, k), k != SUB, null != plt.               ///// < and null not in event type.
 
     [ rule_Classes = '"error, msg: invalid payload type in monitor"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e : Monitor,    ///// < p has non-NIL payload,             
+    TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e : Monitor,    ///// < p has non-NIL payload,
 	                                  CommStmtPLType(c, e, plt),                ///// < constant event expression
 									  TypeRel(t2, plt, k), k != SUB, t2 != plt. ///// < and pt is not a subtype of evt.
 
 	[ rule_Classes = '"error, msg: monitor can be invoked only on an event in sends list"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Monitor(ev, _), ev = Name(n),
-									  no ModuleSendsDecl(c.owner.mod, n).            
-	                                  
+									  no ModuleSendsDecl(c.owner.mod, n).
 
-	//// (4) Mutating statements		
+	//// (4) Mutating statements
 	TypeOf(c, e, NIL)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(ASSIGN, _, _), TypeRel(t2, t1, SUB).
 	[ rule_Classes = '"error, msg: invalid assignment. right hand side is not a subtype of left hand side"']
 	TypeOf(c, e , ERROR)		   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(ASSIGN, _, _), TypeRel(t2, t1, k), k!= SUB, t1 != t2.
-		
+
 	TypeOf(c, e, NIL)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(REMOVE, _, _), t1 : SeqType, t2 = BaseType(INT).
-	TypeOf(c, e, NIL)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(REMOVE, _, _), t1 = MapType(dom, cod), TypeRel(t2, dom, SUB).	
+	TypeOf(c, e, NIL)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(REMOVE, _, _), t1 = MapType(dom, cod), TypeRel(t2, dom, SUB).
 	[ rule_Classes = '"error, msg: remove must be applied to a sequence or map"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = BinStmt(REMOVE, _, _), toSymbol(t1) != #SeqType, toSymbol(t1) != #MapType.
     [ rule_Classes = '"error, msg: index must be an integer"']
     TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinStmt(REMOVE, _, _), t1 : SeqType, t2 != BaseType(INT).
 	[ rule_Classes = '"error, msg: Index may not be in the domain of the map"']
     TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinStmt(REMOVE, _, _), t1 = MapType(dom, _), TypeRel(t2, dom, k), t2 != dom, k != SUB.
-		
+
 	TypeOf(c, e, NIL)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = SeqType(inner), t2 = TupType(BaseType(INT), TupType(value, NIL)), TypeRel(value, inner, SUB).
-	TypeOf(c, e, NIL)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = MapType(dom, cod), t2 = TupType(key, TupType(value, NIL)), TypeRel(value, cod, SUB), TypeRel(key, dom, SUB).	
+	TypeOf(c, e, NIL)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = MapType(dom, cod), t2 = TupType(key, TupType(value, NIL)), TypeRel(value, cod, SUB), TypeRel(key, dom, SUB).
 	[ rule_Classes = '"error, msg: insert must be applied to a sequence or a map"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = BinStmt(INSERT, _, _), toSymbol(t1) != #SeqType, toSymbol(t1) != #MapType.
 	[ rule_Classes = '"error, msg: for insert right syntax is seq += (index value) or map += (key value)"']
-	TypeOf(c, e, ERROR)			   :- SubSE(c, e), e = BinStmt(INSERT, _, arg2), TypeOf(c, arg2, t2), toSymbol(t2) != #TupType; 
+	TypeOf(c, e, ERROR)			   :- SubSE(c, e), e = BinStmt(INSERT, _, arg2), TypeOf(c, arg2, t2), toSymbol(t2) != #TupType;
 	                                  SubSE(c, e), e = BinStmt(INSERT, _, arg2), TypeOf(c, arg2, t2), t2 : TupType, lstLength(#TupType, t2) != 2.
     [ rule_Classes = '"error, msg: key must be an integer"']
-    TypeOf(c, e, ERROR)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = SeqType(inner), t2 = TupType(idx, TupType(value, NIL)), idx != BaseType(INT).	
+    TypeOf(c, e, ERROR)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = SeqType(inner), t2 = TupType(idx, TupType(value, NIL)), idx != BaseType(INT).
     [ rule_Classes = '"error, msg: value must be a subtype of sequence type"']
-    TypeOf(c, e, ERROR)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = SeqType(inner), t2 = TupType(idx, TupType(value, NIL)), TypeRel(value, inner, k), k != SUB, value != inner.	
+    TypeOf(c, e, ERROR)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = SeqType(inner), t2 = TupType(idx, TupType(value, NIL)), TypeRel(value, inner, k), k != SUB, value != inner.
 	[ rule_Classes = '"error, msg: key not in the domain of the map"']
-    TypeOf(c, e, ERROR)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = MapType(dom, cod), t2 = TupType(key, TupType(value, NIL)), TypeRel(key, dom, k), k != SUB, key != dom.	
+    TypeOf(c, e, ERROR)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = MapType(dom, cod), t2 = TupType(key, TupType(value, NIL)), TypeRel(key, dom, k), k != SUB, key != dom.
 	[ rule_Classes = '"error, msg: value not in the codomain of the map"']
     TypeOf(c, e, ERROR)			   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = MapType(dom, cod), t2 = TupType(key, TupType(value, NIL)), TypeRel(value, cod, k), k != SUB, value != cod.
-	
-	//// (5) Function statements
-	TypeOf(c, e, NIL)   :- SubSE(c, e), e = FunStmt(n, NIL, NIL, _, _), decl = FunDecl(n, c.owner, _, NIL, _, _, _), FunAvailable(decl, c.owner);
-						   SubSE(c, e), e = FunStmt(n, m, NIL, _, _), m: String, decl = FunDecl(n, ModuleDecl(m), _, NIL, _, _, _), FunAvailable(decl, c.owner).
 
-	TypeOf(c, e, NIL)   :- TypeOfArg2(c, e, t1, t2), e = FunStmt(n, NIL, _, _, _), FuncSigTupleType(decl, inpt), decl = FunDecl(n, c.owner, _, _, _, _, _), FunAvailable(decl, c.owner), TypeRel(t1, inpt, SUB), TypeRel(decl.return, t2, SUB);
-						   TypeOfArg2(c, e, t1, t2), e = FunStmt(n, m, _, _, _), m: String, FuncSigTupleType(decl, inpt), decl = FunDecl(n, ModuleDecl(m), _, _, _, _, _), 
+	//// (5) Function statements
+	TypeOf(c, e, NIL)   :- SubSE(c, e), e = FunStmt(n, NIL, NIL, _, _), decl = FunDecl(n, c.owner, _, NIL, _, _, _, _), FunAvailable(decl, c.owner);
+						   SubSE(c, e), e = FunStmt(n, m, NIL, _, _), m: String, decl = FunDecl(n, ModuleDecl(m), _, NIL, _, _, _, _), FunAvailable(decl, c.owner).
+
+	TypeOf(c, e, NIL)   :- TypeOfArg2(c, e, t1, t2), e = FunStmt(n, NIL, _, _, _), FuncSigTupleType(decl, inpt), decl = FunDecl(n, c.owner, _, _, _, _, _, _), FunAvailable(decl, c.owner), TypeRel(t1, inpt, SUB), TypeRel(decl.return, t2, SUB);
+						   TypeOfArg2(c, e, t1, t2), e = FunStmt(n, m, _, _, _), m: String, FuncSigTupleType(decl, inpt), decl = FunDecl(n, ModuleDecl(m), _, _, _, _, _, _),
 						   FunAvailable(decl, c.owner), TypeRel(t1, inpt, SUB), TypeRel(decl.return, t2, SUB).
 
 	[ rule_Classes = '"error, msg: function not defined"']
-	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, NIL, _, _, _), no FunDecl(n, c.owner, _, _, _, _, _).
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, NIL, _, _, _), no FunDecl(n, c.owner, _, _, _, _, _, _).
 	[ rule_Classes = '"error, msg: static function can only call other static funtions"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, NIL, _, _, _), toSymbol(c.owner) = #ModuleDecl.
+	[ rule_Classes = '"error, msg: public static function can only call other public static funtions"']
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, c is FunDecl(_, owner, _, _, _, _, _, TRUE), FunDecl(n, ModuleDecl(m), _, _, _, _, _, FALSE).
 	[ rule_Classes = '"error, msg: static function not defined"']
-	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, no FunDecl(n, ModuleDecl(m), _, _, _, _, _).	
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, no FunDecl(n, ModuleDecl(m), _, _, _, _, _, _).
 	[ rule_Classes = '"error, msg: module not declared"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e =  FunStmt(n, m, _, _, _), m : String, no ModuleDecl(m).
 
 	[ rule_Classes = '"error, msg: implementation module can call static functions declared in implementation modules"']
-	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, FunDecl(n, mod, _, _, _, _, _), mod = ModuleDecl(m), ModuleType(mod, kind), kind != IMPL, ModuleType(c.owner, IMPL);
-						   SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, FunDecl(n, mod, _, _, _, _, _), mod = ModuleDecl(m), ModuleType(mod, kind), kind != IMPL, ModuleType(c.owner.mod, IMPL).
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, FunDecl(n, mod, _, _, _, _, _, _), mod = ModuleDecl(m), ModuleType(mod, kind), kind != IMPL, ModuleType(c.owner, IMPL);
+						   SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, FunDecl(n, mod, _, _, _, _, _, _), mod = ModuleDecl(m), ModuleType(mod, kind), kind != IMPL, ModuleType(c.owner.mod, IMPL).
 
 	[ rule_Classes = '"error, msg: function requires arguments"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, NIL, NIL, _, _), FunAvailable(decl, c.owner), decl.name = n, decl.params != NIL;
-						   SubSE(c, e), e = FunStmt(n, m, NIL, _, _), m : String, FunDecl(n, ModuleDecl(m), _, params, _, _, _), params != NIL.
+						   SubSE(c, e), e = FunStmt(n, m, NIL, _, _), m : String, FunDecl(n, ModuleDecl(m), _, params, _, _, _, _), params != NIL.
 	[ rule_Classes = '"error, msg: function arguments have incorrect types"']
 	TypeOf(c, e, ERROR) :- TypeOfArg1(c, e, t1), e = FunStmt(n, NIL, _, _, _), FuncSigTupleType(decl, inpt), decl.name = n, decl.owner = c.owner, FunAvailable(decl, c.owner), TypeRel(t1, inpt, k), t1 != inpt, k != SUB;
 						   TypeOfArg1(c, e, t1), e = FunStmt(n, m, _, _, _), m: String, FuncSigTupleType(decl, inpt), decl.name = n, decl.owner = ModuleDecl(m), FunAvailable(decl, c.owner), TypeRel(t1, inpt, k), t1 != inpt, k != SUB.
@@ -1071,7 +1077,7 @@ domain PStaticTyping extends PData
 
 	[ rule_Classes = '"error, msg: event not defined"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = Cases(trig, _, _), trig: String, no EventDecl(trig, _, _).
-	
+
 	TypeOf(c, e, NIL) :- SubSE(c, e), e = Cases(trig, _, _), ValidCaseEvent(trig).
 
     /*************************************************************/
@@ -1145,10 +1151,10 @@ domain PStaticTyping extends PData
 
 	TOrNTType      ::= TupType + NmdTupType.
 	FieldLabel     ::= String + Natural.
-    TypeOfField    ::= (tupTyp: TOrNTType, lookup: FieldLabel, fieldType: TypeExpr + { ERROR }).    
+    TypeOfField    ::= (tupTyp: TOrNTType, lookup: FieldLabel, fieldType: TypeExpr + { ERROR }).
     TypeOfFieldAux ::= (tupTyp: TOrNTType, lookup: FieldLabel, fieldType: TypeExpr + { ERROR }, pos: Natural, tail: TOrNTType + { NIL }).
 
-    TypeOfFieldAux(ttup, n, ERROR, 0, ttup)  :- SubSE(c, e), e = Field(e', n), TypeOf(c, e', ttup), ttup : TOrNTType.    
+    TypeOfFieldAux(ttup, n, ERROR, 0, ttup)  :- SubSE(c, e), e = Field(e', n), TypeOf(c, e', ttup), ttup : TOrNTType.
     TypeOfFieldAux(ttup, n, t, pos', tl)     :- TypeOfFieldAux(ttup, n, ERROR, pos, aux), n = pos, pos' = pos + 1, aux = TupType(t, tl).
     TypeOfFieldAux(ttup, n, t, pos', tl)     :- TypeOfFieldAux(ttup, n, ERROR, pos, aux), n = pos, pos' = pos + 1, aux = NmdTupType(NmdTupTypeField(_, t), tl).
     TypeOfFieldAux(ttup, n, t, pos', tl)     :- TypeOfFieldAux(ttup, n, ERROR, pos, aux), pos' = pos + 1, aux = NmdTupType(NmdTupTypeField(n, t), tl).
@@ -1156,7 +1162,7 @@ domain PStaticTyping extends PData
     TypeOfFieldAux(ttup, n, t, pos', tl)     :- TypeOfFieldAux(ttup, n, t, pos, aux), n != pos, pos' = pos + 1, aux = TupType(_, tl).
     TypeOfFieldAux(ttup, n, t, pos', tl)     :- TypeOfFieldAux(ttup, n, t, pos, aux), n != pos, n != fn, pos' = pos + 1, aux = NmdTupType(NmdTupTypeField(fn, _), tl).
 
-    TypeOfField(ttup, n, ft)                 :- TypeOfFieldAux(ttup, n, ft, _, NIL).    
+    TypeOfField(ttup, n, ft)                 :- TypeOfFieldAux(ttup, n, ft, _, NIL).
 	TypeOfField(ttup, n, ERROR)              :- TypeOfFieldAux(ttup, n, ERROR, 0, ttup), n : String, ttup : TupType.
 
 	/*************************************************************/
@@ -1173,21 +1179,21 @@ domain PStaticTyping extends PData
 	MaxNumLocals(e, 0) :- SubSE(c, e), c is TypingContext, e: BinStmt.
 	MaxNumLocals(e, 0) :- SubSE(c, e), c is TypingContext, e: Return.
 	MaxNumLocals(e, n) :- SubSE(c, e), c is TypingContext, e = While(_, e'), MaxNumLocals(e', n).
-	MaxNumLocals(e, n) :- SubSE(c, e), c is TypingContext, e = Ite(_, e1, e2), 
+	MaxNumLocals(e, n) :- SubSE(c, e), c is TypingContext, e = Ite(_, e1, e2),
 						  MaxNumLocals(e1, n1), MaxNumLocals(e2, n2), n = max(n1, n2).
-    MaxNumLocals(e, n) :- SubSE(c, e), c is TypingContext, e = Seq(e1, e2), 
+    MaxNumLocals(e, n) :- SubSE(c, e), c is TypingContext, e = Seq(e1, e2),
 	                      MaxNumLocals(e1, n1), MaxNumLocals(e2, n2), n = max(n1, n2).
-	MaxNumLocals(e, n) :- SubSE(c, receive), c is TypingContext, receive: Receive, 
+	MaxNumLocals(e, n) :- SubSE(c, receive), c is TypingContext, receive: Receive,
 						  ReceiveCases(c, receive, e), e = Cases(_, a, NIL), MaxNumLocals(a, n).
-	MaxNumLocals(e, n) :- SubSE(c, receive), c is TypingContext, receive: Receive, 
-						  ReceiveCases(c, receive, e), e = Cases(_, a, e'), e': Cases, 
+	MaxNumLocals(e, n) :- SubSE(c, receive), c is TypingContext, receive: Receive,
+						  ReceiveCases(c, receive, e), e = Cases(_, a, e'), e': Cases,
 						  MaxNumLocals(a, n1), MaxNumLocals(e', n2), n =  max(n1, n2).
-	MaxNumLocals(e, n) :- SubSE(c, e), c is TypingContext, e = Receive(cases, _), MaxNumLocals(cases, n). 
+	MaxNumLocals(e, n) :- SubSE(c, e), c is TypingContext, e = Receive(cases, _), MaxNumLocals(cases, n).
 	MaxNumLocals(a, n) :- a is AnonFunDecl, MaxNumLocals(a.body, n1), n2 = lstLength(#NmdTupType, a.locals), n = n1 + n2 + 1.
 	MaxNumLocals(a, n) :- a is FunDecl, MaxNumLocals(a.body, n1), n2 = lstLength(#NmdTupType, a.locals), n3 = lstLength(#NmdTupType, a.params), n = n1 + n2 + n3.
 
     LocalVarsAux ::= (cntxt: FunDecl + AnonFunDecl, vars: NmdTupType + { NIL }, tl: NmdTupType + { NIL }).
-	LocalVarsAux(cntxt, params, rlocals) :- cntxt is FunDecl(_, _, _, params, _, locals, _), rlocals = lstReverse(#NmdTupType, locals).
+	LocalVarsAux(cntxt, params, rlocals) :- cntxt is FunDecl(_, _, _, params, _, locals, _, _), rlocals = lstReverse(#NmdTupType, locals).
 	LocalVarsAux(cntxt, envVars, rlocals) :- cntxt is AnonFunDecl(_, locals, _, envVars), rlocals = lstReverse(#NmdTupType, locals).
 	LocalVarsAux(cntxt, locals, tl) :- LocalVarsAux(cntxt, locals', tl'), tl' = NmdTupType(NmdTupTypeField(name, type), tl),
 									   locals = NmdTupType(NmdTupTypeField(name, type), locals').
@@ -1200,7 +1206,7 @@ domain PStaticTyping extends PData
 
     TypeOfLocalVarAux(cntxt, name, type, tl) :- LocalVars(cntxt, locals), locals = NmdTupType(NmdTupTypeField(name, type), tl).
     TypeOfLocalVarAux(cntxt, name, type, tl) :- TypeOfLocalVarAux(cntxt, _, _, aux), aux = NmdTupType(NmdTupTypeField(name, type), tl).
-    
+
     TypeOfLocalVar(cntxt, name, type)  :- TypeOfLocalVarAux(cntxt, name, type, aux), no { aux' | TypeOfLocalVarAux(cntxt, name, _, aux'), aux != aux' }.
 	[ rule_Classes = '"error, msg: Variable with same name has been declared before"']
     TypeOfLocalVar(cntxt, name, ERROR) :- TypeOfLocalVarAux(cntxt, name, _, aux), TypeOfLocalVarAux(cntxt, name, _, aux'), aux != aux'.
@@ -1210,9 +1216,9 @@ domain PStaticTyping extends PData
     TypeOfFormalParam    ::= (cntxt: FunDecl, name: String, type: TypeExpr + { ERROR }).
     TypeOfFormalParamAux ::= (cntxt: FunDecl, name: String, type: TypeExpr, aux: NmdTupType + { NIL }).
 
-    TypeOfFormalParamAux(cntxt, name, type, tl) :- cntxt is FunDecl(_, _, _, params, _, _, _), params = NmdTupType(NmdTupTypeField(name, type), tl).  
+    TypeOfFormalParamAux(cntxt, name, type, tl) :- cntxt is FunDecl(_, _, _, params, _, _, _, _), params = NmdTupType(NmdTupTypeField(name, type), tl).
     TypeOfFormalParamAux(cntxt, name, type, tl) :- TypeOfFormalParamAux(cntxt, _, _, aux), aux = NmdTupType(NmdTupTypeField(name, type), tl).
-    
+
     TypeOfFormalParam(cntxt, name, type)  :- TypeOfFormalParamAux(cntxt, name, type, aux), no { aux' | TypeOfFormalParamAux(cntxt, name, _, aux'), aux != aux' }.
 	//// This error is generated as part of DupNmdSubE
     TypeOfFormalParam(cntxt, name, ERROR) :- TypeOfFormalParamAux(cntxt, name, _, aux), TypeOfFormalParamAux(cntxt, name, _, aux'), aux != aux'.
@@ -1221,8 +1227,8 @@ domain PStaticTyping extends PData
 	FuncSigTupleType    ::= (cntxt: FunDecl, type: TupType + { NIL }).
 	FuncSigTupleTypeAux ::= (cntxt: FunDecl, type: TupType + { NIL }, aux: NmdTupType + { NIL }).
 
-	FuncSigTupleTypeAux(cntxt, params, NIL) :- cntxt is FunDecl(_, _, _, params, _, _, _), params = NIL.
-	FuncSigTupleTypeAux(cntxt, type, tl)    :- cntxt is FunDecl(_, _, _, params, _, _, _), params = NmdTupType(NmdTupTypeField(_, t), tl), type = TupType(t, NIL).
+	FuncSigTupleTypeAux(cntxt, params, NIL) :- cntxt is FunDecl(_, _, _, params, _, _, _, _), params = NIL.
+	FuncSigTupleTypeAux(cntxt, type, tl)    :- cntxt is FunDecl(_, _, _, params, _, _, _, _), params = NmdTupType(NmdTupTypeField(_, t), tl), type = TupType(t, NIL).
 	FuncSigTupleTypeAux(cntxt, type, tl)    :- FuncSigTupleTypeAux(cntxt, t', aux), aux = NmdTupType(NmdTupTypeField(_, t), tl), type = TupType(t, t').
 	FuncSigTupleType(cntxt, type)           :- FuncSigTupleTypeAux(cntxt, t, NIL), type = lstReverse(#TupType, t).
 
@@ -1234,14 +1240,14 @@ domain PStaticTyping extends PData
 
 	NmdSubE     ::= sub (NmdList).
 	MaxNmdSubE  ::=     (NmdList).
-	NmdSubNames ::=     (list: NmdList, name: String, aux: NmdListOrNone). 
+	NmdSubNames ::=     (list: NmdList, name: String, aux: NmdListOrNone).
 	DupNmdSubE  ::=     (list: NmdList, name: String, aux1: NmdListOrNone, aux2: NmdListOrNone).
 
 	MaxNmdSubE(e) :- NmdSubE(e), no NmdSubE(NmdTupType(_, e)), no NmdSubE(NamedExprs(_, _, e)).
-	NmdSubNames(list, name, tl) :- MaxNmdSubE(list), list = NmdTupType(NmdTupTypeField(name, _), tl). 
-	NmdSubNames(list, name, tl) :- MaxNmdSubE(list), list = NamedExprs(name, _, tl). 
-	NmdSubNames(list, name, tl) :- NmdSubNames(list, _, aux), aux = NmdTupType(NmdTupTypeField(name, _), tl). 
-	NmdSubNames(list, name, tl) :- NmdSubNames(list, _, aux), aux = NamedExprs(name, _, tl). 
+	NmdSubNames(list, name, tl) :- MaxNmdSubE(list), list = NmdTupType(NmdTupTypeField(name, _), tl).
+	NmdSubNames(list, name, tl) :- MaxNmdSubE(list), list = NamedExprs(name, _, tl).
+	NmdSubNames(list, name, tl) :- NmdSubNames(list, _, aux), aux = NmdTupType(NmdTupTypeField(name, _), tl).
+	NmdSubNames(list, name, tl) :- NmdSubNames(list, _, aux), aux = NamedExprs(name, _, tl).
 
     [ rule_Classes = '"error, msg: same name appears more than once in name tuple or named tuple type"']
 	DupNmdSubE(list, name, tl, tl') :- NmdSubNames(list, name, tl), NmdSubNames(list, name, tl'), tl != tl'.
@@ -1251,11 +1257,11 @@ domain PStaticTyping extends PData
     /*************************************************************/
 	LValueError    ::= (cntxt: TypingContext, stmt: BinStmt + FunStmt).
 	ModStmtSubExpr ::= sub (cntxt: TypingContext, stmt: BinStmt + FunStmt, expr: Expr).
-	IsLValue       ::=     (cntxt: TypingContext, expr: Expr, writesGlobal: Boolean). 
-	IsLValue(c, e, FALSE)  :- ModStmtSubExpr(c, _, e), e = Name(n), TypeOfLocalVar(c, n, _).		
-    IsLValue(c, e, TRUE)   :- ModStmtSubExpr(c, _, e), e = Name(n), VarDecl(n, c.owner, t), no TypeOfLocalVar(c, n, _). 
-    IsLValue(c, e, wg)     :- ModStmtSubExpr(c, _, e), e = Field(e', _), IsLValue(c, e', wg). 
-    IsLValue(c, e, wg)     :- ModStmtSubExpr(c, _, e), e = BinApp(IDX, e', _), IsLValue(c, e', wg). 
+	IsLValue       ::=     (cntxt: TypingContext, expr: Expr, writesGlobal: Boolean).
+	IsLValue(c, e, FALSE)  :- ModStmtSubExpr(c, _, e), e = Name(n), TypeOfLocalVar(c, n, _).
+    IsLValue(c, e, TRUE)   :- ModStmtSubExpr(c, _, e), e = Name(n), VarDecl(n, c.owner, t), no TypeOfLocalVar(c, n, _).
+    IsLValue(c, e, wg)     :- ModStmtSubExpr(c, _, e), e = Field(e', _), IsLValue(c, e', wg).
+    IsLValue(c, e, wg)     :- ModStmtSubExpr(c, _, e), e = BinApp(IDX, e', _), IsLValue(c, e', wg).
 
     [ rule_Classes = '"error, msg: invalid LHS; must have the form LHS ::= var | LHS[expr] | LHS.name"']
 	LValueError(c, e) :- SubSE(c, e), e = BinStmt(_, e', _), no IsLValue(c, e', _);
@@ -1276,21 +1282,20 @@ domain PStaticTyping extends PData
 						SubSE(c, e), e = FunStmt(n, m, _, _, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), ControlImpure(called).
 
     [ rule_Classes = '"error, msg: function may cause a change in current state; this is not allowed here"']
-    PurityError(c, n) :- 
+    PurityError(c, n) :-
 	       c is StateDecl(_, owner, _, n, _), called.name = n, FunAvailable(called, owner), ControlImpure(called).
 
     [ rule_Classes = '"error, msg: function may cause a change in current state; this is not allowed here"']
-    PurityError(c, called) :- 
+    PurityError(c, called) :-
 	       c is StateDecl(_, owner, _, called, _), called = AnonFunDecl(_, _, _, _), ControlImpure(called).
 
     [ rule_Classes = '"error, msg: function may cause a change in current state; this is not allowed here"']
-    PurityError(c, n) :- 
+    PurityError(c, n) :-
 	       c is TransDecl(src, _, _, n), called.name = n, FunAvailable(called, src.owner), ControlImpure(called).
 
     [ rule_Classes = '"error, msg: function may cause a change in current state; this is not allowed here"']
-    PurityError(c, called) :- 
+    PurityError(c, called) :-
 	       c is TransDecl(src, _, _, called), called = AnonFunDecl(_, _, _, _), ControlImpure(called).
-
 
     /*************************************************************/
     /*                      Monitor Checking                     */
@@ -1312,29 +1317,29 @@ domain PStaticTyping extends PData
 						SubSE(c, e), e = FunStmt(n, m, _, _, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), MonitorImpure(called).
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
-    MonitorError(c, n) :- 
+    MonitorError(c, n) :-
 	       c is StateDecl(_, owner, n, _, _), owner.kind = MONITOR, called.name = n, FunAvailable(called, owner), MonitorImpure(called);
 		   c is StateDecl(_, owner, _, n, _), owner.kind = MONITOR, called.name = n, FunAvailable(called, owner), MonitorImpure(called).
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
-    MonitorError(c, called) :- 
+    MonitorError(c, called) :-
 	       c is StateDecl(_, owner, called, _, _), owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _), MonitorImpure(called);
 		   c is StateDecl(_, owner, _, called, _), owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _), MonitorImpure(called).
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
-    MonitorError(c, n) :- 
+    MonitorError(c, n) :-
 	       c is TransDecl(src, _, _, n), src.owner.kind = MONITOR, called.name = n, FunAvailable(called, src.owner), MonitorImpure(called).
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
-    MonitorError(c, called) :- 
+    MonitorError(c, called) :-
 	       c is TransDecl(src, _, _, called), src.owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _), MonitorImpure(called).
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
-	MonitorError(c, n) :-	
+	MonitorError(c, n) :-
 		   c is DoDecl(src, _, n), src.owner.kind = MONITOR, called.name = n, FunAvailable(called, src.owner), MonitorImpure(called).
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
-	MonitorError(c, called) :- 
+	MonitorError(c, called) :-
 		   c is DoDecl(src, _, called), src.owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _), MonitorImpure(called).
 
     /*************************************************************/
@@ -1345,7 +1350,7 @@ domain PStaticTyping extends PData
 
 	//// Every receive statement must have a label that is unique within a context.
 	//// This constraint simplifies P compilers.
-	
+
 	//// A term path describes how to reach a term.
 	//// 0 means this term is reached by following the 1st child stmt of the parent term.
 	//// 1 means this term is reached by following the 2nd child stmt of the parent term.
@@ -1361,7 +1366,7 @@ domain PStaticTyping extends PData
     [ rule_Classes = '"error, msg: function contains bad labeling of Receive"']
 	BadLabelError(c) :-
 	    ReachedContinuation(c, s, p), ReachedContinuation(c, s', p'), s : Continuation, s' : Continuation, s.label = s'.label, p != p'.
-	
+
     /*************************************************************/
     /*                            Impurity                       */
     /*************************************************************/
@@ -1370,7 +1375,7 @@ domain PStaticTyping extends PData
 	Impure(c) :- SubSE(c, e), c : FunDecl, e = BinStmt(_, e', e''), IsLValue(c, e', TRUE).
 	Impure(c) :- SubSE(c, e), c : FunDecl, e = NewStmt(_, _).
 	Impure(c) :- SubSE(c, e), c : FunDecl, e = New(_, _).
-	Impure(c) :- SubSE(c, e), c : FunDecl, e = Send(_, _, _). 
+	Impure(c) :- SubSE(c, e), c : FunDecl, e = Send(_, _, _).
 	Impure(c) :- c: FunDecl, ControlImpure(c).
 	Impure(c) :- SubSE(c, e), e = FunApp(n, NIL, _), c : FunDecl, called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 				 SubSE(c, e), e = FunApp(n, m, _), c : FunDecl, called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called).
@@ -1379,7 +1384,7 @@ domain PStaticTyping extends PData
 	Impure(c) :- SubSE(c, e), e = FunStmt(n, _, _, aout, _), c : FunDecl, aout : Name, IsLValue(c, aout, TRUE).
 
     [ rule_Classes = '"error, msg: this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);" "']
-    PurityError(c, e') :- 
+    PurityError(c, e') :-
        SubSE(c, e), e = New(_, e'),			  e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 	   SubSE(c, e), e = New(_, e'),			  e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = UnApp(_, e'),         e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
@@ -1387,13 +1392,13 @@ domain PStaticTyping extends PData
        SubSE(c, e), e = BinApp(_, e', _),     e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 	   SubSE(c, e), e = BinApp(_, e', _),     e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = BinApp(_, _, e'),     e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
-	   SubSE(c, e), e = BinApp(_, _, e'),     e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);    
+	   SubSE(c, e), e = BinApp(_, _, e'),     e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = Field(e', _),         e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 	   SubSE(c, e), e = Field(e', _),         e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
-       SubSE(c, e), e = Cast(e', _),		  e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called); 
-	   SubSE(c, e), e = Cast(e', _),		  e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);   
-       SubSE(c, e), e = Exprs(e', _),         e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);  
-	   SubSE(c, e), e = Exprs(e', _),         e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);            
+       SubSE(c, e), e = Cast(e', _),		  e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
+	   SubSE(c, e), e = Cast(e', _),		  e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
+       SubSE(c, e), e = Exprs(e', _),         e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
+	   SubSE(c, e), e = Exprs(e', _),         e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = NamedExprs(_, e', _), e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 	   SubSE(c, e), e = NamedExprs(_, e', _), e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = NewStmt(_, e'),		  e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
@@ -1401,17 +1406,17 @@ domain PStaticTyping extends PData
        SubSE(c, e), e = Raise(e', _),         e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 	   SubSE(c, e), e = Raise(e', _),         e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = Raise(_, e'),         e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
-	   SubSE(c, e), e = Raise(_, e'),         e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);       
+	   SubSE(c, e), e = Raise(_, e'),         e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = Send(e', _, _),       e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 	   SubSE(c, e), e = Send(e', _, _),       e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = Send(_, e', _),       e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 	   SubSE(c, e), e = Send(_, e', _),       e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = Send(_, _, e'),       e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
-	   SubSE(c, e), e = Send(_, _, e'),       e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);   
+	   SubSE(c, e), e = Send(_, _, e'),       e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = Monitor(e', _),       e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 	   SubSE(c, e), e = Monitor(e', _),       e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
-       SubSE(c, e), e = Monitor(_, e'),       e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called); 
-	   SubSE(c, e), e = Monitor(_, e'),       e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);   
+       SubSE(c, e), e = Monitor(_, e'),       e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
+	   SubSE(c, e), e = Monitor(_, e'),       e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = UnStmt(_, e'),        e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 	   SubSE(c, e), e = UnStmt(_, e'),        e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
        SubSE(c, e), e = Return (e'),          e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
@@ -1426,30 +1431,30 @@ domain PStaticTyping extends PData
 	   SubSE(c, e), e = BinStmt(_, e', e''),  e'' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called), toSymbol(e') != #Name.
 
     [ rule_Classes = '"error, msg: new M(...) can only be called like "new M(...);" or "x = new M(...);" "']
-    PurityError(c, e') :- 
+    PurityError(c, e') :-
        SubSE(c, e), e = New(_, e'),        e' : New;
        SubSE(c, e), e = UnApp(_, e'),         e' : New;
        SubSE(c, e), e = BinApp(_, e', _),     e' : New;
-       SubSE(c, e), e = BinApp(_, _, e'),     e' : New;    
+       SubSE(c, e), e = BinApp(_, _, e'),     e' : New;
        SubSE(c, e), e = Field(e', _),         e' : New;
-       SubSE(c, e), e = Cast(e', _),          e' : New;    
-       SubSE(c, e), e = Exprs(e', _),         e' : New;              
+       SubSE(c, e), e = Cast(e', _),          e' : New;
+       SubSE(c, e), e = Exprs(e', _),         e' : New;
        SubSE(c, e), e = NamedExprs(_, e', _), e' : New;
        SubSE(c, e), e = NewStmt(_, e'),    e' : New;
        SubSE(c, e), e = Raise(e', _),         e' : New;
-       SubSE(c, e), e = Raise(_, e'),         e' : New;        
+       SubSE(c, e), e = Raise(_, e'),         e' : New;
        SubSE(c, e), e = Send(e', _, _),       e' : New;
        SubSE(c, e), e = Send(_, e', _),       e' : New;
-       SubSE(c, e), e = Send(_, _, e'),       e' : New;    
+       SubSE(c, e), e = Send(_, _, e'),       e' : New;
        SubSE(c, e), e = Monitor(e', _),       e' : New;
-       SubSE(c, e), e = Monitor(_, e'),       e' : New;    
+       SubSE(c, e), e = Monitor(_, e'),       e' : New;
        SubSE(c, e), e = UnStmt(_, e'),        e' : New;
        SubSE(c, e), e = Return (e'),          e' : New;
        SubSE(c, e), e = While(e', _),         e' : New;
        SubSE(c, e), e = Ite(e', _, _),        e' : New;
        SubSE(c, e), e = BinStmt(_, e', _),    e' : New;
        SubSE(c, e), e = BinStmt(_, e', e''),  e'' : New, toSymbol(e') != #Name.
-						 	                                          
+
     /*************************************************************/
     /*                      Type Comparability                   */
     /*************************************************************/
@@ -1459,15 +1464,15 @@ domain PStaticTyping extends PData
     CompTypeRel(da, db), CompTypeRel(ca, cb) :- CompTypeRel(ta, tb), ta = MapType(da, ca), tb = MapType(db, cb).
     CompTypeRel(la, lb), CompTypeRel(ra, rb) :- CompTypeRel(ta, tb), ta = TupType(la, ra), tb = TupType(lb, rb).
     CompTypeRel(la, lb), CompTypeRel(ra, rb) :- CompTypeRel(ta, tb), ta = NmdTupType(lfa, ra), tb = NmdTupType(lfb, rb), la = lfa.type, lb = lfb.type.
-    
+
 	CompTypeRel(t1, t2')       :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2').
 	CompTypeRel(t1, t2)       :- TypeOfArg2(c, e, t1, t2), e = BinApp(op, _, _), op : PolyRel.
 	CompTypeRel(t2, dom)      :- TypeOfArg2(c, e, t1, t2), e = BinApp(IDX, _, _), t1 = MapType(dom, cod).
 	CompTypeRel(t1, inner)    :- TypeOfArg2(c, e, t1, t2), e = BinApp(IN, _, _), t2 = SeqType(inner).
-	CompTypeRel(t1, dom)      :- TypeOfArg2(c, e, t1, t2), e = BinApp(IN, _, _), t2 = MapType(dom, _).      
+	CompTypeRel(t1, dom)      :- TypeOfArg2(c, e, t1, t2), e = BinApp(IN, _, _), t2 = MapType(dom, _).
 	CompTypeRel(t1, inpt)     :- TypeOfArg1(c, e, t1), e = FunApp(n, NIL, _), FuncSigTupleType(decl, inpt), decl.name = n, decl.owner = c.owner, FunAvailable(decl, c.owner);
 								 TypeOfArg1(c, e, t1), e = FunApp(n, m, _), FuncSigTupleType(decl, inpt), decl.name = n, decl.owner = ModuleDecl(m), FunAvailable(decl, c.owner).
-	CompTypeRel(t1, t)        :- TypeOfArg1(c, e, t1), e : Return, c = FunDecl(_, _, _, _, t, _, _).
+	CompTypeRel(t1, t)        :- TypeOfArg1(c, e, t1), e : Return, c = FunDecl(_, _, _, _, t, _, _, _).
 	CompTypeRel(null, plt)    :- CommStmtPLType(c, e, plt), e = Raise(_, NIL), null = BaseType(NULL).
 	CompTypeRel(pt, plt)      :- CommStmtPLType(c, e, plt), e = Raise(_, p), p != NIL, TypeOf(c, p, pt).
 	CompTypeRel(null, plt)    :- SubSE(c, e), e = Send(_, _, NIL), null = BaseType(NULL), CommStmtPLType(c, e, plt).
@@ -1475,8 +1480,8 @@ domain PStaticTyping extends PData
 	CompTypeRel(null, plt)    :- SubSE(c, e), e = Monitor(_, NIL), null = BaseType(NULL), CommStmtPLType(c, e, plt).
 	CompTypeRel(t2, plt)      :- TypeOfArg2(c, e, t1, t2), e : Monitor, CommStmtPLType(c, e, plt).
 	CompTypeRel(t2, plt)      :- TypeOfArg2(c, e, t1, t2), e = Monitor(_, _), CommStmtPLType(c, e, plt).
-	CompTypeRel(t2, t1)       :- TypeOfArg2(c, e, t1, t2), e = BinStmt(ASSIGN, _, _).	
-	CompTypeRel(t2, dom)      :- TypeOfArg2(c, e, t1, t2), e = BinStmt(REMOVE, _, _), t1 = MapType(dom, cod).	
+	CompTypeRel(t2, t1)       :- TypeOfArg2(c, e, t1, t2), e = BinStmt(ASSIGN, _, _).
+	CompTypeRel(t2, dom)      :- TypeOfArg2(c, e, t1, t2), e = BinStmt(REMOVE, _, _), t1 = MapType(dom, cod).
 	CompTypeRel(key, dom)     :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = MapType(dom, cod), t2 = TupType(key, TupType(value, NIL)).
 	CompTypeRel(value, cod)   :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = MapType(dom, cod), t2 = TupType(key, TupType(value, NIL)).
 	CompTypeRel(value, inner) :- TypeOfArg2(c, e, t1, t2), e = BinStmt(INSERT, _, _), t1 = SeqType(inner), t2 = TupType(idx, TupType(value, NIL)).
@@ -1487,40 +1492,40 @@ domain PStaticTyping extends PData
 
     //// TypeRel determines the relationship type expressions ta and tb.
     //// If types are not subtype related, then they can
-    //// either have an empty (EMPTY) or nonempty (NONEMPTY) intersection. 
+    //// either have an empty (EMPTY) or nonempty (NONEMPTY) intersection.
     TypeRel ::= (ta: TypeExpr + { ERROR, NIL }, tb: TypeExpr + { ERROR, NIL }, rel: { SUB, SUP, EMPTY, NONEMPTY }).
-                            
-    //// (1) Type (non-) emptiness.       
+
+    //// (1) Type (non-) emptiness.
     // For convenience, the ERROR type is incomparable to all types, even itself.
     TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = ERROR.
     TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = ERROR.
-    
+
     // For convenience, the NIL type is incomparable to all types, except itself.
     TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NIL, t != NIL.
     TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = NIL, t != NIL.
-    
+
     // The NULL type has empty intersections with NonNullBase and complex types.
     NonNullBase ::= { BOOL, INT, FOREIGN }.
     ComplexType ::= TupType  + NmdTupType + SeqType + MapType.
     TypeRel(s, t, EMPTY)   :- CompTypeRel(s, t), s = BaseType(kt), kt : NonNullBase, t = BaseType(NULL).
     TypeRel(t, s, EMPTY)   :- CompTypeRel(t, s), s = BaseType(kt), kt : NonNullBase, t = BaseType(NULL).
-    
+
     TypeRel(s, t, EMPTY)   :- CompTypeRel(s, t), s : ComplexType, t = BaseType(NULL).
     TypeRel(t, s, EMPTY)   :- CompTypeRel(t, s), s : ComplexType, t = BaseType(NULL).
-        
+
     // NonNullBase types have empty intersections with all types, except themselves and ANY.
     TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = BaseType(ks), ks : NonNullBase, s != t, t != BaseType(ANY).
     TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = BaseType(ks), ks : NonNullBase, s != t, t != BaseType(ANY).
 
     // NullBase types have empty intersections with all types, except themselves, ANY, and NULL.
-    NullBase    ::= { EVENT, REAL }.    
-	
+    NullBase    ::= { EVENT, REAL }.
+
     TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), s = BaseType(ks), ks : NullBase, t = BaseType(kt), kt : NonNullBase.
     TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), s = BaseType(ks), ks : NullBase, t = BaseType(kt), kt : NonNullBase.
-    
+
     TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), s = BaseType(ks), ks : NullBase, toSymbol(t) != #BaseType, toSymbol(t) != #InterfaceType.
     TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), s = BaseType(ks), ks : NullBase, toSymbol(t) != #BaseType, toSymbol(t) != #InterfaceType.
-          
+
     TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = BaseType(ks), ks : NullBase, t = BaseType(kt), kt : NullBase, s != t, kt != ANY, kt != NULL.
     TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = BaseType(ks), ks : NullBase, t = BaseType(kt), kt : NullBase, s != t, kt != ANY, kt != NULL.
 
@@ -1534,100 +1539,99 @@ domain PStaticTyping extends PData
     // Complex types have empty intersections with all differing type kinds, except ANY.
     TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s : ComplexType, toSymbol(s) != toSymbol(t), t != BaseType(ANY).
     TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s : ComplexType, toSymbol(s) != toSymbol(t), t != BaseType(ANY).
-    
+
     // Sequences are EMPTY or NONEMPTY if their inner types are. (Only need one version of these rules.)
-    TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', EMPTY). 
-    
-    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', NONEMPTY). 
-    
+    TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', EMPTY).
+
+    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', NONEMPTY).
+
     // Maps are EMPTY or NONEMPTY if their inner types are. (Only need one version of these rules.)
     TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), s = MapType(sd, _),  t = MapType(td, _),  TypeRel(sd, td, EMPTY).
-    
-    TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), s = MapType(_, sc),  t = MapType(_, tc),  TypeRel(sc, tc, EMPTY).    
-    
-    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = MapType(sd, sc), t = MapType(td, tc), TypeRel(sd, td, NONEMPTY), TypeRel(sc, tc, NONEMPTY). 
+
+    TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), s = MapType(_, sc),  t = MapType(_, tc),  TypeRel(sc, tc, EMPTY).
+
+    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = MapType(sd, sc), t = MapType(td, tc), TypeRel(sd, td, NONEMPTY), TypeRel(sc, tc, NONEMPTY).
 
     // Tuples and NmdTups are EMPTY if their lengths differ. (Only need one version of these rules.)
     TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s : TupType, t : TupType, lstLength(#TupType, s) != lstLength(#TupType, t).
-    
+
     TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s : NmdTupType, t : NmdTupType, lstLength(#NmdTupType, s) != lstLength(#NmdTupType, t).
-    
+
     // Tuples are EMPTY if any pair of inner types is EMPTY.  (Only need one version of some of these rules.)
-    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = TupType(s', _), t = TupType(t', _), TypeRel(s', t', EMPTY). 
-    
-    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = TupType(_, s'), t = TupType(_, t'), TypeRel(s', t', EMPTY). 
-    
-    // Tuples are NONEMPTY if not all inners types are in identical super / sub relationships. 
-    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = TupType(s', s''), t = TupType(t', t''), 
+    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = TupType(s', _), t = TupType(t', _), TypeRel(s', t', EMPTY).
+
+    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = TupType(_, s'), t = TupType(_, t'), TypeRel(s', t', EMPTY).
+
+    // Tuples are NONEMPTY if not all inners types are in identical super / sub relationships.
+    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = TupType(s', s''), t = TupType(t', t''),
                                TypeRel(s', t', NONEMPTY), TypeRel(s'', t'', r), r != EMPTY.
-    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = TupType(s', s''), t = TupType(t', t''), 
+    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = TupType(s', s''), t = TupType(t', t''),
                                TypeRel(s', t', NONEMPTY), TypeRel(s'', t'', r), r != EMPTY.
-                                                                                           
-    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = TupType(s', s''), t = TupType(t', t''), 
+
+    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = TupType(s', s''), t = TupType(t', t''),
                                TypeRel(s', t', r), TypeRel(s'', t'', NONEMPTY), r != EMPTY.
-    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = TupType(s', s''), t = TupType(t', t''), 
+    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = TupType(s', s''), t = TupType(t', t''),
                                TypeRel(s', t', r), TypeRel(s'', t'', NONEMPTY), r != EMPTY.
 
-    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = TupType(s', s''), t = TupType(t', t''), 
+    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = TupType(s', s''), t = TupType(t', t''),
                                TypeRel(s', t', SUB), TypeRel(s'', t'', SUP), s' != t', s'' != t''.
-    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = TupType(s', s''), t = TupType(t', t''), 
+    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = TupType(s', s''), t = TupType(t', t''),
                                TypeRel(s', t', SUB), TypeRel(s'', t'', SUP), s' != t', s'' != t''.
-                               
-    // Named Tuples are EMPTY if any pair of inner types is EMPTY or they name arguments differently. (Only need one version of some of these rules.) 
-    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NmdTupType(fs, _), t = NmdTupType(ft, _), fs.name != ft.name. 
-    
-    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NmdTupType(fs, _), t = NmdTupType(ft, _), TypeRel(fs.type, ft.type, EMPTY). 
-    
-    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NmdTupType(_, s'), t = NmdTupType(_, t'), TypeRel(s', t', EMPTY). 
-    
-    // Named Tuples are NONEMPTY if not all inners types are in identical super / sub relationships. 
-    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name, 
+
+    // Named Tuples are EMPTY if any pair of inner types is EMPTY or they name arguments differently. (Only need one version of some of these rules.)
+    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NmdTupType(fs, _), t = NmdTupType(ft, _), fs.name != ft.name.
+
+    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NmdTupType(fs, _), t = NmdTupType(ft, _), TypeRel(fs.type, ft.type, EMPTY).
+
+    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NmdTupType(_, s'), t = NmdTupType(_, t'), TypeRel(s', t', EMPTY).
+
+    // Named Tuples are NONEMPTY if not all inners types are in identical super / sub relationships.
+    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name,
                                TypeRel(fs.type, ft.type, NONEMPTY), TypeRel(s'', t'', r), r != EMPTY.
-    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name, 
+    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name,
                                TypeRel(fs.type, ft.type, NONEMPTY), TypeRel(s'', t'', r), r != EMPTY.
-                                                            
-    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name, 
+
+    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name,
                                TypeRel(fs.type, ft.type, r), TypeRel(s'', t'', NONEMPTY), r != EMPTY.
-    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name, 
+    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name,
                                TypeRel(fs.type, ft.type, r), TypeRel(s'', t'', NONEMPTY), r != EMPTY.
 
-    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name, 
+    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name,
                                TypeRel(fs.type, ft.type, SUB), TypeRel(s'', t'', SUP), fs.type != ft.type, s'' != t''.
-    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name, 
+    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name,
                                TypeRel(fs.type, ft.type, SUB), TypeRel(s'', t'', SUP), fs.type != ft.type, s'' != t''.
-                               
-    //// (3) Sub-typing.                
+
+    //// (3) Sub-typing.
     // Any non-ERROR type is sub-type related to itself.
     TypeRel(s, s, SUB) :- CompTypeRel(s, s), s != ERROR.
     TypeRel(s, s, SUP) :- CompTypeRel(s, s), s != ERROR.
-   
+
     // Every proper type is a sub-type of any.
     TypeRel(s, t, SUB) :- CompTypeRel(s, t), s != ERROR, s != NIL, t = BaseType(ANY).
     TypeRel(t, s, SUP) :- CompTypeRel(t, s), s != ERROR, s != NIL, t = BaseType(ANY).
-        
+
     // NULL is a subtype of all Nullable types.
     TypeRel(s, t, SUB) :- CompTypeRel(s, t), s = BaseType(NULL), t = BaseType(ANY).
     TypeRel(t, s, SUP) :- CompTypeRel(t, s), s = BaseType(NULL), t = BaseType(ANY).
-    
+
     TypeRel(s, t, SUB) :-  CompTypeRel(s, t), s = BaseType(NULL), t = BaseType(kt), kt : NullBase.
     TypeRel(t, s, SUP) :-  CompTypeRel(t, s), s = BaseType(NULL), t = BaseType(kt), kt : NullBase.
-    
+
 	// Interface type is a subtype of the machine base-type
-	TypeRel(s, t, SUB) :- CompTypeRel(s, t), t = BaseType(REAL), s : InterfaceType. 
-	TypeRel(t, s, SUP) :- CompTypeRel(t, s), t = BaseType(REAL), s : InterfaceType. 
+	TypeRel(s, t, SUB) :- CompTypeRel(s, t), t = BaseType(REAL), s : InterfaceType.
+	TypeRel(t, s, SUP) :- CompTypeRel(t, s), t = BaseType(REAL), s : InterfaceType.
 
 	// Subtype relation between interface types.
 	SubSetRelation ::= (interface1: InterfaceType, interface2: InterfaceType).
 	NoSubSetRelation ::= (interface1: InterfaceType, interface2: InterfaceType).
-	SubSetRelation(n1, n2) :- x is InterfaceTypeEventDecl(n1, _), y is InterfaceTypeEventDecl(n2, _), n1 != n2, no { e | InterfaceTypeEventDecl(n1, e), no InterfaceTypeEventDecl(n2, e)}. 
+	SubSetRelation(n1, n2) :- x is InterfaceTypeEventDecl(n1, _), y is InterfaceTypeEventDecl(n2, _), n1 != n2, no { e | InterfaceTypeEventDecl(n1, e), no InterfaceTypeEventDecl(n2, e)}.
 	NoSubSetRelation(n1, n2) :- x is InterfaceTypeEventDecl(n1, _), y is InterfaceTypeEventDecl(n2, _), n1 != n2, count({ e | InterfaceTypeEventDecl(n1, e), no InterfaceTypeEventDecl(n2, e), InterfaceTypeEventDecl(n2, ee), no InterfaceTypeEventDecl(n1, ee)}) > 0.
-	
-	
+
 	TypeRel(s, t, SUB) :- CompTypeRel(s, t), s : InterfaceType, t : InterfaceType, s != t, SubSetRelation(t, s).
 	TypeRel(t, s, SUP) :- CompTypeRel(t, s), s : InterfaceType, t : InterfaceType, s != t, SubSetRelation(t, s).
 	TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), t : InterfaceType, s : InterfaceType, s != t, NoSubSetRelation(s, t).
 	TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), t : InterfaceType, s : InterfaceType, s != t, NoSubSetRelation(s, t).
-	
+
 	//Interface type is a supertype of NULL
 	TypeRel(s, t, SUB) :- CompTypeRel(s, t), t : InterfaceType, s = BaseType(NULL).
 	TypeRel(t, s, SUP) :- CompTypeRel(t, s), t : InterfaceType, s = BaseType(NULL).
@@ -1637,23 +1641,23 @@ domain PStaticTyping extends PData
 	TypeRel(t, s, SUP) :- CompTypeRel(t, s), s : InterfaceType, t = BaseType(ANY).
 
     // Sequences are subtype related if their inner types are subtype related.
-    TypeRel(s, t, SUB)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUB). 
-    TypeRel(s, t, SUP)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUP). 
-    
+    TypeRel(s, t, SUB)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUB).
+    TypeRel(s, t, SUP)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUP).
+
     // Maps are subtype related if their inner types are subtype related.
-    TypeRel(s, t, SUB) :- CompTypeRel(s, t), s = MapType(sd, sc), t = MapType(td, tc), TypeRel(sd, td, SUB), TypeRel(sc, tc, SUB). 
-    TypeRel(s, t, SUP) :- CompTypeRel(s, t), s = MapType(sd, sc), t = MapType(td, tc), TypeRel(sd, td, SUP), TypeRel(sc, tc, SUP). 
-    
+    TypeRel(s, t, SUB) :- CompTypeRel(s, t), s = MapType(sd, sc), t = MapType(td, tc), TypeRel(sd, td, SUB), TypeRel(sc, tc, SUB).
+    TypeRel(s, t, SUP) :- CompTypeRel(s, t), s = MapType(sd, sc), t = MapType(td, tc), TypeRel(sd, td, SUP), TypeRel(sc, tc, SUP).
+
     // Tuples are subtype related if their inner types are subtype related.
     TypeRel(s, t, SUB) :- CompTypeRel(s, t), s = TupType(s', s''), t = TupType(t', t''), TypeRel(s', t', SUB), TypeRel(s'', t'', SUB).
     TypeRel(s, t, SUP) :- CompTypeRel(s, t), s = TupType(s', s''), t = TupType(t', t''), TypeRel(s', t', SUP), TypeRel(s'', t'', SUP).
-    
-    TypeRel(s, t, SUB) :- CompTypeRel(s, t), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name, TypeRel(fs.type, ft.type, SUB), TypeRel(s'', t'', SUB).    
-    TypeRel(s, t, SUP) :- CompTypeRel(s, t), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name, TypeRel(fs.type, ft.type, SUP), TypeRel(s'', t'', SUP).   
-	
+
+    TypeRel(s, t, SUB) :- CompTypeRel(s, t), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name, TypeRel(fs.type, ft.type, SUB), TypeRel(s'', t'', SUB).
+    TypeRel(s, t, SUP) :- CompTypeRel(s, t), s = NmdTupType(fs, s''), t = NmdTupType(ft, t''), fs.name = ft.name, TypeRel(fs.type, ft.type, SUP), TypeRel(s'', t'', SUP).
+
     /*************************************************************/
     /*                      Payload Checking                    */
-    /*************************************************************/	
+    /*************************************************************/
 	EventPayloadType ::= (e: String + { NULL, HALT }, t: TypeExpr).
 	EventPayloadType(e, et) :- EventDecl(e, _, t), t: TypeExpr, TypeExpansion(t, et).
 	EventPayloadType(e, t)  :- EventDecl(e, _, NIL), t = BaseType(NULL).
@@ -1661,7 +1665,7 @@ domain PStaticTyping extends PData
 	EventPayloadType(HALT, t) :- t = BaseType(ANY).
 
 	PayloadVarType ::= (TypeExpr).
-	PayloadVarType(ft) :- s is StateDecl, TypeExpansion(s.entryAction.envVars.hd.type, ft); 
+	PayloadVarType(ft) :- s is StateDecl, TypeExpansion(s.entryAction.envVars.hd.type, ft);
 						  t is TransDecl, TypeExpansion(t.action.envVars.hd.type, ft);
 						  d is DoDecl, TypeExpansion(d.action.envVars.hd.type, ft);
 						  SubSE(_, cases), cases: Cases, TypeExpansion(cases.action.envVars.hd.type, ft).
@@ -1679,20 +1683,20 @@ domain PStaticTyping extends PData
 	PayloadError(t) :- t is DoDecl, EventPayloadType(t.trig, et), TypeExpansion(t.action.envVars.hd.type, ft),
 	                   TypeRel(et, ft, k), et != ft, k != SUB.
 	[ rule_Classes = '"error, msg: Payload type for event on incoming transition must be subtype of payload type of state entry function;"']
-	PayloadError(s) :- t is TransDecl, EventPayloadType(t.trig, et), 
+	PayloadError(s) :- t is TransDecl, EventPayloadType(t.trig, et),
 					   s is StateDecl, s.name = t.dst, s.owner = t.src.owner, TypeExpansion(s.entryAction.envVars.hd.type, ft),
 					   TypeRel(et, ft, k), et != ft, k != SUB.
 	[ rule_Classes = '"error, msg: Payload type for event must be subtype of payload type of case function;"']
 	PayloadError(cases) :- SubSE(_, cases), cases: Cases, EventPayloadType(cases.trig, et), TypeExpansion(cases.action.envVars.hd.type, ft),
-						   TypeRel(et, ft, k), et != ft, k != SUB. 
+						   TypeRel(et, ft, k), et != ft, k != SUB.
 	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
 	PayloadError(n) :- SubSE(c, n), n: New, TypeOf(c, n.arg, type), type: TypeExpr,
-					   m is MachineDecl, m.name = n.name, s is StateDecl, s.owner = m, s.name = m.start, 
+					   m is MachineDecl, m.name = n.name, s is StateDecl, s.owner = m, s.name = m.start,
 					   TypeExpansion(s.entryAction.envVars.hd.type, ft), TypeRel(type, ft, k), type != ft, k != SUB.
 	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
 	PayloadError(n) :- SubSE(c, n), n: NewStmt, TypeOf(c, n.arg, type), type: TypeExpr,
 					   m is MachineDecl, m.name = n.name, s is StateDecl, s.owner = m, s.name = m.start,
-					   TypeExpansion(s.entryAction.envVars.hd.type, ft), TypeRel(type, ft, k), type != ft, k != SUB.	
+					   TypeExpansion(s.entryAction.envVars.hd.type, ft), TypeRel(type, ft, k), type != ft, k != SUB.
 
 	/***************************************************************************************************************
 	TODO :: static check for map types (this is not done complete)
@@ -1702,14 +1706,12 @@ domain PStaticTyping extends PData
 	ContainsMachOrInterface(type) :- type : TypeExpr, TypeRel(type, BaseType(REAL), SUB);
 									 type is MapType(_, k), k : TypeExpr, ContainsMachOrInterface(k);
 									 type is SeqType(n), ContainsMachOrInterface(n);
-									 type is TupType(hd, tl), ContainsMachOrInterface(hd); 
+									 type is TupType(hd, tl), ContainsMachOrInterface(hd);
 									 type is TupType(hd, tl), ContainsMachOrInterface(tl);
-									 type is NmdTupType(NmdTupTypeField(_, hd), tl), ContainsMachOrInterface(hd); 
+									 type is NmdTupType(NmdTupTypeField(_, hd), tl), ContainsMachOrInterface(hd);
 									 type is NmdTupType(hd, tl), ContainsMachOrInterface(tl).
-									
-	
-	[rule_Classes = '"error, msg: dom of the map type cannot have machine or interface type"']						    
+
+	[rule_Classes = '"error, msg: dom of the map type cannot have machine or interface type"']
 	DomOfMapUnSafe(map) :- map = MapType(dom, _), dom : TypeExpr, VarDecl(_ , _, map), ContainsMachOrInterface(dom);
 						   map = MapType(dom, _), dom : TypeExpr, EventDecl(_ , _, map), ContainsMachOrInterface(dom).
  }
-

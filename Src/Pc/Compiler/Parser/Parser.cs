@@ -23,6 +23,7 @@
 
         private Span crntAnnotSpan;
         private bool isTrigAnnotated = false;
+        private bool isPublic = false;
         private bool isStaticFun = false;
         private P_Root.FunDecl crntFunDecl = null;
         private P_Root.EventDecl crntEventDecl = null;
@@ -2048,6 +2049,7 @@
                                      : (P_Root.IArgType_FunDecl__1)GetCurrentMachineDecl(span);
             funDecl.locals = (P_Root.IArgType_FunDecl__5)localVarStack.LocalVarDecl;
             funDecl.body = (P_Root.IArgType_FunDecl__6)stmtStack.Pop();
+            funDecl.isPublic = isPublic ? MkUserCnst(P_Root.UserCnstKind.TRUE, span) : MkUserCnst(P_Root.UserCnstKind.FALSE, span);
             parseProgram.Functions.Add(funDecl);
             localVarStack = new LocalVarStack(this);
 
@@ -2074,6 +2076,7 @@
                 }
             }
             crntFunDecl = null;
+            isPublic = false;
             isStaticFun = false;
         }
 
@@ -2257,6 +2260,7 @@
             crntAnnotList = new List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>>();
             parseFailed = false;
             isTrigAnnotated = false;
+            isPublic = false;
             isStaticFun = false;
             crntState = null;
             crntEventDecl = null;

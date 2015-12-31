@@ -11,7 +11,7 @@
 %token INT BOOL FOREIGN ANY SEQ MAP ID
 
 %token TYPE INCLUDE MAIN EVENT MACHINE MONITOR ASSUME
-%token VAR START HOT COLD MODEL STATE FUN ACTION GROUP STATIC OBSERVES
+%token VAR START HOT COLD MODEL STATE FUN ACTION GROUP PUBLIC OBSERVES
 
 %token ENTRY EXIT DEFER IGNORE GOTO ON DO PUSH AS WITH
 
@@ -283,12 +283,13 @@ PayloadVarDeclOrNone
 	;
 
 /******************* Function Declarations *******************/
-Static 
-	: STATIC { isStaticFun = true; }
+IsPublic 
+	: PUBLIC { isStaticFun = true; isPublic = true;}
+	|		 { isStaticFun = true; }
 	;
 
 StaticFunDecl
-	: Static IsModel FUN ID ParamsOrNone RetTypeOrNone FunAnnotOrNone StmtBlock { AddFunction($4.str, ToSpan(@4), ToSpan(@1), true); }
+	: IsPublic IsModel FUN ID ParamsOrNone RetTypeOrNone FunAnnotOrNone StmtBlock { AddFunction($4.str, ToSpan(@4), ToSpan(@1), true); }
 	;
 
 FunDecl
