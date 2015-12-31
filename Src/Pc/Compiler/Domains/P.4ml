@@ -69,7 +69,7 @@ domain PData
 
 	////Module
 	ModuleDecl ::= new (name : any String).
-	ModuleType ::= new (mod : ModuleDecl, kind: {IMPL, SPEC, DRIVER}).
+	ModuleType ::= new (mod : ModuleDecl, kind: {IMPL, SPEC}).
 	ModuleSendsDecl ::= new (mod: any ModuleDecl, ev: String).
 	ModuleCreatesDecl ::= new (mod : any ModuleDecl, it: any InterfaceType).
 
@@ -124,7 +124,7 @@ domain PData
 
 	//The function available for a machine is its local functions.
 	// Impl modules can access static functions in other Impl modules.
-	// Spec and driver modules can access all static functions.
+	// Spec modules can access all static functions.
 	FunAvailable ::= (f: FunDecl, m: MachineDecl + ModuleDecl).
     FunAvailable(f, m) :- f is FunDecl( _, m, _, _, _, _, _, _), m is MachineDecl;
 						  f is FunDecl( _, mod, _, _, _, _, _, TRUE), mod is ModuleDecl, m is MachineDecl, ModuleType(mod, IMPL), ModuleType(m.mod, IMPL);
@@ -258,9 +258,9 @@ domain PStructuralTyping extends PData
 	[rule_Classes = '"error, msg: undeclared type"']
 	OneDeclError(nt) :- allNameTypes(nt), no InterfaceTypeEventDecl(InterfaceType(nt.name), _), no TypeDef(nt.name, _).
 
-	//only driver module can have a main machine
-	[rule_Classes = '"error, msg: only driver module can have a main machine"']
-	OneDeclError(mod) :- mach is MachineDecl(_, mod, _, _, _, TRUE), ModuleType(mod, kind), kind != DRIVER.
+	//only impl module can have a main machine
+	[rule_Classes = '"error, msg: only implementation module can have a main machine"']
+	OneDeclError(mod) :- mach is MachineDecl(_, mod, _, _, _, TRUE), ModuleType(mod, kind), kind != IMPL.
 
 	//only one implementation list declaration
 	[rule_Classes = '"error, msg: atmost one implementation module list is allowed"']
@@ -413,7 +413,7 @@ domain PStaticTyping extends PData
 	ModuleLevelTypingError(c) :- mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _),
 								  c is ModuleCreatesDecl(m, i), NotDisjointOrEqual(m, i, mr).
 
-	[rule_Classes = '"error, msg: monitor not allowed in specification or driver module"']
+	[rule_Classes = '"error, msg: monitor not allowed in specification module"']
 	ModuleLevelTypingError(mach) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), ModuleType(mod, kind), kind != IMPL.
 
 	[rule_Classes = '"error, msg: monitor can observe event in sends or implemented interfaces"']
@@ -436,7 +436,6 @@ domain PStaticTyping extends PData
 	SubEvent ::= sub(evl: EventList, ev : String).
 
 	/**************** Illegal Main Machines ************************/
-	//Main machine is allowed only in the driver module
 	IllegalMainMachine ::= (ml: ModuleList).
 
 	[rule_Classes = '"error, msg: no Main Machine in the ModuleList"']
@@ -448,6 +447,7 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: more than one Main Machine in the ModuleList"']
 	IllegalMainMachine(ml) :- SafetyTestDecl(_, ml), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1;
 							  LivenessTestDecl(_, ml, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1;
+							  ImplementationModules(ml), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1;
 							  RefinesTestDecl(_, ml, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1;
 							  RefinesTestDecl(_, _, ml), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1.
 
@@ -780,8 +780,10 @@ domain PStaticTyping extends PData
 
 	[ rule_Classes = '"error, msg: public static function cannot create empty interface"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, no InterfaceTypeEventDecl(InterfaceType(n), _).
-	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
+	[ rule_Classes = '"error, msg: created interface in private static function must be in the creates list of the module"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, no ModuleCreatesDecl(mod, InterfaceType(n)).
+	[ rule_Classes = '"error, msg: created interface in public static function must be implemented in the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, InterfaceTypeEventDecl(InterfaceType(n), ev), no MachineReceivesDecl(m, ev), m is MachineDecl, m.mod = c.owner.
 
     TypeOf(c, e, t2)               :- TypeOfArg2(c, e, _, t2), e : Field, t2 != ERROR.
 	[ rule_Classes = '"error, msg: Bad field name"']
@@ -914,6 +916,8 @@ domain PStaticTyping extends PData
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
 	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, no ModuleCreatesDecl(mod, InterfaceType(n)).
+	[ rule_Classes = '"error, msg: created interface in public static function must be implemented in the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, InterfaceTypeEventDecl(InterfaceType(n), ev), no MachineReceivesDecl(m, ev), m is MachineDecl, m.mod = c.owner.
 
 	[ rule_Classes = '"error, msg: public static function cannot create empty interface"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, no InterfaceTypeEventDecl(InterfaceType(n), _).

@@ -20,7 +20,7 @@
 
 %token TRUE FALSE
 
-%token SPEC DRIVER MODULE SENDS CREATES RECEIVES INTERFACE 
+%token SPEC MODULE SENDS CREATES RECEIVES INTERFACE 
 %token TEST REFINES SATISFIES SAFETY LIVENESS IMPLEMENTATION SPECIFICATION HIDE
 %token PO EVENTLIST
 
@@ -120,7 +120,6 @@ InterfaceDecl
 /***************** Module Declarations *********************/
 ModuleDecl
 	: SPEC MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE		{ AddModule(P_Root.UserCnstKind.SPEC, $3.str, ToSpan(@3), ToSpan(@1)); }
-	| DRIVER MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE		{ AddModule(P_Root.UserCnstKind.DRIVER, $3.str, ToSpan(@3), ToSpan(@1)); }
 	| MODULE ID SendsList CreatesList LCBRACE ModuleBody RCBRACE			{ AddModule(P_Root.UserCnstKind.IMPL, $2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
