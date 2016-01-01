@@ -4,18 +4,21 @@
 
 event E1 assert 1;
 
-main machine Real1 {
-    var test: bool;  //init with "false"
-    start state Real1_Init {
-        entry {			   
-        }
-		
-        on E1 do Action1;   // checking "raise"
-        exit { 
-			raise E1; 
+module TestModule
+{
+	main machine Real1 {
+		var testv: bool;  //init with "false"
+		start state Real1_Init {
+			entry {			   
+			}
+			
+			on E1 do Action1;   // checking "raise"
+			exit { 
+				raise E1; 
+			}
+		}
+		fun Action1() {
+			testv = true;
 		}
 	}
-    fun Action1() {
-		test = true;
-    }
 }

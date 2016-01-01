@@ -4,23 +4,26 @@
 
 event E1 assert 1;
 
-main machine Real1 {
-    var test: bool;  //init with "false"
-    start state Real1_Init {
-        entry {			   
-        }
-		
-        on E1 do Action1;   // checking "raise"
-        exit { 
-			pop; 
+module TestModule
+{
+	main machine Real1 {
+		var testv: bool;  //init with "false"
+		start state Real1_Init {
+			entry {			   
+			}
+			
+			on E1 do Action1;   // checking "raise"
+			exit { 
+				pop; 
+			}
+		}
+		state Real1_S1 {   
+			entry {
+				assert(testv == true); //unreachable
+			}
+		}
+		fun Action1() {
+			testv = true;
 		}
 	}
-	state Real1_S1 {   
-		entry {
-			assert(test == true); //unreachable
-		}
-    }
-    fun Action1() {
-		test = true;
-    }
 }

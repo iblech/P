@@ -426,6 +426,9 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: empty interface in the creates list must be implemented in the module"']
 	ModuleLevelTypingError(mod, c) :- c is ModuleCreatesDecl(mod, i), no InterfaceTypeEventDecl(i, _), no MachineDecl(i.name, mod, _, _, _, _).
 
+	[rule_Classes = '"error, msg: Multiple machines are declared as main machines"']
+	ModuleLevelTypingError(mod, c1) :- c1 is MachineDecl(_, mod, _, _, _, TRUE), c2 is MachineDecl(_, mod, _, _, _, TRUE), c1 != c2.
+
 	/***************************************************************/
 	/***********    All the subterm operations ********************/
 	/***************************************************************/

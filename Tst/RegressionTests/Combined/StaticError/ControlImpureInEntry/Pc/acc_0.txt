@@ -1,43 +1,43 @@
 =================================
          Console output          
 =================================
-OUT: controlimpureinentry.p (13, 13): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (13, 13): inferred type:  NIL
-OUT: controlimpureinentry.p (13, 17): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (13, 20): inferred type:  NIL
-OUT: controlimpureinentry.p (13, 26): inferred type:  BaseType(EVENT)
-OUT: controlimpureinentry.p (20, 5): inferred type:  NIL
-OUT: controlimpureinentry.p (20, 11): inferred type:  BaseType(BOOL)
-OUT: controlimpureinentry.p (20, 14): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (21, 9): inferred type:  NIL
-OUT: controlimpureinentry.p (22, 6): inferred type:  NIL
-OUT: controlimpureinentry.p (23, 6): inferred type:  NIL
-OUT: controlimpureinentry.p (23, 12): inferred type:  BaseType(EVENT)
-OUT: controlimpureinentry.p (24, 6): inferred type:  NIL
-OUT: controlimpureinentry.p (26, 6): inferred type:  ERROR
-OUT: controlimpureinentry.p (30, 6): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (30, 6): inferred type:  NIL
-OUT: controlimpureinentry.p (30, 12): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (30, 14): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (30, 24): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (31, 8): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (31, 18): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (32, 8): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (38, 3): inferred type:  NIL
-OUT: controlimpureinentry.p (39, 3): inferred type:  NIL
-OUT: controlimpureinentry.p (39, 10): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (43, 3): inferred type:  NIL
-OUT: controlimpureinentry.p (43, 10): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (46, 3): inferred type:  NIL
-OUT: controlimpureinentry.p (46, 9): inferred type:  BaseType(EVENT)
-OUT: controlimpureinentry.p (47, 3): inferred type:  NIL
-OUT: controlimpureinentry.p (47, 10): inferred type:  BaseType(INT)
-OUT: controlimpureinentry.p (50, 3): inferred type:  NIL
-OUT: controlimpureinentry.p (54, 3): inferred type:  NIL
-OUT: controlimpureinentry.p (54, 9): inferred type:  BaseType(EVENT)
-OUT: controlimpureinentry.p (56, 16): inferred type:  NIL
-OUT: controlimpureinentry.p (26, 6): function not defined
-OUT: controlimpureinentry.p (30, 14): this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);"
-OUT: controlimpureinentry.p (32, 8): this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);"
+OUT: controlimpureinentry.p (14, 14): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (14, 14): inferred type:  NIL
+OUT: controlimpureinentry.p (14, 18): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (14, 21): inferred type:  NIL
+OUT: controlimpureinentry.p (14, 27): inferred type:  BaseType(EVENT)
+OUT: controlimpureinentry.p (21, 6): inferred type:  NIL
+OUT: controlimpureinentry.p (21, 12): inferred type:  BaseType(BOOL)
+OUT: controlimpureinentry.p (21, 15): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (22, 7): inferred type:  NIL
+OUT: controlimpureinentry.p (23, 7): inferred type:  NIL
+OUT: controlimpureinentry.p (24, 7): inferred type:  NIL
+OUT: controlimpureinentry.p (24, 13): inferred type:  BaseType(EVENT)
+OUT: controlimpureinentry.p (25, 7): inferred type:  NIL
+OUT: controlimpureinentry.p (27, 7): inferred type:  ERROR
+OUT: controlimpureinentry.p (31, 7): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (31, 7): inferred type:  NIL
+OUT: controlimpureinentry.p (31, 13): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (31, 15): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (31, 25): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (32, 9): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (32, 19): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (33, 9): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (39, 4): inferred type:  NIL
+OUT: controlimpureinentry.p (40, 4): inferred type:  NIL
+OUT: controlimpureinentry.p (40, 11): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (44, 4): inferred type:  NIL
+OUT: controlimpureinentry.p (44, 11): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (47, 4): inferred type:  NIL
+OUT: controlimpureinentry.p (47, 10): inferred type:  BaseType(EVENT)
+OUT: controlimpureinentry.p (48, 4): inferred type:  NIL
+OUT: controlimpureinentry.p (48, 11): inferred type:  BaseType(INT)
+OUT: controlimpureinentry.p (51, 4): inferred type:  NIL
+OUT: controlimpureinentry.p (55, 4): inferred type:  NIL
+OUT: controlimpureinentry.p (55, 10): inferred type:  BaseType(EVENT)
+OUT: controlimpureinentry.p (57, 17): inferred type:  NIL
+OUT: controlimpureinentry.p (27, 7): function not defined
+OUT: controlimpureinentry.p (31, 15): this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);"
+OUT: controlimpureinentry.p (33, 9): this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);"
 OUT: Compilation failed
 EXIT: -1

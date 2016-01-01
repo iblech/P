@@ -5,38 +5,41 @@
 event E;
 event unit;
 
-main machine Program {
-		     var i: int;
-	start state Init {
-			 entry { i = 0; raise E; }
-	
-		on E push Call;    
-	}
+module TestModule
+{
+	main machine Program {
+				 var i: int;
+		start state Init {
+				 entry { i = 0; raise E; }
+		
+			on E push Call;    
+		}
 
-	state Call {
-		   entry { 
-			 if (i == 3) {
-				    pop; 
-			}
-            else
-			    {
-					i = i + Action1() +   //error
-							Action2() -
-							Action3();    //error
-			    }
-			     raise E; 
-			 }
-	}
-	fun Action1() : int {		                          
-		pop;   
-		return 1;
-    }
-	fun Action2() : int {
+		state Call {
+			   entry { 
+				 if (i == 3) {
+						pop; 
+				}
+				else
+					{
+						i = i + Action1() +   //error
+								Action2() -
+								Action3();    //error
+					}
+					 raise E; 
+				 }
+		}
+		fun Action1() : int {		                          
+			pop;   
+			return 1;
+		}
+		fun Action2() : int {
 
-		return 1;
-    }
-	fun Action3() : int {
-		raise unit;
-		return 1;
-    }
+			return 1;
+		}
+		fun Action3() : int {
+			raise unit;
+			return 1;
+		}
+	}
 }

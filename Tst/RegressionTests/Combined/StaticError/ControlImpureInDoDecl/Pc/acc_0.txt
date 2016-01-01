@@ -1,54 +1,54 @@
 =================================
          Console output          
 =================================
-OUT: controlimpuredodecl.p (15, 4): inferred type:  NIL
-OUT: controlimpuredodecl.p (15, 10): inferred type:  BaseType(EVENT)
-OUT: controlimpuredodecl.p (17, 16): inferred type:  NIL
-OUT: controlimpuredodecl.p (17, 21): inferred type:  BaseType(REAL)
-OUT: controlimpuredodecl.p (17, 27): inferred type:  BaseType(EVENT)
-OUT: controlimpuredodecl.p (18, 16): inferred type:  NIL
-OUT: controlimpuredodecl.p (18, 27): inferred type:  BaseType(EVENT)
-OUT: controlimpuredodecl.p (19, 16): inferred type:  NIL
-OUT: controlimpuredodecl.p (19, 27): inferred type:  BaseType(EVENT)
-OUT: controlimpuredodecl.p (21, 7): inferred type:  NIL
-OUT: controlimpuredodecl.p (21, 13): inferred type:  BaseType(EVENT)
-OUT: controlimpuredodecl.p (26, 4): inferred type:  NIL
-OUT: controlimpuredodecl.p (27, 4): inferred type:  NIL
-OUT: controlimpuredodecl.p (30, 4): inferred type:  NIL
-OUT: controlimpuredodecl.p (30, 10): inferred type:  BaseType(BOOL)
-OUT: controlimpuredodecl.p (30, 13): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (31, 9): inferred type:  NIL
-OUT: controlimpuredodecl.p (35, 6): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (35, 6): inferred type:  NIL
-OUT: controlimpuredodecl.p (35, 12): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (35, 14): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (35, 24): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (36, 8): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (36, 18): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (37, 8): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (42, 9): inferred type:  NIL
-OUT: controlimpuredodecl.p (45, 4): inferred type:  NIL
-OUT: controlimpuredodecl.p (47, 14): inferred type:  NIL
-OUT: controlimpuredodecl.p (48, 17): inferred type:  NIL
-OUT: controlimpuredodecl.p (49, 14): inferred type:  NIL
-OUT: controlimpuredodecl.p (52, 9): inferred type:  NIL
-OUT: controlimpuredodecl.p (55, 9): inferred type:  NIL
-OUT: controlimpuredodecl.p (58, 9): inferred type:  NIL
-OUT: controlimpuredodecl.p (61, 9): inferred type:  NIL
-OUT: controlimpuredodecl.p (64, 3): inferred type:  NIL
-OUT: controlimpuredodecl.p (66, 16): inferred type:  NIL
-OUT: controlimpuredodecl.p (70, 3): inferred type:  NIL
-OUT: controlimpuredodecl.p (70, 9): inferred type:  BaseType(EVENT)
-OUT: controlimpuredodecl.p (73, 3): inferred type:  NIL
-OUT: controlimpuredodecl.p (74, 3): inferred type:  NIL
-OUT: controlimpuredodecl.p (74, 10): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (78, 3): inferred type:  NIL
-OUT: controlimpuredodecl.p (78, 10): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (81, 3): inferred type:  NIL
-OUT: controlimpuredodecl.p (81, 9): inferred type:  BaseType(EVENT)
-OUT: controlimpuredodecl.p (82, 3): inferred type:  NIL
-OUT: controlimpuredodecl.p (82, 10): inferred type:  BaseType(INT)
-OUT: controlimpuredodecl.p (35, 14): this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);"
-OUT: controlimpuredodecl.p (37, 8): this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);"
+OUT: controlimpuredodecl.p (18, 5): inferred type:  NIL
+OUT: controlimpuredodecl.p (18, 11): inferred type:  BaseType(EVENT)
+OUT: controlimpuredodecl.p (20, 17): inferred type:  NIL
+OUT: controlimpuredodecl.p (20, 22): inferred type:  InterfaceType("Real1")
+OUT: controlimpuredodecl.p (20, 28): inferred type:  BaseType(EVENT)
+OUT: controlimpuredodecl.p (21, 8): inferred type:  NIL
+OUT: controlimpuredodecl.p (21, 19): inferred type:  BaseType(EVENT)
+OUT: controlimpuredodecl.p (22, 8): inferred type:  NIL
+OUT: controlimpuredodecl.p (22, 19): inferred type:  BaseType(EVENT)
+OUT: controlimpuredodecl.p (24, 8): inferred type:  NIL
+OUT: controlimpuredodecl.p (24, 14): inferred type:  BaseType(EVENT)
+OUT: controlimpuredodecl.p (29, 5): inferred type:  NIL
+OUT: controlimpuredodecl.p (30, 5): inferred type:  NIL
+OUT: controlimpuredodecl.p (33, 5): inferred type:  NIL
+OUT: controlimpuredodecl.p (33, 11): inferred type:  BaseType(BOOL)
+OUT: controlimpuredodecl.p (33, 14): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (34, 7): inferred type:  NIL
+OUT: controlimpuredodecl.p (38, 7): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (38, 7): inferred type:  NIL
+OUT: controlimpuredodecl.p (38, 13): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (38, 15): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (38, 25): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (39, 9): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (39, 19): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (40, 9): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (45, 10): inferred type:  NIL
+OUT: controlimpuredodecl.p (48, 5): inferred type:  NIL
+OUT: controlimpuredodecl.p (50, 15): inferred type:  NIL
+OUT: controlimpuredodecl.p (51, 15): inferred type:  NIL
+OUT: controlimpuredodecl.p (52, 15): inferred type:  NIL
+OUT: controlimpuredodecl.p (55, 10): inferred type:  NIL
+OUT: controlimpuredodecl.p (58, 10): inferred type:  NIL
+OUT: controlimpuredodecl.p (61, 10): inferred type:  NIL
+OUT: controlimpuredodecl.p (64, 10): inferred type:  NIL
+OUT: controlimpuredodecl.p (67, 4): inferred type:  NIL
+OUT: controlimpuredodecl.p (69, 17): inferred type:  NIL
+OUT: controlimpuredodecl.p (73, 4): inferred type:  NIL
+OUT: controlimpuredodecl.p (73, 10): inferred type:  BaseType(EVENT)
+OUT: controlimpuredodecl.p (76, 4): inferred type:  NIL
+OUT: controlimpuredodecl.p (77, 4): inferred type:  NIL
+OUT: controlimpuredodecl.p (77, 11): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (81, 4): inferred type:  NIL
+OUT: controlimpuredodecl.p (81, 11): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (84, 4): inferred type:  NIL
+OUT: controlimpuredodecl.p (84, 10): inferred type:  BaseType(EVENT)
+OUT: controlimpuredodecl.p (85, 4): inferred type:  NIL
+OUT: controlimpuredodecl.p (85, 11): inferred type:  BaseType(INT)
+OUT: controlimpuredodecl.p (38, 15): this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);"
+OUT: controlimpuredodecl.p (40, 9): this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);"
 OUT: Compilation failed
 EXIT: -1
