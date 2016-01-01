@@ -81,7 +81,6 @@ domain PData
 	LivenessTestDecl ::= fun (name: String -> modL: any ModuleList, mon: any String).
 
 	ModuleList ::= new (mod: any Module, tail: any ModuleList + {NIL}).
-	NameModuleList ::= new (name: String, modL: any ModuleList).
 	Hide ::= new (evL: any EventList, modL: any ModuleList).
 	PartialOrderRel ::= new (ev1: any String, ev2: any String).
 	EventList ::= new (ev: String, tail: any EventList + {NIL}).
@@ -105,7 +104,7 @@ domain PData
     DoDecl         ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> action: any { DEFER, IGNORE } + AnonFunDecl + String).
 
     PDecl          ::= EventDecl + MachineDecl + VarDecl + AnonFunDecl + FunDecl + StateDecl + TransDecl + DoDecl + ObservesDecl + InterfaceTypeEventDecl +
-					   MachineReceivesDecl + ModuleDecl + ModuleSendsDecl + ModuleCreatesDecl + PartialOrderRel + NameEventList + NameModuleList +
+					   MachineReceivesDecl + ModuleDecl + ModuleSendsDecl + ModuleCreatesDecl + PartialOrderRel + NameEventList +
 					   ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl + InterfaceType + NameType.
 
     AssumeMaxInstances ::= new (bound: Natural).
@@ -241,7 +240,7 @@ domain PStructuralTyping extends PData
 	[rule_Classes = '"error, msg: interface type in creates is not declared"']
 	OneDeclError(creates) :- creates is ModuleCreatesDecl(_, i), no InterfaceTypeEventDecl(i, _).
 
-	TopLevelDecls ::= ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl + PartialOrderRel + NameEventList + NameModuleList.
+	TopLevelDecls ::= ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl + PartialOrderRel + NameEventList.
 	EventAndModule ::= ModuleDecl + EventList.
 
 	//module is declared
@@ -249,9 +248,13 @@ domain PStructuralTyping extends PData
 	[rule_Classes = '"error, msg: module in the list is not declared"']
 	OneDeclError(c) :- SubEML(c, mod), no ModuleDecl(mod.name).
 
-	//event in hide is declared
-	[rule_Classes = '"error, msg: event used in hide operation is not declared"']
-	OneDeclError(c) :- SubEML(c, ml), ml = EventList(ev, _), no EventDecl(ev, _, _).
+	//event in eventlist is declared
+	[rule_Classes = '"error, msg: event or named eventlist is not declared"']
+	OneDeclError(c) :- SubEML(c, ml), ml = EventList(ev, _), no EventDecl(ev, _, _), no NameEventList(ev, _).
+
+	//event in NameEventList is declared
+	[rule_Classes = '"error, msg: event in named eventlist is not declared"']
+	OneDeclError(c) :- SubEML(c, ml), c is NameEventList, ml = EventList(ev, _), no EventDecl(ev, _, _).
 
 	//name type not declared
 	allNameTypes ::= sub(nt: NameType).
@@ -288,7 +291,7 @@ domain PStaticTyping extends PData
 	conforms no PayloadError(_).
 	conforms no TypeDefError(_).
 	conforms no DomOfMapUnSafe(_).
-	conforms no ModuleLevelTypingError(_).
+	conforms no ModuleLevelTypingError(_, _).
 	conforms no StaticFunctionError(_, _).
 	conforms no IllegalMainMachine(_).
 	conforms no IllegalComposition(_).
@@ -391,15 +394,15 @@ domain PStaticTyping extends PData
 	/**************************************************************/
 
 	Permissions ::= ModuleCreatesDecl + ModuleSendsDecl + MachineReceivesDecl + ObservesDecl + MachineDecl.
-	ModuleLevelTypingError ::= (p: Permissions).
+	ModuleLevelTypingError ::= (mod: ModuleDecl, p: Permissions).
 
 	//events in receives of the same module are disjoint
 	[rule_Classes = '"error, msg: all implemented interfaces in a module must be disjoint"']
-	ModuleLevelTypingError(mr) :- mr is MachineReceivesDecl(id1, ev), MachineReceivesDecl(id2, ev), id1 != id2, id1.mod = id2.mod.
+	ModuleLevelTypingError(id1.mod, mr) :- mr is MachineReceivesDecl(id1, ev), MachineReceivesDecl(id2, ev), id1 != id2, id1.mod = id2.mod.
 
 	//interfaces in creates are disjoint
 	[rule_Classes = '"error, msg: interfaces in creates list are not disjoint"']
-	ModuleLevelTypingError(c) :- c is ModuleCreatesDecl(m, i1), ModuleCreatesDecl(m, i2), InterfaceTypeEventDecl(i1, ev), InterfaceTypeEventDecl(i2, ev), i1 != i2.
+	ModuleLevelTypingError(mod, c) :- c is ModuleCreatesDecl(mod, i1), ModuleCreatesDecl(mod, i2), InterfaceTypeEventDecl(i1, ev), InterfaceTypeEventDecl(i2, ev), i1 != i2.
 
 	//a create interface is either disjoint or equal to the events in receives
 	//relation between creates interfaces and implemented machines
@@ -410,18 +413,18 @@ domain PStaticTyping extends PData
 									count({ev1 | no InterfaceTypeEventDecl(i, ev1), MachineReceivesDecl(mach, ev1), InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(mach, ev2)}) > 0.
 
 	[rule_Classes = '"error, msg: interface type in creates is not equal to or disjoint from the implemented interfaces in the module"']
-	ModuleLevelTypingError(c) :- mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _),
-								  c is ModuleCreatesDecl(m, i), NotDisjointOrEqual(m, i, mr).
+	ModuleLevelTypingError(mod, c) :- mach is MachineDecl(_, mod, _, _, _, _), mr is MachineReceivesDecl(mach, _),
+								  c is ModuleCreatesDecl(mod, i), NotDisjointOrEqual(mod, i, mr).
 
 	[rule_Classes = '"error, msg: monitor not allowed in specification module"']
-	ModuleLevelTypingError(mach) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), ModuleType(mod, kind), kind != IMPL.
+	ModuleLevelTypingError(mod, mach) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), ModuleType(mod, kind), kind != IMPL.
 
 	[rule_Classes = '"error, msg: monitor can observe event in sends or implemented interfaces"']
-	ModuleLevelTypingError(obs) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), obs is ObservesDecl(mach, ev), no ModuleSendsDecl(mod, ev), mach' is MachineDecl, no MachineReceivesDecl(mach', ev), mach'.mod = mod.
+	ModuleLevelTypingError(mod, obs) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), obs is ObservesDecl(mach, ev), no ModuleSendsDecl(mod, ev), mach' is MachineDecl, no MachineReceivesDecl(mach', ev), mach'.mod = mod.
 
 	//if there is an empty interface in the creates list then that machine should be implemented in the module
 	[rule_Classes = '"error, msg: empty interface in the creates list must be implemented in the module"']
-	ModuleLevelTypingError(c) :- c is ModuleCreatesDecl(m, i), no InterfaceTypeEventDecl(i, _), no MachineDecl(i.name, m, _, _, _, _).
+	ModuleLevelTypingError(mod, c) :- c is ModuleCreatesDecl(mod, i), no InterfaceTypeEventDecl(i, _), no MachineDecl(i.name, mod, _, _, _, _).
 
 	/***************************************************************/
 	/***********    All the subterm operations ********************/
@@ -434,6 +437,9 @@ domain PStaticTyping extends PData
 	SubModList ::= sub(mod: ModuleList, mod': ModuleList).
 	//get all events in EventList
 	SubEvent ::= sub(evl: EventList, ev : String).
+	ExpandedEventList ::= (evl: EventList, ev : String).
+	ExpandedEventList(evl, ev) :- SubEvent(evl, e), EventDecl(e, _, _), ev = e;
+								  SubEvent(evl, e), NameEventList(e, evl'), SubEvent(evl', ev).
 
 	/**************** Illegal Main Machines ************************/
 	IllegalMainMachine ::= (ml: ModuleList).
@@ -480,7 +486,7 @@ domain PStaticTyping extends PData
 									AllNewCallsInModuleList(ml, c, e), e: NewCall, CreatesForModuleList(ml, InterfaceType(e.name)), InterfaceTypeEventDecl(InterfaceType(e.name), ev), no HiddenEventsForModuleList(ml, ev), MachineReceivesDecl(mach, ev), SubModule(ml, mach.mod);
 									//Interfaces that are completely hidden needs to be resolved separately
 									AllNewCallsInModuleList(ml, c, e), e: NewCall, count({ev | InterfaceTypeEventDecl(InterfaceType(e.name), ev), no HiddenEventsForModuleList(ml, ev)}) = 0,
-									SubHide(ml, hm), count({ev| InterfaceTypeEventDecl(InterfaceType(e.name), ev), no SubEvent(hm.evL, ev)}) = 0,
+									SubHide(ml, hm), count({ev| InterfaceTypeEventDecl(InterfaceType(e.name), ev), no ExpandedEventList(hm.evL, ev)}) = 0,
 									SubModule(hm.modL, mach.mod), MachineReceivesDecl(mach, ev'), InterfaceTypeEventDecl(InterfaceType(e.name), ev').
 
 	//map for implementation modules
@@ -529,7 +535,6 @@ domain PStaticTyping extends PData
 	//all the following modulelists must be legally composed.
 	AllModList(ml) :- ComposedModules(cml), SubModList(cml, ml).
 
-	//get the sends list after removing hidden events and interfaces
 	SendsForModuleList(ml, ev) :-  AllModList(ml), ml = ModuleList(m1, _), SendsForModule(m1, ev);
 								   AllModList(ml), ml = ModuleList(_, m2), SendsForModuleList(m2, ev), m2 != NIL.
 
@@ -540,11 +545,11 @@ domain PStaticTyping extends PData
 	HiddenEventsForModuleList(ml, ev) :- AllModList(ml), ml = ModuleList(m, _), HiddenEventsForModule(m, ev);
 										 AllModList(ml), ml = ModuleList(_, m2), HiddenEventsForModuleList(m2, ev), m2 != NIL.
 
-	//get the creates list for the ModuleList, remove interfaces that have private events in them
+	//get the creates list for the ModuleList
 	CreatesForModuleList(ml, i) :- AllModList(ml), ml = ModuleList(m, _), CreatesForModule(m, i);
 								   AllModList(ml), ml = ModuleList(_, m2), CreatesForModuleList(m2, i), m2 != NIL.
 
-	//Generate signature for the all modules (module + hide)
+	//Generate signature for the modules (module + hide)
 	AllHideModules ::= (h : Hide).
 	AllHideModules(hm) :- ComposedModules(cml), SubHide(cml, hm).
 
@@ -563,7 +568,7 @@ domain PStaticTyping extends PData
 
 	//get the private list for the module
 	HiddenEventsForModule(hm, ev) :-  AllHideModules(hm), HiddenEventsForModuleList(hm.modL, ev);
-									  AllHideModules(hm), SubEvent(hm.evL, ev).
+									  AllHideModules(hm), ExpandedEventList(hm.evL, ev).
 
 	//get the creates list for the module
 	CreatesForModule(hm, i) :-  AllHideModules(hm), CreatesForModuleList(hm.modL, i);
@@ -572,8 +577,29 @@ domain PStaticTyping extends PData
 	/**************************************************************/
 	/*                      Legal Composition                   */
 	/*************************************************************/
-	//generate legal compositions just so that you can generate better error messages
-	//currently the error messages are generated transitively all the way to the root modulelist.
+	LegalComposition ::= (modL: ModuleList).
+	SendsDisjoint ::= (ml: ModuleList).
+	SendsPrivateDisjoint ::= (ml: ModuleList).
+	PublicReceivesDisjoint ::= (ml: ModuleList).
+	CreatesImplDisjointOrEqual ::= (ml: ModuleList).
+	CreatesDisjoint ::= (ml: ModuleList).
+	CreatesPrivateDisjoint ::= (ml: ModuleList).
+
+	SendsDisjoint (ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({ev |SendsForModule(m1, ev), SendsForModuleList(m2, ev), no HiddenEventsForModuleList(ml, ev)}) = 0.
+	SendsPrivateDisjoint(ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({ev | DownClosureSendsForModuleList(ml, ev), HiddenEventsForModuleList(ml, ev)}) = 0.
+	PublicReceivesDisjoint(ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({rd1 | ReceivesForModule(m1, rd1), ReceivesForModuleList(m2, rd2), rd2 is MachineReceivesDecl, rd1.ev = rd2.ev, no HiddenEventsForModuleList(ml, ev), rd1.ev = ev}) = 0.
+	CreatesDisjoint(ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({i1 | CreatesForModule(m1, i1), CreatesForModuleList(m2, i2), InterfaceTypeEventDecl(i1, ev), InterfaceTypeEventDecl(i2, ev), no HiddenEventsForModuleList(ml, ev)}) = 0.
+	CreatesPrivateDisjoint(ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({i | HiddenEventsForModuleList(ml, ev1), CreatesForModuleList(ml, i), InterfaceTypeEventDecl(i, ev1), InterfaceTypeEventDecl(i, ev2), no HiddenEventsForModuleList(ml, ev2)}) = 0.
+	CreatesImplDisjointOrEqual :- AllModList(ml), CreatesForModuleList(ml, i), count({ev | InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev)}) = 0,
+	count({ev1 | InterfaceTypeEventDecl(i, ev1), no ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2),rd2.ev = ev2, rd1.mach = rd2.mach}) = 0,
+	count({ev1 | no InterfaceTypeEventDecl(i, ev1), ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), rd2.ev = ev2, rd1.mach = rd2.mach}) = 0.
+
+	LegalComposition(ml) :- AllModList(ml), ml = ModuleList(m, NIL), m: ModuleDecl, no ModuleLevelTypingError(m, _);
+							AllModList(ml), ml = ModuleList(m, NIL), m: Hide, no IllegalHideOperation(m);
+							AllModList(ml), ml = ModuleList(m, m'), m: ModuleDecl, LegalComposition(m'), no ModuleLevelTypingError(m, _),
+							SendsDisjoint(ml), SendsPrivateDisjoint(ml), PublicReceivesDisjoint(ml), CreatesDisjoint(ml), CreatesPrivateDisjoint(ml), CreatesImplDisjointOrEqual(ml);
+							AllModList(ml), ml = ModuleList(m, m'), m: Hide, LegalComposition(m'), no IllegalHideOperation(m),
+							SendsDisjoint(ml), SendsPrivateDisjoint(ml), PublicReceivesDisjoint(ml), CreatesDisjoint(ml), CreatesPrivateDisjoint(ml), CreatesImplDisjointOrEqual(ml).
 
 	/**************************************************************/
 	/*                      Illegal Composition                   */
@@ -581,7 +607,8 @@ domain PStaticTyping extends PData
 
 	//Get all modulelist compositions
 	ComposeModWithModList ::= (ml: ModuleList, m1: Module, m2:ModuleList).
-	ComposeModWithModList(ml, m1, m2) :- AllModList(ml), ml = ModuleList(m1, m2), m2 : ModuleList. // add m2 is a legal compositions
+	ComposeModWithModList(ml, m1, m2) :- AllModList(ml), ml = ModuleList(m1, m2), m1: ModuleDecl, m2 : ModuleList, LegalComposition(m2), no ModuleLevelTypingError(m1, _);
+										 AllModList(ml), ml = ModuleList(m1, m2), m1: Hide, m2 : ModuleList, LegalComposition(m2), no IllegalHideOperation(m1).
 
 	IllegalComposition ::= (modL: ModuleList).
 
@@ -597,7 +624,7 @@ domain PStaticTyping extends PData
 
 	//sends and privates in the modulelist are disjoint
 	[rule_Classes = '"error, msg: down closure of public sends and hidden events are not disjoint after composition"']
-	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), DownClosureSendsForModuleList(ml, ev), HiddenEventsForModule(m1, ev).
+	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), DownClosureSendsForModuleList(ml, ev), HiddenEventsForModuleList(ml, ev).
 
 	//public events in the receives must be disjoint
 	[rule_Classes = '"error, msg: public events in receives are not disjoint after composition"']
@@ -605,19 +632,19 @@ domain PStaticTyping extends PData
 
 	//interfaces in creates are disjoint
 	[rule_Classes = '"error, msg: interfaces in creates list are not disjoint after composition"']
-	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), CreatesForModule(m1, i1), CreatesForModuleList(m2, i2), InterfaceTypeEventDecl(i1, ev), InterfaceTypeEventDecl(i2, ev).
+	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), CreatesForModule(m1, i1), CreatesForModuleList(m2, i2), InterfaceTypeEventDecl(i1, ev), InterfaceTypeEventDecl(i2, ev), no HiddenEventsForModuleList(ml, ev).
 
 	//a create interface is either disjoint or equal to the public events in receives
 	[rule_Classes = '"error, msg: interface type in creates is not equal to or disjoint from the public events in receives after composition"']
 	IllegalComposition(ml) :-
 	ComposeModWithModList(ml, m1, m2), CreatesForModuleList(ml, i), count({ev | InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev)}) = 0,
-	count({ev1 | InterfaceTypeEventDecl(i, ev1), no ReceivesForModuleList(ml, ed1), no HiddenEventsForModuleList(ml, ev1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), no HiddenEventsForModuleList(ml, ev2),rd2.ev = ev2, rd1.mach = rd2.mach}) > 0;
+	count({ev1 | InterfaceTypeEventDecl(i, ev1), no ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2),rd2.ev = ev2, rd1.mach = rd2.mach}) > 0;
 	ComposeModWithModList(ml, m1, m2), CreatesForModuleList(ml, i), count({ev | InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev)}) = 0,
-	count({ev1 | no InterfaceTypeEventDecl(i, ev1), ReceivesForModuleList(ml, rd1), rd1.ev = ev1, no HiddenEventsForModuleList(ml, ev1), InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), rd2.ev = ev2, no HiddenEventsForModuleList(ml, ev2), rd1.mach = rd2.mach}) > 0.
+	count({ev1 | no InterfaceTypeEventDecl(i, ev1), ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), rd2.ev = ev2, rd1.mach = rd2.mach}) > 0.
 
 	//no private event in the creates interfaces
 	[rule_Classes = '"error, msg: interface in creates has private/hidden event after composition"']
-	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), HiddenEventsForModuleList(ml, ev), CreatesForModuleList(ml, i), InterfaceTypeEventDecl(i, ev).
+	IllegalComposition(ml) :- ComposeModWithModList(ml, m1, m2), HiddenEventsForModuleList(ml, ev1), CreatesForModuleList(ml, i), InterfaceTypeEventDecl(i, ev1), InterfaceTypeEventDecl(i, ev2), no HiddenEventsForModuleList(ml, ev2).
 
 	//no duplicates in the sends list
 	[rule_Classes = '"error, msg: multiple modules have the same event in the sends list after composition"']
@@ -647,14 +674,14 @@ domain PStaticTyping extends PData
 	*/
 
 	[rule_Classes = '"error, msg: hide operation cannot be performed on private event"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvent(evl, ev), HiddenEventsForModuleList(hml, ev).
+	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), ExpandedEventList(evl, ev), HiddenEventsForModuleList(hml, ev).
 
 	[rule_Classes = '"error, msg: events in hide operation must be either disjoint or equal to interfaces in the creates list"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvent(evl, ev), CreatesForModuleList(hml, i), InterfaceTypeEventDecl(i, ev),
-							   count({ev' | InterfaceTypeEventDecl(i, ev'), no SubEvent(evl, ev')}) > 0.
+	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), ExpandedEventList(evl, ev), CreatesForModuleList(hml, i), InterfaceTypeEventDecl(i, ev),
+							   count({ev' | InterfaceTypeEventDecl(i, ev'), no ExpandedEventList(evl, ev')}) > 0.
 
 	[rule_Classes = '"error, msg: hide operation can be performed on an event present in receives of an implemented machine"']
-	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), SubEvent(evl, ev), count({rd | ReceivesForModuleList(hml, rd), rd.ev = ev}) != 1.
+	IllegalHideOperation(h) :- ComposedModules(ml), SubHide(ml, h), h = Hide(evl, hml), ExpandedEventList(evl, ev), count({rd | ReceivesForModuleList(hml, rd), rd.ev = ev}) != 1.
 
 	/**************************************************************/
 	/* Type checking rules for test cases and implementation  	 */
@@ -693,15 +720,24 @@ domain PStaticTyping extends PData
 	/**************************************************************/
 	/*						Sound Composition		 			 */
 	/*************************************************************/
-	SoundCompositionWarning ::= (ml: ModuleList).
+	SoundCompositionWarning ::= (ml: ModuleList + Module).
 
 	//generate a warning that implementations is not closed.
 	[rule_Classes = '"warning, msg: module list is not input closed (creates) with respect to the implemented interfaces"']
-	SoundCompositionWarning(ml) :- ComposedModules(ml), no CreatesForModuleList(ml, i), ReceivesForModuleList(ml, rd), InterfaceTypeEventDecl(i, rd.ev).
+	SoundCompositionWarning(ml) :- ComposedModules(ml), no SpecificationModules(modL), no CreatesForModuleList(ml, i), ReceivesForModuleList(ml, rd), InterfaceTypeEventDecl(i, rd.ev).
 
 	[rule_Classes = '"warning, msg: module list is not input closed (sends) with respect to the receives"']
-	SoundCompositionWarning(ml) :- ComposedModules(ml), ReceivesForModuleList(ml, rd), no SendsForModuleList(modL, rd.ev).
+	SoundCompositionWarning(ml) :- ComposedModules(ml), no SpecificationModules(modL), ReceivesForModuleList(ml, rd), no SendsForModuleList(modL, rd.ev).
 
+	HighLevelModulesInModuleList ::= (modL: ModuleList, mod: Module).
+	HighLevelModulesInModuleList(ml, m) :- AllModList(ml), ml = ModuleList(m1, m2), m = m1;
+										   AllModList(ml), ml = ModuleList(m1, m2), HighLevelModulesInModuleList(m2, m).
+	//there must be a safety check for each implementation module
+	[rule_Classes = '"warning, msg: implementation module does not occur in any safety test case"']
+	SoundCompositionWarning(mod) :- ImplementationModules(iml), HighLevelModulesInModuleList(iml, mod), no SafetyTestDecl(_, sml), HighLevelModulesInModuleList(sml, mod).
+	//there must be a refines check for each spec module
+	[rule_Classes = '"warning, msg: specification module does not occur in any refines test case"']
+	SoundCompositionWarning(mod) :- SpecificationModules(spml), HighLevelModulesInModuleList(spml, mod), no RefinesTestDecl(_, _, rhs), HighLevelModulesInModuleList(rhs, mod).
     /*************************************************************/
     /*                      Types of Expressions                 */
     /*************************************************************/

@@ -59,7 +59,6 @@ TopDecl
     : IncludeDecl
 	| TypeDefDecl
 	| EventListDecl
-	| ModuleListDecl
 	| PODecl
 	| EventDecl
 	| InterfaceDecl
@@ -96,10 +95,6 @@ TypeDefDecl
 /******************* EventList and ModuleList Declarations **********************/
 EventListDecl
 	: EVENTLIST ID ASSIGN NonDefaultEventList SEMICOLON   { AddNameEventList($2.str, ToSpan(@2), ToSpan(@1)); }
-	;
-
-ModuleListDecl
-	: MODULE ID ASSIGN ModuleList SEMICOLON   { AddNameModuleList($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
 /******************* Partial Order Over Events ********************************/

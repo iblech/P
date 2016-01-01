@@ -112,12 +112,6 @@
             private set;
         }
 
-        public List<P_Root.NameModuleList> NameModuleList
-        {
-            get;
-            private set;
-        }
-
         public List<P_Root.StateDecl> States
         {
             get;
@@ -272,10 +266,6 @@
                 {
                     yield return ne;
                 }
-                foreach (var ne in NameModuleList)
-                {
-                    yield return ne;
-                }
             }
         }
 
@@ -299,7 +289,6 @@
             SpecificationModules = new List<P_Root.SpecificationModules>();
             EventsPartialOrder = new List<P_Root.PartialOrderRel>();
             NameEventList = new List<P_Root.NameEventList>();
-            NameModuleList = new List<P_Root.NameModuleList>();
             RefinesTestDecl = new List<P_Root.RefinesTestDecl>();
             LivenessTestDecl = new List<P_Root.LivenessTestDecl>();
             SafetyTestDecl = new List<P_Root.SafetyTestDecl>();

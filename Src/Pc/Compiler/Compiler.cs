@@ -616,7 +616,7 @@
             AddErrors(task.Result, "DeclFunError(_, _)", errors, 1);
 
             //// Enumerate module system typing errors
-            AddErrors(task.Result, "ModuleLevelTypingError(_)", errors, 0);
+            AddErrors(task.Result, "ModuleLevelTypingError(_, _)", errors, 1);
             AddErrors(task.Result, "IllegalComposition(_)", errors, 0);
             AddErrors(task.Result, "IllegalHideOperation(_)", errors, 0);
             AddErrors(task.Result, "IllegalTestOrImplementation(_)", errors, 0);

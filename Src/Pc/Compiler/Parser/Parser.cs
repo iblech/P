@@ -1753,16 +1753,6 @@
             parseProgram.NameEventList.Add(nameEvList);
         }
 
-        private void AddNameModuleList(string mlName, Span nameSpan, Span span)
-        {
-            //create name eventlist
-            var namemodList = new P_Root.NameModuleList();
-            namemodList.Span = span;
-            namemodList.name = (P_Root.IArgType_NameModuleList__0)MkString(mlName, nameSpan);
-            namemodList.modL = (P_Root.IArgType_NameModuleList__1)ModuleListStack.Pop();
-            parseProgram.NameModuleList.Add(namemodList);
-        }
-
         private void AddEventsPO(string evName, Span nameSpan, Span span)
         {
             foreach (var ev in crntEventList)
