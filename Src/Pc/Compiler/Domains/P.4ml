@@ -641,7 +641,7 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: interface type in creates is not equal to or disjoint from the public events in receives after composition"']
 	IllegalComposition(ml) :-
 	ComposeModWithModList(ml, m1, m2), CreatesForModuleList(ml, i), count({ev | InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev)}) = 0,
-	count({ev1 | InterfaceTypeEventDecl(i, ev1), no ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2),rd2.ev = ev2, rd1.mach = rd2.mach}) > 0;
+	count({ev1 | InterfaceTypeEventDecl(i, ev1), no ReceivesForModuleList(ml, rd1), rd1 is MachineReceivesDecl, rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2),rd2.ev = ev2, rd1.mach = rd2.mach}) > 0;
 	ComposeModWithModList(ml, m1, m2), CreatesForModuleList(ml, i), count({ev | InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev)}) = 0,
 	count({ev1 | no InterfaceTypeEventDecl(i, ev1), ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), rd2.ev = ev2, rd1.mach = rd2.mach}) > 0.
 
@@ -727,7 +727,7 @@ domain PStaticTyping extends PData
 
 	//generate a warning that implementations is not closed.
 	[rule_Classes = '"warning, msg: module list is not input closed (creates) with respect to the implemented interfaces"']
-	SoundCompositionWarning(ml) :- ComposedModules(ml), no SpecificationModules(modL), no CreatesForModuleList(ml, i), ReceivesForModuleList(ml, rd), InterfaceTypeEventDecl(i, rd.ev).
+	SoundCompositionWarning(ml) :- ComposedModules(ml), no SpecificationModules(modL), no CreatesForModuleList(ml, i), ReceivesForModuleList(ml, rd), InterfaceTypeEventDecl(i, rd.ev), rd.mach.isMain = FALSE.
 
 	[rule_Classes = '"warning, msg: module list is not input closed (sends) with respect to the receives"']
 	SoundCompositionWarning(ml) :- ComposedModules(ml), no SpecificationModules(modL), ReceivesForModuleList(ml, rd), no SendsForModuleList(modL, rd.ev).
@@ -737,10 +737,11 @@ domain PStaticTyping extends PData
 										   AllModList(ml), ml = ModuleList(m1, m2), HighLevelModulesInModuleList(m2, m).
 	//there must be a safety check for each implementation module
 	[rule_Classes = '"warning, msg: implementation module does not occur in any safety test case"']
-	SoundCompositionWarning(mod) :- ImplementationModules(iml), HighLevelModulesInModuleList(iml, mod), no SafetyTestDecl(_, sml), HighLevelModulesInModuleList(sml, mod).
+	SoundCompositionWarning(mod) :- ImplementationModules(iml), HighLevelModulesInModuleList(iml, mod), count({st | st is SafetyTestDecl(_, sml), HighLevelModulesInModuleList(sml, mod)}) = 0.
+
 	//there must be a refines check for each spec module
 	[rule_Classes = '"warning, msg: specification module does not occur in any refines test case"']
-	SoundCompositionWarning(mod) :- SpecificationModules(spml), HighLevelModulesInModuleList(spml, mod), no RefinesTestDecl(_, _, rhs), HighLevelModulesInModuleList(rhs, mod).
+	SoundCompositionWarning(mod) :- SpecificationModules(spml), HighLevelModulesInModuleList(spml, mod), count({ rt | rt is RefinesTestDecl(_, _, rhs), HighLevelModulesInModuleList(rhs, mod)}) = 0.
     /*************************************************************/
     /*                      Types of Expressions                 */
     /*************************************************************/
