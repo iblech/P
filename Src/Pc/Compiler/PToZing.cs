@@ -2665,18 +2665,18 @@ namespace Microsoft.Pc
             }
             else if (funName == PData.Con_FunApp.Node.Name)
             {
-                foreach (var a in ZingUnfold(ctxt, GetArgByIndex(ft, 1)))
+                foreach (var a in ZingUnfold(ctxt, GetArgByIndex(ft, 2)))
                 {
                     yield return a;
                 }
             }
             else if (funName == PData.Con_FunStmt.Node.Name)
             {
-                foreach (var a in ZingUnfold(ctxt, GetArgByIndex(ft, 1)))
+                foreach (var a in ZingUnfold(ctxt, GetArgByIndex(ft, 2)))
                 {
                     yield return a;
                 }
-                var node = GetArgByIndex(ft, 2);
+                var node = GetArgByIndex(ft, 3);
                 if (node.NodeKind != NodeKind.Id)
                 {
                     yield return node;
