@@ -1555,7 +1555,8 @@
                 isStaticFun
                 ? (P_Root.IArgType_AnonFunDecl__0)GetCurrentModuleDecl(span)
                 : (P_Root.IArgType_AnonFunDecl__0)GetCurrentMachineDecl(span);
-            var anonAction = P_Root.MkAnonFunDecl(owner, (P_Root.IArgType_AnonFunDecl__1)localVarStack.LocalVarDecl, stmt, (P_Root.IArgType_AnonFunDecl__3)localVarStack.ContextLocalVarDecl);
+            var publicInfo = isPublic ? MkUserCnst(P_Root.UserCnstKind.TRUE, span) : MkUserCnst(P_Root.UserCnstKind.FALSE, span);
+            var anonAction = P_Root.MkAnonFunDecl(owner, (P_Root.IArgType_AnonFunDecl__1)localVarStack.LocalVarDecl, stmt, (P_Root.IArgType_AnonFunDecl__3)localVarStack.ContextLocalVarDecl, publicInfo);
             anonAction.Span = stmt.Span;
             parseProgram.AnonFunctions.Add(anonAction);
             var caseEventList = localVarStack.Pop();

@@ -1961,7 +1961,7 @@ namespace Microsoft.Pc
             {
                 foreach (var staticFun in allModules[module].staticFunNameToFunInfo)
                 {
-                    methods.Add(MkZingStaticFunMethod(string.Format("{0}_{1}", module, staticFun.Key), staticFun.Value));
+                    methods.Add(MkZingStaticFunMethod(string.Format("{0}_{1}", module, staticFun.Key), module, staticFun.Value));
                 }
             }
 
@@ -2553,6 +2553,7 @@ namespace Microsoft.Pc
         {
             private PToZing pToZing;
             public string machineName;
+            public string moduleName;
             public string entityName;
             public FunInfo entityInfo;
             public Stack<List<AST<Node>>> sideEffectsStack;
@@ -2561,9 +2562,10 @@ namespace Microsoft.Pc
             private Dictionary<string, int> labels;
             public AST<Node> lastEval;
 
-            public ZingFoldContext(PToZing comp, string machineName, string entityName, FunInfo entityInfo)
+            public ZingFoldContext(PToZing comp, string module, string machineName, string entityName, FunInfo entityInfo)
             {
                 this.pToZing = comp;
+                this.moduleName = module;
                 this.machineName = machineName;
                 this.entityName = entityName;
                 this.entityInfo = entityInfo;
@@ -2973,7 +2975,7 @@ namespace Microsoft.Pc
 
         private List<AST<Node>> CaseFunCallHelper(ZingFoldContext ctxt, List<string> eventNames, List<string> funNames, string afterAfterLabel)
         {
-            var moduleName = GetModuleName(ctxt.machineName);
+            var moduleName = ctxt.moduleName;
             List<AST<Node>> eventStmts = new List<AST<Node>>();
             List<AST<Node>> funStmts = new List<AST<Node>>();
 
@@ -3949,7 +3951,7 @@ namespace Microsoft.Pc
             }
         }
 
-        private AST<Node> MkZingStaticFunMethod(string funName, FunInfo funInfo)
+        private AST<Node> MkZingStaticFunMethod(string funName, string moduleName, FunInfo funInfo)
         {
             List<AST<Node>> parameters = new List<AST<Node>>();
             parameters.Add(MkZingVarDecl("myHandle", Factory.Instance.MkCnst("SM_HANDLE")));
@@ -3960,7 +3962,7 @@ namespace Microsoft.Pc
             localVars.Add(MkZingVarDecl("currentEvent", Factory.Instance.MkCnst("SM_EVENT")));
             localVars.Add(MkZingVarDecl("currentArg", Factory.Instance.MkCnst("PRT_VALUE")));
 
-            var ctxt = new ZingFoldContext(this, null, funName, funInfo);
+            var ctxt = new ZingFoldContext(this, moduleName, null, funName, funInfo);
             var tuple = Factory.Instance.ToAST(funInfo.body).Compute<ZingTranslationInfo>(
                 x => ZingUnfold(ctxt, x),
                 (x, ch) => ZingFold(ctxt, x, ch));
@@ -3983,7 +3985,7 @@ namespace Microsoft.Pc
             List<AST<Node>> localVars = new List<AST<Node>>();
             localVars.Add(MkZingVarDecl("locals", Factory.Instance.MkCnst("PRT_VALUE_ARRAY")));
 
-            var ctxt = new ZingFoldContext(this, machineName, funName, funInfo);
+            var ctxt = new ZingFoldContext(this, GetModuleName(machineName), machineName, funName, funInfo);
             var tuple = Factory.Instance.ToAST(funInfo.body).Compute<ZingTranslationInfo>(
                 x => ZingUnfold(ctxt, x),
                 (x, ch) => ZingFold(ctxt, x, ch));

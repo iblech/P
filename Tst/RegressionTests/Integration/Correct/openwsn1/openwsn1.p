@@ -40,252 +40,270 @@ event Data assert 4 : (machine,int);
 event Ack assert 1 : (machine,int);
 event Initialize assert 1 : (machine,seq[machine]);
 
-main model GodMachine {
-	var N1:machine;var N2:machine;var N3:machine;var N4:machine;
-	var templ:seq[machine];
-	var slotT : machine;
-	start state init {
-		entry {
-			N1 = new OpenWSN_Mote(0);
-			N2 = new OpenWSN_Mote(1);
-			N3 = new OpenWSN_Mote(2);
-			N4 = new OpenWSN_Mote(1);
-			//initalize the slot machine
-			templ += (0, N1); templ += (0, N2); templ += (0, N3); templ += (0, N4);
-			slotT = new SlotTimerMachine(templ);
-			templ -= 0; templ -= 0; templ -= 0; templ -= 0; assert(sizeof(templ) == 0);
-			//initialize the connection
-			templ += (0, N2);
-			send N1, Initialize, (slotT,templ);
-			templ -= 0; assert(sizeof(templ) == 0);
-			templ += (0, N1); templ += (0, N3); templ += (0, N4);
-			send N2, Initialize, (slotT,templ);
-			templ -= 0; templ -= 0; templ -= 0; assert(sizeof(templ) == 0);
-			templ += (0, N2); templ += (0, N4);
-			send N3, Initialize, (slotT,templ);
-			templ -= 0; templ -= 0; assert(sizeof(templ) == 0);
-			templ += (0, N2); templ += (0, N3);
-			send N4, Initialize, (slotT,templ);
-			templ -= 0; templ -= 0; assert(sizeof(templ) == 0);			
-		}
-	}
-
-}
-machine OpenWSN_Mote {
-	//my ID
-	var myRank:int;
-	//temp variable
-	var temp: int;
-	var check : bool;
-	//my neighbours determined static
-	var myNeighbours: seq[machine];
-	//preferred neighbour (time parent)
-	var myTimeParent:(machine, int);
-	//last synchronized 
-	var lastSynched: int;
-	//current slot
-	var currentSlot: (bool, (machine, machine)); //(isshared, machine)
-	//slot timer
-	var slotTimer:machine;
-	//local
-	var i:int;
-	
-	start state init_mote {
-		defer newSlot;
-		ignore Data;
-		entry (payload: int){
-			//init the connections
-			myRank = payload;
-			myTimeParent = (null, 10000);
-			lastSynched = 0;	
-		
-		}
-		on Initialize goto WaitForNewSlot with (payload :(machine,seq[machine]))
-		{ 
-			slotTimer = payload.0;
-			myNeighbours = payload.1;
-		};
-	}
-
-	fun CheckOperationTobePerfomed(currentSlot :(bool, (machine,machine))) {
-		if(myRank != 0)
-			lastSynched = lastSynched + 1;
-		temp = OperationTxorRxorSleep();
-		if(temp == 0)
-			raise Tx;
-		if(temp == 1)
-			raise Rx;
-		if(temp == 2)
-			raise Sleep;
-	}
-	
-	model fun OperationTxorRxorSleep() : int {
-		if($)
-			return 0; // Tx
-		else if ($)
-			return 1; // Rx
-		else
-			return 2; // Sleep
-	}
-	
-	state WaitForNewSlot {
-		ignore Data, Ack;
-		entry {
-		
-		}
-		on newSlot do (payload : (bool, (machine,machine))) { CheckOperationTobePerfomed(payload);};
-		on Tx goto DataTransmissionMode;
-		on Rx goto DataReceptionMode;
-		on Sleep goto WaitForNewSlot with
-		{
-			send slotTimer, endSlot;
-		};
-	}
-	
-	model fun TransmitData(target:machine) {
-		if(target == null)
-		{
-			//choose non-det
-			i = sizeof(myNeighbours) - 1;
-			while(i>= 0)
-			{
-				if($)
-				{
-					send myNeighbours[i], Data, (this, myRank);
-					return;
-				}
-				else
-					i = i - 1;
+module TestDriver
+sends Initialize
+creates OpenWSN_Mote
+{
+	main model GodMachine {
+		var N1:machine;var N2:machine;var N3:machine;var N4:machine;
+		var templ:seq[machine];
+		var slotT : machine;
+		start state init {
+			entry {
+				N1 = new OpenWSN_Mote(0);
+				N2 = new OpenWSN_Mote(1);
+				N3 = new OpenWSN_Mote(2);
+				N4 = new OpenWSN_Mote(1);
+				//initalize the slot machine
+				templ += (0, N1); templ += (0, N2); templ += (0, N3); templ += (0, N4);
+				slotT = new SlotTimerMachine(templ);
+				templ -= 0; templ -= 0; templ -= 0; templ -= 0; assert(sizeof(templ) == 0);
+				//initialize the connection
+				templ += (0, N2);
+				send N1, Initialize, (slotT,templ);
+				templ -= 0; assert(sizeof(templ) == 0);
+				templ += (0, N1); templ += (0, N3); templ += (0, N4);
+				send N2, Initialize, (slotT,templ);
+				templ -= 0; templ -= 0; templ -= 0; assert(sizeof(templ) == 0);
+				templ += (0, N2); templ += (0, N4);
+				send N3, Initialize, (slotT,templ);
+				templ -= 0; templ -= 0; assert(sizeof(templ) == 0);
+				templ += (0, N2); templ += (0, N3);
+				send N4, Initialize, (slotT,templ);
+				templ -= 0; templ -= 0; assert(sizeof(templ) == 0);			
 			}
 		}
-		else
-		{
-			send target, Data, (this, myRank);
-		}
+
 	}
-	
-	model fun CSMA_CA() : bool {
-		if($)
-		{
-			return true;
+}
+
+module OpenWSN
+sends Data, Ack
+{
+	machine OpenWSN_Mote 
+	receives Initialize, Data, Ack, endSlot
+	{
+		//my ID
+		var myRank:int;
+		//temp variable
+		var temp: int;
+		var check : bool;
+		//my neighbours determined static
+		var myNeighbours: seq[machine];
+		//preferred neighbour (time parent)
+		var myTimeParent:(machine, int);
+		//last synchronized 
+		var lastSynched: int;
+		//current slot
+		var currentSlot: (bool, (machine, machine)); //(isshared, machine)
+		//slot timer
+		var slotTimer:machine;
+		//local
+		var i:int;
+		
+		start state init_mote {
+			defer newSlot;
+			ignore Data;
+			entry (payload: int){
+				//init the connections
+				myRank = payload;
+				myTimeParent = (null, 10000);
+				lastSynched = 0;	
+			
+			}
+			on Initialize goto WaitForNewSlot with (payload :(machine,seq[machine]))
+			{ 
+				slotTimer = payload.0;
+				myNeighbours = payload.1;
+			};
 		}
-		else
-			return false;
-	}
-	
-	state DataTransmissionMode {
-		entry {
-		      if(!currentSlot.0)
+
+		fun CheckOperationTobePerfomed(currentSlot :(bool, (machine,machine))) {
+			if(myRank != 0)
+				lastSynched = lastSynched + 1;
+			temp = OperationTxorRxorSleep();
+			if(temp == 0)
+				raise Tx;
+			if(temp == 1)
+				raise Rx;
+			if(temp == 2)
+				raise Sleep;
+		}
+		
+		model fun OperationTxorRxorSleep() : int {
+			if($)
+				return 0; // Tx
+			else if ($)
+				return 1; // Rx
+			else
+				return 2; // Sleep
+		}
+		
+		state WaitForNewSlot {
+			ignore Data, Ack;
+			entry {
+			
+			}
+			on newSlot do (payload : (bool, (machine,machine))) { CheckOperationTobePerfomed(payload);};
+			on Tx goto DataTransmissionMode;
+			on Rx goto DataReceptionMode;
+			on Sleep goto WaitForNewSlot with
 			{
-			if(currentSlot.1.0 == this)
+				send slotTimer, endSlot;
+			};
+		}
+		
+		model fun TransmitData(target:machine) {
+			if(target == null)
+			{
+				//choose non-det
+				i = sizeof(myNeighbours) - 1;
+				while(i>= 0)
 				{
-				TransmitData(currentSlot.1.1);
-					raise TxDone;
-				}
-				else
-				{
-					raise Local;
+					if($)
+					{
+						send myNeighbours[i], Data, (this, myRank);
+						return;
+					}
+					else
+						i = i - 1;
 				}
 			}
 			else
 			{
-				//this slot is shared
-				check = CSMA_CA();
-				if(check)
+				send target, Data, (this, myRank);
+			}
+		}
+		
+		model fun CSMA_CA() : bool {
+			if($)
+			{
+				return true;
+			}
+			else
+				return false;
+		}
+		
+		state DataTransmissionMode {
+			entry {
+				  if(!currentSlot.0)
 				{
-					TransmitData(null);
-					raise TxDone;
+				if(currentSlot.1.0 == this)
+					{
+					TransmitData(currentSlot.1.1);
+						raise TxDone;
+					}
+					else
+					{
+						raise Local;
+					}
 				}
 				else
 				{
-					raise Local;
+					//this slot is shared
+					check = CSMA_CA();
+					if(check)
+					{
+						TransmitData(null);
+						raise TxDone;
+					}
+					else
+					{
+						raise Local;
+					}
+				}
+				
+			}
+			on Local goto WaitForNewSlot with
+			{
+				send slotTimer, endSlot;
+			};
+			on TxDone goto WaitForAck;
+		}
+		
+		state WaitForAck {
+			ignore Data;
+			entry {
+			
+			}
+			on Ack goto WaitForNewSlot with (payload : (machine,int)) {
+			{
+				//update the timeparent
+			if(myTimeParent.1 > payload.1)
+					myTimeParent = payload;
+					
+			if(payload.0 == myTimeParent.0)
+					lastSynched = 0; //Synched
+					
+				send slotTimer, endSlot;
+			}};
+			on null goto WaitForNewSlot with
+			{
+				send slotTimer, endSlot;
+			};
+		}
+		
+		state DataReceptionMode {
+			entry {
+				
+			}
+			on Data goto WaitForNewSlot with (payload : (machine,int))
+			{
+				//Update my preferred parent 
+			if(myTimeParent.1 > payload.1)
+					myTimeParent = payload;
+					
+			if(payload.0 == myTimeParent.0)
+					lastSynched = 0; //synched 
+				
+			send payload.0, Ack, (this, myRank);
+				
+				send slotTimer, endSlot;
+			};
+		}
+		
+	}
+}
+module SlotTimer
+sends newSlot 
+{
+	model SlotTimerMachine 
+	receives endSlot
+	{
+		var AllMotes:seq[machine];
+		var i: int;
+		var counter: int;
+		start state init{
+			entry (payload : seq[machine]){
+				counter = 0;
+				AllMotes = payload;
+				raise Local;
+			}
+			on Local goto SendNewSlot;
+		}
+		
+		state SendNewSlot {
+			entry {
+				i = sizeof(AllMotes) - 1;
+				while(i>=0)
+				{
+					send AllMotes[i], newSlot, (true, (null, null));
+					i = i - 1;
 				}
 			}
-			
+			on endSlot do increaseCounter;
+			on Local goto SendNewSlot;
 		}
-		on Local goto WaitForNewSlot with
-		{
-			send slotTimer, endSlot;
-		};
-		on TxDone goto WaitForAck;
-	}
-	
-	state WaitForAck {
-		ignore Data;
-		entry {
 		
-		}
-		on Ack goto WaitForNewSlot with (payload : (machine,int)) {
-		{
-			//update the timeparent
-		if(myTimeParent.1 > payload.1)
-				myTimeParent = payload;
-				
-		if(payload.0 == myTimeParent.0)
-				lastSynched = 0; //Synched
-				
-			send slotTimer, endSlot;
-		}};
-		on null goto WaitForNewSlot with
-		{
-			send slotTimer, endSlot;
-		};
-	}
-	
-	state DataReceptionMode {
-		entry {
-			
-		}
-		on Data goto WaitForNewSlot with (payload : (machine,int))
-		{
-			//Update my preferred parent 
-		if(myTimeParent.1 > payload.1)
-				myTimeParent = payload;
-				
-		if(payload.0 == myTimeParent.0)
-				lastSynched = 0; //synched 
-			
-		send payload.0, Ack, (this, myRank);
-			
-			send slotTimer, endSlot;
-		};
-	}
-	
-}
-
-model SlotTimerMachine {
-	var AllMotes:seq[machine];
-	var i: int;
-	var counter: int;
-	start state init{
-		entry (payload : seq[machine]){
-			counter = 0;
-			AllMotes = payload;
-			raise Local;
-		}
-		on Local goto SendNewSlot;
-	}
-	
-	state SendNewSlot {
-		entry {
-			i = sizeof(AllMotes) - 1;
-			while(i>=0)
+		fun increaseCounter() {
+			counter = counter + 1;
+			if(counter == sizeof(AllMotes))
 			{
-				send AllMotes[i], newSlot, (true, (null, null));
-				i = i - 1;
+				counter = 0;
+				raise Local;
 			}
 		}
-		on endSlot do increaseCounter;
-		on Local goto SendNewSlot;
-	}
-	
-	fun increaseCounter() {
-		counter = counter + 1;
-		if(counter == sizeof(AllMotes))
-		{
-			counter = 0;
-			raise Local;
-		}
 	}
 }
 
+implementation SlotTimer, OpenWSN, TestDriver;

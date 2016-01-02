@@ -98,7 +98,7 @@ domain PData
 	ObservesDecl   ::= new (monitor: MachineDecl, ev: String).
     VarDecl        ::= fun (name: String, owner: MachineDecl -> type: any TypeExpr).
     FunDecl        ::= fun (name: String, owner: MachineDecl + ModuleDecl -> kind: { REAL, MODEL }, params: any NmdTupType + { NIL },  return: any TypeExpr + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt, isPublic: Boolean).
-    AnonFunDecl    ::= new (owner: MachineDecl + ModuleDecl, locals: any NmdTupType + { NIL }, body: any Stmt, envVars: any NmdTupType).
+    AnonFunDecl    ::= new (owner: MachineDecl + ModuleDecl, locals: any NmdTupType + { NIL }, body: any Stmt, envVars: any NmdTupType, isPublic: Boolean).
     StateDecl      ::= fun (name: any QualifiedName, owner: MachineDecl -> entryAction: any AnonFunDecl + String, exitFun: any AnonFunDecl + String, temperature: { HOT, WARM, COLD }).
     TransDecl      ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> dst: any QualifiedName, action: any { PUSH } + AnonFunDecl + String).
     DoDecl         ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> action: any { DEFER, IGNORE } + AnonFunDecl + String).
@@ -136,7 +136,7 @@ domain PData
    	ImplFunction ::= (f: FunDecl + AnonFunDecl).
 	ImplFunction(f) :- f is FunDecl( _, mod, _, _, _, _, _, _),  AllImplModules(modl, mod);
 					   f is FunDecl, f.owner.kind = REAL, ImplMachine(f.owner);
-					   f is AnonFunDecl(mod, _, _, _),  AllImplModules(modl, mod);
+					   f is AnonFunDecl(mod, _, _, _, _),  AllImplModules(modl, mod);
 					   f is AnonFunDecl, f.owner.kind = REAL, ImplMachine(f.owner).
 
 	//all machines in implementation modules list
@@ -238,7 +238,7 @@ domain PStructuralTyping extends PData
 
 	//interface type in creates declaration
 	[rule_Classes = '"error, msg: interface type in creates is not declared"']
-	OneDeclError(creates) :- creates is ModuleCreatesDecl(_, i), no InterfaceTypeEventDecl(i, _).
+	OneDeclError(creates) :- creates is ModuleCreatesDecl(mod, i), no InterfaceTypeEventDecl(i, _), no MachineDecl(i.name, mod, _, _, _, _).
 
 	TopLevelDecls ::= ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl + PartialOrderRel + NameEventList.
 	EventAndModule ::= ModuleDecl + EventList.
@@ -354,7 +354,7 @@ domain PStaticTyping extends PData
 	SubCntxt ::= sub (cntxt: TypingContext).
 
 	SubSE ::= (cntxt: TypingContext, typeable: Typeable).
-	SubSE(cntxt, typeable) :- SubCntxt(cntxt), cntxt = AnonFunDecl(_, _, typeable, _).
+	SubSE(cntxt, typeable) :- SubCntxt(cntxt), cntxt = AnonFunDecl(_, _, typeable, _, _).
 	SubSE(cntxt, typeable) :- SubCntxt(cntxt), cntxt = FunDecl(_, _, _, _,  _, _, typeable, _).
 	SubSE(c, e), SubSE(c, s) :- SubSE(c, While(e, s)).
 	SubSE(c, e), SubSE(c, s1), SubSE(c, s2) :- SubSE(c, Ite(e, s1, s2)).
@@ -420,7 +420,7 @@ domain PStaticTyping extends PData
 	ModuleLevelTypingError(mod, mach) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), ModuleType(mod, kind), kind != IMPL.
 
 	[rule_Classes = '"error, msg: monitor can observe event in sends or implemented interfaces"']
-	ModuleLevelTypingError(mod, obs) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), obs is ObservesDecl(mach, ev), no ModuleSendsDecl(mod, ev), mach' is MachineDecl, no MachineReceivesDecl(mach', ev), mach'.mod = mod.
+	ModuleLevelTypingError(mod, obs) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), obs is ObservesDecl(mach, ev), no ModuleSendsDecl(mod, ev), count({mach' | mach' is MachineDecl(_, mod, _, _, _, _), MachineReceivesDecl(mach', ev)}) = 0.
 
 	//if there is an empty interface in the creates list then that machine should be implemented in the module
 	[rule_Classes = '"error, msg: empty interface in the creates list must be implemented in the module"']
@@ -485,8 +485,10 @@ domain PStaticTyping extends PData
 	NewToMachineMap(ml, c, e, mach) :-
 									//empty interfaces should be matched to the local machines
 									AllNewCallsInModuleList(ml, c, e), e: NewCall, no InterfaceTypeEventDecl(InterfaceType(e.name), _), mach is MachineDecl(e.name, mod, _, _, _, _), SubModule(ml, mod), ModuleCreatesDecl(mod, InterfaceType(e.name));
-									//interfaces in the creates list can be resolved directly
+									//public interfaces in the creates list can be resolved directly
 									AllNewCallsInModuleList(ml, c, e), e: NewCall, CreatesForModuleList(ml, InterfaceType(e.name)), InterfaceTypeEventDecl(InterfaceType(e.name), ev), no HiddenEventsForModuleList(ml, ev), MachineReceivesDecl(mach, ev), SubModule(ml, mach.mod);
+									//interfaces in the public static functions can be resolved directly
+									AllNewCallsInModuleList(ml, c, e), e: NewCall, c.isPublic = TRUE, InterfaceTypeEventDecl(InterfaceType(e.name), ev), no HiddenEventsForModuleList(ml, ev), MachineReceivesDecl(mach, ev), SubModule(ml, mach.mod), c.owner = mach.mod;
 									//Interfaces that are completely hidden needs to be resolved separately
 									AllNewCallsInModuleList(ml, c, e), e: NewCall, count({ev | InterfaceTypeEventDecl(InterfaceType(e.name), ev), no HiddenEventsForModuleList(ml, ev)}) = 0,
 									SubHide(ml, hm), count({ev| InterfaceTypeEventDecl(InterfaceType(e.name), ev), no ExpandedEventList(hm.evL, ev)}) = 0,
@@ -753,11 +755,11 @@ domain PStaticTyping extends PData
 	//THIS is not allowed in static functions
 	// Type of THIS is the receive set implemented by the machine.
     TypeOf(c, e, i)  :- SubSE(c, e), e = NulApp(THIS), i = InterfaceType(c.owner.name), c is FunDecl(_, owner, _, _, _, _, _, _), owner is MachineDecl;
-						SubSE(c, e), e = NulApp(THIS), i = InterfaceType(c.owner.name), c is AnonFunDecl(owner, _, _, _), owner is MachineDecl.
+						SubSE(c, e), e = NulApp(THIS), i = InterfaceType(c.owner.name), c is AnonFunDecl(owner, _, _, _, _), owner is MachineDecl.
 
     [ rule_Classes = '"error, msg: (this) is not allowed inside static functions"']
     TypeOf(c, e, ERROR)           :- SubSE(c, e), e = NulApp(THIS), c is FunDecl(_, owner, _, _, _, _, _, _), owner is ModuleDecl;
-									 SubSE(c, e), e = NulApp(THIS), c is AnonFunDecl(owner, _, _, _), owner is ModuleDecl.
+									 SubSE(c, e), e = NulApp(THIS), c is AnonFunDecl(owner, _, _, _, _), owner is ModuleDecl.
 
 	TypeOf(c, e, BaseType(BOOL))  :- SubSE(c, e), e = NulApp(NONDET).
 
@@ -810,7 +812,11 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Cast can never succeed"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k = EMPTY.
 
-    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _).
+    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner, _, _, _, _), ModuleCreatesDecl(c.owner, t), c.isPublic = FALSE;
+						 SubSE(c, e), e = New(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner.mod, _, _, _, _), ModuleCreatesDecl(c.owner.mod, t);
+						 SubSE(c, e), e = New(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = FALSE, ModuleCreatesDecl(c.owner.mod, t);
+						 SubSE(c, e), e = New(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = FALSE, ModuleCreatesDecl(c.owner, t);
+						 SubSE(c, e), e = New(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = TRUE, count({ev1 | InterfaceTypeEventDecl(t, ev1), no MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) = 0, count({ev1 | no InterfaceTypeEventDecl(t, ev1), MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) = 0.
 
 	[ rule_Classes = '"error, msg: Monitors cannot be created with "new""']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), MachineDecl(n, _, MONITOR, _, _, _).
@@ -823,7 +829,8 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: created interface in private static function must be in the creates list of the module"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, no ModuleCreatesDecl(mod, InterfaceType(n)).
 	[ rule_Classes = '"error, msg: created interface in public static function must be implemented in the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, InterfaceTypeEventDecl(InterfaceType(n), ev), no MachineReceivesDecl(m, ev), m is MachineDecl, m.mod = c.owner.
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, count({ev1 | InterfaceTypeEventDecl(t, ev1), no MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) > 0;
+									  SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE,count({ev1 | no InterfaceTypeEventDecl(t, ev1), MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) > 0.
 
     TypeOf(c, e, t2)               :- TypeOfArg2(c, e, _, t2), e : Field, t2 != ERROR.
 	[ rule_Classes = '"error, msg: Bad field name"']
@@ -896,8 +903,11 @@ domain PStaticTyping extends PData
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, NIL, _), no FunDecl(n, c.owner, _, _, _, _, _, _).
 	[ rule_Classes = '"error, msg: static function can only call other static funtions"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, NIL, _), toSymbol(c.owner) = #ModuleDecl.
+	[ rule_Classes = '"error, msg: not a public static function"']
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, m, _), m : String, toSymbol(c.owner) = #ModuleDecl, c.owner != ModuleDecl(m), FunDecl(n, ModuleDecl(m), _, _, _, _, _, FALSE);
+						   SubSE(c, e), e = FunApp(n, m, _), m : String, toSymbol(c.owner) = #MachineDecl, c.owner.mod != ModuleDecl(m), FunDecl(n, ModuleDecl(m), _, _, _, _, _, FALSE).	
 	[ rule_Classes = '"error, msg: public static function can only call other public static funtions"']
-	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, m, _), m : String, c is FunDecl(_, owner, _, _, _, _, _, TRUE), FunDecl(n, ModuleDecl(m), _, _, _, _, _, FALSE).
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, m, _), m : String, c.isPublic = TRUE, FunDecl(n, ModuleDecl(m), _, _, _, _, _, FALSE).
 	[ rule_Classes = '"error, msg: static function not defined"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunApp(n, m, _), m : String, no FunDecl(n, ModuleDecl(m), _, _, _, _, _, _).
 	[ rule_Classes = '"error, msg: module not declared"']
@@ -950,14 +960,19 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: "while (...)" expects a boolean value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : While, t1 != BaseType(BOOL).
 
-    TypeOf(c, e, NIL)              :- SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _).
+    TypeOf(c, e, NIL)              :- SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner, _, _, _, _), ModuleCreatesDecl(c.owner, t), c.isPublic = FALSE;
+						 SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner.mod, _, _, _, _), ModuleCreatesDecl(c.owner.mod, t);
+						 SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = FALSE, ModuleCreatesDecl(c.owner.mod, t);
+						 SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = FALSE, ModuleCreatesDecl(c.owner, t);
+						 SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = TRUE, count({ev1 | InterfaceTypeEventDecl(t, ev1), no MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) = 0, count({ev1 | no InterfaceTypeEventDecl(t, ev1), MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) = 0.
 
 	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
 	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, no ModuleCreatesDecl(mod, InterfaceType(n)).
 	[ rule_Classes = '"error, msg: created interface in public static function must be implemented in the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, InterfaceTypeEventDecl(InterfaceType(n), ev), no MachineReceivesDecl(m, ev), m is MachineDecl, m.mod = c.owner.
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, count({ev1 | InterfaceTypeEventDecl(t, ev1), no MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) > 0;
+									  SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, count({ev1 | no InterfaceTypeEventDecl(t, ev1), MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) > 0.
 
 	[ rule_Classes = '"error, msg: public static function cannot create empty interface"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, no InterfaceTypeEventDecl(InterfaceType(n), _).
@@ -1081,11 +1096,14 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: static function can only call other static funtions"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, NIL, _, _, _), toSymbol(c.owner) = #ModuleDecl.
 	[ rule_Classes = '"error, msg: public static function can only call other public static funtions"']
-	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, c is FunDecl(_, owner, _, _, _, _, _, TRUE), FunDecl(n, ModuleDecl(m), _, _, _, _, _, FALSE).
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, c.isPublic = TRUE, FunDecl(n, ModuleDecl(m), _, _, _, _, _, FALSE).
 	[ rule_Classes = '"error, msg: static function not defined"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, no FunDecl(n, ModuleDecl(m), _, _, _, _, _, _).
 	[ rule_Classes = '"error, msg: module not declared"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e =  FunStmt(n, m, _, _, _), m : String, no ModuleDecl(m).
+	[ rule_Classes = '"error, msg: not a public static function"']
+	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, toSymbol(c.owner) = #ModuleDecl, c.owner != ModuleDecl(m), FunDecl(n, ModuleDecl(m), _, _, _, _, _, FALSE);
+						   SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, toSymbol(c.owner) = #MachineDecl, c.owner.mod != ModuleDecl(m), FunDecl(n, ModuleDecl(m), _, _, _, _, _, FALSE).
 
 	[ rule_Classes = '"error, msg: implementation module can call static functions declared in implementation modules"']
 	TypeOf(c, e, ERROR) :- SubSE(c, e), e = FunStmt(n, m, _, _, _), m : String, FunDecl(n, mod, _, _, _, _, _, _), mod = ModuleDecl(m), ModuleType(mod, kind), kind != IMPL, ModuleType(c.owner, IMPL);
@@ -1238,7 +1256,7 @@ domain PStaticTyping extends PData
 
     LocalVarsAux ::= (cntxt: FunDecl + AnonFunDecl, vars: NmdTupType + { NIL }, tl: NmdTupType + { NIL }).
 	LocalVarsAux(cntxt, params, rlocals) :- cntxt is FunDecl(_, _, _, params, _, locals, _, _), rlocals = lstReverse(#NmdTupType, locals).
-	LocalVarsAux(cntxt, envVars, rlocals) :- cntxt is AnonFunDecl(_, locals, _, envVars), rlocals = lstReverse(#NmdTupType, locals).
+	LocalVarsAux(cntxt, envVars, rlocals) :- cntxt is AnonFunDecl(_, locals, _, envVars, _), rlocals = lstReverse(#NmdTupType, locals).
 	LocalVarsAux(cntxt, locals, tl) :- LocalVarsAux(cntxt, locals', tl'), tl' = NmdTupType(NmdTupTypeField(name, type), tl),
 									   locals = NmdTupType(NmdTupTypeField(name, type), locals').
 
@@ -1331,7 +1349,7 @@ domain PStaticTyping extends PData
 
     [ rule_Classes = '"error, msg: function may cause a change in current state; this is not allowed here"']
     PurityError(c, called) :-
-	       c is StateDecl(_, owner, _, called, _), called = AnonFunDecl(_, _, _, _), ControlImpure(called).
+	       c is StateDecl(_, owner, _, called, _), called = AnonFunDecl(_, _, _, _, _), ControlImpure(called).
 
     [ rule_Classes = '"error, msg: function may cause a change in current state; this is not allowed here"']
     PurityError(c, n) :-
@@ -1339,7 +1357,7 @@ domain PStaticTyping extends PData
 
     [ rule_Classes = '"error, msg: function may cause a change in current state; this is not allowed here"']
     PurityError(c, called) :-
-	       c is TransDecl(src, _, _, called), called = AnonFunDecl(_, _, _, _), ControlImpure(called).
+	       c is TransDecl(src, _, _, called), called = AnonFunDecl(_, _, _, _, _), ControlImpure(called).
 
     /*************************************************************/
     /*                      Monitor Checking                     */
@@ -1367,8 +1385,8 @@ domain PStaticTyping extends PData
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
     MonitorError(c, called) :-
-	       c is StateDecl(_, owner, called, _, _), owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _), MonitorImpure(called);
-		   c is StateDecl(_, owner, _, called, _), owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _), MonitorImpure(called).
+	       c is StateDecl(_, owner, called, _, _), owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _, _), MonitorImpure(called);
+		   c is StateDecl(_, owner, _, called, _), owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _, _), MonitorImpure(called).
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
     MonitorError(c, n) :-
@@ -1376,7 +1394,7 @@ domain PStaticTyping extends PData
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
     MonitorError(c, called) :-
-	       c is TransDecl(src, _, _, called), src.owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _), MonitorImpure(called).
+	       c is TransDecl(src, _, _, called), src.owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _, _), MonitorImpure(called).
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
 	MonitorError(c, n) :-
@@ -1384,7 +1402,7 @@ domain PStaticTyping extends PData
 
 	[ rule_Classes = '"error, msg: monitor may not use this keyword or perform nondeterministic choice or create machines or execute send, monitor, receive and pop statements"']
 	MonitorError(c, called) :-
-		   c is DoDecl(src, _, called), src.owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _), MonitorImpure(called).
+		   c is DoDecl(src, _, called), src.owner.kind = MONITOR, called = AnonFunDecl(_, _, _, _, _), MonitorImpure(called).
 
     /*************************************************************/
     /*                         Receive Labels                       */
