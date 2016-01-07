@@ -20,165 +20,177 @@ event eNo assert 1;
 event eUnit assert 1;
 
 
-
-main model User {
-    var Driver: machine;
-    
-	start state User_Init {
-		entry{
-			Driver = new OSRDriver();
-			raise(eUnit);
-		}
-		on eUnit goto S0;
-	}
-	
-	state S0 {
-		entry{
-			send Driver, eD0Entry;
-			raise(eUnit);
-		}
-		on eUnit goto S1;
-	}
-	
-	state S1 {
-		entry {
-			send Driver, eD0Exit;
-			raise(eUnit);
-		}
-		on eUnit goto S0;
-	}
-  
-}
-
-model Switch {
-	var Driver: machine;
-    start state _Init {
-	entry (payload: machine) { Driver = payload; raise(eUnit); }
-        on eUnit goto Switch_Init;
-    }
-
-    state Switch_Init {
-        entry { raise(eUnit);}
-        on eUnit goto ChangeSwitchStatus;
-    }
-	
-	
-
-    state ChangeSwitchStatus {
-	entry {
-	     send Driver, eSwitchStatusChange;
-	     raise (eUnit);		 	  
-	}
-        on eUnit goto ChangeSwitchStatus;
-    }
-}
-
-model LED {
-	var Driver: machine;
-	
-    start state _Init {
-	entry (payload: machine) { Driver = payload; raise(eUnit); }
-        on eUnit goto LED_Init;
-    }
-
-	state LED_Init {
-		entry { }
+module User
+sends eD0Entry, eD0Exit
+creates OSRDriverMachine
+{
+	main model User {
+		var Driver: OSRDriverMachine;
 		
-		on eUpdateBarGraphStateUsingControlTransfer goto ProcessUpdateLED;
-		on eSetLedStateToUnstableUsingControlTransfer goto UnstableLED;
-		on eSetLedStateToStableUsingControlTransfer goto StableLED;
+		start state User_Init {
+			entry{
+				Driver = new OSRDriver();
+				raise(eUnit);
+			}
+			on eUnit goto S0;
+		}
+		
+		state S0 {
+			entry{
+				send Driver, eD0Entry;
+				raise(eUnit);
+			}
+			on eUnit goto S1;
+		}
+		
+		state S1 {
+			entry {
+				send Driver, eD0Exit;
+				raise(eUnit);
+			}
+			on eUnit goto S0;
+		}
+	}
+}
+
+module SwitchAndLED
+sends eSwitchStatusChange, eTransferSuccess, eTransferFailure
+{
+	model Switch 
+	{
+		var Driver: OSRDriverMachine;
+		start state _Init {
+		entry (payload: machine) { Driver = payload as OSRDriverMachine; raise(eUnit); }
+			on eUnit goto Switch_Init;
+		}
+
+		state Switch_Init {
+			entry { raise(eUnit);}
+			on eUnit goto ChangeSwitchStatus;
+		}
+		
+		
+
+		state ChangeSwitchStatus {
+		entry {
+			 send Driver, eSwitchStatusChange;
+			 raise (eUnit);		 	  
+		}
+			on eUnit goto ChangeSwitchStatus;
+		}
 	}
 	
-	state ProcessUpdateLED {
-		entry { 
-			if($)
-			{
+	
+	model LED 
+	receives eUpdateBarGraphStateUsingControlTransfer, eSetLedStateToUnstableUsingControlTransfer, eSetLedStateToStableUsingControlTransfer
+	{
+		var Driver: OSRDriverMachine;
+		start state _Init {
+		entry (payload: machine) { Driver = payload as OSRDriverMachine; raise(eUnit); }
+			on eUnit goto LED_Init;
+		}
+
+		state LED_Init {
+			entry { }
+			
+			on eUpdateBarGraphStateUsingControlTransfer goto ProcessUpdateLED;
+			on eSetLedStateToUnstableUsingControlTransfer goto UnstableLED;
+			on eSetLedStateToStableUsingControlTransfer goto StableLED;
+		}
+		
+		state ProcessUpdateLED {
+			entry { 
+				if($)
+				{
+					send Driver, eTransferSuccess;
+				}
+				else
+					send Driver, eTransferFailure;
+				raise(eUnit);
+			}
+			
+			on eUnit goto LED_Init;
+		}
+		
+		state UnstableLED {
+			entry {
 				send Driver, eTransferSuccess;
 			}
-			else
-				send Driver, eTransferFailure;
-			raise(eUnit);
+			
+			on eSetLedStateToStableUsingControlTransfer goto LED_Init;
+			on eUpdateBarGraphStateUsingControlTransfer goto ProcessUpdateLED;
+			
 		}
 		
-		on eUnit goto LED_Init;
-	}
-	
-	state UnstableLED {
-		entry {
-			send Driver, eTransferSuccess;
-		}
-		
-		on eSetLedStateToStableUsingControlTransfer goto LED_Init;
-		on eUpdateBarGraphStateUsingControlTransfer goto ProcessUpdateLED;
-		
-	}
-	
-	state StableLED {
-		entry {
-			send Driver, eTransferSuccess;
-			raise(eUnit);
-		}
-		
-		on eUnit goto LED_Init;
-	}
-}
-
-model Timer {
-	var Driver : machine;
-	
-    start state _Init {
-	entry (payload: machine) { Driver = payload; raise(eUnit); }
-        on eUnit goto Timer_Init;
-    }
-
-	state Timer_Init {
-		ignore eStopTimer;
-		entry { }
-		on eStartDebounceTimer goto TimerStarted;
-	}
-	
-	state TimerStarted {
-	
-		defer eStartDebounceTimer;
-		entry {
-			if($)
+		state StableLED {
+			entry {
+				send Driver, eTransferSuccess;
 				raise(eUnit);
-		}
-		
-		on eUnit goto SendTimerFired;
-		on eStopTimer goto ConsmachineeringStoppingTimer;
-	}
-	
-	state SendTimerFired {
-		defer eStartDebounceTimer;
-		entry {
-			send Driver, eTimerFired;
-			raise(eUnit);
-		}
-		
-		on eUnit goto Timer_Init;
-	}
-
-	state ConsmachineeringStoppingTimer {
-		defer eStartDebounceTimer;
-		entry {
-			if($)
-			{
-				send Driver, eStoppingFailure;
-				send Driver, eTimerFired;
 			}
-			else
-			{
-				send Driver, eStoppingSuccess;
-			}
-			raise(eUnit);
+			
+			on eUnit goto LED_Init;
 		}
-	
-	
-		on eUnit goto Timer_Init;
 	}
 }
+module Timer
+sends 
+{
+	model TimerMachine {
+		var Driver : machine;
 		
+		start state _Init {
+		entry (payload: machine) { Driver = payload; raise(eUnit); }
+			on eUnit goto Timer_Init;
+		}
+
+		state Timer_Init {
+			ignore eStopTimer;
+			entry { }
+			on eStartDebounceTimer goto TimerStarted;
+		}
+		
+		state TimerStarted {
+		
+			defer eStartDebounceTimer;
+			entry {
+				if($)
+					raise(eUnit);
+			}
+			
+			on eUnit goto SendTimerFired;
+			on eStopTimer goto StoppingTimer;
+		}
+		
+		state SendTimerFired {
+			defer eStartDebounceTimer;
+			entry {
+				send Driver, eTimerFired;
+				raise(eUnit);
+			}
+			
+			on eUnit goto Timer_Init;
+		}
+
+		state StoppingTimer {
+			defer eStartDebounceTimer;
+			entry {
+				if($)
+				{
+					send Driver, eStoppingFailure;
+					send Driver, eTimerFired;
+				}
+				else
+				{
+					send Driver, eStoppingSuccess;
+				}
+				raise(eUnit);
+			}
+		
+		
+			on eUnit goto Timer_Init;
+		}
+	}
+}	
 machine OSRDriver {
 	
 	var TimerV: machine;
