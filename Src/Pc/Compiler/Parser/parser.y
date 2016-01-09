@@ -177,11 +177,15 @@ EventAnnotOrNone
 
 /******************  TEST Declarations **********************/
 TestDecl
-	: TEST ID ModuleList REFINES ModuleList SEMICOLON				{ AddRefinesTest($2.str, ToSpan(@2), ToSpan(@1));   }	
-	| TEST LIVENESS ID ModuleList SATISFIES ID SEMICOLON			{ AddLivenessTest($3.str, ToSpan(@3), $6.str, ToSpan(@6), ToSpan(@1));  }
-	| TEST SAFETY ID ModuleList SEMICOLON							{ AddSafetyTest($3.str, ToSpan(@3), ToSpan(@1)); }
+	: TEST ID COLON ModuleList REFINES ModuleList SEMICOLON			{ AddRefinesTest($2.str, ToSpan(@2), ToSpan(@1));   }	
+	| TEST ID COLON ModuleList SATISFIES MonitorList SEMICOLON		{ AddSatisfiesTest($2.str, ToSpan(@2), ToSpan(@1));  }
+	| TEST ID COLON ModuleList SEMICOLON							{ AddSatisfiesTest($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
+MonitorList
+	: ID				{ AddToMonitorList($1.str, ToSpan(@1)); }
+	| ID MonitorList    { AddToMonitorList($1.str, ToSpan(@1)); }
+	;
 Hide
 	: HIDE NonDefaultEventList IN LPAREN ModuleList RPAREN	{ PushHideModule(ToSpan(@1)); }
 	;

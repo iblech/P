@@ -248,37 +248,27 @@ namespace Microsoft.Pc
         }
     }
 
-    internal class SafetyTestInfo : TestCaseInfo
+    internal class SatisfiesTestInfo : TestCaseInfo
     {
-        public SafetyTestInfo(AST<Node> imp)
+        public List<string> monitors;
+
+        public SatisfiesTestInfo(AST<Node> imp, List<string> mon)
             : base(imp)
         {
+            monitors = mon;
         }
     }
 
-    internal class LivenessTestInfo : TestCaseInfo
-    {
-        public string livenessMonitor;
-
-        public LivenessTestInfo(AST<Node> imp, string mon)
-            : base(imp)
-        {
-            livenessMonitor = mon;
-        }
-    }
-
-    internal enum TestCaseType { REFINES, SAFETY, LIVENESS };
+    internal enum TestCaseType { REFINES, MONITOR, NOFAILURE };
 
     internal class AllTestCasesInfo
     {
         public Dictionary<string, RefinesTestInfo> allRefinesTests;
-        public Dictionary<string, SafetyTestInfo> allSafetyTests;
-        public Dictionary<string, LivenessTestInfo> allLivenessTests;
+        public Dictionary<string, SatisfiesTestInfo> allSatisfiesTests;
 
         public AllTestCasesInfo()
         {
-            allSafetyTests = new Dictionary<string, SafetyTestInfo>();
-            allLivenessTests = new Dictionary<string, LivenessTestInfo>();
+            allSatisfiesTests = new Dictionary<string, SatisfiesTestInfo>();
             allRefinesTests = new Dictionary<string, RefinesTestInfo>();
         }
     }
@@ -469,14 +459,14 @@ namespace Microsoft.Pc
             return modules.ToList();
         }
 
-        public List<string> GetEventsFromEventList(FuncTerm ft)
+        public List<string> GetMonitorsFromMonitorList(FuncTerm ft)
         {
             var iter = ft;
-            List<string> events = new List<string>();
-            Contract.Assert(((Id)ft.Function).Name == "EventList");
+            List<string> monitors = new List<string>();
+            Contract.Assert(((Id)ft.Function).Name == "MonitorList");
             while (true)
             {
-                events.Add(GetName(iter, 0));
+                monitors.Add(GetName(iter, 0));
                 var arg2 = GetArgByIndex(iter, 1);
                 if (arg2 is Id && (arg2 as Id).Name == "NIL")
                 {
@@ -485,7 +475,7 @@ namespace Microsoft.Pc
                 iter = (FuncTerm)arg2;
             }
 
-            return events;
+            return monitors;
         }
 
         private Dictionary<string, int> uniqIDCounters = new Dictionary<string, int>();
@@ -679,21 +669,7 @@ namespace Microsoft.Pc
             }
 
             //populate monitors test information
-            terms = GetBin(factBins, "SafetyTestDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var testName = ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    var impList = Factory.Instance.ToAST(it.Current);
-                    allTestCasesInfo.allSafetyTests[testName] = new SafetyTestInfo(impList);
-                }
-            }
-
-            //populate no failures test information
-            terms = GetBin(factBins, "LivenessTestDecl");
+            terms = GetBin(factBins, "SatisfiesTestDecl");
             foreach (var term in terms)
             {
                 using (var it = term.Node.Args.GetEnumerator())
@@ -703,8 +679,10 @@ namespace Microsoft.Pc
                     it.MoveNext();
                     var impList = Factory.Instance.ToAST(it.Current);
                     it.MoveNext();
-                    var livenessMon = ((Cnst)it.Current).GetStringValue();
-                    allTestCasesInfo.allLivenessTests[testName] = new LivenessTestInfo(impList, livenessMon);
+                    List<string> monitors = new List<string>();
+                    if (it.Current.NodeKind == NodeKind.FuncTerm)
+                        monitors = GetMonitorsFromMonitorList(it.Current as FuncTerm);
+                    allTestCasesInfo.allSatisfiesTests[testName] = new SatisfiesTestInfo(impList, monitors);
                 }
             }
 
@@ -1646,60 +1624,23 @@ namespace Microsoft.Pc
         public void GenerateZing(ref List<string> FileNames, ref AST<Model> outModel)
         {
             //generate separate zing out model for each test-case
-            foreach (var safetyTestCase in allTestCasesInfo.allSafetyTests)
+            foreach (var satTestCase in allTestCasesInfo.allSatisfiesTests)
             {
-                crntTestCaseType = TestCaseType.SAFETY;
-                string FileName = safetyTestCase.Key;
+                if (satTestCase.Value.monitors.Count() > 0)
+                    crntTestCaseType = TestCaseType.MONITOR;
+                else
+                    crntTestCaseType = TestCaseType.NOFAILURE;
+
+                string FileName = satTestCase.Key;
                 string zFileName = FileName + ".zing";
 
                 List<AST<Node>> elements = new List<AST<Node>>();
 
-                //current modulelist
-                crntModuleList = safetyTestCase.Value.impModList;
-
-                //generate implementation modules
-                crntModulesInModuleList = GetModulesFromModuleList(safetyTestCase.Value.impModList.Node as FuncTerm);
-                //union of all the machines names in the implementation modules
-                List<string> allMachinesInModuleList = new List<string>();
-                foreach (var module in crntModulesInModuleList)
+                //initialize the monitors
+                foreach (var monitorName in satTestCase.Value.monitors)
                 {
-                    crntMachinesInModuleList.AddRange(allModules[module].allMachineNames);
-                }
-                MkZingEnums(elements);
-                MkZingClasses(elements);
-                outModel = Add(outModel, MkZingFile(zFileName, elements));
-                FileNames.Add(FileName);
-
-                crntMachinesInModuleList.Clear();
-                crntModulesInModuleList.Clear();
-            }
-
-            foreach (var livenessTestCase in allTestCasesInfo.allLivenessTests)
-            {
-                crntTestCaseType = TestCaseType.LIVENESS;
-                string FileName = livenessTestCase.Key;
-                string zFileName = FileName + ".zing";
-                List<AST<Node>> elements = new List<AST<Node>>();
-
-                //current modulelist
-                crntModuleList = livenessTestCase.Value.impModList;
-                //generate implementation modules
-                crntModulesInModuleList = GetModulesFromModuleList(livenessTestCase.Value.impModList.Node as FuncTerm);
-                foreach (var module in crntModulesInModuleList)
-                {
-                    foreach (var machine in allModules[module].allMachineNames)
-                    {
-                        if (!allMachines[machine].IsMonitor)
-                            crntMachinesInModuleList.Add(machine);
-                    }
-                }
-                //add the liveness monitor
-                crntMachinesInModuleList.Add(livenessTestCase.Value.livenessMonitor);
-
-                //initialize the liveness monitor
-                {
-                    if (!allMachines[livenessTestCase.Value.livenessMonitor].IsMonitor) continue;
-                    var machineInfo = allMachines[livenessTestCase.Value.livenessMonitor];
+                    if (!allMachines[monitorName].IsMonitor) continue;
+                    var machineInfo = allMachines[monitorName];
 
                     List<string> initialSet = new List<string>();
                     foreach (var stateName in ComputeReachableStates(machineInfo, new string[] { machineInfo.initStateName }))
@@ -1724,11 +1665,31 @@ namespace Microsoft.Pc
                         }
                     }
                 }
-                //set the compiler option for liveness
-                compiler.Options.liveness = LivenessOption.Standard;
+
+                //current modulelist
+                crntModuleList = satTestCase.Value.impModList;
+
+                //generate implementation modules
+                crntModulesInModuleList = GetModulesFromModuleList(satTestCase.Value.impModList.Node as FuncTerm);
+                foreach (var module in crntModulesInModuleList)
+                {
+                    foreach (var machine in allModules[module].allMachineNames)
+                    {
+                        if (!allMachines[machine].IsMonitor)
+                            crntMachinesInModuleList.Add(machine);
+                    }
+                }
+                //add all monitor machines
+                crntMachinesInModuleList.AddRange(satTestCase.Value.monitors);
+
+                //check if liveness test case
+                if (crntMachinesInModuleList.Where(mach => allMachines[mach].IsMonitor && allMachines[mach].monitorType != MonitorType.SAFETY).Count() > 0)
+                {
+                    //set the compiler option for liveness
+                    compiler.Options.liveness = LivenessOption.Standard;
+                }
 
                 MkZingEnums(elements);
-
                 MkZingClasses(elements);
                 outModel = Add(outModel, MkZingFile(zFileName, elements));
                 FileNames.Add(FileName);
@@ -3706,7 +3667,7 @@ namespace Microsoft.Pc
                 var afterLabel = ctxt.GetFreshLabel();
 
                 //generate invoke monitor only in case of monitor test case
-                if (crntTestCaseType != TestCaseType.REFINES)
+                if (crntTestCaseType == TestCaseType.MONITOR)
                 {
                     //call on source machine monitors
                     ctxt.AddSideEffect(MkZingCallStmt(MkZingCall(MkZingDot("Main", "InvokeGlobalMonitor"), MkZingDot(Factory.Instance.MkCnst("myHandle"), "mod"), eventExpr, tmpVar)));
@@ -3747,7 +3708,7 @@ namespace Microsoft.Pc
 
                 List<AST<Node>> stmts = new List<AST<Node>>();
 
-                if (crntTestCaseType != TestCaseType.REFINES)
+                if (crntTestCaseType == TestCaseType.MONITOR)
                 {
                     ctxt.AddSideEffect(MkZingCallStmt(MkZingCall(MkZingDot("Main", "InvokeGlobalMonitor"), MkZingDot(Factory.Instance.MkCnst("myHandle"), "mod"), eventExpr, tmpVar)));
                 }

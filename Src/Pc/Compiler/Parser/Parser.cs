@@ -33,6 +33,7 @@
         private P_Root.StateDecl crntState = null;
         private List<P_Root.VarDecl> crntVarList = new List<P_Root.VarDecl>();
         private List<P_Root.EventLabel> crntEventList = new List<P_Root.EventLabel>();
+        private List<P_Root.String> crntMonitorList = new List<P_Root.String>();
         private List<P_Root.String> crntInterfaceList = new List<P_Root.String>();
         private List<P_Root.EventLabel> onEventList = new List<P_Root.EventLabel>();
         private List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>> crntAnnotList = new List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>>();
@@ -59,6 +60,7 @@
         private Stack<P_Root.ModuleList> ModuleListStack = new Stack<P_Root.ModuleList>();
         private Stack<P_Root.Module> moduleStack = new Stack<P_Root.Module>();
         private Stack<P_Root.EventList> eventListStack = new Stack<P_Root.EventList>();
+        private Stack<P_Root.MonitorList> monitorListStack = new Stack<P_Root.MonitorList>();
 
         private class LocalVarStack
         {
@@ -1352,6 +1354,25 @@
             }
         }
 
+        private void AddToMonitorList(string name, Span span)
+        {
+            if (crntMonitorList.Where(e => ((string)e.Symbol == name)).Count() >= 1)
+            {
+                var errFlag = new Flag(
+                                     SeverityKind.Error,
+                                     span,
+                                     Constants.BadSyntax.ToString(string.Format("Monitor {0} listed multiple times in the monitor list", name)),
+                                     Constants.BadSyntax.Code,
+                                     parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
+            }
+            else
+            {
+                crntMonitorList.Add(MkString(name, span));
+            }
+        }
+
         private void AddToInterfaceList(string name, Span span)
         {
             if (crntInterfaceList.Where(e => ((string)e.Symbol == name)).Count() >= 1)
@@ -1815,33 +1836,38 @@
             parseProgram.RefinesTestDecl.Add(refinesDecl);
         }
 
-        private void AddSafetyTest(string name, Span nameSpan, Span span)
+        private void AddSatisfiesTest(string name, Span nameSpan, Span span)
         {
             if (IsValidName(name, nameSpan))
             {
                 topDeclNames.testNames.Add(name);
             }
             Contract.Assert(ModuleListStack.Count() == 1);
-            var safetyTest = P_Root.MkSafetyTestDecl();
-            safetyTest.Span = span;
-            safetyTest.name = (P_Root.IArgType_SafetyTestDecl__0)MkString(name, nameSpan);
-            safetyTest.modL = ModuleListStack.Pop();
-            parseProgram.SafetyTestDecl.Add(safetyTest);
-        }
-
-        private void AddLivenessTest(string testName, Span testNameSpan, string monName, Span monNameSpan, Span span)
-        {
-            if (IsValidName(testName, testNameSpan))
+            var satisfiesTest = P_Root.MkSatisfiesTestDecl();
+            satisfiesTest.Span = span;
+            satisfiesTest.name = (P_Root.IArgType_SatisfiesTestDecl__0)MkString(name, nameSpan);
+            satisfiesTest.modL = ModuleListStack.Pop();
+            if (crntMonitorList.Count() == 0)
             {
-                topDeclNames.testNames.Add(testName);
+                satisfiesTest.monL = MkUserCnst(P_Root.UserCnstKind.NIL, span);
             }
-            Contract.Assert(ModuleListStack.Count() == 1);
-            var livenessTest = P_Root.MkLivenessTestDecl();
-            livenessTest.Span = span;
-            livenessTest.name = (P_Root.IArgType_LivenessTestDecl__0)MkString(testName, testNameSpan);
-            livenessTest.modL = ModuleListStack.Pop();
-            livenessTest.mon = (P_Root.IArgType_LivenessTestDecl__2)MkString(monName, monNameSpan);
-            parseProgram.LivenessTestDecl.Add(livenessTest);
+            else
+            {
+                var monList = P_Root.MkMonitorList();
+                monList.mon = (P_Root.IArgType_MonitorList__0)crntMonitorList[0];
+                monList.tail = MkUserCnst(P_Root.UserCnstKind.NIL, span);
+                monitorListStack.Push(monList);
+                crntMonitorList.RemoveAt(0);
+                foreach (var mon in crntMonitorList)
+                {
+                    monList = P_Root.MkMonitorList();
+                    monList.mon = (P_Root.IArgType_MonitorList__0)mon;
+                    monList.tail = (P_Root.IArgType_MonitorList__1)monitorListStack.Pop();
+                    monitorListStack.Push(monList);
+                }
+                crntMonitorList.Clear();
+            }
+            parseProgram.SatisfiesTestDecl.Add(satisfiesTest);
         }
 
         private void AddSpecificationList(Span span)
@@ -2247,6 +2273,7 @@
             crntVarList.Clear();
             groupStack.Clear();
             crntEventList.Clear();
+            crntMonitorList.Clear();
             crntAnnotStack.Clear();
             crntAnnotList = new List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>>();
             parseFailed = false;

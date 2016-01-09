@@ -76,13 +76,7 @@
             private set;
         }
 
-        public List<P_Root.SafetyTestDecl> SafetyTestDecl
-        {
-            get;
-            private set;
-        }
-
-        public List<P_Root.LivenessTestDecl> LivenessTestDecl
+        public List<P_Root.SatisfiesTestDecl> SatisfiesTestDecl
         {
             get;
             private set;
@@ -242,13 +236,9 @@
                 {
                     yield return rT;
                 }
-                foreach (var mt in SafetyTestDecl)
+                foreach (var mt in SatisfiesTestDecl)
                 {
                     yield return mt;
-                }
-                foreach (var nft in LivenessTestDecl)
-                {
-                    yield return nft;
                 }
                 foreach (var imp in ImplementationModules)
                 {
@@ -290,8 +280,7 @@
             EventsPartialOrder = new List<P_Root.PartialOrderRel>();
             NameEventList = new List<P_Root.NameEventList>();
             RefinesTestDecl = new List<P_Root.RefinesTestDecl>();
-            LivenessTestDecl = new List<P_Root.LivenessTestDecl>();
-            SafetyTestDecl = new List<P_Root.SafetyTestDecl>();
+            SatisfiesTestDecl = new List<P_Root.SatisfiesTestDecl>();
             AnonFunctions = new List<P_Root.AnonFunDecl>();
             Dos = new List<P_Root.DoDecl>();
             Annotations = new List<P_Root.Annotation>();

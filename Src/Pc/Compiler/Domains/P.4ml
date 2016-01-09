@@ -77,14 +77,14 @@ domain PData
 	ImplementationModules ::= new (modL: any ModuleList).
 	SpecificationModules ::= new (modL: any ModuleList).
 	RefinesTestDecl ::= fun (name: String -> imodL: any ModuleList, smodL: any ModuleList).
-	SafetyTestDecl ::= fun (name: String -> modL: any ModuleList).
-	LivenessTestDecl ::= fun (name: String -> modL: any ModuleList, mon: any String).
+	SatisfiesTestDecl ::= fun (name: String -> modL: any ModuleList, monL: MonitorList + {NIL}).
 
 	ModuleList ::= new (mod: any Module, tail: any ModuleList + {NIL}).
 	Hide ::= new (evL: any EventList, modL: any ModuleList).
 	PartialOrderRel ::= new (ev1: any String, ev2: any String).
 	EventList ::= new (ev: String, tail: any EventList + {NIL}).
 	NameEventList ::= new (name: String, evL: any EventList).
+	MonitorList ::= new (mon: String, tail: any MonitorList + {NIL}).
 
 	//combining value types (used in PToZing)
 	Module ::= ModuleDecl + Hide.
@@ -105,7 +105,7 @@ domain PData
 
     PDecl          ::= EventDecl + MachineDecl + VarDecl + AnonFunDecl + FunDecl + StateDecl + TransDecl + DoDecl + ObservesDecl + InterfaceTypeEventDecl +
 					   MachineReceivesDecl + ModuleDecl + ModuleSendsDecl + ModuleCreatesDecl + PartialOrderRel + NameEventList +
-					   ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl + InterfaceType + NameType.
+					   ImplementationModules + SpecificationModules + RefinesTestDecl + SatisfiesTestDecl + InterfaceType + NameType.
 
     AssumeMaxInstances ::= new (bound: Natural).
     AssertMaxInstances ::= new (bound: Natural).
@@ -240,7 +240,7 @@ domain PStructuralTyping extends PData
 	[rule_Classes = '"error, msg: interface type in creates is not declared"']
 	OneDeclError(creates) :- creates is ModuleCreatesDecl(mod, i), no InterfaceTypeEventDecl(i, _), no MachineDecl(i.name, mod, _, _, _, _).
 
-	TopLevelDecls ::= ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl + PartialOrderRel + NameEventList.
+	TopLevelDecls ::= ImplementationModules + SpecificationModules + RefinesTestDecl + SatisfiesTestDecl + PartialOrderRel + NameEventList.
 	EventAndModule ::= ModuleDecl + EventList.
 
 	//module is declared
@@ -448,14 +448,12 @@ domain PStaticTyping extends PData
 	IllegalMainMachine ::= (ml: ModuleList).
 
 	[rule_Classes = '"error, msg: no Main Machine in the ModuleList"']
-	IllegalMainMachine(ml) :- SafetyTestDecl(_, ml), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) = 0;
-							  LivenessTestDecl(_, ml, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) = 0;
+	IllegalMainMachine(ml) :- SatisfiesTestDecl(_, ml, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) = 0;
 							  RefinesTestDecl(_, ml, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) = 0;
 							  RefinesTestDecl(_, _, ml), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) = 0.
 
 	[rule_Classes = '"error, msg: more than one Main Machine in the ModuleList"']
-	IllegalMainMachine(ml) :- SafetyTestDecl(_, ml), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1;
-							  LivenessTestDecl(_, ml, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1;
+	IllegalMainMachine(ml) :- SatisfiesTestDecl(_, ml, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1;
 							  ImplementationModules(ml), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1;
 							  RefinesTestDecl(_, ml, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1;
 							  RefinesTestDecl(_, _, ml), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModule(ml, mod)}) > 1.
@@ -464,10 +462,9 @@ domain PStaticTyping extends PData
 	/******* Get all high level module compositions ****************/
 	/**************************************************************/
 	//get all the high level modules list
-	//ImplementationModules + SpecificationModules + RefinesTestDecl + SafetyTestDecl + LivenessTestDecl.
+	//ImplementationModules + SpecificationModules + RefinesTestDecl + SatisfiesTestDecl.
 	ComposedModules ::= (m: ModuleList).
-	ComposedModules(mL) :- SafetyTestDecl(_, mL);
-						   LivenessTestDecl(_, mL, _);
+	ComposedModules(mL) :- SatisfiesTestDecl(_, mL, _);
 						   RefinesTestDecl(_, mL, _); RefinesTestDecl(_, _, mL);
 						   SpecificationModules(mL);
 						   ImplementationModules(mL).
@@ -693,13 +690,14 @@ domain PStaticTyping extends PData
 	/*************************************************************/
 	IllegalTestOrImplementation ::= (ml: ModuleList).
 
+	SubMonitor ::= sub(ml: MonitorList, s: String).
 	//illegal liveness test case
 	[rule_Classes = '"error, msg: monitor not defined in the modulelist"']
-	IllegalTestOrImplementation(modL) :- LivenessTestDecl(_, modL, mon), count({mach | mach is MachineDecl(mon, mod, _, _, _, _), SubModule(modL, mod)}) = 0.
+	IllegalTestOrImplementation(modL) :- SatisfiesTestDecl(_, modL, monL), SubMonitor(monL, mon), count({mach | mach is MachineDecl(mon, mod, MONITOR, _, _, _), SubModule(modL, mod)}) = 0.
 
 	//illegal liveness test case
-	[rule_Classes = '"error, msg: monitor must be a liveness monitor"']
-	IllegalTestOrImplementation(modL) :- LivenessTestDecl(_, modL, mon), no StateDecl(_, mach, _, _, COLD), no StateDecl(_, mach, _, _, HOT), mach is MachineDecl(mon, mod, MONITOR, _, _, _), SubModule(modL, mod).
+	[rule_Classes = '"error, msg: satisfies test case can have atmost one liveness monitor"']
+	IllegalTestOrImplementation(modL) :- SatisfiesTestDecl(_, modL, monL), SubMonitor(monL, mon1), SubMonitor(monL, mon2), mon1 != mon2, StateDecl(_, mach1, _, _, k1), k1 != WARM, StateDecl(_, mach2, _, _, k2), k2 != WARM, mach1 is MachineDecl, mach2 is MachineDecl, mach1.name = mon1, mach2.name = mon2.
 
 	//implementation is closed with respect to creates
 	[rule_Classes = '"error, msg: the module list is not closed with respect to creates, all created interfaces are not implemented"']
@@ -716,7 +714,7 @@ domain PStaticTyping extends PData
 										 RefinesTestDecl(_, lhs, rhs), ReceivesForModuleList(rhs, rd), no HiddenEventsForModuleList(rhs, rd.ev), no		  ReceivesForModuleList(lhs, rd'), rd' is MachineReceivesDecl, rd'.ev = rd.ev.
 	[rule_Classes = '"error, msg: public event (sends or receives) in the rhs of refines is hidden in the lhs"']
 	IllegalTestOrImplementation(rhs) :- RefinesTestDecl(_, lhs, rhs), SendsForModuleList(rhs, ev), no HiddenEventsForModuleList(rhs, ev), SendsForModuleList(lhs, ev), HiddenEventsForModuleList(lhs, ev);
-										 RefinesTestDecl(_, lhs, rhs), ReceivesForModuleList(rhs, rd), no HiddenEventsForModuleList(rhs, rd.ev), ReceivesForModuleList(lhs, rd'), rd'.ev = rd.ev, HiddenEventsForModuleList(lhs, rd'.ev).
+										RefinesTestDecl(_, lhs, rhs), ReceivesForModuleList(rhs, rd), no HiddenEventsForModuleList(rhs, rd.ev), ReceivesForModuleList(lhs, rd'), rd'.ev = rd.ev, HiddenEventsForModuleList(lhs, rd'.ev).
 	[rule_Classes = '"error, msg: public creates interfaces in the rhs of refines is not a subset of lhs creates set"']
 	IllegalTestOrImplementation(rhs) :- RefinesTestDecl(_, lhs, rhs), CreatesForModuleList(rhs, i), no HiddenEventsForModuleList(rhs, ev), InterfaceTypeEventDecl(i, ev), no CreatesForModuleList(lhs, i).
 	[rule_Classes = '"error, msg: public creates interface in the rhs of refines is hidden in the lhs"']
@@ -737,9 +735,9 @@ domain PStaticTyping extends PData
 	HighLevelModulesInModuleList ::= (modL: ModuleList, mod: Module).
 	HighLevelModulesInModuleList(ml, m) :- AllModList(ml), ml = ModuleList(m1, m2), m = m1;
 										   AllModList(ml), ml = ModuleList(m1, m2), HighLevelModulesInModuleList(m2, m).
-	//there must be a safety check for each implementation module
-	[rule_Classes = '"warning, msg: implementation module does not occur in any safety test case"']
-	SoundCompositionWarning(mod) :- ImplementationModules(iml), HighLevelModulesInModuleList(iml, mod), count({st | st is SafetyTestDecl(_, sml), HighLevelModulesInModuleList(sml, mod)}) = 0.
+	//there must be a satisfies check for each implementation module
+	[rule_Classes = '"warning, msg: implementation module does not occur in any satisfies test case"']
+	SoundCompositionWarning(mod) :- ImplementationModules(iml), HighLevelModulesInModuleList(iml, mod), count({st | st is SatisfiesTestDecl(_, sml, _), HighLevelModulesInModuleList(sml, mod)}) = 0.
 
 	//there must be a refines check for each spec module
 	[rule_Classes = '"warning, msg: specification module does not occur in any refines test case"']
