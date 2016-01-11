@@ -422,9 +422,9 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: monitor can observe event in sends or implemented interfaces"']
 	ModuleLevelTypingError(mod, obs) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), obs is ObservesDecl(mach, ev), no ModuleSendsDecl(mod, ev), count({mach' | mach' is MachineDecl(_, mod, _, _, _, _), MachineReceivesDecl(mach', ev)}) = 0.
 
-	//if there is an empty interface in the creates list then that machine should be implemented in the module
-	[rule_Classes = '"error, msg: empty interface in the creates list must be implemented in the module"']
-	ModuleLevelTypingError(mod, c) :- c is ModuleCreatesDecl(mod, i), no InterfaceTypeEventDecl(i, _), no MachineDecl(i.name, mod, _, _, _, _).
+	//creates list cannot have an empty interface
+	[rule_Classes = '"error, msg: creates list cannot have an empty interface"']
+	ModuleLevelTypingError(mod, c) :- c is ModuleCreatesDecl(mod, i), no InterfaceTypeEventDecl(i, _), MachineDecl(i.name, mod, _, _, _, _).
 
 	[rule_Classes = '"error, msg: Multiple machines are declared as main machines"']
 	ModuleLevelTypingError(mod, c1) :- c1 is MachineDecl(_, mod, _, _, _, TRUE), c2 is MachineDecl(_, mod, _, _, _, TRUE), c1 != c2.
@@ -586,6 +586,7 @@ domain PStaticTyping extends PData
 	CreatesImplDisjointOrEqual ::= (ml: ModuleList).
 	CreatesDisjoint ::= (ml: ModuleList).
 	CreatesPrivateDisjoint ::= (ml: ModuleList).
+	MachineNamesDistinct ::= (ml : ModuleList).
 
 	SendsDisjoint (ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({ev |SendsForModule(m1, ev), SendsForModuleList(m2, ev), no HiddenEventsForModuleList(ml, ev)}) = 0.
 	SendsPrivateDisjoint(ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({ev | DownClosureSendsForModuleList(ml, ev), HiddenEventsForModuleList(ml, ev)}) = 0.
@@ -595,13 +596,14 @@ domain PStaticTyping extends PData
 	CreatesImplDisjointOrEqual :- AllModList(ml), CreatesForModuleList(ml, i), count({ev | InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev)}) = 0,
 	count({ev1 | InterfaceTypeEventDecl(i, ev1), no ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2),rd2.ev = ev2, rd1.mach = rd2.mach}) = 0,
 	count({ev1 | no InterfaceTypeEventDecl(i, ev1), ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), rd2.ev = ev2, rd1.mach = rd2.mach}) = 0.
+	MachineNamesDistinct(ml) :- AllModList(ml), SubModule(ml, m1), no SubModule(ml, m2), m1 != m2, MachineDecl(n, m1, _, _, _, _), MachineDecl(n, m2, _, _, _, _).
 
 	LegalComposition(ml) :- AllModList(ml), ml = ModuleList(m, NIL), m: ModuleDecl, no ModuleLevelTypingError(m, _);
 							AllModList(ml), ml = ModuleList(m, NIL), m: Hide, no IllegalHideOperation(m);
 							AllModList(ml), ml = ModuleList(m, m'), m: ModuleDecl, LegalComposition(m'), no ModuleLevelTypingError(m, _),
-							SendsDisjoint(ml), SendsPrivateDisjoint(ml), PublicReceivesDisjoint(ml), CreatesDisjoint(ml), CreatesPrivateDisjoint(ml), CreatesImplDisjointOrEqual(ml);
+							SendsDisjoint(ml), SendsPrivateDisjoint(ml), PublicReceivesDisjoint(ml), CreatesDisjoint(ml), CreatesPrivateDisjoint(ml), CreatesImplDisjointOrEqual(ml), MachineNamesDistinct(ml);
 							AllModList(ml), ml = ModuleList(m, m'), m: Hide, LegalComposition(m'), no IllegalHideOperation(m),
-							SendsDisjoint(ml), SendsPrivateDisjoint(ml), PublicReceivesDisjoint(ml), CreatesDisjoint(ml), CreatesPrivateDisjoint(ml), CreatesImplDisjointOrEqual(ml).
+							SendsDisjoint(ml), SendsPrivateDisjoint(ml), PublicReceivesDisjoint(ml), CreatesDisjoint(ml), CreatesPrivateDisjoint(ml), CreatesImplDisjointOrEqual(ml), MachineNamesDistinct(ml).
 
 	/**************************************************************/
 	/*                      Illegal Composition                   */
@@ -656,12 +658,14 @@ domain PStaticTyping extends PData
 	//A module expression M may include an open leaf module P only if P has a unique path to the root of M.
 
 	OpenModule ::= (m: ModuleDecl).
-	OpenModule(m) :- m is ModuleDecl, ModuleCreatesDecl(m, i), count({ev | InterfaceTypeEventDecl(i, ev), MachineReceivesDecl(mach, ev), mach.mod = m }) = 0.
+	OpenModule(m) :- m is ModuleDecl, ModuleCreatesDecl(m, i), count({ev | InterfaceTypeEventDecl(i, ev), no MachineReceivesDecl(mach, ev), mach is MachineDecl, mach.mod = m }) > 0.
 
 	[rule_Classes = '"error, msg: one of the open leaf module does not have a unique path to the root"']
 	IllegalComposition(ml) :- ComposedModules(ml), SubModule(ml, mod), OpenModule(mod), SubModList(ml, path1), SubModList(ml, path2),
 							  no SubModList(path1, path2), no SubModList(path2, path1), SubModule(path1, mod), SubModule(path2, mod).
 
+	[rule_Classes = '"error, msg: multiple machines in the module list have the same name"']
+	IllegalComposition(ml) :- ComposedModules(ml), SubModule(ml, mod1), SubModule(ml, mod2), MachineDecl(n, mod1, _, _, _, _), MachineDecl(n, mod2, _, _, _, _).
 	/*************************************************************/
 	/*					Illegal Hide Operation					*/
 	/*************************************************************/
@@ -810,8 +814,8 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Cast can never succeed"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k = EMPTY.
 
-    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner, _, _, _, _), ModuleCreatesDecl(c.owner, t), c.isPublic = FALSE;
-						 SubSE(c, e), e = New(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner.mod, _, _, _, _), ModuleCreatesDecl(c.owner.mod, t);
+    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner, _, _, _, _), c.isPublic = FALSE;
+						 SubSE(c, e), e = New(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner.mod, _, _, _, _);
 						 SubSE(c, e), e = New(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = FALSE, ModuleCreatesDecl(c.owner.mod, t);
 						 SubSE(c, e), e = New(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = FALSE, ModuleCreatesDecl(c.owner, t);
 						 SubSE(c, e), e = New(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = TRUE, count({ev1 | InterfaceTypeEventDecl(t, ev1), no MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) = 0, count({ev1 | no InterfaceTypeEventDecl(t, ev1), MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) = 0.
@@ -820,12 +824,20 @@ domain PStaticTyping extends PData
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), MachineDecl(n, _, MONITOR, _, _, _).
 
 	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
+
+	[ rule_Classes = '"error, msg: created empty interface is not implemented in the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), no ModuleCreatesDecl(mod, InterfaceType(n)), no MachineDecl(n, mod, _, _, _, _).
 
 	[ rule_Classes = '"error, msg: public static function cannot create empty interface"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, no InterfaceTypeEventDecl(InterfaceType(n), _).
+
 	[ rule_Classes = '"error, msg: created interface in private static function must be in the creates list of the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, no ModuleCreatesDecl(mod, InterfaceType(n)).
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, t = InterfaceType(n), InterfaceTypeEventDecl(t, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
+
+	[ rule_Classes = '"error, msg: created empty interface in private static function must be implemented in the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), no MachineDecl(n, c.owner, _, _, _, _).
+
 	[ rule_Classes = '"error, msg: created interface in public static function must be implemented in the module"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, count({ev1 | InterfaceTypeEventDecl(t, ev1), no MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) > 0;
 									  SubSE(c, e), e = New(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE,count({ev1 | no InterfaceTypeEventDecl(t, ev1), MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) > 0.
@@ -958,25 +970,37 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: "while (...)" expects a boolean value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : While, t1 != BaseType(BOOL).
 
-    TypeOf(c, e, NIL)              :- SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner, _, _, _, _), ModuleCreatesDecl(c.owner, t), c.isPublic = FALSE;
-						 SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner.mod, _, _, _, _), ModuleCreatesDecl(c.owner.mod, t);
-						 SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = FALSE, ModuleCreatesDecl(c.owner.mod, t);
-						 SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = FALSE, ModuleCreatesDecl(c.owner, t);
-						 SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = TRUE, count({ev1 | InterfaceTypeEventDecl(t, ev1), no MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) = 0, count({ev1 | no InterfaceTypeEventDecl(t, ev1), MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) = 0.
+    TypeOf(c, e, NIL)              :- SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner, _, _, _, _), c.isPublic = FALSE;
+									  SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), MachineDecl(n, c.owner.mod, _, _, _, _);
+									  SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = FALSE, ModuleCreatesDecl(c.owner.mod, t);
+									  SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = FALSE, ModuleCreatesDecl(c.owner, t);
+									  SubSE(c, e), e = NewStmt(n, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), c.isPublic = TRUE, count({ev1 | InterfaceTypeEventDecl(t, ev1), no MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) = 0, count({ev1 | no InterfaceTypeEventDecl(t, ev1), MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) = 0.
+	
+	[ rule_Classes = '"error, msg: monitor cannot be created dynamically using new"']
+	TypeOf(c, e, ERROR)              :- SubSE(c, e), e = NewStmt(n, _), MachineDecl(n, _, MONITOR, _, _, _).
 
 	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
-	[ rule_Classes = '"error, msg: created interface is not in the creates list of the module"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, no ModuleCreatesDecl(mod, InterfaceType(n)).
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), t = InterfaceType(n), InterfaceTypeEventDecl(t, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
+	[ rule_Classes = '"error, msg: created empty interface is not implemented in the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = MachineDecl(_, mod, _, _, _, _), t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), no ModuleCreatesDecl(mod, InterfaceType(n)), no MachineDecl(n, mod, _, _, _, _).
+	
+	[ rule_Classes = '"error, msg: public static function cannot create empty interface"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, no InterfaceTypeEventDecl(InterfaceType(n), _).
+
+	[ rule_Classes = '"error, msg: created empty interface in private static function must be implemented in the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), no MachineDecl(n, c.owner, _, _, _, _).
+
+	[ rule_Classes = '"error, msg: created interface in private static function must be in the creates list of the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, t = InterfaceType(n), InterfaceTypeEventDecl(t, _), no ModuleCreatesDecl(mod, InterfaceType(n)).
+	
+	[ rule_Classes = '"error, msg: created empty interface in private static function must be implemented in the module"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = FALSE, t = InterfaceType(n), no InterfaceTypeEventDecl(t, _), no MachineDecl(n, c.owner, _, _, _, _).
+
 	[ rule_Classes = '"error, msg: created interface in public static function must be implemented in the module"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, count({ev1 | InterfaceTypeEventDecl(t, ev1), no MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) > 0;
 									  SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, count({ev1 | no InterfaceTypeEventDecl(t, ev1), MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) > 0.
 
-	[ rule_Classes = '"error, msg: public static function cannot create empty interface"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, no InterfaceTypeEventDecl(InterfaceType(n), _).
-
-	[ rule_Classes = '"error, msg: monitor cannot be created dynamically using new"']
-	TypeOf(c, e, ERROR)              :- SubSE(c, e), e = NewStmt(n, _), MachineDecl(n, _, MONITOR, _, _, _).
+	
 
 	//// Rules for raise.
     TypeOf(c, e, NIL)              :- CommStmtPLType(c, e, plt), e = Raise(_, NIL),              ///// < raise has NIL payload,

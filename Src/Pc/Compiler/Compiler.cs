@@ -18,8 +18,6 @@
     {
         public HashSet<string> eventNames;
         public HashSet<string> eventListNames;
-        public HashSet<string> moduleListNames;
-        public HashSet<string> machineNames;
         public HashSet<string> interfaceNames;
         public HashSet<string> moduleNames;
         public HashSet<string> testNames;
@@ -29,8 +27,6 @@
         {
             eventNames = new HashSet<string>();
             eventListNames = new HashSet<string>();
-            moduleListNames = new HashSet<string>();
-            machineNames = new HashSet<string>();
             interfaceNames = new HashSet<string>();
             moduleNames = new HashSet<string>();
             testNames = new HashSet<string>();

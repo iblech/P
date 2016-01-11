@@ -47,6 +47,7 @@
         private HashSet<string> crntStateNames = new HashSet<string>();
         private HashSet<string> crntLocalFunNames = new HashSet<string>();
         private HashSet<string> crntStaticFunNames = new HashSet<string>();
+        private HashSet<string> crntMachineNames = new HashSet<string>();
         private HashSet<string> crntVarNames = new HashSet<string>();
         private TopDeclNames topDeclNames;
 
@@ -321,11 +322,6 @@
                 errorMessage = string.Format("An interface with name {0} already declared", name);
                 error = true;
             }
-            else if (topDeclNames.machineNames.Contains(name))
-            {
-                errorMessage = string.Format("A machine with name {0} already declared", name);
-                error = true;
-            }
             else if (topDeclNames.moduleNames.Contains(name))
             {
                 errorMessage = string.Format("A module with name {0} already declared", name);
@@ -334,16 +330,6 @@
             else if (topDeclNames.testNames.Contains(name))
             {
                 errorMessage = string.Format("A test case with name {0} already declared", name);
-                error = true;
-            }
-            else if (topDeclNames.typeNames.Contains(name))
-            {
-                errorMessage = string.Format("A type with name {0} already declared", name);
-                error = true;
-            }
-            else if (topDeclNames.moduleListNames.Contains(name))
-            {
-                errorMessage = string.Format("A module list with name {0} already declared", name);
                 error = true;
             }
             else if (topDeclNames.eventListNames.Contains(name))
@@ -1822,9 +1808,21 @@
 
         private void AddRefinesTest(string name, Span nameSpan, Span span)
         {
-            if (IsValidName(name, nameSpan))
+            if (!topDeclNames.testNames.Contains(name))
             {
                 topDeclNames.testNames.Add(name);
+            }
+            else
+            {
+                string errMessage = string.Format("A test case with name {0} already declared", name);
+                var errFlag = new Flag(
+                                         SeverityKind.Error,
+                                         nameSpan,
+                                         Constants.BadSyntax.ToString(errMessage),
+                                         Constants.BadSyntax.Code,
+                                         parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
             }
 
             Contract.Assert(ModuleListStack.Count() == 2);
@@ -1838,9 +1836,21 @@
 
         private void AddSatisfiesTest(string name, Span nameSpan, Span span)
         {
-            if (IsValidName(name, nameSpan))
+            if (!topDeclNames.testNames.Contains(name))
             {
                 topDeclNames.testNames.Add(name);
+            }
+            else
+            {
+                string errMessage = string.Format("A test case with name {0} already declared", name);
+                var errFlag = new Flag(
+                                         SeverityKind.Error,
+                                         nameSpan,
+                                         Constants.BadSyntax.ToString(errMessage),
+                                         Constants.BadSyntax.Code,
+                                         parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
             }
             Contract.Assert(ModuleListStack.Count() == 1);
             var satisfiesTest = P_Root.MkSatisfiesTestDecl();
@@ -1932,6 +1942,8 @@
             crntInterfaceList.Clear();
             crntSendsList.Clear();
             crntPrivateList.Clear();
+            crntStaticFunNames.Clear();
+            crntMachineNames.Clear();
             crntModuleDecl = null;
         }
 
@@ -1978,10 +1990,26 @@
                 }
             }
             parseProgram.Machines.Add(machDecl);
-            if (IsValidName(name, nameSpan))
+
+            if (crntMachineNames.Contains(name))
             {
-                topDeclNames.machineNames.Add(name);
+                string errMessage = string.Format("A machine with name {0} already declared in the module", name);
+                var errFlag = new Flag(SeverityKind.Error, nameSpan, Constants.BadSyntax.ToString(errMessage), Constants.BadSyntax.Code, parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
             }
+            else if (topDeclNames.interfaceNames.Contains(name) || topDeclNames.typeNames.Contains(name))
+            {
+                string errMessage = string.Format("A interface or typedef with name {0} already declared", name);
+                var errFlag = new Flag(SeverityKind.Error, nameSpan, Constants.BadSyntax.ToString(errMessage), Constants.BadSyntax.Code, parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
+            }
+            else
+            {
+                crntMachineNames.Add(name);
+            }
+
             crntMachDecl = null;
             crntStateNames.Clear();
             crntLocalFunNames.Clear();
@@ -2290,6 +2318,7 @@
             crntStateNames.Clear();
             crntLocalFunNames.Clear();
             crntStaticFunNames.Clear();
+            crntMachineNames.Clear();
             crntVarNames.Clear();
             crntObservesList.Clear();
             crntSendsList.Clear();
