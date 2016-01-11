@@ -783,7 +783,7 @@ namespace Microsoft.Pc
                     else
                     {
                         var moduleName = GetModuleNameFromMachineDecl(owner as FuncTerm);
-                        var funName = "AnonFun" + anonFunCounter[ownerName];
+                        var funName = "AnonFun" + anonFunCounter[moduleName][ownerName];
                         allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName] = new FunInfo(true, envVars, PToZing.PTypeNull, locals, body);
                         anonFunToName[term] = funName;
                         anonFunCounter[moduleName][ownerName]++;
@@ -1825,9 +1825,9 @@ namespace Microsoft.Pc
                     fields.Add(MkZingVarDecl(string.Format("{0}_SM_STATE", stateName), SmState, ZingData.Cnst_Static));
                 }
             }
-            foreach (var machineName in crntMachinesInModuleList)
+            foreach (var machine in crntMachinesInModuleList)
             {
-                fields.Add(MkZingVarDecl(string.Format("{0}_instance", machineName), ZingData.Cnst_Int, ZingData.Cnst_Static));
+                fields.Add(MkZingVarDecl(string.Format("{0}_instance", machine.Key), ZingData.Cnst_Int, ZingData.Cnst_Static));
             }
 
             foreach (var machine in crntMachinesInModuleList)
@@ -1992,9 +1992,9 @@ namespace Microsoft.Pc
                     }
                 }
             }
-            foreach (var machineName in crntMachinesInModuleList)
+            foreach (var machine in crntMachinesInModuleList)
             {
-                var assignStmt = MkZingAssign(MkZingIdentifier(string.Format("{0}_instance", machineName)), Factory.Instance.MkCnst(0));
+                var assignStmt = MkZingAssign(MkZingIdentifier(string.Format("{0}_instance", machine.Key)), Factory.Instance.MkCnst(0));
                 runBodyStmts.Add(assignStmt);
             }
             //create the interface set for each interface-type
@@ -2036,7 +2036,7 @@ namespace Microsoft.Pc
                     runBodyStmts.Add(MkZingCallStmt(MkZingCall(MkZingDot("Main", string.Format("CreateMachine_{0}", machine.Key)))));
             }
 
-            var mainMachineName = crntMachinesInModuleList.Where(n => n.Value.IsMain).First();
+            var mainMachineName = crntMachinesInModuleList.Where(n => n.Value.IsMain).First().Key;
             runBodyStmts.Add(typeContext.InitializeFieldNamesAndTypes());
             runBodyStmts.Add(MkZingAssign(MkZingIdentifier("nullValue"), MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(PTypeNull.Node))));
             runBodyStmts.Add(MkZingCallStmt(MkZingCall(MkZingDot("Main", string.Format("CreateMachine_{0}", mainMachineName)), MkZingIdentifier("nullValue"))));

@@ -315,5 +315,5 @@ sends eTimerFired, eOperationFailure, eOperationSuccess
 	}
 }
 
-test safety elevator Elevator, Door, User, Timer;
+test elevator: Elevator, Door, User, Timer;
 implementation Elevator, Door, User, Timer;

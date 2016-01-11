@@ -481,14 +481,14 @@ domain PStaticTyping extends PData
 
 	NewToMachineMap(ml, c, e, mach) :-
 									//empty interfaces should be matched to the local machines
-									AllNewCallsInModuleList(ml, c, e), e: NewCall, no InterfaceTypeEventDecl(InterfaceType(e.name), _), mach is MachineDecl(e.name, mod, _, _, _, _), SubModule(ml, mod), ModuleCreatesDecl(mod, InterfaceType(e.name));
+									AllNewCallsInModuleList(ml, c, e), e: NewCall, no InterfaceTypeEventDecl(InterfaceType(e.name), _), mach is MachineDecl(e.name, mod, _, _, _, _), SubModule(ml, mod);
 									//public interfaces in the creates list can be resolved directly
-									AllNewCallsInModuleList(ml, c, e), e: NewCall, CreatesForModuleList(ml, InterfaceType(e.name)), InterfaceTypeEventDecl(InterfaceType(e.name), ev), no HiddenEventsForModuleList(ml, ev), MachineReceivesDecl(mach, ev), SubModule(ml, mach.mod);
+									AllNewCallsInModuleList(ml, c, e), e: NewCall, CreatesForModuleList(ml, InterfaceType(e.name)), count({ev | InterfaceTypeEventDecl(InterfaceType(e.name), ev), HiddenEventsForModuleList(ml, ev)}) = 0, InterfaceTypeEventDecl(InterfaceType(e.name), ev'), MachineReceivesDecl(mach, ev'), SubModule(ml, mach.mod);
 									//interfaces in the public static functions can be resolved directly
-									AllNewCallsInModuleList(ml, c, e), e: NewCall, c.isPublic = TRUE, InterfaceTypeEventDecl(InterfaceType(e.name), ev), no HiddenEventsForModuleList(ml, ev), MachineReceivesDecl(mach, ev), SubModule(ml, mach.mod), c.owner = mach.mod;
+									AllNewCallsInModuleList(ml, c, e), e: NewCall, c.isPublic = TRUE, InterfaceTypeEventDecl(InterfaceType(e.name), ev), MachineReceivesDecl(mach, ev), SubModule(ml, mach.mod), c.owner = mach.mod;
 									//Interfaces that are completely hidden needs to be resolved separately
 									AllNewCallsInModuleList(ml, c, e), e: NewCall, count({ev | InterfaceTypeEventDecl(InterfaceType(e.name), ev), no HiddenEventsForModuleList(ml, ev)}) = 0,
-									SubHide(ml, hm), count({ev| InterfaceTypeEventDecl(InterfaceType(e.name), ev), no ExpandedEventList(hm.evL, ev)}) = 0,
+									SubHide(ml, hm), count({ev | InterfaceTypeEventDecl(InterfaceType(e.name), ev), ExpandedEventList(hm.evL, ev)}) > 0,
 									SubModule(hm.modL, mach.mod), MachineReceivesDecl(mach, ev'), InterfaceTypeEventDecl(InterfaceType(e.name), ev').
 
 	//map for implementation modules
@@ -665,7 +665,7 @@ domain PStaticTyping extends PData
 							  no SubModList(path1, path2), no SubModList(path2, path1), SubModule(path1, mod), SubModule(path2, mod).
 
 	[rule_Classes = '"error, msg: multiple machines in the module list have the same name"']
-	IllegalComposition(ml) :- ComposedModules(ml), SubModule(ml, mod1), SubModule(ml, mod2), MachineDecl(n, mod1, _, _, _, _), MachineDecl(n, mod2, _, _, _, _).
+	IllegalComposition(ml) :- ComposedModules(ml), SubModule(ml, mod1), SubModule(ml, mod2), MachineDecl(n, mod1, _, _, _, _), MachineDecl(n, mod2, _, _, _, _), mod1 != mod2.
 	/*************************************************************/
 	/*					Illegal Hide Operation					*/
 	/*************************************************************/

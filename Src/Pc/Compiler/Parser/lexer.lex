@@ -121,8 +121,6 @@
 			 keywords.Add("specification", (int)Tokens.SPECIFICATION);
 			 keywords.Add("hide", (int)Tokens.HIDE);
 			 keywords.Add("spec", (int)Tokens.SPEC);
-			 keywords.Add("safety", (int)Tokens.SAFETY);
-			 keywords.Add("liveness", (int)Tokens.LIVENESS);
 			 keywords.Add("po", (int)Tokens.PO);
 			 keywords.Add("eventlist", (int)Tokens.EVENTLIST);
 		 }
