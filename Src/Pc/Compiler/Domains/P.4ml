@@ -874,8 +874,7 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Values cannot be compared because their types are incompatible"']
     TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(op, _, _), op : PolyRel, TypeRel(t1, t2, k), k = EMPTY.
 	[ rule_Classes = '"error, msg: Values of type machine or interface cannot be compared"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(op, _, _), op : PolyRel, TypeRel(t1, BaseType(REAL), SUB), t1 != BaseType(NULL);
-									  TypeOfArg2(c, e, t1, t2), e = BinApp(op, _, _), op : PolyRel, TypeRel(t2, BaseType(REAL), SUB), t2 != BaseType(NULL).
+    TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(op, _, _), op : PolyRel, TypeRel(t1, BaseType(REAL), SUB), TypeRel(t2, BaseType(REAL), SUB), t1 != BaseType(NULL), t2 != BaseType(NULL).
 
     TypeOf(c, e, inner)            :- TypeOfArg2(c, e, t1, t2), e = BinApp(IDX, _, _), t1 = SeqType(inner), t2 = BaseType(INT).
     TypeOf(c, e, cod)              :- TypeOfArg2(c, e, t1, t2), e = BinApp(IDX, _, _), t1 = MapType(dom, cod), TypeRel(t2, dom, SUB).
