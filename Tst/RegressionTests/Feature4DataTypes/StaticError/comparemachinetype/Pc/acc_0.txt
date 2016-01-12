@@ -1,0 +1,22 @@
+=================================
+         Console output          
+=================================
+OUT: compileerrorsuppressed.p (14, 14): inferred type:  NIL
+OUT: compileerrorsuppressed.p (14, 22): inferred type:  BaseType(REAL)
+OUT: compileerrorsuppressed.p (14, 36): inferred type:  BaseType(BOOL)
+OUT: compileerrorsuppressed.p (14, 39): inferred type:  BaseType(NULL)
+OUT: compileerrorsuppressed.p (15, 5): inferred type:  ERROR
+OUT: compileerrorsuppressed.p (15, 5): inferred type:  NIL
+OUT: compileerrorsuppressed.p (15, 27): inferred type:  BaseType(BOOL)
+OUT: compileerrorsuppressed.p (15, 27): inferred type:  ERROR
+OUT: compileerrorsuppressed.p (15, 30): inferred type:  SeqType(BaseType(REAL))
+OUT: compileerrorsuppressed.p (15, 50): inferred type:  BaseType(REAL)
+OUT: compileerrorsuppressed.p (15, 51): inferred type:  BaseType(INT)
+OUT: compileerrorsuppressed.p (25, 14): inferred type:  NIL
+OUT: compileerrorsuppressed.p (25, 14): inferred type:  SeqType(BaseType(REAL))
+OUT: compileerrorsuppressed.p (25, 29): inferred type:  SeqType(BaseType(REAL))
+OUT: compileerrorsuppressed.p (29, 6): inferred type:  NIL
+OUT: compileerrorsuppressed.p (15, 5): "assert" expects a boolean value
+OUT: compileerrorsuppressed.p (15, 27): Values of type machine or interface cannot be compared
+OUT: Compilation failed
+EXIT: -1
