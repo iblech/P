@@ -66,7 +66,7 @@ machine Client
 			send sr, req;
 			counter = counter + 1;
 			receive {
-				case resp: (arg: TUP){ /*UpdateTuple(arg);*/ }
+				case resp: (arg: TUP){ UpdateTuple(arg); }
 			}
 			raise next;
 		};
