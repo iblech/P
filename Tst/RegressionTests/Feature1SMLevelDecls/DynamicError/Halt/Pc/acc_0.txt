@@ -1,0 +1,9 @@
+=================================
+         Console output          
+=================================
+OUT: halt.p (11, 5): inferred type:  NIL
+OUT: halt.p (11, 10): inferred type:  InterfaceType("Manager")
+OUT: halt.p (11, 16): inferred type:  BaseType(EVENT)
+OUT: Writing HALT.zing ...
+OUT: Compiling HALT.zing to HALT.dll ...
+EXIT: 0

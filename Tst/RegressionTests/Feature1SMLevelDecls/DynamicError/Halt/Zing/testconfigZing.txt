@@ -1,0 +1,7 @@
+runZing: ..\..\..\..\..\..\Bld\Drops\Plang_Debug_x86\Compiler\zinger.exe
+argZing: ..\halt.dll
+argZing: -et:halt.trace
+incZing: halt.trace
+del: halt.trace
+acc: .\
+dsc: zinger.exe, sending of halt event to an empty interface
