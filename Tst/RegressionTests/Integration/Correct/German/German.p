@@ -1,7 +1,7 @@
 //Event declaration
 event unit assert 1;
-event req_share assert 3 : machine;
-event req_excl assert 3 : machine;
+event req_share assert 3 : ClientMachine;
+event req_excl assert 3 : ClientMachine;
 event need_invalidate assert 1;
 event invalidate_ack assert 3;
 event grant assert 1;
@@ -13,11 +13,11 @@ event grant_share assert 1;
 event normal assert 1;
 event wait assert 1;
 event invalidate_sharers assert 1 : int;
-event sharer_id assert 3 : machine;
+event sharer_id assert 3 : ClientMachine;
 
 module Host
 sends invalidate, grant_excl, grant_share, ask_share, ask_excl
-creates CPUMachine, ClientMachine
+creates ClientMachine
 {
 	machine CPUMachine
 	{

@@ -24,7 +24,7 @@ domain PWithInferredTypes extends PData
 	NewToMachineMap ::= new (ml: ModuleList, typingCtxt: TypingContext, n: New + NewStmt, mach: MachineDecl).
 
 	//// Partial Order between events
-	PartialOrderRel ::= new (ev1: any String, ev2: any String).
+	PartialOrderRel ::= new (ev1: NonNullEventLabel, ev2: NonNullEventLabel).
 }
 
 transform P2PWithInferredTypes (in:: P) returns (out:: PWithInferredTypes)

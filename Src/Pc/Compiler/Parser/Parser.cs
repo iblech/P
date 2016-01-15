@@ -41,7 +41,6 @@
 
         private List<P_Root.EventLabel> crntObservesList = new List<P_Root.EventLabel>();
         private List<P_Root.EventLabel> crntSendsList = new List<P_Root.EventLabel>();
-        private List<P_Root.EventLabel> crntPrivateList = new List<P_Root.EventLabel>();
         private List<P_Root.EventLabel> crntReceivesList = new List<P_Root.EventLabel>();
 
         private HashSet<string> crntStateNames = new HashSet<string>();
@@ -1941,7 +1940,6 @@
 
             crntInterfaceList.Clear();
             crntSendsList.Clear();
-            crntPrivateList.Clear();
             crntStaticFunNames.Clear();
             crntMachineNames.Clear();
             crntModuleDecl = null;
@@ -1972,21 +1970,14 @@
             {
                 foreach (var e in crntReceivesList)
                 {
+                    //add receives
                     var rec = P_Root.MkMachineReceivesDecl(machDecl, (P_Root.IArgType_MachineReceivesDecl__1)e);
                     rec.Span = e.Span;
                     parseProgram.MachineReceivesDecl.Add(rec);
-                }
-                //create the interface-type with machine name
-                foreach (var e in crntReceivesList)
-                {
-                    var interfaceType = new P_Root.InterfaceType();
-                    interfaceType.Span = nameSpan;
-                    interfaceType.name = (P_Root.IArgType_InterfaceType__0)MkString(name, nameSpan);
-                    var interfaceDecl = new P_Root.InterfaceTypeEventDecl();
-                    interfaceDecl.Span = e.Span;
-                    interfaceDecl.it = (P_Root.IArgType_InterfaceTypeEventDecl__0)interfaceType;
-                    interfaceDecl.ev = (P_Root.IArgType_InterfaceTypeEventDecl__1)e;
-                    parseProgram.InterfaceEvents.Add(interfaceDecl);
+                    //create interface
+                    var itDecl = P_Root.MkInterfaceTypeEventDecl(P_Root.MkInterfaceType(MkString(name, nameSpan)), (P_Root.IArgType_InterfaceTypeEventDecl__1)e);
+                    itDecl.Span = e.Span;
+                    parseProgram.InterfaceEvents.Add(itDecl);
                 }
             }
             parseProgram.Machines.Add(machDecl);
@@ -2323,7 +2314,6 @@
             crntObservesList.Clear();
             crntSendsList.Clear();
             crntReceivesList.Clear();
-            crntPrivateList.Clear();
             crntInterfaceList.Clear();
             ModuleListStack.Clear();
             moduleStack.Clear();

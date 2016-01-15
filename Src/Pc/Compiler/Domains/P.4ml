@@ -64,13 +64,13 @@ domain PData
     /***************  Module System Declarations  ****************/
     /*************************************************************/
 	////Interface type
-	InterfaceTypeEventDecl ::= new (it: any InterfaceType, ev: String).
-	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: String).
+	InterfaceTypeEventDecl ::= new (it: any InterfaceType, ev: NonNullEventLabel).
+	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 
 	////Module
 	ModuleDecl ::= new (name : any String).
 	ModuleType ::= new (mod : ModuleDecl, kind: {IMPL, SPEC}).
-	ModuleSendsDecl ::= new (mod: any ModuleDecl, ev: String).
+	ModuleSendsDecl ::= new (mod: any ModuleDecl, ev: NonNullEventLabel).
 	ModuleCreatesDecl ::= new (mod : any ModuleDecl, it: any InterfaceType).
 
 	////Compositional imp and tests
@@ -81,8 +81,8 @@ domain PData
 
 	ModuleList ::= new (mod: any Module, tail: any ModuleList + {NIL}).
 	Hide ::= new (evL: any EventList, modL: any ModuleList).
-	PartialOrderRel ::= new (ev1: any String, ev2: any String).
-	EventList ::= new (ev: String, tail: any EventList + {NIL}).
+	PartialOrderRel ::= new (ev1: NonNullEventLabel, ev2: NonNullEventLabel).
+	EventList ::= new (ev: NonNullEventLabel, tail: any EventList + {NIL}).
 	NameEventList ::= new (name: String, evL: any EventList).
 	MonitorList ::= new (mon: String, tail: any MonitorList + {NIL}).
 
@@ -95,13 +95,13 @@ domain PData
 
     EventDecl      ::= fun (name: String -> card: any QueueConstraint, type: any TypeExpr + { NIL }).
     MachineDecl    ::= fun (name: String, mod: any ModuleDecl -> kind: { REAL, MODEL, MONITOR }, card: any QueueConstraint, start: any QualifiedName, isMain: Boolean).
-	ObservesDecl   ::= new (monitor: MachineDecl, ev: String).
+	ObservesDecl   ::= new (monitor: MachineDecl, ev: NonNullEventLabel).
     VarDecl        ::= fun (name: String, owner: MachineDecl -> type: any TypeExpr).
     FunDecl        ::= fun (name: String, owner: MachineDecl + ModuleDecl -> kind: { REAL, MODEL }, params: any NmdTupType + { NIL },  return: any TypeExpr + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt, isPublic: Boolean).
     AnonFunDecl    ::= new (owner: MachineDecl + ModuleDecl, locals: any NmdTupType + { NIL }, body: any Stmt, envVars: any NmdTupType, isPublic: Boolean).
     StateDecl      ::= fun (name: any QualifiedName, owner: MachineDecl -> entryAction: any AnonFunDecl + String, exitFun: any AnonFunDecl + String, temperature: { HOT, WARM, COLD }).
-    TransDecl      ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> dst: any QualifiedName, action: any { PUSH } + AnonFunDecl + String).
-    DoDecl         ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> action: any { DEFER, IGNORE } + AnonFunDecl + String).
+    TransDecl      ::= fun (src: StateDecl, trig: EventLabel -> dst: any QualifiedName, action: any { PUSH } + AnonFunDecl + String).
+    DoDecl         ::= fun (src: StateDecl, trig: EventLabel -> action: any { DEFER, IGNORE } + AnonFunDecl + String).
 
     PDecl          ::= EventDecl + MachineDecl + VarDecl + AnonFunDecl + FunDecl + StateDecl + TransDecl + DoDecl + ObservesDecl + InterfaceTypeEventDecl +
 					   MachineReceivesDecl + ModuleDecl + ModuleSendsDecl + ModuleCreatesDecl + PartialOrderRel + NameEventList +
@@ -112,6 +112,7 @@ domain PData
     QualifiedName      ::= new (name: String, qualifier: any QualifiedName + { NIL }).
     QueueConstraint    ::= AssumeMaxInstances + AssertMaxInstances + { NIL }.
     EventLabel         ::= String + { NULL, HALT }.
+	NonNullEventLabel  ::= String + { HALT }.
 
     /*************************************************************/
     /****************          Annotations           *************/
@@ -222,19 +223,19 @@ domain PStructuralTyping extends PData
 
 	//event in observes is declared
 	[rule_Classes = '"error, msg: event in observes set is not declared"']
-	OneDeclError(obs) :- obs is ObservesDecl, obs.monitor.kind = MONITOR, no EventDecl(obs.ev, _, _).
+	OneDeclError(obs) :- obs is ObservesDecl, obs.monitor.kind = MONITOR, no EventDecl(obs.ev, _, _), obs.ev != HALT.
 
 	//event in interface type
 	[rule_Classes = '"error, msg: unknown event in interface declaration"']
-	OneDeclError(inter) :- inter is InterfaceTypeEventDecl(_, e), no EventDecl(e, _, _).
+	OneDeclError(inter) :- inter is InterfaceTypeEventDecl(_, ev), no EventDecl(ev, _, _), ev != HALT.
 
 	//event in receives of a machine
 	[rule_Classes = '"error, msg: event in receives is not declared"']
-	OneDeclError(receivesE) :- receivesE is MachineReceivesDecl(_, ev), no EventDecl(ev, _, _).
+	OneDeclError(receivesE) :- receivesE is MachineReceivesDecl(_, ev), no EventDecl(ev, _, _), ev!= HALT.
 
 	//event in sends of a module
 	[rule_Classes = '"error, msg: event in sends is not declared"']
-	OneDeclError(sendsE) :- sendsE is ModuleSendsDecl(_, ev), no EventDecl(ev, _, _).
+	OneDeclError(sendsE) :- sendsE is ModuleSendsDecl(_, ev), no EventDecl(ev, _, _), ev != HALT.
 
 	//interface type in creates declaration
 	[rule_Classes = '"error, msg: interface type in creates is not declared"']
@@ -250,11 +251,11 @@ domain PStructuralTyping extends PData
 
 	//event in eventlist is declared
 	[rule_Classes = '"error, msg: event or named eventlist is not declared"']
-	OneDeclError(c) :- SubEML(c, ml), ml = EventList(ev, _), no EventDecl(ev, _, _), no NameEventList(ev, _).
+	OneDeclError(c) :- SubEML(c, ml), ml = EventList(ev, _), no EventDecl(ev, _, _), no NameEventList(ev, _), ev != HALT.
 
 	//event in NameEventList is declared
 	[rule_Classes = '"error, msg: event in named eventlist is not declared"']
-	OneDeclError(c) :- SubEML(c, ml), c is NameEventList, ml = EventList(ev, _), no EventDecl(ev, _, _).
+	OneDeclError(c) :- SubEML(c, ml), c is NameEventList, ml = EventList(ev, _), no EventDecl(ev, _, _), ev != HALT.
 
 	//name type not declared
 	allNameTypes ::= sub(nt: NameType).
@@ -330,6 +331,7 @@ domain PStaticTyping extends PData
 
 	TypeExpansion(type, type) :- AllTypeExprs(type), type = BaseType(_).
 	TypeExpansion(type, type) :- AllTypeExprs(type), type = InterfaceType(_).
+	TypeExpansion(type, type) :- MachineDecl(n, _, _, _, _, _), no InterfaceTypeEventDecl(type, _), type = InterfaceType(n).
 	TypeExpansion(type, eType) :- typeDef is TypeDef, type = NameType(typeDef.name), TypeExpansion(typeDef.type, eType).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NameType(name), eType = InterfaceType(name), no TypeDef(name, _).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, NIL), TypeExpansion(hd, hd'), eType = TupType(hd', NIL).
@@ -429,6 +431,9 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: Multiple machines are declared as main machines"']
 	ModuleLevelTypingError(mod, c1) :- c1 is MachineDecl(_, mod, _, _, _, TRUE), c2 is MachineDecl(_, mod, _, _, _, TRUE), c1 != c2.
 
+	[rule_Classes = '"error, msg: Multiple machines with the same name have unequal receive set, they implement different interfaces"']
+	ModuleLevelTypingError(c1.mod, c1) :- c1 is MachineDecl, c2 is MachineDecl, c1 != c2, c1.name = c2.name, count({ev | MachineReceivesDecl(c1, ev), no MachineReceivesDecl(c2, ev) }) > 0.
+
 	/***************************************************************/
 	/***********    All the subterm operations ********************/
 	/***************************************************************/
@@ -439,8 +444,8 @@ domain PStaticTyping extends PData
 	//get all nested modulelists
 	SubModList ::= sub(mod: ModuleList, mod': ModuleList).
 	//get all events in EventList
-	SubEvent ::= sub(evl: EventList, ev : String).
-	ExpandedEventList ::= (evl: EventList, ev : String).
+	SubEvent ::= sub(evl: EventList, ev : NonNullEventLabel).
+	ExpandedEventList ::= (evl: EventList, ev : NonNullEventLabel).
 	ExpandedEventList(evl, ev) :- SubEvent(evl, e), EventDecl(e, _, _), ev = e;
 								  SubEvent(evl, e), NameEventList(e, evl'), SubEvent(evl', ev).
 
@@ -529,8 +534,8 @@ domain PStaticTyping extends PData
 	/***************************************************************/
 
 	AllModList ::= (modL: ModuleList).
-	SendsForModuleList ::= (ml: ModuleList, ev: String).
-	HiddenEventsForModuleList ::= (ml: ModuleList, ev: String).
+	SendsForModuleList ::= (ml: ModuleList, ev: NonNullEventLabel).
+	HiddenEventsForModuleList ::= (ml: ModuleList, ev: NonNullEventLabel).
 	CreatesForModuleList ::= (ml: ModuleList, inter: InterfaceType).
 	ReceivesForModuleList ::= (ml: ModuleList, rd: MachineReceivesDecl).
 
@@ -555,8 +560,8 @@ domain PStaticTyping extends PData
 	AllHideModules ::= (h : Hide).
 	AllHideModules(hm) :- ComposedModules(cml), SubHide(cml, hm).
 
-	SendsForModule ::= (mod: Module, ev: String).
-	HiddenEventsForModule ::= (mod: Module, ev: String).
+	SendsForModule ::= (mod: Module, ev: NonNullEventLabel).
+	HiddenEventsForModule ::= (mod: Module, ev: NonNullEventLabel).
 	CreatesForModule ::= (mod: Module, it: InterfaceType).
 	ReceivesForModule ::= (mod: Module, rd: MachineReceivesDecl).
 
@@ -622,7 +627,7 @@ domain PStaticTyping extends PData
 
 	PartialOrderRel(ev1.name, ev2name) :- NameTypeInEventDecl(ev1, nt), InterfaceTypeEventDecl(InterfaceType(nt.name), ev2name).
 
-	DownClosureSendsForModuleList ::= (ml: ModuleList, ev: String).
+	DownClosureSendsForModuleList ::= (ml: ModuleList, ev: NonNullEventLabel).
 	DownClosureSendsForModuleList(ml, ev') :- SendsForModuleList(ml, ev), no HiddenEventsForModuleList(ml, ev), PartialOrderRel(ev, ev');
 											  DownClosureSendsForModuleList(ml, ev), PartialOrderRel(ev, ev').
 

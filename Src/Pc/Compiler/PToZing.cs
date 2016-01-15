@@ -583,7 +583,7 @@ namespace Microsoft.Pc
                     it.MoveNext();
                     var moduleName = GetName(it.Current as FuncTerm, 0);
                     it.MoveNext();
-                    var ev = ((Cnst)it.Current).GetStringValue();
+                    var ev = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
                     allModules[moduleName].moduleSendsEvents.Add(ev);
                 }
             }
@@ -632,7 +632,8 @@ namespace Microsoft.Pc
                     var machineName = GetName(machineDecl, 0);
                     var moduleName = GetModuleNameFromMachineDecl(machineDecl);
                     it.MoveNext();
-                    allModules[moduleName].implementedMachines[machineName].observesEvents.Add(((Cnst)it.Current).GetStringValue());
+                    var ev = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
+                    allModules[moduleName].implementedMachines[machineName].observesEvents.Add(ev);
                 }
             }
 
@@ -644,7 +645,7 @@ namespace Microsoft.Pc
                     it.MoveNext();
                     var interfaceName = GetName(((FuncTerm)it.Current), 0);
                     it.MoveNext();
-                    var eventName = ((Cnst)it.Current).GetStringValue();
+                    var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
                     it.MoveNext();
                     if (allInterfaces.ContainsKey(interfaceName))
                     {
@@ -656,6 +657,13 @@ namespace Microsoft.Pc
                         allInterfaces[interfaceName].Add(eventName);
                     }
                 }
+            }
+            //add machines with empty receive sets
+            foreach (var machine in allModules.SelectMany(m => m.Value.implementedMachines))
+            {
+                if (allInterfaces.ContainsKey(machine.Key))
+                    continue;
+                allInterfaces[machine.Key] = new List<string>();
             }
 
             //populate refines test information
@@ -1191,9 +1199,9 @@ namespace Microsoft.Pc
                 using (var it = term.Node.Args.GetEnumerator())
                 {
                     it.MoveNext();
-                    string ev1 = ((Cnst)it.Current).GetStringValue();
+                    string ev1 = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
                     it.MoveNext();
-                    string ev2 = ((Cnst)it.Current).GetStringValue();
+                    string ev2 = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue(); ;
                     if (allEventsPartialOrder.ContainsKey(ev1))
                         allEventsPartialOrder[ev1].Add(ev2);
                     else
