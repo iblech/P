@@ -1129,6 +1129,7 @@ namespace Microsoft.Pc
                     it.MoveNext();
                     var eType = (FuncTerm)it.Current;
                     typeExpansion[type] = eType;
+                    typeExpansion[(AST<FuncTerm>)Factory.Instance.ToAST(eType)] = eType;
                 }
             }
 
