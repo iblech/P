@@ -247,7 +247,7 @@ domain PStructuralTyping extends PData
 	//module is declared
 	SubEML ::= sub (c: TopLevelDecls, mem: EventAndModule).
 	[rule_Classes = '"error, msg: module in the list is not declared"']
-	OneDeclError(c) :- SubEML(c, mod), no ModuleDecl(mod.name).
+	OneDeclError(mod) :- SubEML(c, mod), mod: ModuleDecl, no ModuleDecl(mod.name).
 
 	//event in eventlist is declared
 	[rule_Classes = '"error, msg: event or named eventlist is not declared"']
@@ -593,15 +593,17 @@ domain PStaticTyping extends PData
 	CreatesPrivateDisjoint ::= (ml: ModuleList).
 	MachineNamesDistinct ::= (ml : ModuleList).
 
-	SendsDisjoint (ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({ev |SendsForModule(m1, ev), SendsForModuleList(m2, ev), no HiddenEventsForModuleList(ml, ev)}) = 0.
+	SendsDisjoint (ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({ev | SendsForModule(m1, ev), SendsForModuleList(m2, ev), no HiddenEventsForModuleList(ml, ev)}) = 0.
 	SendsPrivateDisjoint(ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({ev | DownClosureSendsForModuleList(ml, ev), HiddenEventsForModuleList(ml, ev)}) = 0.
 	PublicReceivesDisjoint(ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({rd1 | ReceivesForModule(m1, rd1), ReceivesForModuleList(m2, rd2), rd2 is MachineReceivesDecl, rd1.ev = rd2.ev, no HiddenEventsForModuleList(ml, ev), rd1.ev = ev}) = 0.
 	CreatesDisjoint(ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({i1 | CreatesForModule(m1, i1), CreatesForModuleList(m2, i2), InterfaceTypeEventDecl(i1, ev), InterfaceTypeEventDecl(i2, ev), no HiddenEventsForModuleList(ml, ev)}) = 0.
+	
 	CreatesPrivateDisjoint(ml) :- AllModList(ml), ml = ModuleList(m1, m2), count({i | HiddenEventsForModuleList(ml, ev1), CreatesForModuleList(ml, i), InterfaceTypeEventDecl(i, ev1), InterfaceTypeEventDecl(i, ev2), no HiddenEventsForModuleList(ml, ev2)}) = 0.
-	CreatesImplDisjointOrEqual :- AllModList(ml), CreatesForModuleList(ml, i), count({ev | InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev)}) = 0,
-	count({ev1 | InterfaceTypeEventDecl(i, ev1), no ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2),rd2.ev = ev2, rd1.mach = rd2.mach}) = 0,
-	count({ev1 | no InterfaceTypeEventDecl(i, ev1), ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), rd2.ev = ev2, rd1.mach = rd2.mach}) = 0.
-	MachineNamesDistinct(ml) :- AllModList(ml), SubModule(ml, m1), no SubModule(ml, m2), m1 != m2, MachineDecl(n, m1, _, _, _, _), MachineDecl(n, m2, _, _, _, _).
+	
+	CreatesImplDisjointOrEqual(ml) :- AllModList(ml), count({i | CreatesForModuleList(ml, i), count({ev | InterfaceTypeEventDecl(i, ev), HiddenEventsForModuleList(ml, ev)}) = 0, count({ev1 | InterfaceTypeEventDecl(i, ev1), no ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2),rd2.ev = ev2, rd1.mach = rd2.mach}) > 0,
+	count({ev1 | no InterfaceTypeEventDecl(i, ev1), ReceivesForModuleList(ml, rd1), rd1.ev = ev1, InterfaceTypeEventDecl(i, ev2), ReceivesForModuleList(ml, rd2), rd2.ev = ev2, rd1.mach = rd2.mach}) > 0}) = 0.
+	
+	MachineNamesDistinct(ml) :- AllModList(ml), count({m1 | SubModule(ml, m1), SubModule(ml, m2), m1 != m2, MachineDecl(n, m1, _, _, _, _), MachineDecl(n, m2, _, _, _, _)}) = 0.
 
 	LegalComposition(ml) :- AllModList(ml), ml = ModuleList(m, NIL), m: ModuleDecl, no ModuleLevelTypingError(m, _);
 							AllModList(ml), ml = ModuleList(m, NIL), m: Hide, no IllegalHideOperation(m);
