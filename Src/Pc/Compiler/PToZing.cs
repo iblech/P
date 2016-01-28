@@ -110,6 +110,7 @@ namespace Microsoft.Pc
 
     internal class FunInfo
     {
+        public string srcFileName;
         public bool isAnonymous;
         public List<string> parameterNames;
 
@@ -141,8 +142,9 @@ namespace Microsoft.Pc
         }
 
         // if isAnonymous is true, parameters is actually envVars
-        public FunInfo(bool isAnonymous, FuncTerm parameters, AST<FuncTerm> returnType, FuncTerm locals, Node body)
+        public FunInfo(string fileName, bool isAnonymous, FuncTerm parameters, AST<FuncTerm> returnType, FuncTerm locals, Node body)
         {
+            this.srcFileName = fileName;
             this.isAnonymous = isAnonymous;
             this.returnType = returnType;
             this.body = body;
@@ -303,7 +305,7 @@ namespace Microsoft.Pc
             observesEvents = new List<string>();
             funNameToFunInfo = new Dictionary<string, FunInfo>();
             monitorType = MonitorType.SAFETY;
-            funNameToFunInfo["ignore"] = new FunInfo(false, null, PToZing.PTypeNull, null, Factory.Instance.AddArg(Factory.Instance.MkFuncTerm(PData.Con_NulStmt), PData.Cnst_Skip).Node);
+            funNameToFunInfo["ignore"] = new FunInfo(null, false, null, PToZing.PTypeNull, null, Factory.Instance.AddArg(Factory.Instance.MkFuncTerm(PData.Con_NulStmt), PData.Cnst_Skip).Node);
             IsMain = false;
         }
     }
@@ -401,19 +403,19 @@ namespace Microsoft.Pc
         private Dictionary<AST<Node>, string> anonFunToName;
         public Dictionary<AST<FuncTerm>, FuncTerm> typeExpansion;
 
-        public LinkedList<AST<FuncTerm>> GetBin(Dictionary<string, LinkedList<AST<FuncTerm>>> factBins, FuncTerm ft)
+        public LinkedList<Tuple<string, AST<FuncTerm>>> GetBin(Dictionary<string, LinkedList<Tuple<string, AST<FuncTerm>>>> factBins, FuncTerm ft)
         {
             var fun = (Id)ft.Function;
             return GetBin(factBins, fun.Name);
         }
 
-        public LinkedList<AST<FuncTerm>> GetBin(Dictionary<string, LinkedList<AST<FuncTerm>>> factBins, string name)
+        public LinkedList<Tuple<string, AST<FuncTerm>>> GetBin(Dictionary<string, LinkedList<Tuple<string, AST<FuncTerm>>>> factBins, string name)
         {
             Contract.Requires(!string.IsNullOrEmpty(name));
-            LinkedList<AST<FuncTerm>> bin;
+            LinkedList<Tuple<string, AST<FuncTerm>>> bin;
             if (!factBins.TryGetValue(name, out bin))
             {
-                bin = new LinkedList<AST<FuncTerm>>();
+                bin = new LinkedList<Tuple<string, AST<FuncTerm>>>();
                 factBins.Add(name, bin);
             }
 
@@ -497,7 +499,7 @@ namespace Microsoft.Pc
 
         private Compiler compiler;
 
-        public PToZing(Compiler compiler, List<AST<Model>> allModels, AST<Model> modelWithTypes)
+        public PToZing(Compiler compiler, List<Tuple<string, AST<Model>>> allModels, AST<Model> modelWithTypes)
         {
             this.compiler = compiler;
             this.typeContext = new TypeTranslationContext(this);
@@ -505,526 +507,534 @@ namespace Microsoft.Pc
             GenerateTypeInfo(modelWithTypes);
         }
 
-        private void GenerateProgramData(List<AST<Model>> allModels)
+        private void GenerateProgramData(List<Tuple<string, AST<Model>>> allModels)
         {
-            var factBins = new Dictionary<string, LinkedList<AST<FuncTerm>>>();
+            var factBins = new Dictionary<string, LinkedList<Tuple<string, AST<FuncTerm>>>>();
 
-            foreach (var model in allModels)
+            foreach (var tuple in allModels)
             {
-                model.FindAll(
-                    new NodePred[]
+                {
+                    var srcFileName = tuple.Item1;
+                    var model = tuple.Item2;
+                    model.FindAll(
+                        new NodePred[]
                     {
                         NodePredFactory.Instance.Star,
                         NodePredFactory.Instance.MkPredicate(NodeKind.ModelFact)
                     },
-                    (path, n) =>
-                    {
-                        var mf = (ModelFact)n;
-                        FuncTerm ft = (FuncTerm)mf.Match;
-                        GetBin(factBins, ft).AddLast((AST<FuncTerm>)Factory.Instance.ToAST(ft));
-                    });
-            }
-
-            allEvents = new Dictionary<string, EventInfo>();
-            allEvents[HaltEvent] = new EventInfo(1, false, PTypeNull.Node);
-            allEvents[NullEvent] = new EventInfo(1, false, PTypeNull.Node);
-            typeExpansion = new Dictionary<AST<FuncTerm>, FuncTerm>();
-            allInterfaces = new Dictionary<string, List<string>>();
-            allTestCasesInfo = new AllTestCasesInfo();
-            allModules = new Dictionary<string, ModuleInfo>();
-            allEventsPartialOrder = new Dictionary<string, List<string>>();
-            crntMachinesInModuleList = new List<KeyValuePair<string, MachineInfo>>();
-            crntModulesInModuleList = new List<string>();
-
-            LinkedList<AST<FuncTerm>> terms;
-
-            terms = GetBin(factBins, "EventDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var name = ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    var bound = it.Current;
-                    it.MoveNext();
-                    var payloadType = (FuncTerm)(it.Current.NodeKind == NodeKind.Id ? PTypeNull.Node : it.Current);
-                    if (bound.NodeKind == NodeKind.Id)
-                    {
-                        allEvents[name] = new EventInfo(payloadType);
-                    }
-                    else
-                    {
-                        var ft = (FuncTerm)bound;
-                        var maxInstances = (int)((Cnst)GetArgByIndex(ft, 0)).GetNumericValue().Numerator;
-                        var maxInstancesAssumed = ((Id)ft.Function).Name == "AssumeMaxInstances";
-                        allEvents[name] = new EventInfo(maxInstances, maxInstancesAssumed, payloadType);
-                    }
-                }
-            }
-
-            //add module
-            terms = GetBin(factBins, "ModuleDecl");
-            foreach (var term in terms)
-            {
-                string moduleName = GetName(term.Node, 0);
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    allModules[moduleName] = new ModuleInfo(moduleName);
-                }
-            }
-            //initialize sends for each module
-            terms = GetBin(factBins, "ModuleSendsDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var moduleName = GetName(it.Current as FuncTerm, 0);
-                    it.MoveNext();
-                    var ev = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
-                    allModules[moduleName].moduleSendsEvents.Add(ev);
-                }
-            }
-
-            terms = GetBin(factBins, "MachineDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    var crntMachineInfo = new MachineInfo();
-                    it.MoveNext();
-                    var machineName = ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    var moduleName = GetName(it.Current as FuncTerm, 0);
-                    it.MoveNext();
-
-                    crntMachineInfo.type = ((Id)it.Current).Name;
-
-                    it.MoveNext();
-                    var bound = it.Current;
-                    if (bound.NodeKind != NodeKind.Id)
-                    {
-                        var ft = (FuncTerm)bound;
-                        crntMachineInfo.maxQueueSize = (int)((Cnst)GetArgByIndex(ft, 0)).GetNumericValue().Numerator;
-                        crntMachineInfo.maxQueueSizeAssumed = ((Id)ft.Function).Name == "AssumeMaxInstances";
-                    }
-                    it.MoveNext();
-                    crntMachineInfo.initStateName = GetNameFromQualifiedName(machineName, (FuncTerm)it.Current);
-                    it.MoveNext();
-                    it.MoveNext();
-                    if (((Id)it.Current).Name == "TRUE")
-                    {
-                        crntMachineInfo.IsMain = true;
-                    }
-                    allModules[moduleName].implementedMachines[machineName] = crntMachineInfo;
-                }
-            }
-
-            terms = GetBin(factBins, "ObservesDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var machineDecl = (FuncTerm)it.Current;
-                    var machineName = GetName(machineDecl, 0);
-                    var moduleName = GetModuleNameFromMachineDecl(machineDecl);
-                    it.MoveNext();
-                    var ev = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
-                    allModules[moduleName].implementedMachines[machineName].observesEvents.Add(ev);
-                }
-            }
-
-            terms = GetBin(factBins, "InterfaceTypeEventDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var interfaceName = GetName(((FuncTerm)it.Current), 0);
-                    it.MoveNext();
-                    var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    if (allInterfaces.ContainsKey(interfaceName))
-                    {
-                        allInterfaces[interfaceName].Add(eventName);
-                    }
-                    else
-                    {
-                        allInterfaces[interfaceName] = new List<string>();
-                        allInterfaces[interfaceName].Add(eventName);
-                    }
-                }
-            }
-            //add machines with empty receive sets
-            foreach (var machine in allModules.SelectMany(m => m.Value.implementedMachines))
-            {
-                if (allInterfaces.ContainsKey(machine.Key))
-                    continue;
-                allInterfaces[machine.Key] = new List<string>();
-            }
-
-            //populate refines test information
-            terms = GetBin(factBins, "RefinesTestDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var testName = ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    var impList = Factory.Instance.ToAST(it.Current);
-                    it.MoveNext();
-                    var specList = Factory.Instance.ToAST(it.Current);
-                    allTestCasesInfo.allRefinesTests[testName] = new RefinesTestInfo(impList, specList);
-                }
-            }
-
-            //populate monitors test information
-            terms = GetBin(factBins, "SatisfiesTestDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var testName = ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    var impList = Factory.Instance.ToAST(it.Current);
-                    it.MoveNext();
-                    List<string> monitors = new List<string>();
-                    if (it.Current.NodeKind == NodeKind.FuncTerm)
-                        monitors = GetMonitorsFromMonitorList(it.Current as FuncTerm);
-                    allTestCasesInfo.allSatisfiesTests[testName] = new SatisfiesTestInfo(impList, monitors);
-                }
-            }
-
-            terms = GetBin(factBins, "VarDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var varName = ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    var machineDecl = (FuncTerm)it.Current;
-                    var machineName = GetName(machineDecl, 0);
-                    var moduleName = GetModuleNameFromMachineDecl(machineDecl);
-                    var varTable = allModules[moduleName].implementedMachines[machineName].localVariableToVarInfo;
-                    it.MoveNext();
-                    var type = (FuncTerm)it.Current;
-                    varTable[varName] = new VariableInfo(type);
-                }
-            }
-
-            terms = GetBin(factBins, "FunDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    string funName = ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    var owner = it.Current;
-                    it.MoveNext();
-                    var isModel = ((Id)it.Current).Name == "MODEL";
-                    it.MoveNext();
-                    var parameters = it.Current as FuncTerm;
-                    it.MoveNext();
-                    var returnTypeName = it.Current is Id ? PTypeNull : (AST<FuncTerm>)Factory.Instance.ToAST(it.Current);
-                    it.MoveNext();
-                    var locals = it.Current as FuncTerm;
-                    it.MoveNext();
-                    var body = it.Current;
-                    var funInfo = new FunInfo(false, parameters, returnTypeName, locals, body);
-
-                    string ownerKind = GetOwnerKind(term.Node, 1);
-                    string ownerName = GetOwnerName(term.Node, 1);
-                    if (ownerKind == "MachineDecl")
-                    {
-                        var moduleName = GetModuleNameFromMachineDecl(owner as FuncTerm);
-                        allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName] = funInfo;
-                    }
-                    else
-                    {
-                        allModules[ownerName].staticFunNameToFunInfo[funName] = funInfo;
-                    }
-                }
-            }
-
-            this.anonFunToName = new Dictionary<AST<Node>, string>();
-            var anonFunCounter = new Dictionary<string, Dictionary<string, int>>();
-            var anonFunCounterStatic = new Dictionary<string, int>();
-            foreach (var module in allModules.Keys)
-            {
-                anonFunCounter[module] = new Dictionary<string, int>();
-                foreach (var machine in allModules[module].implementedMachines.Keys)
-                {
-                    anonFunCounter[module][machine] = 0;
-                }
-                anonFunCounterStatic[module] = 0;
-            }
-            terms = GetBin(factBins, "AnonFunDecl");
-            foreach (var term in terms)
-            {
-                if (anonFunToName.ContainsKey(term)) continue;
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var owner = it.Current as FuncTerm;
-                    it.MoveNext();
-                    var locals = it.Current as FuncTerm;
-                    it.MoveNext();
-                    var body = it.Current;
-                    it.MoveNext();
-                    var envVars = it.Current as FuncTerm;
-                    string ownerKind = GetOwnerKind(term.Node, 0);
-                    string ownerName = GetOwnerName(term.Node, 0);
-                    if (ownerKind == "ModuleDecl")
-                    {
-                        var funName = "AnonFunStatic" + anonFunCounterStatic[ownerName];
-                        allModules[ownerName].staticFunNameToFunInfo[funName] = new FunInfo(true, envVars, PToZing.PTypeNull, locals, body);
-                        anonFunToName[term] = funName;
-                        anonFunCounterStatic[ownerName]++;
-                    }
-                    else
-                    {
-                        var moduleName = GetModuleNameFromMachineDecl(owner as FuncTerm);
-                        var funName = "AnonFun" + anonFunCounter[moduleName][ownerName];
-                        allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName] = new FunInfo(true, envVars, PToZing.PTypeNull, locals, body);
-                        anonFunToName[term] = funName;
-                        anonFunCounter[moduleName][ownerName]++;
-                    }
-                }
-            }
-
-            terms = GetBin(factBins, "StateDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var qualifiedStateName = (FuncTerm)it.Current;
-                    it.MoveNext();
-                    var machineDecl = (FuncTerm)it.Current;
-                    var ownerName = GetName(machineDecl, 0);
-                    var stateName = GetNameFromQualifiedName(ownerName, qualifiedStateName);
-                    it.MoveNext();
-                    var entryActionName = it.Current.NodeKind == NodeKind.Cnst
-                                            ? ((Cnst)it.Current).GetStringValue()
-                                            : anonFunToName[Factory.Instance.ToAST(it.Current)];
-                    it.MoveNext();
-                    var exitFunName = it.Current.NodeKind == NodeKind.Cnst
-                                            ? ((Cnst)it.Current).GetStringValue()
-                                            : anonFunToName[Factory.Instance.ToAST(it.Current)];
-                    it.MoveNext();
-                    var temperature = StateTemperature.WARM;
-                    var t = ((Id)it.Current).Name;
-                    if (t == "HOT")
-                    {
-                        temperature = StateTemperature.HOT;
-                    }
-                    else if (t == "COLD")
-                    {
-                        temperature = StateTemperature.COLD;
-                    }
-                    var moduleName = GetModuleNameFromMachineDecl(machineDecl as FuncTerm);
-                    var stateTable = allModules[moduleName].implementedMachines[ownerName].stateNameToStateInfo;
-                    stateTable[stateName] = new StateInfo(ownerName, entryActionName, exitFunName, temperature, GetPrintedNameFromQualifiedName(qualifiedStateName));
-                }
-            }
-
-            terms = GetBin(factBins, "TransDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var stateDecl = (FuncTerm)it.Current;
-                    var qualifiedStateName = (FuncTerm)GetArgByIndex(stateDecl, 0);
-                    var stateOwnerMachineName = GetMachineName(stateDecl, 1);
-                    var moduleName = GetModuleNameFromMachineDecl(GetArgByIndex(stateDecl, 1) as FuncTerm);
-                    var stateName = GetNameFromQualifiedName(stateOwnerMachineName, qualifiedStateName);
-                    var stateTable = allModules[moduleName].implementedMachines[stateOwnerMachineName].stateNameToStateInfo[stateName];
-                    it.MoveNext();
-                    string eventName;
-                    if (it.Current.NodeKind == NodeKind.Id)
-                    {
-                        var name = ((Id)it.Current).Name;
-                        if (name == "NULL")
+                        (path, n) =>
                         {
-                            eventName = NullEvent;
-                            stateTable.hasNullTransition = true;
+                            var mf = (ModelFact)n;
+                            FuncTerm ft = (FuncTerm)mf.Match;
+                            GetBin(factBins, ft).AddLast(new Tuple<string, AST<FuncTerm>>(srcFileName, (AST<FuncTerm>)Factory.Instance.ToAST(ft)));
+                        });
+                }
+
+                allEvents = new Dictionary<string, EventInfo>();
+                allEvents[HaltEvent] = new EventInfo(1, false, PTypeNull.Node);
+                allEvents[NullEvent] = new EventInfo(1, false, PTypeNull.Node);
+                typeExpansion = new Dictionary<AST<FuncTerm>, FuncTerm>();
+                allInterfaces = new Dictionary<string, List<string>>();
+                allTestCasesInfo = new AllTestCasesInfo();
+                allModules = new Dictionary<string, ModuleInfo>();
+                allEventsPartialOrder = new Dictionary<string, List<string>>();
+                crntMachinesInModuleList = new List<KeyValuePair<string, MachineInfo>>();
+                crntModulesInModuleList = new List<string>();
+
+                LinkedList<Tuple<string, AST<FuncTerm>>> terms;
+
+                terms = GetBin(factBins, "EventDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
+                    {
+                        it.MoveNext();
+                        var name = ((Cnst)it.Current).GetStringValue();
+                        it.MoveNext();
+                        var bound = it.Current;
+                        it.MoveNext();
+                        var payloadType = (FuncTerm)(it.Current.NodeKind == NodeKind.Id ? PTypeNull.Node : it.Current);
+                        if (bound.NodeKind == NodeKind.Id)
+                        {
+                            allEvents[name] = new EventInfo(payloadType);
                         }
                         else
                         {
-                            // name == "HALT"
-                            eventName = HaltEvent;
+                            var ft = (FuncTerm)bound;
+                            var maxInstances = (int)((Cnst)GetArgByIndex(ft, 0)).GetNumericValue().Numerator;
+                            var maxInstancesAssumed = ((Id)ft.Function).Name == "AssumeMaxInstances";
+                            allEvents[name] = new EventInfo(maxInstances, maxInstancesAssumed, payloadType);
                         }
                     }
-                    else
+                }
+
+                //add module
+                terms = GetBin(factBins, "ModuleDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    string moduleName = GetName(term.Node, 0);
+                    using (var it = term.Node.Args.GetEnumerator())
                     {
-                        eventName = ((Cnst)it.Current).GetStringValue();
-                    }
-                    it.MoveNext();
-                    var targetStateName = GetNameFromQualifiedName(stateOwnerMachineName, (FuncTerm)it.Current);
-                    it.MoveNext();
-                    if (it.Current.NodeKind == NodeKind.Id)
-                    {
-                        stateTable.transitions[eventName] = new TransitionInfo(targetStateName);
-                    }
-                    else
-                    {
-                        var exitFunName = it.Current.NodeKind == NodeKind.Cnst
-                                            ? ((Cnst)it.Current).GetStringValue()
-                                            : anonFunToName[Factory.Instance.ToAST(it.Current)];
-                        stateTable.transitions[eventName] = new TransitionInfo(targetStateName, exitFunName);
+                        it.MoveNext();
+                        allModules[moduleName] = new ModuleInfo(moduleName);
                     }
                 }
-            }
-
-            terms = GetBin(factBins, "DoDecl");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
+                //initialize sends for each module
+                terms = GetBin(factBins, "ModuleSendsDecl");
+                foreach (var term in terms.Select(x => x.Item2))
                 {
-                    it.MoveNext();
-                    var stateDecl = (FuncTerm)it.Current;
-                    var qualifiedStateName = (FuncTerm)GetArgByIndex(stateDecl, 0);
-                    var stateOwnerMachineName = GetMachineName(stateDecl, 1);
-                    var stateName = GetNameFromQualifiedName(stateOwnerMachineName, qualifiedStateName);
-                    var moduleName = GetModuleNameFromMachineDecl(GetArgByIndex(stateDecl, 1) as FuncTerm);
-                    var stateTable = allModules[moduleName].implementedMachines[stateOwnerMachineName].stateNameToStateInfo[stateName];
-                    it.MoveNext();
-                    string eventName;
-                    if (it.Current.NodeKind == NodeKind.Id)
+                    using (var it = term.Node.Args.GetEnumerator())
                     {
-                        var name = ((Id)it.Current).Name;
-                        if (name == "NULL")
+                        it.MoveNext();
+                        var moduleName = GetName(it.Current as FuncTerm, 0);
+                        it.MoveNext();
+                        var ev = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
+                        allModules[moduleName].moduleSendsEvents.Add(ev);
+                    }
+                }
+
+                terms = GetBin(factBins, "MachineDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
+                    {
+                        var crntMachineInfo = new MachineInfo();
+                        it.MoveNext();
+                        var machineName = ((Cnst)it.Current).GetStringValue();
+                        it.MoveNext();
+                        var moduleName = GetName(it.Current as FuncTerm, 0);
+                        it.MoveNext();
+
+                        crntMachineInfo.type = ((Id)it.Current).Name;
+
+                        it.MoveNext();
+                        var bound = it.Current;
+                        if (bound.NodeKind != NodeKind.Id)
                         {
-                            eventName = NullEvent;
+                            var ft = (FuncTerm)bound;
+                            crntMachineInfo.maxQueueSize = (int)((Cnst)GetArgByIndex(ft, 0)).GetNumericValue().Numerator;
+                            crntMachineInfo.maxQueueSizeAssumed = ((Id)ft.Function).Name == "AssumeMaxInstances";
+                        }
+                        it.MoveNext();
+                        crntMachineInfo.initStateName = GetNameFromQualifiedName(machineName, (FuncTerm)it.Current);
+                        it.MoveNext();
+                        it.MoveNext();
+                        if (((Id)it.Current).Name == "TRUE")
+                        {
+                            crntMachineInfo.IsMain = true;
+                        }
+                        allModules[moduleName].implementedMachines[machineName] = crntMachineInfo;
+                    }
+                }
+
+                terms = GetBin(factBins, "ObservesDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
+                    {
+                        it.MoveNext();
+                        var machineDecl = (FuncTerm)it.Current;
+                        var machineName = GetName(machineDecl, 0);
+                        var moduleName = GetModuleNameFromMachineDecl(machineDecl);
+                        it.MoveNext();
+                        var ev = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
+                        allModules[moduleName].implementedMachines[machineName].observesEvents.Add(ev);
+                    }
+                }
+
+                terms = GetBin(factBins, "InterfaceTypeEventDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
+                    {
+                        it.MoveNext();
+                        var interfaceName = GetName(((FuncTerm)it.Current), 0);
+                        it.MoveNext();
+                        var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
+                        it.MoveNext();
+                        if (allInterfaces.ContainsKey(interfaceName))
+                        {
+                            allInterfaces[interfaceName].Add(eventName);
                         }
                         else
                         {
-                            // name == "HALT"
-                            eventName = HaltEvent;
+                            allInterfaces[interfaceName] = new List<string>();
+                            allInterfaces[interfaceName].Add(eventName);
                         }
                     }
-                    else
+                }
+                //add machines with empty receive sets
+                foreach (var machine in allModules.SelectMany(m => m.Value.implementedMachines))
+                {
+                    if (allInterfaces.ContainsKey(machine.Key))
+                        continue;
+                    allInterfaces[machine.Key] = new List<string>();
+                }
+
+                //populate refines test information
+                terms = GetBin(factBins, "RefinesTestDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
                     {
-                        eventName = ((Cnst)it.Current).GetStringValue();
+                        it.MoveNext();
+                        var testName = ((Cnst)it.Current).GetStringValue();
+                        it.MoveNext();
+                        var impList = Factory.Instance.ToAST(it.Current);
+                        it.MoveNext();
+                        var specList = Factory.Instance.ToAST(it.Current);
+                        allTestCasesInfo.allRefinesTests[testName] = new RefinesTestInfo(impList, specList);
                     }
-                    it.MoveNext();
-                    var action = it.Current;
-                    if (action.NodeKind == NodeKind.Cnst)
+                }
+
+                //populate monitors test information
+                terms = GetBin(factBins, "SatisfiesTestDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
                     {
-                        stateTable.actions[eventName] = ((Cnst)action).GetStringValue();
+                        it.MoveNext();
+                        var testName = ((Cnst)it.Current).GetStringValue();
+                        it.MoveNext();
+                        var impList = Factory.Instance.ToAST(it.Current);
+                        it.MoveNext();
+                        List<string> monitors = new List<string>();
+                        if (it.Current.NodeKind == NodeKind.FuncTerm)
+                            monitors = GetMonitorsFromMonitorList(it.Current as FuncTerm);
+                        allTestCasesInfo.allSatisfiesTests[testName] = new SatisfiesTestInfo(impList, monitors);
                     }
-                    else if (action.NodeKind == NodeKind.Id)
+                }
+
+                terms = GetBin(factBins, "VarDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
                     {
-                        if (((Id)action).Name == "DEFER")
+                        it.MoveNext();
+                        var varName = ((Cnst)it.Current).GetStringValue();
+                        it.MoveNext();
+                        var machineDecl = (FuncTerm)it.Current;
+                        var machineName = GetName(machineDecl, 0);
+                        var moduleName = GetModuleNameFromMachineDecl(machineDecl);
+                        var varTable = allModules[moduleName].implementedMachines[machineName].localVariableToVarInfo;
+                        it.MoveNext();
+                        var type = (FuncTerm)it.Current;
+                        varTable[varName] = new VariableInfo(type);
+                    }
+                }
+
+                terms = GetBin(factBins, "FunDecl");
+                foreach (var tup in terms)
+                {
+                    var srcFileName = tup.Item1;
+                    var term = tup.Item2;
+                    using (var it = term.Node.Args.GetEnumerator())
+                    {
+                        it.MoveNext();
+                        string funName = ((Cnst)it.Current).GetStringValue();
+                        it.MoveNext();
+                        var owner = it.Current;
+                        it.MoveNext();
+                        var isModel = ((Id)it.Current).Name == "MODEL";
+                        it.MoveNext();
+                        var parameters = it.Current as FuncTerm;
+                        it.MoveNext();
+                        var returnTypeName = it.Current is Id ? PTypeNull : (AST<FuncTerm>)Factory.Instance.ToAST(it.Current);
+                        it.MoveNext();
+                        var locals = it.Current as FuncTerm;
+                        it.MoveNext();
+                        var body = it.Current;
+                        var funInfo = new FunInfo(srcFileName, false, parameters, returnTypeName, locals, body);
+
+                        string ownerKind = GetOwnerKind(term.Node, 1);
+                        string ownerName = GetOwnerName(term.Node, 1);
+                        if (ownerKind == "MachineDecl")
                         {
-                            stateTable.deferredEvents.Add(eventName);
+                            var moduleName = GetModuleNameFromMachineDecl(owner as FuncTerm);
+                            allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName] = funInfo;
                         }
                         else
                         {
-                            // ((Id)action).Name == "IGNORE"
-                            stateTable.ignoredEvents.Add(eventName);
-                            stateTable.actions[eventName] = "ignore";
+                            allModules[ownerName].staticFunNameToFunInfo[funName] = funInfo;
                         }
                     }
-                    else
-                    {
-                        stateTable.actions[eventName] = anonFunToName[Factory.Instance.ToAST(action)];
-                    }
                 }
-            }
 
-            terms = GetBin(factBins, "Annotation");
-            foreach (var term in terms)
-            {
-                using (var it = term.Node.Args.GetEnumerator())
+                this.anonFunToName = new Dictionary<AST<Node>, string>();
+                var anonFunCounter = new Dictionary<string, Dictionary<string, int>>();
+                var anonFunCounterStatic = new Dictionary<string, int>();
+                foreach (var module in allModules.Keys)
                 {
-                    it.MoveNext();
-                    FuncTerm annotationContext = (FuncTerm)it.Current;
-                    string annotationContextKind = ((Id)annotationContext.Function).Name;
-                    if (annotationContextKind != "FunDecl") continue;
-                    var ownerKind = GetOwnerKind(annotationContext, 1);
-                    var ownerName = GetOwnerName(annotationContext, 1);
-                    string funName = GetName(annotationContext, 0);
-                    it.MoveNext();
-                    string annotation = ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    if (annotation == "invokescheduler")
+                    anonFunCounter[module] = new Dictionary<string, int>();
+                    foreach (var machine in allModules[module].implementedMachines.Keys)
                     {
+                        anonFunCounter[module][machine] = 0;
+                    }
+                    anonFunCounterStatic[module] = 0;
+                }
+                terms = GetBin(factBins, "AnonFunDecl");
+                foreach (var tup in terms)
+                {
+                    var srcFileName = tup.Item1;
+                    var term = tup.Item2;
+                    if (anonFunToName.ContainsKey(term)) continue;
+                    using (var it = term.Node.Args.GetEnumerator())
+                    {
+                        it.MoveNext();
+                        var owner = it.Current as FuncTerm;
+                        it.MoveNext();
+                        var locals = it.Current as FuncTerm;
+                        it.MoveNext();
+                        var body = it.Current;
+                        it.MoveNext();
+                        var envVars = it.Current as FuncTerm;
+                        string ownerKind = GetOwnerKind(term.Node, 0);
+                        string ownerName = GetOwnerName(term.Node, 0);
                         if (ownerKind == "ModuleDecl")
                         {
-                            allModules[ownerName].staticFunNameToFunInfo[funName].invokeSchedulerFuns.Add(it.Current);
+                            var funName = "AnonFunStatic" + anonFunCounterStatic[ownerName];
+                            allModules[ownerName].staticFunNameToFunInfo[funName] = new FunInfo(srcFileName, true, envVars, PToZing.PTypeNull, locals, body);
+                            anonFunToName[term] = funName;
+                            anonFunCounterStatic[ownerName]++;
                         }
                         else
                         {
-                            var moduleName = GetModuleNameFromMachineDecl(GetArgByIndex(annotationContext, 1) as FuncTerm);
-                            allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName].invokeSchedulerFuns.Add(it.Current);
+                            var moduleName = GetModuleNameFromMachineDecl(owner as FuncTerm);
+                            var funName = "AnonFun" + anonFunCounter[moduleName][ownerName];
+                            allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName] = new FunInfo(srcFileName, true, envVars, PToZing.PTypeNull, locals, body);
+                            anonFunToName[term] = funName;
+                            anonFunCounter[moduleName][ownerName]++;
                         }
                     }
-                    else if (annotation == "print")
+                }
+
+                terms = GetBin(factBins, "StateDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
                     {
-                        Cnst indexCnst = it.Current as Cnst;
-                        if (indexCnst != null)
+                        it.MoveNext();
+                        var qualifiedStateName = (FuncTerm)it.Current;
+                        it.MoveNext();
+                        var machineDecl = (FuncTerm)it.Current;
+                        var ownerName = GetName(machineDecl, 0);
+                        var stateName = GetNameFromQualifiedName(ownerName, qualifiedStateName);
+                        it.MoveNext();
+                        var entryActionName = it.Current.NodeKind == NodeKind.Cnst
+                                                ? ((Cnst)it.Current).GetStringValue()
+                                                : anonFunToName[Factory.Instance.ToAST(it.Current)];
+                        it.MoveNext();
+                        var exitFunName = it.Current.NodeKind == NodeKind.Cnst
+                                                ? ((Cnst)it.Current).GetStringValue()
+                                                : anonFunToName[Factory.Instance.ToAST(it.Current)];
+                        it.MoveNext();
+                        var temperature = StateTemperature.WARM;
+                        var t = ((Id)it.Current).Name;
+                        if (t == "HOT")
                         {
-                            string arg = indexCnst.GetStringValue();
+                            temperature = StateTemperature.HOT;
+                        }
+                        else if (t == "COLD")
+                        {
+                            temperature = StateTemperature.COLD;
+                        }
+                        var moduleName = GetModuleNameFromMachineDecl(machineDecl as FuncTerm);
+                        var stateTable = allModules[moduleName].implementedMachines[ownerName].stateNameToStateInfo;
+                        stateTable[stateName] = new StateInfo(ownerName, entryActionName, exitFunName, temperature, GetPrintedNameFromQualifiedName(qualifiedStateName));
+                    }
+                }
+
+                terms = GetBin(factBins, "TransDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
+                    {
+                        it.MoveNext();
+                        var stateDecl = (FuncTerm)it.Current;
+                        var qualifiedStateName = (FuncTerm)GetArgByIndex(stateDecl, 0);
+                        var stateOwnerMachineName = GetMachineName(stateDecl, 1);
+                        var moduleName = GetModuleNameFromMachineDecl(GetArgByIndex(stateDecl, 1) as FuncTerm);
+                        var stateName = GetNameFromQualifiedName(stateOwnerMachineName, qualifiedStateName);
+                        var stateTable = allModules[moduleName].implementedMachines[stateOwnerMachineName].stateNameToStateInfo[stateName];
+                        it.MoveNext();
+                        string eventName;
+                        if (it.Current.NodeKind == NodeKind.Id)
+                        {
+                            var name = ((Id)it.Current).Name;
+                            if (name == "NULL")
+                            {
+                                eventName = NullEvent;
+                                stateTable.hasNullTransition = true;
+                            }
+                            else
+                            {
+                                // name == "HALT"
+                                eventName = HaltEvent;
+                            }
+                        }
+                        else
+                        {
+                            eventName = ((Cnst)it.Current).GetStringValue();
+                        }
+                        it.MoveNext();
+                        var targetStateName = GetNameFromQualifiedName(stateOwnerMachineName, (FuncTerm)it.Current);
+                        it.MoveNext();
+                        if (it.Current.NodeKind == NodeKind.Id)
+                        {
+                            stateTable.transitions[eventName] = new TransitionInfo(targetStateName);
+                        }
+                        else
+                        {
+                            var exitFunName = it.Current.NodeKind == NodeKind.Cnst
+                                                ? ((Cnst)it.Current).GetStringValue()
+                                                : anonFunToName[Factory.Instance.ToAST(it.Current)];
+                            stateTable.transitions[eventName] = new TransitionInfo(targetStateName, exitFunName);
+                        }
+                    }
+                }
+
+                terms = GetBin(factBins, "DoDecl");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
+                    {
+                        it.MoveNext();
+                        var stateDecl = (FuncTerm)it.Current;
+                        var qualifiedStateName = (FuncTerm)GetArgByIndex(stateDecl, 0);
+                        var stateOwnerMachineName = GetMachineName(stateDecl, 1);
+                        var stateName = GetNameFromQualifiedName(stateOwnerMachineName, qualifiedStateName);
+                        var moduleName = GetModuleNameFromMachineDecl(GetArgByIndex(stateDecl, 1) as FuncTerm);
+                        var stateTable = allModules[moduleName].implementedMachines[stateOwnerMachineName].stateNameToStateInfo[stateName];
+                        it.MoveNext();
+                        string eventName;
+                        if (it.Current.NodeKind == NodeKind.Id)
+                        {
+                            var name = ((Id)it.Current).Name;
+                            if (name == "NULL")
+                            {
+                                eventName = NullEvent;
+                            }
+                            else
+                            {
+                                // name == "HALT"
+                                eventName = HaltEvent;
+                            }
+                        }
+                        else
+                        {
+                            eventName = ((Cnst)it.Current).GetStringValue();
+                        }
+                        it.MoveNext();
+                        var action = it.Current;
+                        if (action.NodeKind == NodeKind.Cnst)
+                        {
+                            stateTable.actions[eventName] = ((Cnst)action).GetStringValue();
+                        }
+                        else if (action.NodeKind == NodeKind.Id)
+                        {
+                            if (((Id)action).Name == "DEFER")
+                            {
+                                stateTable.deferredEvents.Add(eventName);
+                            }
+                            else
+                            {
+                                // ((Id)action).Name == "IGNORE"
+                                stateTable.ignoredEvents.Add(eventName);
+                                stateTable.actions[eventName] = "ignore";
+                            }
+                        }
+                        else
+                        {
+                            stateTable.actions[eventName] = anonFunToName[Factory.Instance.ToAST(action)];
+                        }
+                    }
+                }
+
+                terms = GetBin(factBins, "Annotation");
+                foreach (var term in terms.Select(x => x.Item2))
+                {
+                    using (var it = term.Node.Args.GetEnumerator())
+                    {
+                        it.MoveNext();
+                        FuncTerm annotationContext = (FuncTerm)it.Current;
+                        string annotationContextKind = ((Id)annotationContext.Function).Name;
+                        if (annotationContextKind != "FunDecl") continue;
+                        var ownerKind = GetOwnerKind(annotationContext, 1);
+                        var ownerName = GetOwnerName(annotationContext, 1);
+                        string funName = GetName(annotationContext, 0);
+                        it.MoveNext();
+                        string annotation = ((Cnst)it.Current).GetStringValue();
+                        it.MoveNext();
+                        if (annotation == "invokescheduler")
+                        {
                             if (ownerKind == "ModuleDecl")
                             {
-                                allModules[ownerName].staticFunNameToFunInfo[funName].printArgs.Add(arg);
+                                allModules[ownerName].staticFunNameToFunInfo[funName].invokeSchedulerFuns.Add(it.Current);
                             }
                             else
                             {
                                 var moduleName = GetModuleNameFromMachineDecl(GetArgByIndex(annotationContext, 1) as FuncTerm);
-                                allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName].printArgs.Add(arg);
+                                allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName].invokeSchedulerFuns.Add(it.Current);
+                            }
+                        }
+                        else if (annotation == "print")
+                        {
+                            Cnst indexCnst = it.Current as Cnst;
+                            if (indexCnst != null)
+                            {
+                                string arg = indexCnst.GetStringValue();
+                                if (ownerKind == "ModuleDecl")
+                                {
+                                    allModules[ownerName].staticFunNameToFunInfo[funName].printArgs.Add(arg);
+                                }
+                                else
+                                {
+                                    var moduleName = GetModuleNameFromMachineDecl(GetArgByIndex(annotationContext, 1) as FuncTerm);
+                                    allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName].printArgs.Add(arg);
+                                }
+                            }
+                        }
+                        else if (annotation == "invokeplugin")
+                        {
+                            if (ownerKind == "ModuleDecl")
+                            {
+                                allModules[ownerName].staticFunNameToFunInfo[funName].invokePluginFuns.Add(it.Current);
+                            }
+                            else
+                            {
+                                var moduleName = GetModuleNameFromMachineDecl(GetArgByIndex(annotationContext, 1) as FuncTerm);
+                                allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName].invokePluginFuns.Add(it.Current);
                             }
                         }
                     }
-                    else if (annotation == "invokeplugin")
-                    {
-                        if (ownerKind == "ModuleDecl")
-                        {
-                            allModules[ownerName].staticFunNameToFunInfo[funName].invokePluginFuns.Add(it.Current);
-                        }
-                        else
-                        {
-                            var moduleName = GetModuleNameFromMachineDecl(GetArgByIndex(annotationContext, 1) as FuncTerm);
-                            allModules[moduleName].implementedMachines[ownerName].funNameToFunInfo[funName].invokePluginFuns.Add(it.Current);
-                        }
-                    }
                 }
-            }
 
-            foreach (var machine in allModules.SelectMany(mod => mod.Value.implementedMachines))
-            {
-                var machineInfo = machine.Value;
-                if (!machineInfo.IsMonitor) continue;
+                foreach (var machine in allModules.SelectMany(mod => mod.Value.implementedMachines))
+                {
+                    var machineInfo = machine.Value;
+                    if (!machineInfo.IsMonitor) continue;
 
-                List<string> initialSet = new List<string>();
-                foreach (var stateName in ComputeReachableStates(machineInfo, new string[] { machineInfo.initStateName }))
-                {
-                    if (machineInfo.stateNameToStateInfo[stateName].IsWarm)
+                    List<string> initialSet = new List<string>();
+                    foreach (var stateName in ComputeReachableStates(machineInfo, new string[] { machineInfo.initStateName }))
                     {
-                        continue;
+                        if (machineInfo.stateNameToStateInfo[stateName].IsWarm)
+                        {
+                            continue;
+                        }
+                        if (machineInfo.stateNameToStateInfo[stateName].IsHot)
+                        {
+                            machineInfo.monitorType = MonitorType.FINALLY;
+                            continue;
+                        }
+                        initialSet.Add(stateName);
                     }
-                    if (machineInfo.stateNameToStateInfo[stateName].IsHot)
+                    foreach (var stateName in ComputeReachableStates(machineInfo, initialSet))
                     {
-                        machineInfo.monitorType = MonitorType.FINALLY;
-                        continue;
-                    }
-                    initialSet.Add(stateName);
-                }
-                foreach (var stateName in ComputeReachableStates(machineInfo, initialSet))
-                {
-                    if (machineInfo.stateNameToStateInfo[stateName].IsHot)
-                    {
-                        machineInfo.monitorType = MonitorType.REPEATEDLY;
-                        break;
+                        if (machineInfo.stateNameToStateInfo[stateName].IsHot)
+                        {
+                            machineInfo.monitorType = MonitorType.REPEATEDLY;
+                            break;
+                        }
                     }
                 }
             }
@@ -1056,7 +1066,7 @@ namespace Microsoft.Pc
 
         private void GenerateTypeInfo(AST<Model> model)
         {
-            var factBins = new Dictionary<string, LinkedList<AST<FuncTerm>>>();
+            var factBins = new Dictionary<string, LinkedList<Tuple<string, AST<FuncTerm>>>>();
             model.FindAll(
                 new NodePred[]
                 {
@@ -1068,11 +1078,11 @@ namespace Microsoft.Pc
                 {
                     var mf = (ModelFact)n;
                     FuncTerm ft = (FuncTerm)mf.Match;
-                    GetBin(factBins, ft).AddLast((AST<FuncTerm>)Factory.Instance.ToAST(ft));
+                    GetBin(factBins, ft).AddLast(new Tuple<string, AST<FuncTerm>>(null, (AST<FuncTerm>)Factory.Instance.ToAST(ft)));
                 });
 
             var terms = GetBin(factBins, "TypeOf");
-            foreach (var term in terms)
+            foreach (var term in terms.Select(x => x.Item2))
             {
                 using (var it = term.Node.Args.GetEnumerator())
                 {
@@ -1120,7 +1130,7 @@ namespace Microsoft.Pc
             }
 
             terms = GetBin(factBins, "TypeExpansion");
-            foreach (var term in terms)
+            foreach (var term in terms.Select(x => x.Item2))
             {
                 using (var it = term.Node.Args.GetEnumerator())
                 {
@@ -1134,7 +1144,7 @@ namespace Microsoft.Pc
             }
 
             terms = GetBin(factBins, "NewToMachineMap");
-            foreach (var term in terms)
+            foreach (var term in terms.Select(x => x.Item2))
             {
                 using (var it = term.Node.Args.GetEnumerator())
                 {
@@ -1195,7 +1205,7 @@ namespace Microsoft.Pc
             }
 
             terms = GetBin(factBins, "PartialOrderRel");
-            foreach (var term in terms)
+            foreach (var term in terms.Select(x => x.Item2))
             {
                 using (var it = term.Node.Args.GetEnumerator())
                 {
@@ -1215,7 +1225,7 @@ namespace Microsoft.Pc
             }
 
             terms = GetBin(factBins, "MaxNumLocals");
-            foreach (var term in terms)
+            foreach (var term in terms.Select(x => x.Item2))
             {
                 using (var it = term.Node.Args.GetEnumerator())
                 {
@@ -1263,9 +1273,9 @@ namespace Microsoft.Pc
 
         #region Static helpers
 
-        public static string SpanToString(Span span)
+        public static string SpanToString(string srcFileName, Span span)
         {
-            return string.Format("({0}, {1})", span.StartLine, span.StartCol);
+            return string.Format("{0} ({1}, {2})", srcFileName.Replace(@"\", @"\\"), span.StartLine, span.StartCol);
         }
 
         public static string NodeToString(Node n)
@@ -3607,13 +3617,16 @@ namespace Microsoft.Pc
 
         private ZingTranslationInfo FoldRaise(FuncTerm ft, IEnumerable<ZingTranslationInfo> children, ZingFoldContext ctxt)
         {
+            var moduleName = ctxt.moduleName;
+            var machInfo = GetMachineInfo(ctxt.machineName);
             using (var it = children.GetEnumerator())
             {
                 it.MoveNext();
                 var eventExpr = MkZingDot(it.Current.node, "ev");
                 it.MoveNext();
                 var payloadExpr = it.Current.node;
-                var assertStmt = MkZingAssert(MkZingNeq(eventExpr, MkZingIdentifier("null")), string.Format("{0}: Raised event must be non-null", SpanToString(ft.Span)));
+                var funInfo = allModules[moduleName].staticFunNameToFunInfo.ContainsKey(ctxt.entityName) ? allModules[moduleName].staticFunNameToFunInfo[ctxt.entityName] : machInfo.funNameToFunInfo[ctxt.entityName];
+                var assertStmt = MkZingAssert(MkZingNeq(eventExpr, MkZingIdentifier("null")), string.Format("{0}: Raised event must be non-null", SpanToString(funInfo.srcFileName, ft.Span)));
                 string traceString = string.Format("\"<RaiseLog> Machine {0}-{{0}} raised Event {{1}}\\n\"", ctxt.machineName);
                 var traceStmt = MkZingCallStmt(MkZingCall(MkZingIdentifier("trace"), Factory.Instance.MkCnst(traceString), MkZingDot("myHandle", "instance"), MkZingDot(eventExpr, "name")));
                 var tmpVar = ctxt.GetTmpVar(PrtValue, "tmpPayload");
@@ -3677,6 +3690,8 @@ namespace Microsoft.Pc
 
         private ZingTranslationInfo FoldMonitor(FuncTerm ft, IEnumerable<ZingTranslationInfo> children, ZingFoldContext ctxt)
         {
+            var moduleName = ctxt.moduleName;
+            var machInfo = GetMachineInfo(ctxt.machineName);
             using (var it = children.GetEnumerator())
             {
                 it.MoveNext();
@@ -3684,7 +3699,8 @@ namespace Microsoft.Pc
                 it.MoveNext();
                 AST<Node> arg = it.Current.node;
                 var tmpVar = ctxt.GetTmpVar(PrtValue, "tmpSendPayload");
-                var assertStmt = MkZingAssert(MkZingNeq(eventExpr, MkZingIdentifier("null")), string.Format("{0}: Enqueued event must be non-null", SpanToString(ft.Span)));
+                var funInfo = allModules[moduleName].staticFunNameToFunInfo.ContainsKey(ctxt.entityName) ? allModules[moduleName].staticFunNameToFunInfo[ctxt.entityName] : machInfo.funNameToFunInfo[ctxt.entityName];
+                var assertStmt = MkZingAssert(MkZingNeq(eventExpr, MkZingIdentifier("null")), string.Format("{0} {1}: Enqueued event must be non-null", SpanToString(funInfo.srcFileName, ft.Span)));
                 ctxt.AddSideEffect(assertStmt);
                 if (arg == ZingData.Cnst_Nil)
                 {
@@ -3730,12 +3746,15 @@ namespace Microsoft.Pc
 
         private ZingTranslationInfo FoldUnStmt(FuncTerm ft, IEnumerable<ZingTranslationInfo> children, ZingFoldContext ctxt)
         {
+            var moduleName = ctxt.moduleName;
+            var machInfo = GetMachineInfo(ctxt.machineName);
             var op = ((Id)GetArgByIndex(ft, 0)).Name;
             // op == PData.Con_Assert.Node.Name
             using (var it = children.GetEnumerator())
             {
                 it.MoveNext();
-                return new ZingTranslationInfo(MkZingAssert(MkZingDot(it.Current.node, "bl"), string.Format("{0}: Assert failed", SpanToString(ft.Span))));
+                var funInfo = allModules[moduleName].staticFunNameToFunInfo.ContainsKey(ctxt.entityName) ? allModules[moduleName].staticFunNameToFunInfo[ctxt.entityName] : machInfo.funNameToFunInfo[ctxt.entityName];
+                return new ZingTranslationInfo(MkZingAssert(MkZingDot(it.Current.node, "bl"), string.Format("{0} {1}: Assert failed", SpanToString(funInfo.srcFileName, ft.Span))));
             }
         }
 
