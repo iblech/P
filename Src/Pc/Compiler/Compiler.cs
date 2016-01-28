@@ -191,6 +191,7 @@
 
         public Compiler(CommandLineOptions options)
         {
+            currTime = DateTime.UtcNow;
             Options = options;
             SeenFileNames = new Dictionary<string, ProgramName>(StringComparer.OrdinalIgnoreCase);
             EnvParams envParams = null;
@@ -202,10 +203,12 @@
 
             CompilerEnv = new Env(envParams);
             InitEnv(CompilerEnv);
+            Profile("Compiler loading");
         }
 
         public Compiler(bool shortFileNames)
         {
+            currTime = DateTime.UtcNow;
             SeenFileNames = new Dictionary<string, ProgramName>(StringComparer.OrdinalIgnoreCase);
             EnvParams envParams = null;
             if (shortFileNames)
@@ -214,6 +217,20 @@
             }
             CompilerEnv = new Env(envParams);
             InitEnv(CompilerEnv);
+            Profile("Compiler loading");
+        }
+
+        private DateTime currTime;
+        private void Profile(string msg)
+        {
+            if (Options == null)
+                return;
+            if (Options.profile)
+            {
+                var nextTime = DateTime.UtcNow;
+                Console.WriteLine("{0}: {1}s", msg, nextTime.Subtract(currTime).Seconds);
+                currTime = nextTime;
+            }
         }
 
         public bool Compile(string inputFileName, out List<Flag> flags)
@@ -410,6 +427,7 @@
             string outputDirName = Options.outputDir == null ? Environment.CurrentDirectory : Options.outputDir;
 
             new PToZing(this, AllModels, (AST<Model>)modelWithTypes).GenerateZing(ref FileNames, ref zingModel);
+            Profile("Generating Zing");
 
             if (!PrintZingFile(zingModel, CompilerEnv, outputDirName))
                 return false;
@@ -427,6 +445,7 @@
                 Console.WriteLine("Compiling {0} to {1} ...", zFile, dllFileName);
                 var zcProcess = System.Diagnostics.Process.Start(zcProcessInfo);
                 zcProcess.WaitForExit();
+                Profile("Compiling Zing");
                 if (zcProcess.ExitCode != 0)
                 {
                     Console.WriteLine("Zc failed to compile the generated code :");
@@ -627,7 +646,7 @@
             }
 
             flags.AddRange(errors);
-
+            Profile("Type checking");
             return task.Result.Conclusion == LiftedBool.True;
         }
 
@@ -1041,7 +1060,7 @@
             InstallResult uninstallResult;
             var uninstallDidStart = CompilerEnv.Uninstall(new ProgramName[] { progName }, out uninstallResult);
             // Contract.Assert(uninstallDidStart && uninstallResult.Succeeded);
-
+            Profile("Generating C");
             return success;
         }
 
