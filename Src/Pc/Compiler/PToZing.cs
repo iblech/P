@@ -1891,9 +1891,11 @@ namespace Microsoft.Pc
                 methods.Add(method);
             }
 
-            //create method to invoke correct monitor
-            methods.Add(MkGlobalInvokeMonitorMethod());
-
+            if (crntTestCaseType == TestCaseType.MONITOR)
+            {
+                //create method to invoke correct monitor
+                methods.Add(MkGlobalInvokeMonitorMethod());
+            }
             // Generate method for computing complement of a set of events
             AST<Node> calculateComplementParameters = MkZingVarDecls(MkZingVarDecl("eventSet", SmEventSet));
             AST<Node> calculateComplementLocalVars = MkZingVarDecls(MkZingVarDecl("returnEventSet", SmEventSet));
@@ -4038,10 +4040,10 @@ namespace Microsoft.Pc
             foreach (var moduleName in crntModulesInModuleList)
             {
                 List<AST<Node>> inkMonitors = new List<AST<Node>>();
-                foreach (var machine in allModules[moduleName].implementedMachines)
+                foreach (var machine in crntMachinesInModuleList)
                 {
                     if (!machine.Value.IsMonitor) continue;
-                    inkMonitors.Add(MkZingCallStmt(MkZingCall(MkZingDot("Main", string.Format("InvokeMachine_{0}", machine)), evt, arg)));
+                    inkMonitors.Add(MkZingCallStmt(MkZingCall(MkZingDot("Main", string.Format("InvokeMachine_{0}", machine.Key)), evt, arg)));
                 }
                 if (inkMonitors.Count > 0)
                     stmts.Add(MkZingIfThen(MkZingEq(mod, MkZingModule(moduleName)), MkZingSeq(inkMonitors)));
