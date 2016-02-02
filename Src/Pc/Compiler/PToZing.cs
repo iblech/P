@@ -2048,6 +2048,8 @@ namespace Microsoft.Pc
                 AddEventSet(stmts, machineInfo.observesEvents, currentObservesSet);
                 runBodyStmts.Add(MkZingSeq(stmts));
             }
+
+            //create types
             runBodyStmts.Add(typeContext.InitializeFieldNamesAndTypes());
 
             //launch all the monitor machines statically
@@ -2058,7 +2060,6 @@ namespace Microsoft.Pc
             }
 
             var mainMachineName = crntMachinesInModuleList.Where(n => n.Value.IsMain).First().Key;
-            runBodyStmts.Add(typeContext.InitializeFieldNamesAndTypes());
             runBodyStmts.Add(MkZingAssign(MkZingIdentifier("nullValue"), MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(PTypeNull.Node))));
             runBodyStmts.Add(MkZingCallStmt(MkZingCall(MkZingDot("Main", string.Format("CreateMachine_{0}", mainMachineName)), MkZingIdentifier("nullValue"))));
             var locals = MkZingVarDecls(MkZingVarDecl("nullValue", PrtValue));

@@ -408,6 +408,7 @@ domain PStaticTyping extends PData
 
 	//a create interface is either disjoint or equal to the events in receives
 	//relation between creates interfaces and implemented machines
+	//not (disjoint or equal)
 	NotDisjointOrEqual ::= (m: ModuleDecl, i:InterfaceType, mr: MachineReceivesDecl).
 	NotDisjointOrEqual(m, i, mr) :- ModuleCreatesDecl(m, i), mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _), InterfaceTypeEventDecl(i, ev1), no MachineReceivesDecl(mach, ev1), InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(mach, ev2);
 								    ModuleCreatesDecl(m, i), mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _), no InterfaceTypeEventDecl(i, ev1), MachineReceivesDecl(mach, ev1), InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(mach, ev2).
@@ -419,9 +420,11 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: monitor not allowed in specification module"']
 	ModuleLevelTypingError(mod, mach) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), ModuleType(mod, kind), kind != IMPL.
 
+	// use the set of machinesreceives
 	[rule_Classes = '"error, msg: monitor can observe event in sends or implemented interfaces"']
 	ModuleLevelTypingError(mod, obs) :- mach is MachineDecl(_, mod, MONITOR, _, _, _), obs is ObservesDecl(mach, ev), no ModuleSendsDecl(mod, ev), count({mach' | mach' is MachineDecl(_, mod, _, _, _, _), MachineReceivesDecl(mach', ev)}) = 0.
 
+	//check if this rule already asserted
 	//creates list cannot have an empty interface
 	[rule_Classes = '"error, msg: creates list cannot have an empty interface"']
 	ModuleLevelTypingError(mod, c) :- c is ModuleCreatesDecl(mod, i), no InterfaceTypeEventDecl(i, _), MachineDecl(i.name, mod, _, _, _, _).
@@ -429,6 +432,7 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: Multiple machines are declared as main machines"']
 	ModuleLevelTypingError(mod, c1) :- c1 is MachineDecl(_, mod, _, _, _, TRUE), c2 is MachineDecl(_, mod, _, _, _, TRUE), c1 != c2.
 
+	//fix this
 	[rule_Classes = '"error, msg: Multiple machines with the same name have unequal receive set, they implement different interfaces"']
 	ModuleLevelTypingError(c1.mod, c1) :- c1 is MachineDecl, c2 is MachineDecl, c1 != c2, c1.name = c2.name, count({ev | MachineReceivesDecl(c1, ev), no MachineReceivesDecl(c2, ev) }) > 0.
 
@@ -563,6 +567,7 @@ domain PStaticTyping extends PData
 	CreatesForModule ::= (mod: Module, it: InterfaceType).
 	ReceivesForModule ::= (mod: Module, rd: MachineReceivesDecl).
 
+	//fix this
 	//get the sends list for the module
 	SendsForModule(hm, ev) :- AllHideModules(hm), SendsForModuleList(hm.modL, ev);
 							  ModuleSendsDecl(hm, ev).
