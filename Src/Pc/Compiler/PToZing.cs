@@ -3756,7 +3756,7 @@ namespace Microsoft.Pc
             {
                 it.MoveNext();
                 var funInfo = allModules[moduleName].staticFunNameToFunInfo.ContainsKey(ctxt.entityName) ? allModules[moduleName].staticFunNameToFunInfo[ctxt.entityName] : machInfo.funNameToFunInfo[ctxt.entityName];
-                return new ZingTranslationInfo(MkZingAssert(MkZingDot(it.Current.node, "bl"), string.Format("{0} {1}: Assert failed", SpanToString(funInfo.srcFileName, ft.Span))));
+                return new ZingTranslationInfo(MkZingAssert(MkZingDot(it.Current.node, "bl"), string.Format("{0}: Assert failed", SpanToString(funInfo.srcFileName, ft.Span))));
             }
         }
 

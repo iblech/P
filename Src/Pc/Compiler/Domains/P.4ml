@@ -77,7 +77,7 @@ domain PData
 	ImplementationModules ::= new (modL: any ModuleList).
 	SpecificationModules ::= new (modL: any ModuleList).
 	RefinesTestDecl ::= fun (name: String -> imodL: any ModuleList, smodL: any ModuleList).
-	SatisfiesTestDecl ::= fun (name: String -> modL: any ModuleList, monL: MonitorList + {NIL}).
+	SatisfiesTestDecl ::= fun (name: String -> modL: any ModuleList, monL: any MonitorList + {NIL}).
 
 	ModuleList ::= new (mod: any Module, tail: any ModuleList + {NIL}).
 	Hide ::= new (evL: any EventList, modL: any ModuleList).
@@ -409,10 +409,8 @@ domain PStaticTyping extends PData
 	//a create interface is either disjoint or equal to the events in receives
 	//relation between creates interfaces and implemented machines
 	NotDisjointOrEqual ::= (m: ModuleDecl, i:InterfaceType, mr: MachineReceivesDecl).
-	NotDisjointOrEqual(m, i, mr) :- ModuleCreatesDecl(m, i), mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _),
-									count({ev1 | InterfaceTypeEventDecl(i, ev1), no MachineReceivesDecl(mach, ev1), InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(mach, ev2)}) > 0;
-									ModuleCreatesDecl(m, i), mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _),
-									count({ev1 | no InterfaceTypeEventDecl(i, ev1), MachineReceivesDecl(mach, ev1), InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(mach, ev2)}) > 0.
+	NotDisjointOrEqual(m, i, mr) :- ModuleCreatesDecl(m, i), mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _), InterfaceTypeEventDecl(i, ev1), no MachineReceivesDecl(mach, ev1), InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(mach, ev2);
+								    ModuleCreatesDecl(m, i), mach is MachineDecl(_, m, _, _, _, _), mr is MachineReceivesDecl(mach, _), no InterfaceTypeEventDecl(i, ev1), MachineReceivesDecl(mach, ev1), InterfaceTypeEventDecl(i, ev2), MachineReceivesDecl(mach, ev2).
 
 	[rule_Classes = '"error, msg: interface type in creates is not equal to or disjoint from the implemented interfaces in the module"']
 	ModuleLevelTypingError(mod, c) :- mach is MachineDecl(_, mod, _, _, _, _), mr is MachineReceivesDecl(mach, _),

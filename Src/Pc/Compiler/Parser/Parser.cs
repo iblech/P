@@ -1876,6 +1876,7 @@
                 }
                 crntMonitorList.Clear();
             }
+            satisfiesTest.monL = monitorListStack.Pop();
             parseProgram.SatisfiesTestDecl.Add(satisfiesTest);
         }
 
