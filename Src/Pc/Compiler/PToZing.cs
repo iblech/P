@@ -3703,7 +3703,7 @@ namespace Microsoft.Pc
                 AST<Node> arg = it.Current.node;
                 var tmpVar = ctxt.GetTmpVar(PrtValue, "tmpSendPayload");
                 var funInfo = allModules[moduleName].staticFunNameToFunInfo.ContainsKey(ctxt.entityName) ? allModules[moduleName].staticFunNameToFunInfo[ctxt.entityName] : machInfo.funNameToFunInfo[ctxt.entityName];
-                var assertStmt = MkZingAssert(MkZingNeq(eventExpr, MkZingIdentifier("null")), string.Format("{0} {1}: Enqueued event must be non-null", SpanToString(funInfo.srcFileName, ft.Span)));
+                var assertStmt = MkZingAssert(MkZingNeq(eventExpr, MkZingIdentifier("null")), string.Format("{0}: Enqueued event must be non-null", SpanToString(funInfo.srcFileName, ft.Span)));
                 ctxt.AddSideEffect(assertStmt);
                 if (arg == ZingData.Cnst_Nil)
                 {

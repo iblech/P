@@ -6,42 +6,50 @@ event Done;
 event Waiting : int;
 event Computing;
 
-main machine EventHandler
-{
-       start state Init {
-			entry { new WatchDog(); raise Unit; }
-			on Unit goto WaitForUser;
-       }
+test t1 : TestModule satisfies WatchDog;
 
-       state WaitForUser
-       {
-            entry { 
-				monitor Waiting, 0;
-				send this, UserEvent;
-			}
-            on UserEvent goto HandleEvent;
-       }
-  
-       state HandleEvent
-       {
-            entry { 
-				monitor Computing;
-				// send this, Done;
-			}			
-            on Done goto WaitForUser;
-       }
-}
-
-spec WatchDog monitors Computing, Waiting
+module TestModule 
+sends UserEvent, Computing, Waiting
 {
-      start cold state CanGetUserInput
+     main machine EventHandler
+     receives UserEvent
       {
-             on Waiting goto CanGetUserInput;
-             on Computing goto CannotGetUserInput;
+             start state Init {
+                        entry { raise Unit; }
+                        on Unit goto WaitForUser;
+             }
+
+             state WaitForUser
+             {
+                  entry { 
+                              monitor Waiting, 0;
+                              send this, UserEvent;
+                        }
+                  on UserEvent goto HandleEvent;
+             }
+        
+             state HandleEvent
+             {
+                  entry { 
+                              monitor Computing;
+                              // send this, Done;
+                  }                 
+                  on Done goto WaitForUser;
+             }
+      }
+
+      monitor WatchDog observes Computing, Waiting
+      {
+            start cold state CanGetUserInput
+            {
+                   on Waiting goto CanGetUserInput;
+                   on Computing goto CannotGetUserInput;
+            } 
+            hot state CannotGetUserInput
+           {
+                   on Waiting goto CanGetUserInput;
+                   on Computing goto CannotGetUserInput;
+           }
       } 
-	  hot state CannotGetUserInput
-     {
-             on Waiting goto CanGetUserInput;
-             on Computing goto CannotGetUserInput;
-     }
 }
+
