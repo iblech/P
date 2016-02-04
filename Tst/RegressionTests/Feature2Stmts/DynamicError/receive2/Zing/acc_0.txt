@@ -4,7 +4,7 @@
 OUT: ##################
 OUT: Check Failed
 OUT: ##################
-OUT: 8 distinct states explored
+OUT: 6 distinct states explored
 OUT: 
 EXIT: 3
 
@@ -22,4 +22,4 @@ Trace-Log 0:
 Error:
 P Assertion failed:
 Expression: assert(tmpVar_4.bl,)
-Comment: (15, 4): Assert failed
+Comment: receive2.p (15, 4): Assert failed

@@ -631,7 +631,6 @@
             AddErrors(task.Result, "BadLabelError(_)", errors, 0);
             AddErrors(task.Result, "PayloadError(_)", errors, 0);
             AddErrors(task.Result, "TypeDefError(_)", errors, 0);
-            AddErrors(task.Result, "DomOfMapUnSafe(_)", errors, 0);
 
             //// Enumerate structural errors
             AddErrors(task.Result, "OneDeclError(_)", errors, 0);
