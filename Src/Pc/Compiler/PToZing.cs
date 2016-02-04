@@ -4041,7 +4041,7 @@ namespace Microsoft.Pc
             foreach (var moduleName in crntModulesInModuleList)
             {
                 List<AST<Node>> inkMonitors = new List<AST<Node>>();
-                foreach (var machine in crntMachinesInModuleList)
+                foreach (var machine in allModules[moduleName].implementedMachines)
                 {
                     if (!machine.Value.IsMonitor) continue;
                     inkMonitors.Add(MkZingCallStmt(MkZingCall(MkZingDot("Main", string.Format("InvokeMachine_{0}", machine.Key)), evt, arg)));

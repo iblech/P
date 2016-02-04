@@ -1,75 +1,54 @@
-event x : K1;
-event y;
-event z;
-event a;
-interface K1 a;
-interface K2 y, x;
+event x;
+event y : M1;
 
-test t1 Mod1, Mod2 satisfies Mon1, Mon2, Mon1 observes Mod1;
+test t1: Mod1, Mod2 satisfies Mon1;
 
 module Mod1
-sends x, a
-creates K1, K2
+sends y
+creates M2
 {
 	main machine M1
-	implements K1
+	receives x
 	{
 		var id: machine;
 		start state S 
 		{
 			entry {
-				id = new K2();
-				send id as K2, x, this;
+				id = new M2();
+				send id as M2, y, this;
 			}
-		}
-	}
-}
-
-monitor Mon1 observes x 
-{
-	start state S1
-	{
-		entry {
-		
-		}
-		on x do {};
-	}
-}
-
-monitor Mon2 observes x 
-{
-	start state S1
-	{
-		entry {
-		
+			ignore x;
 		}
 	}
 	
-	hot state S2
+	monitor Mon1 observes x, y
 	{
-	
+		var i : int;
+		start state S1
+		{
+			entry {
+				i = 0;
+			}
+			on y do { i = i + 1; };
+			on x goto hotState;
+		}
+
+		hot state hotState {
+			
+		}
 	}
 }
 
 
 module Mod2
-sends y
+sends x
 {
 	machine M2
-	implements K2
+	receives y
 	{
 		start state S1
 		{
-			entry {
-			
-			}
-			on x goto S2;
-		}
-		
-		state S2 {
-			entry {
-				assert(false);
-			}
+			on y do (payload: machine) { send payload as M1, x; };
 		}
 	}
 }
