@@ -1891,8 +1891,8 @@
                     monitorListStack.Push(monList);
                 }
                 crntMonitorList.Clear();
+                satisfiesTest.monL = monitorListStack.Pop();
             }
-            satisfiesTest.monL = monitorListStack.Pop();
             parseProgram.SatisfiesTestDecl.Add(satisfiesTest);
         }
 
