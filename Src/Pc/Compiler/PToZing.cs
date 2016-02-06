@@ -370,6 +370,7 @@ namespace Microsoft.Pc
         public static AST<Node> PrtCloneValue = MkZingDot("PRT_VALUE", "PrtCloneValue");
         public static AST<Node> PrtIsEqualValue = MkZingDot("PRT_VALUE", "PrtIsEqualValue");
         public static AST<Node> PrtAssertEventsPO = MkZingDot("myHandle", "PrtAssertEventsPO");
+        public static AST<Node> PrtMkFreshForeignValue = MkZingDot("PRT_VALUE", "PrtMkFreshForeignValue");
 
         public const string NullEvent = "null";
         public const string HaltEvent = "halt";
@@ -383,11 +384,6 @@ namespace Microsoft.Pc
         private static string ZingMachineClassName(string machineName)
         {
             return string.Format("MACHINE_{0}", machineName);
-        }
-
-        private static string ZingMachineClassSetTypeName(string machineName)
-        {
-            return string.Format("SET_{0}", machineName);
         }
 
         public Dictionary<string, EventInfo> allEvents;
@@ -2692,6 +2688,7 @@ namespace Microsoft.Pc
                      funName == PData.Con_NulApp.Node.Name ||
                      funName == PData.Con_UnApp.Node.Name ||
                      funName == PData.Con_Default.Node.Name ||
+                     funName == PData.Con_Fresh.Node.Name ||
                      funName == PData.Con_NulStmt.Node.Name ||
                      funName == PData.Con_UnStmt.Node.Name)
             {
@@ -2872,6 +2869,10 @@ namespace Microsoft.Pc
             else if (funName == PData.Con_Default.Node.Name)
             {
                 return FoldDefault(ft, children, ctxt);
+            }
+            else if (funName == PData.Con_Fresh.Node.Name)
+            {
+                return FoldFresh(ft, children, ctxt);
             }
             else if (funName == PData.Con_Cast.Node.Name)
             {
@@ -3067,7 +3068,7 @@ namespace Microsoft.Pc
                 {
                     ctxt.AddSideEffect(MkZingAssignWithClone(tmpVar, arg));
                 }
-
+                
                 AST<Node> retVal;
                 MachineInfo machineInfo = GetMachineInfo(machineName);
 
@@ -3569,6 +3570,14 @@ namespace Microsoft.Pc
             return new ZingTranslationInfo(tmpVar);
         }
 
+        private ZingTranslationInfo FoldFresh(FuncTerm ft, IEnumerable<ZingTranslationInfo> children, ZingFoldContext ctxt)
+        {
+            var tmpVar = ctxt.GetTmpVar(PrtValue, "tmpVar");
+            ctxt.AddSideEffect(MkZingAssign(tmpVar, MkZingCall(PrtMkFreshForeignValue, typeContext.PTypeToZingExpr(LookupType(ctxt, ft)))));
+            ctxt.lastEval = tmpVar;
+            return new ZingTranslationInfo(tmpVar);
+        }
+
         private ZingTranslationInfo FoldCast(FuncTerm ft, IEnumerable<ZingTranslationInfo> children, ZingFoldContext ctxt)
         {
             var typeArg = (FuncTerm)GetArgByIndex(ft, 1);
@@ -4005,6 +4014,7 @@ namespace Microsoft.Pc
                     MkZingReturn(ZingData.Cnst_Nil)));
             stmts.Add(MkZingCallStmt(MkZingCall(MkZingIdentifier("trace"), Factory.Instance.MkCnst("\"<MonitorLog> Enqueued Event < {0}, \""), MkZingDot(evt, "name"))));
             stmts.Add(MkZingCallStmt(MkZingCall(MkZingDot("PRT_VALUE", "Print"), arg)));
+
             string traceString = string.Format("\" > to {0} monitors\\n\"", machineName);
             stmts.Add(MkZingCallStmt(MkZingCall(MkZingIdentifier("trace"), Factory.Instance.MkCnst(traceString))));
             var monitorHandle = MkZingDot("Main", GetMonitorMachineName(machineName));
@@ -4068,7 +4078,6 @@ namespace Microsoft.Pc
         private AST<Node> MkCreateMonitorMethod(string machineName)
         {
             var objectName = string.Format("o_{0}", machineName);
-            var parameters = new List<AST<Node>>();
             var localVars = new List<AST<Node>>();
             localVars.Add(MkZingVarDecl(objectName, Factory.Instance.MkCnst(ZingMachineClassName(machineName))));
             localVars.Add(MkZingVarDecl("doPop", ZingData.Cnst_Bool));
@@ -4093,30 +4102,28 @@ namespace Microsoft.Pc
             }
 
             var doPop = MkZingIdentifier("doPop");
-            var machineInstance = MkZingIdentifier(string.Format("{0}_instance", machineName));
-            var machineHandles = MkZingDot("Main", GetMonitorMachineName(machineName));
-            string createTraceString = string.Format("\"<CreateLog> Created Machine {0}-{{0}}\\n\"", machineName);
-            string errorTraceString = string.Format("\"<StateLog> Unhandled event exception by machine {0}-{{0}}\\n\"", machineName);
+            var machineHandle = MkZingDot("Main", GetMonitorMachineName(machineName));
+            string createTraceString = string.Format("\"<CreateLog> Created monitor {0}\\n\"", machineName);
+            string errorTraceString = string.Format("\"<StateLog> Unhandled event exception by monitor {0}\\n\"", machineName);
 
             body = MkZingSeq(body,
                     MkZingAssign(MkZingIdentifier(objectName), MkZingNew(Factory.Instance.MkCnst(ZingMachineClassName(machineName)), ZingData.Cnst_Nil)),
                     MkInitializers(machineName, objectName),
                     MkZingAssign(MkZingDot(objectName, "myHandle"),
-                                 MkZingCall(MkZingDot("SM_HANDLE", "Construct"), MkZingDot("Machine", string.Format("_{0}", machineName)), machineInstance, Factory.Instance.MkCnst(0))),
-                    MkZingCallStmt(MkZingCall(MkZingIdentifier("trace"), Factory.Instance.MkCnst(createTraceString), machineInstance)),
+                                 MkZingCall(MkZingDot("SM_HANDLE", "Construct"), MkZingDot("Machine", string.Format("_{0}", machineName)), Factory.Instance.MkCnst(0), Factory.Instance.MkCnst(0))),
+                    MkZingCallStmt(MkZingCall(MkZingIdentifier("trace"), Factory.Instance.MkCnst(createTraceString))),
                     MkZingAssign(MkZingDot(objectName, "myHandle", "currentArg"), MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(PTypeNull.Node))),
-                    MkZingAssign(machineInstance, MkZingAdd(machineInstance, Factory.Instance.MkCnst(1))),
                     MkZingCallStmt(MkZingCall(MkZingDot(objectName, "myHandle", "Push"))),
                     MkZingAssign(MkZingDot(objectName, "myHandle", "stack", "state"), MkZingState(machineInfo.initStateName)),
-                    MkZingAssign(machineHandles, MkZingIdentifier(objectName)),
+                    MkZingAssign(machineHandle, MkZingIdentifier(objectName)),
                     MkZingAssign(doPop, MkZingCall(MkZingDot(objectName, "RunHelper"), ZingData.Cnst_True)),
                     MkZingIfThen(doPop,
-                                 MkZingSeq(MkZingCallStmt(MkZingCall(MkZingIdentifier("trace"), Factory.Instance.MkCnst(errorTraceString), MkZingDot(objectName, "myHandle", "instance"))),
+                                 MkZingSeq(MkZingCallStmt(MkZingCall(MkZingIdentifier("trace"), Factory.Instance.MkCnst(errorTraceString))),
                                            MkZingAssert(ZingData.Cnst_False)))
                     );
             body = MkZingBlock("dummy", body);
 
-            return MkZingMethodDecl(string.Format("CreateMachine_{0}", machineName), MkZingVarDecls(parameters), ZingData.Cnst_Void, MkZingVarDecls(localVars), MkZingBlocks(body), ZingData.Cnst_Static);
+            return MkZingMethodDecl(string.Format("CreateMachine_{0}", machineName), ZingData.Cnst_Nil, ZingData.Cnst_Void, MkZingVarDecls(localVars), MkZingBlocks(body), ZingData.Cnst_Static);
         }
 
         private AST<Node> MkCreateMachineMethod(string machineName)
@@ -4188,6 +4195,7 @@ namespace Microsoft.Pc
 
         internal class TypeTranslationContext
         {
+            private int foreignTypeCount;
             private int fieldCount;
             private int typeCount;
             private List<AST<Node>> fieldNameInitialization;
@@ -4199,6 +4207,7 @@ namespace Microsoft.Pc
             public TypeTranslationContext(PToZing pToZing)
             {
                 this.pToZing = pToZing;
+                foreignTypeCount = 0;
                 fieldCount = 0;
                 typeCount = 0;
                 fieldNameInitialization = new List<AST<Node>>();
@@ -4307,18 +4316,20 @@ namespace Microsoft.Pc
                         AddTypeInitialization(MkZingAssign(tmpVar, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkPrimitiveType"), MkZingDot("PRT_TYPE_KIND", "PRT_KIND_REAL"))));
                         return tmpVar;
                     }
-                    else if (primitiveType == "ANY")
+                    else 
                     {
+                        Debug.Assert(primitiveType == "ANY", "Illegal BaseType") ;
                         var tmpVar = GetType();
                         AddTypeInitialization(MkZingAssign(tmpVar, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkPrimitiveType"), MkZingDot("PRT_TYPE_KIND", "PRT_KIND_ANY"))));
                         return tmpVar;
                     }
-                    else
-                    {
-                        var tmpVar = GetType();
-                        AddTypeInitialization(MkZingAssign(tmpVar, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkPrimitiveType"), MkZingDot("PRT_TYPE_KIND", "PRT_KIND_FORGN"))));
-                        return tmpVar;
-                    }
+                }
+                else if (typeKind == "NameType")
+                {
+                    var tmpVar = GetType();
+                    AddTypeInitialization(MkZingAssign(tmpVar, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkForeignType"), Factory.Instance.MkCnst(foreignTypeCount))));
+                    foreignTypeCount++;
+                    return tmpVar;
                 }
                 else if (typeKind == "TupType")
                 {

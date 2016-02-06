@@ -55,10 +55,10 @@ OUT: two-phase-commit.p (88, 5): inferred type:  BaseType(INT)
 OUT: two-phase-commit.p (88, 5): inferred type:  NIL
 OUT: two-phase-commit.p (88, 18): inferred type:  BaseType(INT)
 OUT: two-phase-commit.p (92, 4): inferred type:  NIL
-OUT: two-phase-commit.p (92, 12): inferred type:  NmdTupType(NmdTupTypeField("seqNum", BaseType(INT)), NmdTupType(NmdTupTypeField("idx", BaseType(INT)), NmdTupType(NmdTupTypeField("val", BaseType(INT)), NIL)))
-OUT: two-phase-commit.p (92, 28): inferred type:  BaseType(INT)
 OUT: two-phase-commit.p (92, 35): inferred type:  BaseType(BOOL)
 OUT: two-phase-commit.p (93, 4): inferred type:  NIL
+OUT: two-phase-commit.p (93, 8): inferred type:  NmdTupType(NmdTupTypeField("seqNum", BaseType(INT)), NmdTupType(NmdTupTypeField("idx", BaseType(INT)), NmdTupType(NmdTupTypeField("val", BaseType(INT)), NIL)))
+OUT: two-phase-commit.p (93, 24): inferred type:  BaseType(INT)
 OUT: two-phase-commit.p (93, 31): inferred type:  BaseType(BOOL)
 OUT: two-phase-commit.p (94, 5): inferred type:  MapType(BaseType(INT), BaseType(INT))
 OUT: two-phase-commit.p (94, 5): inferred type:  NIL
@@ -281,14 +281,13 @@ OUT: two-phase-commit.p (282, 11): inferred type:  BaseType(BOOL)
 OUT: two-phase-commit.p (282, 13): inferred type:  BaseType(INT)
 OUT: two-phase-commit.p (282, 21): inferred type:  BaseType(BOOL)
 OUT: two-phase-commit.p (282, 24): inferred type:  MapType(BaseType(INT), BaseType(INT))
-OUT: two-phase-commit.p (292, 4): inferred type:  NIL
-OUT: two-phase-commit.p (293, 10): inferred type:  BaseType(REAL)
-OUT: two-phase-commit.p (293, 10): inferred type:  NIL
-OUT: two-phase-commit.p (293, 24): inferred type:  BaseType(REAL)
-OUT: two-phase-commit.p (293, 40): inferred type:  BaseType(INT)
-OUT: two-phase-commit.p (294, 4): inferred type:  BaseType(REAL)
-OUT: two-phase-commit.p (294, 4): inferred type:  NIL
-OUT: two-phase-commit.p (294, 13): inferred type:  BaseType(REAL)
+OUT: two-phase-commit.p (292, 10): inferred type:  BaseType(REAL)
+OUT: two-phase-commit.p (292, 10): inferred type:  NIL
+OUT: two-phase-commit.p (292, 24): inferred type:  BaseType(REAL)
+OUT: two-phase-commit.p (292, 40): inferred type:  BaseType(INT)
+OUT: two-phase-commit.p (293, 4): inferred type:  BaseType(REAL)
+OUT: two-phase-commit.p (293, 4): inferred type:  NIL
+OUT: two-phase-commit.p (293, 13): inferred type:  BaseType(REAL)
 OUT: Writing stubs.c ...
 OUT: Writing program.h ...
 OUT: Writing program.c ...

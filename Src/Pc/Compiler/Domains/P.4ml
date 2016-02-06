@@ -6,13 +6,13 @@ domain PData
 {
     /*************************************************************/
     /****************          Type Language          ************/
-    /*************************************************************/
-
-	TypeDef         ::= new (name: String, type: any TypeExpr).
+    /*************************************************************/    
+    
+	TypeDef         ::= new (name: String, type: any TypeExpr + { NIL }).
 
     //// The BaseType REAL is the type of real machines.
 	NameType        ::= new (name: String).
-    BaseType        ::= new ({ NULL, BOOL, INT, EVENT, REAL, FOREIGN, ANY }).
+    BaseType        ::= new ({ NULL, BOOL, INT, EVENT, REAL, ANY }).
     TupType         ::= new (hd: any TypeExpr, tl: any TupType + { NIL }).
     NmdTupType      ::= new (hd: any NmdTupTypeField, tl: any NmdTupType + { NIL }).
     SeqType         ::= new (x: any TypeExpr).
@@ -33,13 +33,14 @@ domain PData
     UnApp      ::= new (op: { NOT, NEG, KEYS, VALUES, SIZEOF }, arg1: any Expr).
     BinApp     ::= new (op: { ADD, SUB, MUL, INTDIV, AND, OR, EQ, NEQ, LT, LE, GT, GE, IDX, IN }, arg1: any Expr, arg2: any Expr).
     Field      ::= new (arg: any Expr, name: String + Natural).
-    Default    ::= new (type: any TypeExpr).
-    Cast       ::= new (arg: any Expr, type: any TypeExpr).
+    Default    ::= new (type: any TypeExpr). 
+	Fresh      ::= new (name: String).
+    Cast       ::= new (arg: any Expr, type: any TypeExpr). 
     Tuple      ::= new (body: any Exprs).
     NamedTuple ::= new (body: any NamedExprs).
     Exprs      ::= new (head: any Expr, tail: any Exprs + { NIL }).
     NamedExprs ::= new (field: String, exp: any Expr, tail: any NamedExprs + { NIL }).
-    Expr       ::= Name + New + FunApp + NulApp + UnApp + BinApp + Field + Default + Cast + Tuple + NamedTuple.
+    Expr       ::= Name + New + FunApp + NulApp + UnApp + BinApp + Field + Default + Fresh + Cast + Tuple + NamedTuple.
     ExprsExt   ::= Expr + Exprs + NamedExprs.
 
     //// Statements
@@ -324,7 +325,6 @@ domain PStaticTyping extends PData
 	TypeExpansion(BaseType(INT), BaseType(INT)).
 	TypeExpansion(BaseType(EVENT), BaseType(EVENT)).
 	TypeExpansion(BaseType(REAL), BaseType(REAL)).
-	TypeExpansion(BaseType(FOREIGN), BaseType(FOREIGN)).
 	TypeExpansion(BaseType(ANY), BaseType(ANY)).
 	//TypeExpansion(t, t) :- TypeOf(_, _, t), t : TypeExpr.
 	TypeExpansion(t, t) :- TypeOf(_, Tuple(_), t), t : TypeExpr.
@@ -337,7 +337,8 @@ domain PStaticTyping extends PData
 	TypeExpansion(type, type) :- AllTypeExprs(type), type = BaseType(_).
 	TypeExpansion(type, type) :- AllTypeExprs(type), type = InterfaceType(_).
 	TypeExpansion(type, type) :- MachineDecl(n, _, _, _, _, _), no InterfaceTypeEventDecl(type, _), type = InterfaceType(n).
-	TypeExpansion(type, eType) :- typeDef is TypeDef, type = NameType(typeDef.name), TypeExpansion(typeDef.type, eType).
+	TypeExpansion(type, type)  :- TypeDef(typeName, NIL), no TypeDefError(typeName), type = NameType(typeName).
+	TypeExpansion(type, eType) :- TypeDef(typeName, typeExpr), typeExpr: TypeExpr, no TypeDefError(typeName), type = NameType(typeName), TypeExpansion(typeExpr, eType).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NameType(name), eType = InterfaceType(name), no TypeDef(name, _).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, NIL), TypeExpansion(hd, hd'), eType = TupType(hd', NIL).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, tl), tl != NIL, TypeExpansion(hd, hd'), TypeExpansion(tl, tl'), eType = TupType(hd', tl').
@@ -786,9 +787,13 @@ domain PStaticTyping extends PData
     TypeOf(c, e, BaseType(BOOL))  :- SubSE(c, e), e = NulApp(v), v : Boolean.
 
     //// (2) The types of unary expressions
-    TypeOf(c, e, et)               :- SubSE(c, e), e = Default(t), TypeExpansion(t, et).
+    TypeOf(c, e, et)              :- SubSE(c, e), e = Default(t), TypeExpansion(t, et). 
+	
+	[ rule_Classes = '"error, msg: Illegal type"']
+	TypeOf(c, e, ERROR)           :- SubSE(c, e), e = Fresh(t), no TypeDef(t, NIL). 
+	TypeOf(c, e, type)            :- SubSE(c, e), e = Fresh(t), type = NameType(t), TypeDef(t, NIL). 
 
-    TypeOf(c, e, t1)              :- TypeOfArg1(c, e, t1), e : Tuple.
+    TypeOf(c, e, t1)              :- TypeOfArg1(c, e, t1), e : Tuple.     
 
     TypeOf(c, e, t1)              :- TypeOfArg1(c, e, t1), e : NamedTuple.
 
@@ -1010,8 +1015,6 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: created interface in public static function must be implemented in the module"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, count({ev1 | InterfaceTypeEventDecl(t, ev1), no MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) > 0;
 									  SubSE(c, e), e = NewStmt(n, _), c.owner = ModuleDecl(_), c.isPublic = TRUE, count({ev1 | no InterfaceTypeEventDecl(t, ev1), MachineReceivesDecl(m, ev1), InterfaceTypeEventDecl(t, ev2), MachineReceivesDecl(m, ev2), m is MachineDecl, m.mod = c.owner}) > 0.
-
-	
 
 	//// Rules for raise.
     TypeOf(c, e, NIL)              :- CommStmtPLType(c, e, plt), e = Raise(_, NIL),              ///// < raise has NIL payload,
@@ -1477,6 +1480,7 @@ domain PStaticTyping extends PData
 	Impure(c) :- SubSE(c, e), e = FunStmt(n, _, _, aout, _), c : FunDecl, aout : Name, IsLValue(c, aout, TRUE).
 
     [ rule_Classes = '"error, msg: this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);" "']
+
     PurityError(c, e') :-
        SubSE(c, e), e = New(_, e'),			  e' = FunApp(n, NIL, _), called.name = n, called.owner = c.owner, FunAvailable(called, c.owner), Impure(called);
 	   SubSE(c, e), e = New(_, e'),			  e' = FunApp(n, m, _), called.name = n, called.owner = ModuleDecl(m), FunAvailable(called, c.owner), Impure(called);
@@ -1599,29 +1603,32 @@ domain PStaticTyping extends PData
     TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = NIL, t != NIL.
 
     // The NULL type has empty intersections with NonNullBase and complex types.
-    NonNullBase ::= { BOOL, INT, FOREIGN }.
+    NonNullBase ::= (TypeExpr).
+	NonNullBase(type) :- type = BaseType(BOOL).
+	NonNullBase(type) :- type = BaseType(INT).
+	NonNullBase(type) :- TypeDef(name, NIL), type = NameType(name).
     ComplexType ::= TupType  + NmdTupType + SeqType + MapType.
-    TypeRel(s, t, EMPTY)   :- CompTypeRel(s, t), s = BaseType(kt), kt : NonNullBase, t = BaseType(NULL).
-    TypeRel(t, s, EMPTY)   :- CompTypeRel(t, s), s = BaseType(kt), kt : NonNullBase, t = BaseType(NULL).
-
+    TypeRel(s, t, EMPTY)   :- CompTypeRel(s, t), NonNullBase(s), t = BaseType(NULL).
+    TypeRel(t, s, EMPTY)   :- CompTypeRel(t, s), NonNullBase(s), t = BaseType(NULL).
     TypeRel(s, t, EMPTY)   :- CompTypeRel(s, t), s : ComplexType, t = BaseType(NULL).
     TypeRel(t, s, EMPTY)   :- CompTypeRel(t, s), s : ComplexType, t = BaseType(NULL).
 
     // NonNullBase types have empty intersections with all types, except themselves and ANY.
-    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = BaseType(ks), ks : NonNullBase, s != t, t != BaseType(ANY).
-    TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = BaseType(ks), ks : NonNullBase, s != t, t != BaseType(ANY).
+    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), NonNullBase(s), s != t, t != BaseType(ANY).
+    TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), NonNullBase(s), s != t, t != BaseType(ANY).
 
     // NullBase types have empty intersections with all types, except themselves, ANY, and NULL.
-    NullBase    ::= { EVENT, REAL }.
-
-    TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), s = BaseType(ks), ks : NullBase, t = BaseType(kt), kt : NonNullBase.
-    TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), s = BaseType(ks), ks : NullBase, t = BaseType(kt), kt : NonNullBase.
-
-    TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), s = BaseType(ks), ks : NullBase, toSymbol(t) != #BaseType, toSymbol(t) != #InterfaceType.
-    TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), s = BaseType(ks), ks : NullBase, toSymbol(t) != #BaseType, toSymbol(t) != #InterfaceType.
-
-    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), s = BaseType(ks), ks : NullBase, t = BaseType(kt), kt : NullBase, s != t, kt != ANY, kt != NULL.
-    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), s = BaseType(ks), ks : NullBase, t = BaseType(kt), kt : NullBase, s != t, kt != ANY, kt != NULL.
+    NullBase    ::= (TypeExpr).
+	NullBase(type) :- type = BaseType(EVENT).
+	NullBase(type) :- type = BaseType(REAL).    
+    TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), NullBase(s), NonNullBase(t).
+    TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), NullBase(s), NonNullBase(t).
+    
+    TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), NullBase(s), toSymbol(t) != #BaseType, toSymbol(t) != #InterfaceType.
+    TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), NullBase(s), toSymbol(t) != #BaseType, toSymbol(t) != #InterfaceType.
+          
+    TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), NullBase(s), NullBase(t), s != t.
+    TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), NullBase(s), NullBase(t), s != t.
 
 	//Interface Type has empty intersection with all the types except themselves, ANY, REAL and NULL
 	TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s : InterfaceType, t = BaseType(kt), kt != ANY, kt != NULL, kt != REAL.
@@ -1707,9 +1714,8 @@ domain PStaticTyping extends PData
     // NULL is a subtype of all Nullable types.
     TypeRel(s, t, SUB) :- CompTypeRel(s, t), s = BaseType(NULL), t = BaseType(ANY).
     TypeRel(t, s, SUP) :- CompTypeRel(t, s), s = BaseType(NULL), t = BaseType(ANY).
-
-    TypeRel(s, t, SUB) :-  CompTypeRel(s, t), s = BaseType(NULL), t = BaseType(kt), kt : NullBase.
-    TypeRel(t, s, SUP) :-  CompTypeRel(t, s), s = BaseType(NULL), t = BaseType(kt), kt : NullBase.
+    TypeRel(s, t, SUB) :-  CompTypeRel(s, t), s = BaseType(NULL), NullBase(t).
+    TypeRel(t, s, SUP) :-  CompTypeRel(t, s), s = BaseType(NULL), NullBase(t).
 
 	// Interface type is a subtype of the machine base-type
 	TypeRel(s, t, SUB) :- CompTypeRel(s, t), t = BaseType(REAL), s : InterfaceType.
@@ -1733,7 +1739,7 @@ domain PStaticTyping extends PData
 	//Interface type is a subtype of ANY
 	TypeRel(s, t, SUB) :- CompTypeRel(s, t), s : InterfaceType, t = BaseType(ANY).
 	TypeRel(t, s, SUP) :- CompTypeRel(t, s), s : InterfaceType, t = BaseType(ANY).
-
+    
     // Sequences are subtype related if their inner types are subtype related.
     TypeRel(s, t, SUB)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUB).
     TypeRel(s, t, SUP)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUP).
@@ -1793,4 +1799,11 @@ domain PStaticTyping extends PData
 	PayloadError(n) :- SubSE(c, n), n: NewStmt, TypeOf(c, n.arg, type), type: TypeExpr,
 					   m is MachineDecl, m.name = n.name, s is StateDecl, s.owner = m, s.name = m.start,
 					   PayloadVarType(s, ft), TypeRel(type, ft, k), type != ft, k != SUB.	
+
+	[ rule_Classes = '"error, msg: Null type must be subtype of payload type of entry function of start state;"']
+	PayloadError(s) :- m is MachineDecl, m.isMain = TRUE, s is StateDecl, s.owner = m, s.name = m.start, 
+					   PayloadVarType(s, ft), type = BaseType(NULL), TypeRel(type, ft, k), type != ft, k != SUB.
+	[ rule_Classes = '"error, msg: Null type must be subtype of payload type of entry function of start state;"']
+	PayloadError(s) :- m is MachineDecl, m.kind = MONITOR, s is StateDecl, s.owner = m, s.name = m.start, 
+					   PayloadVarType(s, ft), type = BaseType(NULL), TypeRel(type, ft, k), type != ft, k != SUB.
 }

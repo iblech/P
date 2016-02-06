@@ -69,7 +69,6 @@
 
 			 keywords.Add("int", (int)Tokens.INT);
 			 keywords.Add("bool", (int)Tokens.BOOL);
-			 keywords.Add("foreign", (int)Tokens.FOREIGN);
 			 keywords.Add("any", (int)Tokens.ANY);
 			 keywords.Add("seq", (int)Tokens.SEQ);
 			 keywords.Add("map", (int)Tokens.MAP);
@@ -81,6 +80,7 @@
 			 keywords.Add("machine", (int)Tokens.MACHINE);
 			 keywords.Add("assume", (int)Tokens.ASSUME);
 			 keywords.Add("default", (int)Tokens.DEFAULT);
+			 keywords.Add("fresh", (int)Tokens.FRESH);
 
 			 keywords.Add("var", (int)Tokens.VAR);
 			 keywords.Add("start", (int)Tokens.START);
