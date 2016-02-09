@@ -28,7 +28,6 @@ OUT: functionparmutated.p (28, 3): inferred type:  NIL
 OUT: functionparmutated.p (28, 9): inferred type:  BaseType(BOOL)
 OUT: functionparmutated.p (28, 12): inferred type:  BaseType(INT)
 OUT: functionparmutated.p (29, 4): inferred type:  NIL
-OUT: functionparmutated.p (29, 10): inferred type:  BaseType(INT)
 OUT: functionparmutated.p (30, 4): inferred type:  NIL
 OUT: functionparmutated.p (30, 11): inferred type:  BaseType(INT)
 OUT: functionparmutated.p (31, 4): inferred type:  NIL
@@ -40,6 +39,7 @@ OUT: functionparmutated.p (33, 4): inferred type:  NIL
 OUT: functionparmutated.p (33, 13): inferred type:  BaseType(BOOL)
 OUT: functionparmutated.p (33, 16): inferred type:  BaseType(INT)
 OUT: functionparmutated.p (34, 4): inferred type:  NIL
+OUT: functionparmutated.p (34, 10): inferred type:  BaseType(INT)
 OUT: functionparmutated.p (35, 4): inferred type:  NIL
 OUT: functionparmutated.p (35, 14): inferred type:  BaseType(BOOL)
 OUT: functionparmutated.p (35, 17): inferred type:  BaseType(INT)
