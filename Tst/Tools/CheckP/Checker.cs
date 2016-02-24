@@ -56,23 +56,24 @@ namespace CheckP
 
         private void pciProcess_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
-            if (!pciInitialized && e.Data == "Pci: initialization succeeded")
+            string data = "" + e.Data;
+            if (!pciInitialized && data == "Pci: initialization succeeded")
             {
                 pciInitialized = true;
                 evt.Set();
             }
-            else if (e.Data == "Pci: command done")
+            else if (data == "Pci: command done")
             {
                 evt.Set();
             }
-            else if (e.Data.StartsWith("Pci: load failed"))
+            else if (data.StartsWith("Pci: load failed"))
             {
                 loadSucceeded = false;
                 evt.Set();
             }
             else
             {
-                outputString += string.Format("OUT: {0}\r\n", e.Data);
+                outputString += string.Format("OUT: {0}\r\n", data);
             }
         }
 
@@ -150,11 +151,9 @@ namespace CheckP
         //Pc, Prt or Zing:
         private string parentDir = null;
 		private string execsToRun = null;
-        private bool isSetExePc = false;
-        private bool isSetExeZing = false;
-        private bool isSetExePrt = false;
         private PciProcess pciProcess;
         private string zingFilePath;
+        private string testRoot;
 
         public string Description
         {
@@ -162,7 +161,7 @@ namespace CheckP
             private set;
         }
 
-        public Checker(string activeDirectory, bool reset, string parentDir, string execsToRun, string zingFilePath, PciProcess pciProcess)
+        public Checker(string activeDirectory, string testRoot, bool reset, string parentDir, string execsToRun, string zingFilePath, PciProcess pciProcess)
         {
             this.activeDirectory = activeDirectory;
             this.reset = reset;
@@ -170,6 +169,7 @@ namespace CheckP
 			this.execsToRun = execsToRun;
             this.pciProcess = pciProcess;
             this.zingFilePath = zingFilePath;
+            this.testRoot = testRoot;
         }
 
         public static void PrintUsage()
@@ -312,7 +312,7 @@ namespace CheckP
             }
 
             //debudding only?
-            Console.WriteLine("Running test under {0}...", activeDirectory);
+            Console.WriteLine("Running test under {0} ...", activeDirectory);
 
             //If isAdd is true, remove old acceptor file
             //Note: this will break the logic of multiple acceptors;
@@ -416,10 +416,10 @@ namespace CheckP
                     result = ValidateOption(opts, ArgsPrtOption, true, 1, int.MaxValue, out isArgsPrt, out prtArgs) &&
                              result;
                     //Compute "TesterDirectory" (Tst\PrtTester):
-                    //path to ...PrtTester\Debug\tester.exe:
-                    var testerExeDir = Path.Combine(Environment.CurrentDirectory, "PrtTester\\Debug");
+                    //path to ...PrtTester\Debug\x86\tester.exe (since that is the configuration that RunBuildTester builds).
+                    string testerExeDir = Path.Combine(this.testRoot, "PrtTester\\Debug\\x86");
                     var testerExePath = Path.Combine(testerExeDir, "tester.exe");
-                    var testerDirectory = Path.Combine(Environment.CurrentDirectory, "PrtTester");
+                    var testerDirectory = Path.Combine(this.testRoot, "PrtTester");
 
                     //Remove previous runtime files from Tst\PrtTester:
                     File.Delete(Path.Combine(testerDirectory, RuntimeFile1));
@@ -441,15 +441,13 @@ namespace CheckP
                         );
 
                     //Build tester.exe for the updated runtime files.
-                    var prtTesterProj = @"PrtTester\Tester.vcxproj";
+                    var prtTesterProj = Path.Combine(this.testRoot, @"PrtTester\Tester.vcxproj");
 
                     //1. Define msbuildPath for msbuild.exe:
-                    var windir = Environment.GetEnvironmentVariable("windir");
-                    var msbuildPath = Path.Combine(windir, "Microsoft.NET", "Framework", "v4.0.30319", "MSBuild.exe");
-
-                    if (!File.Exists(msbuildPath))
+                    var msbuildPath = FindTool("MSBuild.exe");
+                    if (msbuildPath == null)
                     {
-                        Console.WriteLine("Error: Microsoft.NET framework version 4.0 or greater is required. Cannot build.");
+                        Console.WriteLine("Error: msbuild.exe is not in your PATH.");
                         return false;
                     }
 
@@ -470,14 +468,14 @@ namespace CheckP
                     }
 
                     //Cleaning tester.exe:
-                    bool buildRes = RunBuildTester(msbuildPath, true);
+                    bool buildRes = RunBuildTester(msbuildPath, prtTesterProj, true);
                     if (!buildRes)
                     {
                         Console.WriteLine("Error cleaning Tester project");
                         return false;
                     }
                     //Building tester.exe:
-                    buildRes = RunBuildTester(msbuildPath, false);
+                    buildRes = RunBuildTester(msbuildPath, prtTesterProj, false);
                     if (!buildRes)
                     {
                         Console.WriteLine("Error building Tester project");
@@ -535,6 +533,21 @@ namespace CheckP
             }
 
             return result;
+        }
+
+        private static string FindTool(string name)
+        {
+            string path = Environment.GetEnvironmentVariable("PATH");
+            string[] dirs = path.Split(new char[] { ';' }, StringSplitOptions.RemoveEmptyEntries);
+            foreach (string dir in dirs)
+            {
+                string toolPath = Path.Combine(dir, name);
+                if (File.Exists(toolPath))
+                {
+                    return toolPath;
+                }
+            }
+            return null;
         }
 
         private static bool ValidateOption(
@@ -736,7 +749,9 @@ namespace CheckP
                 psi.RedirectStandardError = true;
                 psi.RedirectStandardOutput = true;
                 psi.WorkingDirectory = activeDirectory;
-                psi.FileName = Path.Combine(activeDirectory, exe);
+
+                Uri combined = new Uri(new Uri(activeDirectory), exe);
+                psi.FileName = combined.LocalPath;
                 psi.Arguments = args.Trim();
                 psi.CreateNoWindow = true;
 
@@ -765,22 +780,15 @@ namespace CheckP
         }
 
 
-        private bool RunBuildTester(string buildExe, bool clean)
+        private bool RunBuildTester(string buildExe, string projectFile, bool clean)
         {
             try
             {
                 var msbuildArgs = "";
-                msbuildArgs += @".\PrtTester\Tester.vcxproj ";
-                msbuildArgs += clean ? @"/t:Clean " : @"/t:Build ";
-                //if (clean)
-                //{
-                //    msbuildArgs += @"/t:Clean ";
-                //}
-                //else
-                //{
-                //    msbuildArgs += @"/t:Build ";
-                //}
+                msbuildArgs += projectFile;
+                msbuildArgs += clean ? @" /t:Clean " : @" /t:Build ";
                 msbuildArgs += @"/p:Configuration=Debug ";
+                msbuildArgs += @"/p:Platform=x86 ";
                 msbuildArgs += @"/verbosity:quiet ";
                 msbuildArgs += @"/nologo";
                 //Console.WriteLine("msbuildArgs: {0}", msbuildArgs);
@@ -822,9 +830,6 @@ namespace CheckP
 
         private static bool IsDifferent(string file1, string file2)
         {
-            int read1, read2;
-            var buf1 = new char[BufferSize];
-            var buf2 = new char[BufferSize];
             try
             {
                 using (var sr1 = new StreamReader(file1))
@@ -833,22 +838,14 @@ namespace CheckP
                     {
                         while (true)
                         {
-                            read1 = sr1.ReadBlock(buf1, 0, BufferSize);
-                            read2 = sr2.ReadBlock(buf2, 0, BufferSize);
-                            if (read1 != read2)
+                            string line1 = sr1.ReadLine();
+                            string line2 = sr2.ReadLine();
+                            if (line1 != line2)
                             {
                                 return true;
                             }
 
-                            for (int i = 0; i < read1; ++i)
-                            {
-                                if (buf1[i] != buf2[i])
-                                {
-                                    return true;
-                                }
-                            }
-
-                            if (read1 == 0)
+                            if (line1 == null && line2 == null)
                             {
                                 return false;
                             }

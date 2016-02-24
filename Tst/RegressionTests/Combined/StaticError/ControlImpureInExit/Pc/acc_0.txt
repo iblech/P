@@ -1,58 +1,59 @@
 =================================
          Console output          
 =================================
-OUT: controlimpureinexit.p (18, 5): inferred type:  NIL
-OUT: controlimpureinexit.p (18, 11): inferred type:  BaseType(EVENT)
-OUT: controlimpureinexit.p (21, 17): inferred type:  NIL
-OUT: controlimpureinexit.p (21, 22): inferred type:  InterfaceType("Real1")
-OUT: controlimpureinexit.p (21, 28): inferred type:  BaseType(EVENT)
-OUT: controlimpureinexit.p (22, 8): inferred type:  NIL
-OUT: controlimpureinexit.p (22, 19): inferred type:  BaseType(EVENT)
-OUT: controlimpureinexit.p (23, 19): inferred type:  BaseType(EVENT)
-OUT: controlimpureinexit.p (26, 13): inferred type:  NIL
-OUT: controlimpureinexit.p (29, 5): inferred type:  NIL
-OUT: controlimpureinexit.p (30, 5): inferred type:  NIL
-OUT: controlimpureinexit.p (30, 11): inferred type:  BaseType(EVENT)
-OUT: controlimpureinexit.p (31, 5): inferred type:  NIL
-OUT: controlimpureinexit.p (31, 11): inferred type:  BaseType(BOOL)
-OUT: controlimpureinexit.p (31, 14): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (32, 7): inferred type:  NIL
-OUT: controlimpureinexit.p (36, 7): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (36, 7): inferred type:  NIL
-OUT: controlimpureinexit.p (36, 13): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (36, 15): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (36, 25): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (37, 9): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (37, 19): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (38, 9): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (43, 10): inferred type:  NIL
-OUT: controlimpureinexit.p (46, 15): inferred type:  NIL
-OUT: controlimpureinexit.p (50, 10): inferred type:  NIL
-OUT: controlimpureinexit.p (51, 11): inferred type:  NIL
-OUT: controlimpureinexit.p (54, 10): inferred type:  NIL
-OUT: controlimpureinexit.p (58, 10): inferred type:  NIL
-OUT: controlimpureinexit.p (59, 11): inferred type:  NIL
-OUT: controlimpureinexit.p (59, 17): inferred type:  BaseType(EVENT)
-OUT: controlimpureinexit.p (62, 10): inferred type:  NIL
-OUT: controlimpureinexit.p (66, 4): inferred type:  NIL
-OUT: controlimpureinexit.p (68, 17): inferred type:  NIL
-OUT: controlimpureinexit.p (72, 4): inferred type:  NIL
-OUT: controlimpureinexit.p (72, 10): inferred type:  BaseType(EVENT)
-OUT: controlimpureinexit.p (75, 4): inferred type:  NIL
-OUT: controlimpureinexit.p (76, 4): inferred type:  NIL
-OUT: controlimpureinexit.p (76, 11): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (80, 4): inferred type:  NIL
-OUT: controlimpureinexit.p (80, 11): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (83, 4): inferred type:  NIL
-OUT: controlimpureinexit.p (83, 10): inferred type:  BaseType(EVENT)
-OUT: controlimpureinexit.p (84, 4): inferred type:  NIL
-OUT: controlimpureinexit.p (84, 11): inferred type:  BaseType(INT)
-OUT: controlimpureinexit.p (29, 5): function may cause a change in current state; this is not allowed here
-OUT: controlimpureinexit.p (36, 15): this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);"
-OUT: controlimpureinexit.p (38, 9): this function must be pure. Data impure functions can only be called like "foo(...);" or "x = foo(...);"
-OUT: controlimpureinexit.p (47, 9): function may cause a change in current state; this is not allowed here
-OUT: controlimpureinexit.p (51, 11): function may cause a change in current state; this is not allowed here
-OUT: controlimpureinexit.p (59, 11): function may cause a change in current state; this is not allowed here
-OUT: controlimpureinexit.p (63, 9): function may cause a change in current state; this is not allowed here
+OUT: controlimpureinexit.p (15, 4): inferred type:  NIL
+OUT: controlimpureinexit.p (15, 10): inferred type:  BaseType(EVENT)
+OUT: controlimpureinexit.p (18, 16): inferred type:  NIL
+OUT: controlimpureinexit.p (18, 21): inferred type:  BaseType(REAL)
+OUT: controlimpureinexit.p (18, 27): inferred type:  BaseType(EVENT)
+OUT: controlimpureinexit.p (19, 16): inferred type:  NIL
+OUT: controlimpureinexit.p (19, 27): inferred type:  BaseType(EVENT)
+OUT: controlimpureinexit.p (20, 16): inferred type:  NIL
+OUT: controlimpureinexit.p (20, 27): inferred type:  BaseType(EVENT)
+OUT: controlimpureinexit.p (23, 18): inferred type:  NIL
+OUT: controlimpureinexit.p (26, 4): inferred type:  NIL
+OUT: controlimpureinexit.p (27, 4): inferred type:  NIL
+OUT: controlimpureinexit.p (27, 10): inferred type:  BaseType(EVENT)
+OUT: controlimpureinexit.p (28, 4): inferred type:  NIL
+OUT: controlimpureinexit.p (28, 10): inferred type:  BaseType(BOOL)
+OUT: controlimpureinexit.p (28, 13): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (29, 9): inferred type:  NIL
+OUT: controlimpureinexit.p (33, 6): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (33, 6): inferred type:  NIL
+OUT: controlimpureinexit.p (33, 12): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (33, 14): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (33, 24): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (34, 8): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (34, 18): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (35, 8): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (40, 9): inferred type:  NIL
+OUT: controlimpureinexit.p (43, 14): inferred type:  NIL
+OUT: controlimpureinexit.p (47, 9): inferred type:  NIL
+OUT: controlimpureinexit.p (48, 10): inferred type:  NIL
+OUT: controlimpureinexit.p (51, 9): inferred type:  NIL
+OUT: controlimpureinexit.p (55, 9): inferred type:  NIL
+OUT: controlimpureinexit.p (56, 10): inferred type:  NIL
+OUT: controlimpureinexit.p (56, 16): inferred type:  BaseType(EVENT)
+OUT: controlimpureinexit.p (59, 9): inferred type:  NIL
+OUT: controlimpureinexit.p (63, 3): inferred type:  NIL
+OUT: controlimpureinexit.p (65, 16): inferred type:  NIL
+OUT: controlimpureinexit.p (69, 3): inferred type:  NIL
+OUT: controlimpureinexit.p (69, 9): inferred type:  BaseType(EVENT)
+OUT: controlimpureinexit.p (72, 3): inferred type:  NIL
+OUT: controlimpureinexit.p (73, 3): inferred type:  NIL
+OUT: controlimpureinexit.p (73, 10): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (77, 3): inferred type:  NIL
+OUT: controlimpureinexit.p (77, 10): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (80, 3): inferred type:  NIL
+OUT: controlimpureinexit.p (80, 9): inferred type:  BaseType(EVENT)
+OUT: controlimpureinexit.p (81, 3): inferred type:  NIL
+OUT: controlimpureinexit.p (81, 10): inferred type:  BaseType(INT)
+OUT: controlimpureinexit.p (26, 4): function may cause a change in current state; this is not allowed here
+OUT: controlimpureinexit.p (33, 14): this function must be pure. Impure functions can only be called like "foo(...);" or "x = foo(...);"
+OUT: controlimpureinexit.p (35, 8): this function must be pure. Impure functions can only be called like "foo(...);" or "x = foo(...);"
+OUT: controlimpureinexit.p (44, 8): function may cause a change in current state; this is not allowed here
+OUT: controlimpureinexit.p (48, 10): function may cause a change in current state; this is not allowed here
+OUT: controlimpureinexit.p (56, 10): function may cause a change in current state; this is not allowed here
+OUT: controlimpureinexit.p (60, 8): function may cause a change in current state; this is not allowed here
 OUT: Compilation failed
 EXIT: -1
