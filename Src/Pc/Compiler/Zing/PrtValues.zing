@@ -39,7 +39,7 @@ class PRT_VALUE {
 				trace("{0}", value.ev.name);
 		}
 
-		if (tkind == PRT_TYPE_KIND.PRT_KIND_REAL)
+		if (tkind == PRT_TYPE_KIND.PRT_KIND_REAL || tkind == PRT_TYPE_KIND.PRT_KIND_INTERFACE)
 		{
 			if(isNullValue)
 				trace("null");
@@ -225,6 +225,43 @@ class PRT_VALUE {
 		if (tkind == PRT_TYPE_KIND.PRT_KIND_ANY)
 			return true;
 
+		if (tkind == PRT_TYPE_KIND.PRT_KIND_INTERFACE)
+		{
+			if(vkind == PRT_TYPE_KIND.PRT_KIND_INTERFACE)
+			{
+				if(sizeof(type.interfaceSet) != sizeof(value.type.interfaceSet))
+					return false;
+
+				foreach(SM_EVENT e in type.interfaceSet)
+				{
+					if(!(e in  value.type.interfaceSet))
+					{	
+						trace("<TypeError> Incorrect interface type cast\n");
+						return false;
+					}
+				}
+
+				foreach(SM_EVENT e1 in value.type.interfaceSet)
+				{
+					if(!(e1 in  type.interfaceSet))
+					{	
+						trace("<TypeError> Incorrect interface type cast\n");
+						return false;
+					}
+				}
+
+				return true;
+			}
+			else if (isNullValue || tkind == PRT_TYPE_KIND.PRT_KIND_REAL)
+			{
+				return true;
+			}
+			else
+			{
+				return false;
+			}
+		}
+
 		if (tkind == PRT_TYPE_KIND.PRT_KIND_BOOL)
 			return vkind == PRT_TYPE_KIND.PRT_KIND_BOOL;
 	
@@ -329,6 +366,9 @@ class PRT_VALUE {
 		if (kind == PRT_TYPE_KIND.PRT_KIND_REAL)
 			return value.mach == null;
 
+		if (kind == PRT_TYPE_KIND.PRT_KIND_INTERFACE)
+			return value.mach == null;
+
 		if (kind == PRT_TYPE_KIND.PRT_KIND_NULL)
 			return true;
 
@@ -341,7 +381,7 @@ class PRT_VALUE {
 		b = PrtInhabitsType(value, type);
         assert (b, "value must be a member of type");
 		newValue = PrtCloneValue(value);
-		value.type = type;
+		//value.type = type;
 		return newValue;
     }
 
@@ -379,7 +419,7 @@ class PRT_VALUE {
 		if (kind1 == PRT_TYPE_KIND.PRT_KIND_EVENT)
 			return value1.ev == value2.ev;
 
-		if (kind1 == PRT_TYPE_KIND.PRT_KIND_REAL)
+		if (kind1 == PRT_TYPE_KIND.PRT_KIND_REAL || kind1 == PRT_TYPE_KIND.PRT_KIND_INTERFACE)
 			return value1.mach == value2.mach;
 
 		if (kind1 == PRT_TYPE_KIND.PRT_KIND_INT)

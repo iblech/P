@@ -20,7 +20,8 @@ domain PData
     SeqType         ::= new (x: any TypeExpr).
     MapType         ::= new (k: any TypeExpr, v: any TypeExpr).
     NmdTupTypeField ::= new (qual: Qualifier, name: any String, type: any TypeExpr). 
-    TypeExpr        ::= NameType + BaseType + TupType + NmdTupType + SeqType + MapType.
+	InterfaceType	::= new (name: any String).
+    TypeExpr        ::= NameType + BaseType + TupType + NmdTupType + SeqType + MapType + InterfaceType.
         
     /*************************************************************/
     /****************          Action Language        ************/
@@ -67,6 +68,13 @@ domain PData
 	FileInfo   ::= new (decl: FunDecl + AnonFunDecl, file: String + { NIL }).
 	LineInfo   ::= new (decl: FunDecl + AnonFunDecl, loc: { ENTRY, EXIT }, line: Natural).
 
+	/**************************************************************/
+	/******* Module System Declarations **************************/
+	/*************************************************************/
+	////Interface type events
+	InterfaceTypeEventsDecl ::= new (it: any InterfaceType, ev: NonNullEventLabel).
+	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
+
     /*************************************************************/
     /****************  State Machine Declarations    *************/
     /*************************************************************/
@@ -90,13 +98,15 @@ domain PData
     TransDecl      ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> dst: any QualifiedName, action: any { PUSH } + AnonFunDecl + String).
     DoDecl         ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> action: any { DEFER, IGNORE } + AnonFunDecl + String).
 
-    PDecl          ::= EventDecl + MachineDecl + VarDecl + AnonFunDecl + FunDecl + StateDecl + TransDecl + DoDecl + ObservesDecl.            
+    PDecl          ::= EventDecl + MachineDecl + VarDecl + AnonFunDecl + FunDecl + StateDecl + TransDecl + DoDecl + ObservesDecl 
+						+ InterfaceTypeEventsDecl + MachineReceivesDecl.            
 
     AssumeMaxInstances ::= new (bound: Natural).
     AssertMaxInstances ::= new (bound: Natural).
     QualifiedName      ::= new (name: String, qualifier: any QualifiedName + { NIL }).
     QueueConstraint    ::= AssumeMaxInstances + AssertMaxInstances + { NIL }.
     EventLabel         ::= String + { NULL, HALT }.
+	NonNullEventLabel  ::= String + { HALT }.
 
     /*************************************************************/
     /****************          Annotations           *************/
@@ -202,8 +212,16 @@ domain PStructuralTyping extends PData
 	OneDeclError(d) :- d is DoDecl(s, _, DEFER), s.owner.kind = MONITOR.	
 
 	//event in monitors is defined
-	[rule_Classes = '"error, msg: event in monitor is undefined"']
+	[rule_Classes = '"error, msg: event in observes set is not declared"']
 	OneDeclError(obs) :- obs is ObservesDecl, obs.monitor.kind = MONITOR, no EventDecl(obs.ev, _, _).	
+
+	//event in interface type
+	[rule_Classes = '"error, msg: unknown event in interface declaration"']
+	OneDeclError(inter) :- inter is InterfaceTypeEventsDecl(_, ev), no EventDecl(ev, _, _), ev != HALT, no MachineReceivesDecl(_, ev).
+
+	//event in receives of a machine
+	[rule_Classes = '"error, msg: event in receives is not declared"']
+	OneDeclError(receivesE) :- receivesE is MachineReceivesDecl(_, ev), no EventDecl(ev, _, _), ev!= HALT.
 }
 
 domain PStaticTyping extends PData
@@ -236,7 +254,8 @@ domain PStaticTyping extends PData
 	TypeDefError ::= (name: String).
 
 	[rule_Classes = '"error, msg: undefined type"']
-	TypeDefError(name) :- AllTypeExprs(type), type = NameType(name), no TypeDef(name, _).
+	TypeDefError(name) :- AllTypeExprs(type), type = NameType(name), no TypeDef(name, _), no InterfaceTypeEventsDecl(InterfaceType(name), _).
+
 	[rule_Classes = '"error, msg: multiple type definitions for a type name"']
 	TypeDefError(name) :- TypeDef(name, type1), TypeDef(name, type2), type1 != type2.
 
@@ -255,6 +274,7 @@ domain PStaticTyping extends PData
 	TypeExpansion(BaseType(EVENT), BaseType(EVENT)).
 	TypeExpansion(BaseType(REAL), BaseType(REAL)).
 	TypeExpansion(BaseType(ANY), BaseType(ANY)).
+
 	TypeExpansion(t, t) :- TypeOf(_, Tuple(_), t), t : TypeExpr.
 	TypeExpansion(t, t) :- TypeOf(_, NamedTuple(_), t), t : TypeExpr.
 	TypeExpansion(t, t) :- TypeExpansion(_, TupType(t, _)), t : TypeExpr.
@@ -262,8 +282,10 @@ domain PStaticTyping extends PData
 	TypeExpansion(t, t) :- TypeExpansion(_, NmdTupType(f, _)), t = f.type.
 	TypeExpansion(t, t) :- TypeExpansion(_, NmdTupType(_, t)), t : TypeExpr.
 
+	TypeExpansion(type, type)  :- AllTypeExprs(type), type = InterfaceType(_).
 	TypeExpansion(type, type)  :- TypeDef(typeName, NIL), no TypeDefError(typeName), type = NameType(typeName).
 	TypeExpansion(type, eType) :- TypeDef(typeName, typeExpr), typeExpr: TypeExpr, no TypeDefError(typeName), type = NameType(typeName), TypeExpansion(typeExpr, eType).
+	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NameType(name), eType = InterfaceType(name), no TypeDef(name, _).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, NIL), TypeExpansion(hd, hd'), eType = TupType(hd', NIL).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, tl), tl != NIL, TypeExpansion(hd, hd'), TypeExpansion(tl, tl'), eType = TupType(hd', tl').
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NmdTupType(NmdTupTypeField(qual, name, hd), NIL), TypeExpansion(hd, hd'), eType = NmdTupType(NmdTupTypeField(qual, name, hd'), NIL).
@@ -324,7 +346,15 @@ domain PStaticTyping extends PData
     TypeOf(c, e, BaseType(NULL))  :- SubSE(c, e), e = NulApp(NULL).
     TypeOf(c, e, BaseType(EVENT)) :- SubSE(c, e), e = NulApp(HALT).
 	
-    TypeOf(c, e, BaseType(REAL))  :- SubSE(c, e), e = NulApp(THIS).
+	
+	// Type of THIS is the receive set implemented by the machine, machine type if the receive set is empty.
+    TypeOf(c, e, i)  :- SubSE(c, e), e = NulApp(THIS), i = InterfaceType(c.owner.name), MachineReceivesDecl(c.owner, _);
+						SubSE(c, e), e = NulApp(THIS), i = BaseType(NULL), no MachineReceivesDecl(c.owner, _).
+
+    //THIS is not allowed in static functions
+	[ rule_Classes = '"error, msg: THIS is not allowed inside static functions"']
+    TypeOf(c, e, ERROR)           :- SubSE(c, e), e = NulApp(THIS), c is FunDecl(_, NIL, _, _, _, _, _);
+									 SubSE(c, e), e = NulApp(THIS), c is AnonFunDecl(NIL, _, _, _).
     
 	TypeOf(c, e, BaseType(BOOL))  :- SubSE(c, e), e = NulApp(NONDET).
 
@@ -393,8 +423,9 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Cast can never succeed"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k = EMPTY.
 
-    TypeOf(c, e, BaseType(REAL))   :- SubSE(c, e), e = New(n, _), MachineDecl(n, REAL, _, _, _).
-    TypeOf(c, e, BaseType(REAL))   :- SubSE(c, e), e = New(n, _), MachineDecl(n, MODEL, _, _, _).
+    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), t = InterfaceType(n), InterfaceTypeEventsDecl(t, _);
+						 SubSE(c, e), e = New(n, _), t = BaseType(NULL), no InterfaceTypeEventsDecl(InterfaceType(n), _), MachineDecl(n, mt, _, _, _), mt != MONITOR.
+
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), MachineDecl(n, MONITOR, _, _, _).
 	[ rule_Classes = '"error, msg: Undefined machine type"']
@@ -627,8 +658,11 @@ domain PStaticTyping extends PData
     TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e : While, t1 = BaseType(BOOL).
 	[ rule_Classes = '"error, msg: "while (...)" expects a boolean value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : While, t1 != BaseType(BOOL).
-               
-    TypeOf(c, e, NIL)              :- SubSE(c, e), e = NewStmt(n, _, _), MachineDecl(n, kind, _, _, _), kind != MONITOR.   
+    
+	          
+    TypeOf(c, e, NIL)   :- SubSE(c, e), e = NewStmt(n, _, _), InterfaceTypeEventsDecl(InterfaceType(n), _);
+						   SubSE(c, e), e = NewStmt(n, _, _), no InterfaceTypeEventsDecl(InterfaceType(n), _), MachineDecl(n, mt, _, _, _), mt != MONITOR.
+						  
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), MachineDecl(n, MONITOR, _, _, _).
 	[ rule_Classes = '"error, msg: Undeclared machine"']
@@ -654,17 +688,17 @@ domain PStaticTyping extends PData
 									  TypeOf(c, p, pt), TypeRel(pt, plt, k), k != SUB, pt != plt. ///// < and pt is not a subtype of plt.
 
 	//// Rules for send.
-    TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e = Send(_, _, NIL, _, _),                           ///// < send has NIL payload,
-	                                  t1 = BaseType(REAL),                                                 ///// < arg1 is a machine type,
+    TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e = Send(_, _, NIL, _, _),                     ///// < send has NIL payload,
+	                                  TypeRel(BaseType(REAL), t1, SUB),                                    ///// < arg1 is a subtype of machine type,
 	                                  CommStmtPLType(c, e, plt), TypeRel(BaseType(NULL), plt, SUB).        ///// < arg2 event type contains null.
 
     TypeOf(c, e, NIL)              :- TypeOfArg3(c, e, t1, t2, t3), e : Send,                             ///// < send has non-NIL payload,             
-	                                  t1 = BaseType(REAL),                                                ///// < arg1 is a machine type,
+									  TypeRel(BaseType(REAL), t1, SUB),                                   ///// < arg1 is a subtype of machine type,
 	                                  CommStmtPLType(c, e, plt), TypeRel(t3, evt, SUB).                   ///// < and t3 is a subtype of plt.
 
 	//// Error rules for send.
-	[ rule_Classes = '"error, msg: argument 1 of "send" expects a machine value"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Send, t1 != BaseType(REAL).
+	[ rule_Classes = '"error, msg: argument 1 of "send" expects a machine or interface type value"']
+    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Send, TypeRel(BaseType(REAL), t1, k), k != SUB.
 
 	[ rule_Classes = '"error, msg: argument 2 of "send" expects an event value"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Send(_, e2, _, _, _), TypeOf(c, e2, t2), t2 != BaseType(EVENT).
@@ -1192,7 +1226,9 @@ domain PStaticTyping extends PData
     // NullBase types have empty intersections with all types, except themselves, ANY, and NULL.
     NullBase    ::= (TypeExpr).
 	NullBase(type) :- type = BaseType(EVENT).
-	NullBase(type) :- type = BaseType(REAL).    
+	NullBase(type) :- type = BaseType(REAL). 
+	NullBase(type) :- AllTypeExprs(type), type = InterfaceType(_).
+	   
     TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), NullBase(s), NonNullBase(t).
     TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), NullBase(s), NonNullBase(t).
     
@@ -1283,6 +1319,27 @@ domain PStaticTyping extends PData
     TypeRel(s, t, SUB) :-  CompTypeRel(s, t), s = BaseType(NULL), NullBase(t).
     TypeRel(t, s, SUP) :-  CompTypeRel(t, s), s = BaseType(NULL), NullBase(t).
     
+	// Interface type is a subtype of the machine base-type
+	TypeRel(s, t, SUB) :- CompTypeRel(s, t), t = BaseType(REAL), s : InterfaceType.
+	TypeRel(t, s, SUP) :- CompTypeRel(t, s), t = BaseType(REAL), s : InterfaceType.
+
+	//subtype relation between interface types
+	SubtypeRelInterfaces ::= (i1: InterfaceType, i2: InterfaceType).
+	SubtypeRelInterfaces(n1, n2) :- x is InterfaceTypeEventsDecl(n1, _), y is InterfaceTypeEventsDecl(n2, _), n1 != n2,
+							  no { e1 | InterfaceTypeEventsDecl(n1, e1), no InterfaceTypeEventsDecl(n2, e1)},
+							  no { e2 | no InterfaceTypeEventsDecl(n1, e2), InterfaceTypeEventsDecl(n2, e2)}.
+	
+	NotSubtypeRelInterfaces ::= (i1: InterfaceType, i2: InterfaceType).
+	NotSubtypeRelInterfaces(n1, n2) :- x is InterfaceTypeEventsDecl(n1, _), y is InterfaceTypeEventsDecl(n2, _), n1 != n2,
+									   InterfaceTypeEventsDecl(n1, e1), no InterfaceTypeEventsDecl(n2, e1);
+									   x is InterfaceTypeEventsDecl(n1, _), y is InterfaceTypeEventsDecl(n2, _), n1 != n2,
+									   no InterfaceTypeEventsDecl(n1, e2), InterfaceTypeEventsDecl(n2, e2).
+
+	TypeRel(s, t, SUB) :- CompTypeRel(s, t), s : InterfaceType, t : InterfaceType, s != t, SubtypeRelInterfaces(t, s).
+	TypeRel(t, s, SUP) :- CompTypeRel(t, s), s : InterfaceType, t : InterfaceType, s != t, SubtypeRelInterfaces(t, s).
+	//TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), t : InterfaceType, s : InterfaceType, s != t, NotSubtypeRelInterfaces(s, t).
+	//TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), t : InterfaceType, s : InterfaceType, s != t, NotSubtypeRelInterfaces(s, t).
+
     // Sequences are subtype related if their inner types are subtype related.
     TypeRel(s, t, SUB)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUB). 
     TypeRel(s, t, SUP)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUP). 

@@ -39,12 +39,14 @@
         private Stack<List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>>> crntAnnotStack = new Stack<List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>>>();
 
         private List<P_Root.EventLabel> crntObservesList = new List<P_Root.EventLabel>();
+        private List<P_Root.EventLabel> crntReceivesList = new List<P_Root.EventLabel>();
 
         private HashSet<string> crntStateNames = new HashSet<string>();
         private HashSet<string> crntFunNames = new HashSet<string>();
         private HashSet<string> crntVarNames = new HashSet<string>();
-        private HashSet<string> crntEventNames;
-        private HashSet<string> crntMachineNames;
+        private HashSet<string> crntMachineNames = new HashSet<string>();
+
+        private TopDeclNames topDeclNames;
 
         private Stack<P_Root.Expr> valueExprStack = new Stack<P_Root.Expr>();
         private Stack<P_Root.ExprsExt> exprsStack = new Stack<P_Root.ExprsExt>();
@@ -244,15 +246,13 @@
         internal bool ParseFile(
             ProgramName file,
             CommandLineOptions options,
-            HashSet<string> crntEventNames,
-            HashSet<string> crntMachineNames,
+            TopDeclNames topDeclNames,
             out List<Flag> flags,
             out PProgram program,
             out List<string> includedFileNames)
         {
             flags = parseFlags = new List<Flag>();
-            this.crntEventNames = crntEventNames;
-            this.crntMachineNames = crntMachineNames;
+            this.topDeclNames = topDeclNames;
             program = parseProgram = new PProgram();
             includedFileNames = parseIncludedFileNames = new List<string>();
             parseSource = file;
@@ -341,6 +341,49 @@
             return new Span(loc.StartLine, loc.StartColumn + 1, loc.EndLine, loc.EndColumn + 1);
         }
 
+        private bool IsValidName(string name, Span nameSpan)
+        {
+            string errorMessage = "";
+            bool error = false;
+            if (topDeclNames.eventNames.Contains(name))
+            {
+                errorMessage = string.Format("An event with name {0} already declared", name);
+                error = true;
+            }
+            else if (topDeclNames.interfaceNames.Contains(name))
+            {
+                errorMessage = string.Format("An interface with name {0} already declared", name);
+                error = true;
+            }
+            else if (topDeclNames.moduleNames.Contains(name))
+            {
+                errorMessage = string.Format("A module with name {0} already declared", name);
+                error = true;
+            }
+            else if (topDeclNames.testNames.Contains(name))
+            {
+                errorMessage = string.Format("A test case with name {0} already declared", name);
+                error = true;
+            }
+            else if (topDeclNames.eventListNames.Contains(name))
+            {
+                errorMessage = string.Format("A event list with name {0} already declared", name);
+                error = true;
+            }
+            if (error)
+            {
+                var errFlag = new Flag(
+                                         SeverityKind.Error,
+                                         nameSpan,
+                                         Constants.BadSyntax.ToString(errorMessage),
+                                         Constants.BadSyntax.Code,
+                                         parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
+            }
+
+            return !error;
+        }
         #region Pushers
         private void PushAnnotationSet()
         {
@@ -1271,6 +1314,10 @@
 
         private void AddTypeDef(string name, Span nameSpan, Span typeDefSpan)
         {
+            if (IsValidName(name, nameSpan))
+            {
+                topDeclNames.typeNames.Add(name);
+            }
             var type = (P_Root.IArgType_TypeDef__1)typeExprStack.Pop();
             var typeDef = P_Root.MkTypeDef(MkString(name, nameSpan), type);
             typeDef.Span = typeDefSpan;
@@ -1676,26 +1723,34 @@
             crntVarList.Clear();
         }
 
+        private void AddInterfaceType(string name, Span nameSpan, Span span)
+        {
+            if (IsValidName(name, nameSpan))
+                topDeclNames.interfaceNames.Add(name);
+
+            foreach (var ev in crntEventList)
+            {
+                var interfaceType = new P_Root.InterfaceType();
+                interfaceType.Span = nameSpan;
+                interfaceType.name = (P_Root.IArgType_InterfaceType__0)MkString(name, nameSpan);
+                var interfaceDecl = new P_Root.InterfaceTypeEventsDecl();
+                interfaceDecl.Span = ev.Span;
+                interfaceDecl.it = (P_Root.IArgType_InterfaceTypeEventsDecl__0)interfaceType;
+                interfaceDecl.ev = (P_Root.IArgType_InterfaceTypeEventsDecl__1)ev;
+                parseProgram.InterfaceEventsDecl.Add(interfaceDecl);
+            }
+            crntEventList.Clear();
+        }
+
         private void AddEvent(string name, Span nameSpan, Span span)
         {
             var evDecl = GetCurrentEventDecl(span);
             evDecl.Span = span;
             evDecl.name = MkString(name, nameSpan);
             parseProgram.Events.Add(evDecl);
-            if (crntEventNames.Contains(name))
+            if (IsValidName(name, nameSpan))
             {
-                var errFlag = new Flag(
-                                     SeverityKind.Error,
-                                     span,
-                                     Constants.BadSyntax.ToString(string.Format("An event with name {0} already declared", name)),
-                                     Constants.BadSyntax.Code,
-                                     parseSource);
-                parseFailed = true;
-                parseFlags.Add(errFlag);
-            }
-            else
-            {
-                crntEventNames.Add(name);
+                topDeclNames.eventNames.Add(name);
             }
             crntEventDecl = null;
         }
@@ -1719,15 +1774,33 @@
                 }
                 crntObservesList.Clear();
             }
+            else
+            {
+                foreach (var e in crntReceivesList)
+                {
+                    //add receives
+                    var rec = P_Root.MkMachineReceivesDecl(machDecl, (P_Root.IArgType_MachineReceivesDecl__1)e);
+                    rec.Span = e.Span;
+                    parseProgram.MachineReceivesDecl.Add(rec);
+                    //create interface
+                    var itDecl = P_Root.MkInterfaceTypeEventsDecl(P_Root.MkInterfaceType(MkString(name, nameSpan)), (P_Root.IArgType_InterfaceTypeEventsDecl__1)e);
+                    itDecl.Span = e.Span;
+                    parseProgram.InterfaceEventsDecl.Add(itDecl);
+                }
+                crntReceivesList.Clear();
+            }
             parseProgram.Machines.Add(machDecl);
             if (crntMachineNames.Contains(name))
             {
-                var errFlag = new Flag(
-                                     SeverityKind.Error,
-                                     span,
-                                     Constants.BadSyntax.ToString(string.Format("A machine with name {0} already declared", name)),
-                                     Constants.BadSyntax.Code,
-                                     parseSource);
+                string errMessage = string.Format("A machine with name {0} already declared in the module", name);
+                var errFlag = new Flag(SeverityKind.Error, nameSpan, Constants.BadSyntax.ToString(errMessage), Constants.BadSyntax.Code, parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
+            }
+            else if (topDeclNames.interfaceNames.Contains(name) || topDeclNames.typeNames.Contains(name))
+            {
+                string errMessage = string.Format("A interface or typedef with name {0} already declared", name);
+                var errFlag = new Flag(SeverityKind.Error, nameSpan, Constants.BadSyntax.ToString(errMessage), Constants.BadSyntax.Code, parseSource);
                 parseFailed = true;
                 parseFlags.Add(errFlag);
             }
@@ -2015,6 +2088,9 @@
             crntStateNames.Clear();
             crntFunNames.Clear();
             crntVarNames.Clear();
+            crntMachineNames.Clear();
+            crntObservesList.Clear();
+            crntReceivesList.Clear();
         }
         #endregion
     }

@@ -18,7 +18,11 @@ event eUnit assert 1;
 event eStopTimerReturned assert 1;
 event eObjectEncountered assert 1;
 
-machine Elevator {
+machine Elevator 
+receives eCloseDoor, eOpenDoor, eDoorOpened, eTimerFired, eStopTimerReturned, eDoorClosed,
+		 eObjectDetected, eDoorStopped, eOperationSuccess, eOperationFailure
+
+{
     var TimerV, DoorV: machine;
 
     start state Init {
@@ -152,7 +156,10 @@ main model User {
     }
 }
 
-model Door {
+model Door 
+receives eSendCommandToOpenDoor, eSendCommandToCloseDoor, 
+		 eObjectEncountered, eSendCommandToStopDoor, eSendCommandToResetDoor
+{
     var ElevatorV : machine;
 
     start state _Init {
@@ -225,7 +232,9 @@ model Door {
     }
 }
 
-model Timer {
+model Timer 
+receives eStartDoorCloseTimer, eStopDoorCloseTimer
+{
     var ElevatorV : machine;
 
     start state _Init {

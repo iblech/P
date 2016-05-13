@@ -16,6 +16,26 @@
 
     public enum LivenessOption { None, Standard, Mace };
 
+    public class TopDeclNames
+    {
+        public HashSet<string> eventNames;
+        public HashSet<string> eventListNames;
+        public HashSet<string> interfaceNames;
+        public HashSet<string> moduleNames;
+        public HashSet<string> testNames;
+        public HashSet<string> typeNames;
+
+        public TopDeclNames()
+        {
+            eventNames = new HashSet<string>();
+            eventListNames = new HashSet<string>();
+            interfaceNames = new HashSet<string>();
+            moduleNames = new HashSet<string>();
+            testNames = new HashSet<string>();
+            typeNames = new HashSet<string>();
+        }
+    }
+
     public class Compiler
     {
         public bool Compile(string inputFileName)
@@ -231,8 +251,7 @@
                 return false;
             }
 
-            HashSet<string> crntEventNames = new HashSet<string>();
-            HashSet<string> crntMachineNames = new HashSet<string>();
+            TopDeclNames topDeclNames = new TopDeclNames();
 
             InstallResult uninstallResult;
             var uninstallDidStart = CompilerEnv.Uninstall(SeenFileNames.Values, out uninstallResult);
@@ -251,7 +270,7 @@
                 List<Flag> parserFlags;
                 string currFileName = parserWorkQueue.Dequeue();
                 var parser = new Parser.Parser();
-                var result = parser.ParseFile(SeenFileNames[currFileName], Options, crntEventNames, crntMachineNames, out parserFlags, out prog, out includedFileNames);
+                var result = parser.ParseFile(SeenFileNames[currFileName], Options, topDeclNames, out parserFlags, out prog, out includedFileNames);
                 flags.AddRange(parserFlags);
                 if (!result)
                 {

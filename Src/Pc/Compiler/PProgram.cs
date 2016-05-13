@@ -77,6 +77,18 @@
             private set;
         }
 
+        public List<P_Root.InterfaceTypeEventsDecl> InterfaceEventsDecl
+        {
+            get;
+            private set;
+        }
+
+        public List<P_Root.MachineReceivesDecl> MachineReceivesDecl
+        {
+            get;
+            private set;
+        }
+
         public List<P_Root.FileInfo> FileInfos
         {
             get;
@@ -147,7 +159,15 @@
                 {
                     yield return obs;
                 }
+                foreach (var inter in InterfaceEventsDecl)
+                {
+                    yield return inter;
+                }
 
+                foreach (var mRec in MachineReceivesDecl)
+                {
+                    yield return mRec;
+                }
                 foreach (var info in FileInfos)
                 {
                     yield return info;
@@ -173,6 +193,8 @@
             Dos = new List<P_Root.DoDecl>();
             Annotations = new List<P_Root.Annotation>();
             Observes = new List<P_Root.ObservesDecl>();
+            InterfaceEventsDecl = new List<P_Root.InterfaceTypeEventsDecl>();
+            MachineReceivesDecl = new List<P_Root.MachineReceivesDecl>();
             FileInfos = new List<P_Root.FileInfo>();
             LineInfos = new List<P_Root.LineInfo>();
         }

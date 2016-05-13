@@ -9,9 +9,9 @@
 }
 
 %token INT BOOL ANY SEQ MAP ID
-%token TYPE INCLUDE MAIN EVENT MACHINE MONITOR ASSUME SPEC
+%token TYPE INCLUDE MAIN EVENT MACHINE MONITOR ASSUME MONITOR
 
-%token VAR START HOT COLD MODEL STATE FUN ACTION GROUP STATIC MODELS MONITORS
+%token VAR START HOT COLD MODEL STATE FUN ACTION GROUP STATIC MODELS OBSERVES
 
 %token ENTRY EXIT DEFER IGNORE GOTO ON DO PUSH AS WITH
 
@@ -19,6 +19,9 @@
 %token LPAREN RPAREN LCBRACE RCBRACE LBRACKET RBRACKET SIZEOF KEYS VALUES
 
 %token TRUE FALSE
+
+%token INTERFACE
+%token RECEIVES
 
 %token SWAP, XFER
 
@@ -57,7 +60,9 @@ TopDecl
     : IncludeDecl
 	| TypeDefDecl
 	| EventDecl
+	| InterfaceDecl
 	| MachineDecl
+	| MonitorDecl
 	| StaticFunDecl
 	;
 
@@ -112,15 +117,29 @@ EventAnnotOrNone
 	|
 	;
 
-/******************* Machine Declarations *******************/
+/****************** Interface Declarations ******************/
+InterfaceDecl
+	: INTERFACE ID NonDefaultEventList SEMICOLON				{ AddInterfaceType($2.str, ToSpan(@2), ToSpan(@2)); } 
+	;
+
+	/******************* Machine Declarations *******************/
 MachineDecl
-	: IsMain MACHINE ID MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE { AddMachine(P_Root.UserCnstKind.REAL, $3.str, ToSpan(@3), ToSpan(@1));    }
-	| IsMain MODEL ID MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE   { AddMachine(P_Root.UserCnstKind.MODEL, $3.str, ToSpan(@3), ToSpan(@1));   }
-	| SPEC ID ObservesList MachAnnotOrNone LCBRACE MachineBody RCBRACE			   { AddMachine(P_Root.UserCnstKind.MONITOR, $2.str, ToSpan(@2), ToSpan(@1)); }
+	: IsMain MACHINE ID Receives MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE { AddMachine(P_Root.UserCnstKind.REAL, $3.str, ToSpan(@3), ToSpan(@1));    }
+	| IsMain MODEL ID Receives MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE   { AddMachine(P_Root.UserCnstKind.MODEL, $3.str, ToSpan(@3), ToSpan(@1));   }
 	;
 	
+Receives
+	: RECEIVES NonDefaultEventList           { crntReceivesList.AddRange(crntEventList); crntEventList.Clear(); }
+	|
+	;
+
+	/***************** Monitor Declaration *********************/
+MonitorDecl
+	: MONITOR ID ObservesList MachAnnotOrNone LCBRACE MachineBody RCBRACE			   { AddMachine(P_Root.UserCnstKind.MONITOR, $2.str, ToSpan(@2), ToSpan(@1)); }
+	;
+
 ObservesList
-	: MONITORS EventList { crntObservesList.AddRange(crntEventList); crntEventList.Clear(); }
+	: OBSERVES NonDefaultEventList { crntObservesList.AddRange(crntEventList); crntEventList.Clear(); }
 	;
 
 IsMain

@@ -289,6 +289,7 @@ namespace Microsoft.Pc
         }
 
         public Dictionary<string, EventInfo> allEvents;
+        public Dictionary<string, List<string>> allInterfaces;
         public Dictionary<string, MachineInfo> allMachines;
         public Dictionary<string, FunInfo> allStaticFuns;
         public string mainMachineName;
@@ -363,6 +364,7 @@ namespace Microsoft.Pc
             }
 
             allEvents = new Dictionary<string, EventInfo>();
+            allInterfaces = new Dictionary<string, List<string>>();
             allEvents[HaltEvent] = new EventInfo(1, false, PTypeNull.Node);
             allEvents[NullEvent] = new EventInfo(1, false, PTypeNull.Node);
             allMachines = new Dictionary<string, MachineInfo>();
@@ -434,6 +436,28 @@ namespace Microsoft.Pc
                     var machineName = GetName(machineDecl, 0);
                     it.MoveNext();
                     allMachines[machineName].observesEvents.Add(((Cnst)it.Current).GetStringValue());
+                }
+            }
+
+            terms = GetBin(factBins, "InterfaceTypeEventsDecl");
+            foreach (var term in terms.Select(x => x.Item2))
+            {
+                using (var it = term.Node.Args.GetEnumerator())
+                {
+                    it.MoveNext();
+                    var interfaceName = GetName(((FuncTerm)it.Current), 0);
+                    it.MoveNext();
+                    var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
+                    it.MoveNext();
+                    if (allInterfaces.ContainsKey(interfaceName))
+                    {
+                        allInterfaces[interfaceName].Add(eventName);
+                    }
+                    else
+                    {
+                        allInterfaces[interfaceName] = new List<string>();
+                        allInterfaces[interfaceName].Add(eventName);
+                    }
                 }
             }
 
@@ -1356,6 +1380,11 @@ namespace Microsoft.Pc
             return string.Format("{0}_observes", machineName);
         }
 
+        private string GetInterfaceSetName(string interfaceName)
+        {
+            return string.Format("{0}_interface", interfaceName);
+        }
+
         private string GetFairChoice(string entityName, int i)
         {
             return string.Format("FairChoice_{0}_{1}", entityName, i);
@@ -1385,6 +1414,12 @@ namespace Microsoft.Pc
                 if (!allMachines[machineName].IsMonitor) continue;
                 fields.Add(MkZingVarDecl(GetMonitorMachineName(machineName), Factory.Instance.MkCnst(ZingMachineClassName(machineName)), ZingData.Cnst_Static));
                 fields.Add(MkZingVarDecl(GetObservesSetName(machineName), Factory.Instance.MkCnst(PToZing.SM_EVENT_SET), ZingData.Cnst_Static));
+            }
+
+            //declare the interface sets
+            foreach (var inter in allInterfaces)
+            {
+                fields.Add(MkZingVarDecl(GetInterfaceSetName(inter.Key), Factory.Instance.MkCnst(PToZing.SM_EVENT_SET), ZingData.Cnst_Static));
             }
 
             List<AST<Node>> methods = new List<AST<Node>>();
@@ -1552,6 +1587,17 @@ namespace Microsoft.Pc
                 }
                 runBodyStmts.Add(livenessStmt);
             }
+
+            //create the interface set for each interface-type
+            foreach (var inter in allInterfaces)
+            {
+                var interfaceSet = MkZingDot("Main", GetInterfaceSetName(inter.Key));
+                runBodyStmts.Add(MkZingAssign(interfaceSet, MkZingNew(SmEventSet, ZingData.Cnst_Nil)));
+                List<AST<Node>> stmts = new List<AST<Node>>();
+                AddEventSet(stmts, inter.Value, interfaceSet);
+                runBodyStmts.Add(MkZingSeq(stmts));
+            }
+
             foreach (var machineName in allMachines.Keys)
             {
                 if (!allMachines[machineName].IsMonitor) continue;
@@ -2745,9 +2791,9 @@ namespace Microsoft.Pc
             }
             else if (op == PData.Cnst_This.Node.Name)
             {
-                var machineType = PTypeReal;
+                var interfaceType = AddArgs(Factory.Instance.MkFuncTerm(Factory.Instance.MkId("InterfaceType")), Factory.Instance.MkCnst(ctxt.machineName));
                 var tmpVar = ctxt.GetTmpVar(PrtValue, "tmp");
-                ctxt.AddSideEffect(MkZingAssign(tmpVar, MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(machineType.Node))));
+                ctxt.AddSideEffect(MkZingAssign(tmpVar, MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(interfaceType.Node))));
                 ctxt.AddSideEffect(MkZingCallStmt(MkZingCall(MkZingDot(PRT_VALUE, "PrtPrimSetMachine"), tmpVar, MkZingIdentifier("myHandle"))));
                 retVal = tmpVar;
             }
@@ -3134,6 +3180,7 @@ namespace Microsoft.Pc
             {
                 it.MoveNext();
                 var targetExpr = MkZingDot(it.Current.node, "mach");
+                var targetInterface = MkZingDot(it.Current.node, "type", "interfaceSet");
                 it.MoveNext();
                 var eventExpr = MkZingDot(it.Current.node, "ev");
                 it.MoveNext();
@@ -3148,6 +3195,10 @@ namespace Microsoft.Pc
                 {
                     ctxt.AddSideEffect(MkZingAssignWithClone(tmpVar, payloadExpr));
                 }
+
+                //dynamic assertions with respect to module system
+                ctxt.AddSideEffect(MkZingAssert(MkZingIn(eventExpr, targetInterface), "Sent event is not in the target interface"));
+
                 var afterLabel = ctxt.GetFreshLabel();
                 foreach (var machineName in allMachines.Keys)
                 {
@@ -3666,6 +3717,12 @@ namespace Microsoft.Pc
                 return retVal;
             }
 
+            private AST<FuncTerm> GetInterfaceSet(string interfaceName)
+            {
+                var retVal = MkZingDot("Main", string.Format("{0}_interface", interfaceName));
+                return retVal;
+            }
+
             private new AST<FuncTerm> GetType()
             {
                 var retVal = MkZingDot("Main", string.Format("type_{0}_PRT_TYPE", typeCount));
@@ -3789,7 +3846,7 @@ namespace Microsoft.Pc
                     AddTypeInitialization(MkZingAssign(seqType, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkSeqType"), innerType)));
                     return seqType;
                 }
-                else
+                else if(typeKind == "MapType")
                 {
                     // typeKind == "MapType"
                     var domType = PTypeToZingExpr((FuncTerm)GetArgByIndex(type, 0));
@@ -3797,6 +3854,14 @@ namespace Microsoft.Pc
                     var mapType = GetType();
                     AddTypeInitialization(MkZingAssign(mapType, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkMapType"), domType, codType)));
                     return mapType;
+                }
+                else
+                {
+                    //typeKind == "InterfaceType"
+                    var InterfaceType = GetType();
+                    var interfaceName = ((Cnst)GetArgByIndex(type, 0)).GetStringValue();
+                    AddTypeInitialization(MkZingAssign(InterfaceType, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkInterfaceType"), GetInterfaceSet(interfaceName))));
+                    return InterfaceType;
                 }
             }
         }

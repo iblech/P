@@ -319,6 +319,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	TypeDepNum  ::= (id: Natural, type: TypeExpr).
 
 	TypeDepNum(0, t) :- TranslatedTypeExpr(t), t : in.BaseType.
+	TypeDepNum(0, t) :- TranslatedTypeExpr(t), t : InterfaceType.
 	TypeDepNum(0, t) :- TranslatedTypeExpr(t), t : in.NameType. 
 	TypeDepNum(i, t) :- TranslatedTypeExpr(t), t = SeqType(t'), TypeDepNum(j, t'), i = j + 1.  
 	TypeDepNum(i, t) :- TranslatedTypeExpr(t), t = MapType(t', t''), TypeDepNum(j, t'), TypeDepNum(k, t''),  i = j + k + 1.  
@@ -348,6 +349,13 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 								typeName = strJoin("P_GEND_TYPE_", toString(m)),
                                 typeStruct = out.Init(Args(Ident(kind), Args(Init(Args(Ident("NULL"), NIL)), NIL))).						              
 	
+	//interface type
+	TypeConstant(t, m, defs) :- TypeId(m, t), TypeConstant(_, m - 1, before), t = InterfaceType(_), BaseType2Kind(REAL, kind),
+								              defs = out.Section(before, def),
+										          def = out.VarDef(NIL, NmdType(NIL, "PRT_TYPE"), typeName, typeStruct),
+								              typeName = strJoin("P_GEND_TYPE_", toString(m)),
+                              typeStruct = out.Init(Args(Ident(kind), Args(Ident("NULL"), NIL))).
+
 	//// Foreign types
 	TypeConstant(t, m, defs) :- TypeId(m, t), TypeConstant(_, m - 1, before), t = in.NameType(name), 
 								defs = out.Section(before, def),
