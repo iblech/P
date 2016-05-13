@@ -283,6 +283,7 @@ domain PStaticTyping extends PData
 	TypeExpansion(t, t) :- TypeExpansion(_, NmdTupType(_, t)), t : TypeExpr.
 
 	TypeExpansion(type, type)  :- AllTypeExprs(type), type = InterfaceType(_).
+	TypeExpansion(type, type)  :- MachineDecl(n, _, _, _, _), no InterfaceTypeEventsDecl(type, _), type = InterfaceType(n).
 	TypeExpansion(type, type)  :- TypeDef(typeName, NIL), no TypeDefError(typeName), type = NameType(typeName).
 	TypeExpansion(type, eType) :- TypeDef(typeName, typeExpr), typeExpr: TypeExpr, no TypeDefError(typeName), type = NameType(typeName), TypeExpansion(typeExpr, eType).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NameType(name), eType = InterfaceType(name), no TypeDef(name, _).
@@ -689,16 +690,16 @@ domain PStaticTyping extends PData
 
 	//// Rules for send.
     TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e = Send(_, _, NIL, _, _),                     ///// < send has NIL payload,
-	                                  TypeRel(BaseType(REAL), t1, SUB),                                    ///// < arg1 is a subtype of machine type,
+	                                  TypeRel(t1, BaseType(REAL), SUB), t1 != BaseType(NULL),              ///// < arg1 is a subtype of machine type,
 	                                  CommStmtPLType(c, e, plt), TypeRel(BaseType(NULL), plt, SUB).        ///// < arg2 event type contains null.
 
     TypeOf(c, e, NIL)              :- TypeOfArg3(c, e, t1, t2, t3), e : Send,                             ///// < send has non-NIL payload,             
-									  TypeRel(BaseType(REAL), t1, SUB),                                   ///// < arg1 is a subtype of machine type,
+									  TypeRel(t1, BaseType(REAL), SUB), t1 != BaseType(NULL),             ///// < arg1 is a subtype of machine type,
 	                                  CommStmtPLType(c, e, plt), TypeRel(t3, evt, SUB).                   ///// < and t3 is a subtype of plt.
 
 	//// Error rules for send.
 	[ rule_Classes = '"error, msg: argument 1 of "send" expects a machine or interface type value"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Send, TypeRel(BaseType(REAL), t1, k), k != SUB.
+    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Send, toSymbol(t1) != #InterfaceType, t1 != BaseType(REAL).
 
 	[ rule_Classes = '"error, msg: argument 2 of "send" expects an event value"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Send(_, e2, _, _, _), TypeOf(c, e2, t2), t2 != BaseType(EVENT).
@@ -1227,16 +1228,21 @@ domain PStaticTyping extends PData
     NullBase    ::= (TypeExpr).
 	NullBase(type) :- type = BaseType(EVENT).
 	NullBase(type) :- type = BaseType(REAL). 
-	NullBase(type) :- AllTypeExprs(type), type = InterfaceType(_).
 	   
     TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), NullBase(s), NonNullBase(t).
     TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), NullBase(s), NonNullBase(t).
     
-    TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), NullBase(s), toSymbol(t) != #BaseType.
-    TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), NullBase(s), toSymbol(t) != #BaseType.
+    TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), NullBase(s), toSymbol(t) != #BaseType, toSymbol(t) != #InterfaceType.
+    TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), NullBase(s), toSymbol(t) != #BaseType, toSymbol(t) != #InterfaceType.
           
     TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), NullBase(s), NullBase(t), s != t.
     TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), NullBase(s), NullBase(t), s != t.
+
+	//Interface Type has empty intersection with all the types except themselves, ANY, REAL and NULL
+	TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s : InterfaceType, t = BaseType(kt), kt != ANY, kt != NULL, kt != REAL.
+    TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s : InterfaceType, t = BaseType(kt), kt != ANY, kt != NULL, kt != REAL.
+	TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s : InterfaceType, toSymbol(t) != #BaseType, toSymbol(t) != #InterfaceType.
+    TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s : InterfaceType, toSymbol(t) != #BaseType, toSymbol(t) != #InterfaceType.
 
     // Complex types have empty intersections with all differing type kinds, except ANY.
     TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s : ComplexType, toSymbol(s) != toSymbol(t), t != BaseType(ANY).
@@ -1337,8 +1343,17 @@ domain PStaticTyping extends PData
 
 	TypeRel(s, t, SUB) :- CompTypeRel(s, t), s : InterfaceType, t : InterfaceType, s != t, SubtypeRelInterfaces(t, s).
 	TypeRel(t, s, SUP) :- CompTypeRel(t, s), s : InterfaceType, t : InterfaceType, s != t, SubtypeRelInterfaces(t, s).
-	//TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), t : InterfaceType, s : InterfaceType, s != t, NotSubtypeRelInterfaces(s, t).
-	//TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), t : InterfaceType, s : InterfaceType, s != t, NotSubtypeRelInterfaces(s, t).
+	TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), t : InterfaceType, s : InterfaceType, s != t, NotSubtypeRelInterfaces(s, t).
+	TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), t : InterfaceType, s : InterfaceType, s != t, NotSubtypeRelInterfaces(s, t).
+
+	//Interface type is a supertype of NULL
+	TypeRel(s, t, SUB) :- CompTypeRel(s, t), t : InterfaceType, s = BaseType(NULL).
+	TypeRel(t, s, SUP) :- CompTypeRel(t, s), t : InterfaceType, s = BaseType(NULL).
+
+	//Interface type is a subtype of ANY
+	TypeRel(s, t, SUB) :- CompTypeRel(s, t), s : InterfaceType, t = BaseType(ANY).
+	TypeRel(t, s, SUP) :- CompTypeRel(t, s), s : InterfaceType, t = BaseType(ANY).
+
 
     // Sequences are subtype related if their inner types are subtype related.
     TypeRel(s, t, SUB)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUB). 

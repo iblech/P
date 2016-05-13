@@ -1552,6 +1552,19 @@ namespace Microsoft.Pc
                 var assignStmt = MkZingAssign(MkZingIdentifier(string.Format("{0}_instance", machineName)), Factory.Instance.MkCnst(0));
                 runBodyStmts.Add(assignStmt);
             }
+
+
+            //create the interface set for each interface-type
+            foreach (var inter in allInterfaces)
+            {
+                var interfaceSet = MkZingDot("Main", GetInterfaceSetName(inter.Key));
+                runBodyStmts.Add(MkZingAssign(interfaceSet, MkZingNew(SmEventSet, ZingData.Cnst_Nil)));
+                List<AST<Node>> stmts = new List<AST<Node>>();
+                AddEventSet(stmts, inter.Value, interfaceSet);
+                runBodyStmts.Add(MkZingSeq(stmts));
+            }
+
+
             runBodyStmts.Add(typeContext.InitializeFieldNamesAndTypes());
             runBodyStmts.Add(MkZingAssign(MkZingIdentifier("nullValue"), MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(PTypeNull.Node))));
 
@@ -1586,16 +1599,6 @@ namespace Microsoft.Pc
                     count++;
                 }
                 runBodyStmts.Add(livenessStmt);
-            }
-
-            //create the interface set for each interface-type
-            foreach (var inter in allInterfaces)
-            {
-                var interfaceSet = MkZingDot("Main", GetInterfaceSetName(inter.Key));
-                runBodyStmts.Add(MkZingAssign(interfaceSet, MkZingNew(SmEventSet, ZingData.Cnst_Nil)));
-                List<AST<Node>> stmts = new List<AST<Node>>();
-                AddEventSet(stmts, inter.Value, interfaceSet);
-                runBodyStmts.Add(MkZingSeq(stmts));
             }
 
             foreach (var machineName in allMachines.Keys)

@@ -23,7 +23,8 @@ receives eCloseDoor, eOpenDoor, eDoorOpened, eTimerFired, eStopTimerReturned, eD
 		 eObjectDetected, eDoorStopped, eOperationSuccess, eOperationFailure
 
 {
-    var TimerV, DoorV: machine;
+    var TimerV : Timer;
+    var DoorV: machine;
 
     start state Init {
         entry {
