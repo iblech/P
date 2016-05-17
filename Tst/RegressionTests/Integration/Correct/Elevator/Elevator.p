@@ -21,7 +21,7 @@ event eObjectEncountered assert 1;
 machine Elevator 
 receives eCloseDoor, eOpenDoor, eDoorOpened, eTimerFired, eStopTimerReturned, eDoorClosed,
 		 eObjectDetected, eDoorStopped, eOperationSuccess, eOperationFailure;
-sends eSendCommandToResetDoor, eSendCommandToOpenDoor, eStartDoorCloseTimer, eStopDoorCloseTimer, eSendCommandToCloseDoor;
+sends eSendCommandToResetDoor, eSendCommandToOpenDoor, eStartDoorCloseTimer, eStopDoorCloseTimer, eSendCommandToCloseDoor, eSendCommandToStopDoor;
 
 {
     var TimerV : Timer;
