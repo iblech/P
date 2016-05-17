@@ -1,9 +1,11 @@
 type StringType;
 
-event sendback : (machine, any);
+event sendback : (TestMachine, any);
 event getback : any;
 
 main machine TestMachine
+receives getback;
+sends sendback;
 {
 	var someStringV : StringType;
 	var fMachine: machine;
@@ -28,7 +30,10 @@ main machine TestMachine
 
 }
 
-machine ForwardingMachine {
+machine ForwardingMachine 
+receives sendback;
+sends getback;
+{
 	start state Init {
 		on sendback do (payload : (machine, any))
 		{

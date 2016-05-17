@@ -9,7 +9,10 @@ static fun CreateNode(container: machine) : machine
 	return newMachine;
 } 
 
-main machine Driver {
+main machine Driver 
+receives NODE_DOWN;
+sends halt, REGISTER_CLIENT;
+{
     var fd: machine;
 	var nodeseq: seq[machine];
     var nodemap: map[machine, bool];
@@ -60,6 +63,7 @@ monitor Safety observes M_PING, M_PONG {
 
 event L_INIT: map[machine, bool];
 
+/*
 monitor Liveness observes NODE_DOWN {
 	var nodes: map[machine, bool];
 	start hot state Init {
@@ -76,3 +80,4 @@ monitor Liveness observes NODE_DOWN {
 	state Done {
 	}
 }
+*/

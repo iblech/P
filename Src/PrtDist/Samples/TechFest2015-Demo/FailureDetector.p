@@ -9,7 +9,10 @@ event UNREGISTER_CLIENT: machine;
 event NODE_DOWN: machine;
 event TIMER_CANCELED;
 
-machine FailureDetector {
+machine FailureDetector 
+receives REGISTER_CLIENT, UNREGISTER_CLIENT, PONG, TIMEOUT, ROUND_DONE, CANCEL_FAILURE, CANCEL_SUCCESS;
+sends CANCEL, PING, NODE_DOWN, START;
+{
 	var nodes: seq[machine];
     var clients: map[machine, bool];
 	var attempts: int;
@@ -105,7 +108,10 @@ machine FailureDetector {
 	 }
 }
 
-machine Node {
+machine Node 
+receives PING, halt;
+sends PONG;
+{
 	start state WaitPing {
         on PING do (payload: machine) {
 			monitor M_PONG, this;

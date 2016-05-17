@@ -12,6 +12,8 @@ static model fun PrintTime() {
 }
 
 main machine Server
+receives req, halt;
+sends resp;
 {
 	var cl: machine;
 	var randomTup : TUP;
@@ -32,12 +34,14 @@ main machine Server
 }
 
 machine Client
+receives resp, TIMEOUT;
+sends req, START, halt;
 {
 	var sr: machine;
 	var tmr: machine;
 	var counter: int;
 	start state Init{
-		entry (arg: machine){
+		entry (arg: Server){
 			sr = arg;
 			tmr = new Timer(this);
 			counter = 0;

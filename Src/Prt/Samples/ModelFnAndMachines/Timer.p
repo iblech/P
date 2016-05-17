@@ -5,7 +5,10 @@ event TIMEOUT: machine;
 
 // local event for control transfer within timer
 event UNIT; 
-model Timer {
+model Timer 
+receives START;
+sends TIMEOUT;
+{
   var client: machine;
   start state Init {
     entry (arg: machine){
