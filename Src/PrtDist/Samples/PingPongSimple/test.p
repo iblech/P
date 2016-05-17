@@ -5,7 +5,10 @@ event PING assert 1: machine;
 event PONG assert 1; 
 event SUCCESS;
 
-main machine Client {
+main machine Client 
+receives PONG;
+sends PING;
+{
   var server: machine;
   start state Init { 
     entry { 
@@ -27,7 +30,10 @@ main machine Client {
   }
 }
 
-machine Server { 
+machine Server 
+receives PING, TIMEOUT;
+sends PONG, START;
+{ 
   var timer: machine;
   var client: machine;
 
@@ -59,7 +65,7 @@ machine Server {
 event M_PING: machine;
 event M_PONG: machine;
 
-spec Safety monitors M_PING, M_PONG { 
+monitor Safety observes M_PING, M_PONG { 
     var pending: map[machine, int];
     start state Init { 
         on M_PING do (payload: machine) { 

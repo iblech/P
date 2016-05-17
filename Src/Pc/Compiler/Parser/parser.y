@@ -21,7 +21,7 @@
 %token TRUE FALSE
 
 %token INTERFACE
-%token RECEIVES
+%token RECEIVES SENDS
 
 %token SWAP, XFER
 
@@ -124,15 +124,19 @@ InterfaceDecl
 
 	/******************* Machine Declarations *******************/
 MachineDecl
-	: IsMain MACHINE ID Receives MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE { AddMachine(P_Root.UserCnstKind.REAL, $3.str, ToSpan(@3), ToSpan(@1));    }
-	| IsMain MODEL ID Receives MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE   { AddMachine(P_Root.UserCnstKind.MODEL, $3.str, ToSpan(@3), ToSpan(@1));   }
+	: IsMain MACHINE ID Receives Sends MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE { AddMachine(P_Root.UserCnstKind.REAL, $3.str, ToSpan(@3), ToSpan(@1));    }
+	| IsMain MODEL ID Receives Sends MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE   { AddMachine(P_Root.UserCnstKind.MODEL, $3.str, ToSpan(@3), ToSpan(@1));   }
 	;
 	
 Receives
-	: RECEIVES NonDefaultEventList           { crntReceivesList.AddRange(crntEventList); crntEventList.Clear(); }
+	: RECEIVES NonDefaultEventList SEMICOLON         { crntReceivesList.AddRange(crntEventList); crntEventList.Clear(); }
 	|
 	;
 
+Sends
+	: SENDS NonDefaultEventList SEMICOLON			{ crntSendsList.AddRange(crntEventList); crntEventList.Clear();}
+	|
+	;
 	/***************** Monitor Declaration *********************/
 MonitorDecl
 	: MONITOR ID ObservesList MachAnnotOrNone LCBRACE MachineBody RCBRACE			   { AddMachine(P_Root.UserCnstKind.MONITOR, $2.str, ToSpan(@2), ToSpan(@1)); }

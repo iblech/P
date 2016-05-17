@@ -40,6 +40,7 @@
 
         private List<P_Root.EventLabel> crntObservesList = new List<P_Root.EventLabel>();
         private List<P_Root.EventLabel> crntReceivesList = new List<P_Root.EventLabel>();
+        private List<P_Root.EventLabel> crntSendsList = new List<P_Root.EventLabel>();
 
         private HashSet<string> crntStateNames = new HashSet<string>();
         private HashSet<string> crntFunNames = new HashSet<string>();
@@ -1788,6 +1789,15 @@
                     parseProgram.InterfaceEventsDecl.Add(itDecl);
                 }
                 crntReceivesList.Clear();
+
+                foreach (var e in crntSendsList)
+                {
+                    //add receives
+                    var send = P_Root.MkMachineSendsDecl(machDecl, (P_Root.IArgType_MachineSendsDecl__1)e);
+                    send.Span = e.Span;
+                    parseProgram.MachineSendsDecl.Add(send);
+                }
+                crntSendsList.Clear();
             }
             parseProgram.Machines.Add(machDecl);
             if (crntMachineNames.Contains(name))
@@ -2091,6 +2101,7 @@
             crntMachineNames.Clear();
             crntObservesList.Clear();
             crntReceivesList.Clear();
+            crntSendsList.Clear();
         }
         #endregion
     }

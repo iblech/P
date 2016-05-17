@@ -7,6 +7,8 @@ event M_Pong;
 include "PrtDistHelp.p" 
 
 machine PING 
+receives Pong;
+sends Ping;
 {
     var pongMachine: (machine,machine);
 
@@ -41,6 +43,8 @@ machine PING
 }
 
 machine PONG
+receives Ping;
+sends Pong;
 {
     start state Init {
         on Ping goto SendPong;
@@ -63,7 +67,7 @@ machine PONG
 }
 
 
-spec M monitors M_Ping, M_Pong {
+monitor M observes M_Ping, M_Pong {
     start state ExpectPing {
         on M_Ping goto ExpectPong_1;
     }

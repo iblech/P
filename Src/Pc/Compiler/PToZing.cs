@@ -209,6 +209,7 @@ namespace Microsoft.Pc
         public Dictionary<string, StateInfo> stateNameToStateInfo;
         public Dictionary<string, VariableInfo> localVariableToVarInfo;
         public List<string> observesEvents;
+        public List<string> sendsEvents;
         public Dictionary<string, FunInfo> funNameToFunInfo;
         public MonitorType monitorType;
 
@@ -221,6 +222,7 @@ namespace Microsoft.Pc
             stateNameToStateInfo = new Dictionary<string, StateInfo>();
             localVariableToVarInfo = new Dictionary<string, VariableInfo>();
             observesEvents = new List<string>();
+            sendsEvents = new List<string>();
             funNameToFunInfo = new Dictionary<string, FunInfo>();
             monitorType = MonitorType.SAFETY;
             funNameToFunInfo["ignore"] = new FunInfo(null, false, null, PToZing.PTypeNull, null, Factory.Instance.AddArg(Factory.Instance.MkFuncTerm(PData.Con_NulStmt), PData.Cnst_Skip).Node);
@@ -435,7 +437,22 @@ namespace Microsoft.Pc
                     var machineDecl = (FuncTerm)it.Current;
                     var machineName = GetName(machineDecl, 0);
                     it.MoveNext();
-                    allMachines[machineName].observesEvents.Add(((Cnst)it.Current).GetStringValue());
+                    var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
+                    allMachines[machineName].observesEvents.Add(eventName);
+                }
+            }
+
+            terms = GetBin(factBins, "MachineSendsDecl");
+            foreach (var term in terms.Select(x => x.Item2))
+            {
+                using (var it = term.Node.Args.GetEnumerator())
+                {
+                    it.MoveNext();
+                    var machineDecl = (FuncTerm)it.Current;
+                    var machineName = GetName(machineDecl, 0);
+                    it.MoveNext();
+                    var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
+                    allMachines[machineName].sendsEvents.Add(eventName);
                 }
             }
 
@@ -1380,6 +1397,11 @@ namespace Microsoft.Pc
             return string.Format("{0}_observes", machineName);
         }
 
+        private string GetSendsSetName(string machineName)
+        {
+            return string.Format("{0}_sends", machineName);
+        }
+
         private string GetInterfaceSetName(string interfaceName)
         {
             return string.Format("{0}_interface", interfaceName);
@@ -1420,6 +1442,13 @@ namespace Microsoft.Pc
             foreach (var inter in allInterfaces)
             {
                 fields.Add(MkZingVarDecl(GetInterfaceSetName(inter.Key), Factory.Instance.MkCnst(PToZing.SM_EVENT_SET), ZingData.Cnst_Static));
+            }
+
+            //declare the sends sets
+            foreach (var machineName in allMachines.Keys)
+            {
+                if(!allMachines[machineName].IsMonitor)
+                    fields.Add(MkZingVarDecl(GetSendsSetName(machineName), Factory.Instance.MkCnst(PToZing.SM_EVENT_SET), ZingData.Cnst_Static));
             }
 
             List<AST<Node>> methods = new List<AST<Node>>();
@@ -1564,6 +1593,17 @@ namespace Microsoft.Pc
                 runBodyStmts.Add(MkZingSeq(stmts));
             }
 
+            //create the sends set for each machine
+            foreach (var machineName in allMachines.Keys)
+            {
+                if (allMachines[machineName].IsMonitor)
+                    continue;
+                var sendsSet = MkZingDot("Main", GetSendsSetName(machineName));
+                runBodyStmts.Add(MkZingAssign(sendsSet, MkZingNew(SmEventSet, ZingData.Cnst_Nil)));
+                List<AST<Node>> stmts = new List<AST<Node>>();
+                AddEventSet(stmts, allMachines[machineName].sendsEvents, sendsSet);
+                runBodyStmts.Add(MkZingSeq(stmts));
+            }
 
             runBodyStmts.Add(typeContext.InitializeFieldNamesAndTypes());
             runBodyStmts.Add(MkZingAssign(MkZingIdentifier("nullValue"), MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(PTypeNull.Node))));
@@ -3199,7 +3239,7 @@ namespace Microsoft.Pc
                     ctxt.AddSideEffect(MkZingAssignWithClone(tmpVar, payloadExpr));
                 }
 
-                //dynamic assertions with respect to module system
+                //dynamic assertions e belongs to the target interface
                 ctxt.AddSideEffect(MkZingAssert(MkZingIn(eventExpr, targetInterface), "Sent event is not in the target interface"));
 
                 var afterLabel = ctxt.GetFreshLabel();
@@ -3625,6 +3665,7 @@ namespace Microsoft.Pc
                     MkInitializers(machineName, objectName),
                     MkZingAssign(MkZingDot(objectName, "myHandle"),
                                  MkZingCall(MkZingDot("SM_HANDLE", "Construct"), MkZingDot("Machine", string.Format("_{0}", machineName)), machineInstance, Factory.Instance.MkCnst(allMachines[machineName].maxQueueSize))),
+                    MkZingAssign(MkZingDot(objectName, "myHandle", "machineSendsSet"), MkZingDot("Main", GetSendsSetName(machineName))),
                     MkZingAssign(MkZingDot("SM_HANDLE", "enabled"), MkZingAdd(MkZingDot("SM_HANDLE", "enabled"), MkZingDot(objectName, "myHandle"))),
                     MkZingTrace(string.Format("<CreateLog> Created Machine {0}-{{0}}\\n", machineName), machineInstance),
                     MkZingAssign(MkZingDot(objectName, "myHandle", "currentArg"), MkZingIdentifier("arg")),

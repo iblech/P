@@ -115,6 +115,7 @@
 			 //related to module system
 			 keywords.Add("interface", (int)Tokens.INTERFACE);
 			 keywords.Add("receives", (int)Tokens.RECEIVES);
+			 keywords.Add("sends", (int)Tokens.SENDS);
 		 }
 
          int GetIdToken(string txt)

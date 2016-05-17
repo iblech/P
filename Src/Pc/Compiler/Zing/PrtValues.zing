@@ -252,7 +252,7 @@ class PRT_VALUE {
 
 				return true;
 			}
-			else if (isNullValue || tkind == PRT_TYPE_KIND.PRT_KIND_REAL)
+			else if (isNullValue)
 			{
 				return true;
 			}
@@ -269,7 +269,7 @@ class PRT_VALUE {
 			return (vkind == PRT_TYPE_KIND.PRT_KIND_EVENT || isNullValue);
 
 		if (tkind == PRT_TYPE_KIND.PRT_KIND_REAL)
-			return (vkind == PRT_TYPE_KIND.PRT_KIND_REAL || isNullValue);
+			return (vkind == PRT_TYPE_KIND.PRT_KIND_REAL || isNullValue || vkind == PRT_TYPE_KIND.PRT_KIND_INTERFACE);
 
 		if (tkind == PRT_TYPE_KIND.PRT_KIND_INT)
 			return vkind == PRT_TYPE_KIND.PRT_KIND_INT;

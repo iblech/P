@@ -106,6 +106,7 @@ class SM_HANDLE {
 	SM_EVENT currentEvent;
     PRT_VALUE currentArg;
 	SM_EVENT_SET receiveSet;
+	SM_EVENT_SET machineSendsSet;
 
     static SM_HANDLE Construct(Machine mName, int inst, int maxBSize) {
     	SM_HANDLE handle;
@@ -122,6 +123,7 @@ class SM_HANDLE {
 		prtType = PRT_TYPE.PrtMkPrimitiveType(PRT_TYPE_KIND.PRT_KIND_NULL);
 		handle.currentArg = PRT_VALUE.PrtMkDefaultValue(prtType);
 		handle.receiveSet = new SM_EVENT_SET;
+		handle.machineSendsSet = new SM_EVENT_SET;
 		return handle;
     }
 
@@ -140,6 +142,12 @@ class SM_HANDLE {
         bool b;
 		bool isEnabled;
 		PRT_TYPE prtType;
+		//module system: assert that event sent is in the sends set of the machine
+		if(!(e in source.machineSendsSet))
+		{
+			trace("<EXCEPTION> Event {0} not in the sends set of machine {1}", e.name, source.machineName);
+			assert(false);
+		}
     	assert(e != null, "Enqueued event must be non-null");
 		//assertion to check if argument passed inhabits the payload type.
 		prtType = Main.PayloadOf(e);

@@ -74,6 +74,7 @@ domain PData
 	////Interface type events
 	InterfaceTypeEventsDecl ::= new (it: any InterfaceType, ev: NonNullEventLabel).
 	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
+	MachineSendsDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 
     /*************************************************************/
     /****************  State Machine Declarations    *************/
@@ -82,7 +83,7 @@ domain PData
     EventDecl      ::= fun (name: String -> card: any QueueConstraint, type: any TypeExpr + { NIL }).    
     MachineDecl    ::= fun (name: String -> kind: { REAL, MODEL, MONITOR }, card: any QueueConstraint, start: any QualifiedName, isMain: Boolean).
 
-	ObservesDecl   ::= new (monitor: MachineDecl, ev: String).
+	ObservesDecl   ::= new (monitor: MachineDecl, ev: NonNullEventLabel).
 
     VarDecl        ::= fun (name: String, owner: MachineDecl -> type: any TypeExpr).
     
@@ -99,7 +100,7 @@ domain PData
     DoDecl         ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> action: any { DEFER, IGNORE } + AnonFunDecl + String).
 
     PDecl          ::= EventDecl + MachineDecl + VarDecl + AnonFunDecl + FunDecl + StateDecl + TransDecl + DoDecl + ObservesDecl 
-						+ InterfaceTypeEventsDecl + MachineReceivesDecl.            
+						+ InterfaceTypeEventsDecl + MachineReceivesDecl + MachineSendsDecl.            
 
     AssumeMaxInstances ::= new (bound: Natural).
     AssertMaxInstances ::= new (bound: Natural).
@@ -222,6 +223,10 @@ domain PStructuralTyping extends PData
 	//event in receives of a machine
 	[rule_Classes = '"error, msg: event in receives is not declared"']
 	OneDeclError(receivesE) :- receivesE is MachineReceivesDecl(_, ev), no EventDecl(ev, _, _), ev!= HALT.
+
+	//event in sends of a machine
+	[rule_Classes = '"error, msg: event in sends is not declared"']
+	OneDeclError(s) :- s is MachineSendsDecl(_, ev), no EventDecl(ev, _, _), ev!= HALT.
 }
 
 domain PStaticTyping extends PData
@@ -283,7 +288,6 @@ domain PStaticTyping extends PData
 	TypeExpansion(t, t) :- TypeExpansion(_, NmdTupType(_, t)), t : TypeExpr.
 
 	TypeExpansion(type, type)  :- AllTypeExprs(type), type = InterfaceType(_).
-	TypeExpansion(type, type)  :- MachineDecl(n, _, _, _, _), no InterfaceTypeEventsDecl(type, _), type = InterfaceType(n).
 	TypeExpansion(type, type)  :- TypeDef(typeName, NIL), no TypeDefError(typeName), type = NameType(typeName).
 	TypeExpansion(type, eType) :- TypeDef(typeName, typeExpr), typeExpr: TypeExpr, no TypeDefError(typeName), type = NameType(typeName), TypeExpansion(typeExpr, eType).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NameType(name), eType = InterfaceType(name), no TypeDef(name, _).
