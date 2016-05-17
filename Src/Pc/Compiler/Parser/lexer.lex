@@ -65,7 +65,8 @@
 			 keywords.Add("assert", (int)Tokens.ASSERT);
 			 keywords.Add("print", (int)Tokens.PRINT);
 			 keywords.Add("send", (int)Tokens.SEND);
-			 keywords.Add("monitor", (int)Tokens.MONITOR);
+			 keywords.Add("spec", (int)Tokens.SPEC);
+			 keywords.Add("announce", (int)Tokens.ANNOUNCE);
 			 keywords.Add("observes", (int)Tokens.OBSERVES);
 			 keywords.Add("raise", (int)Tokens.RAISE);
 			 keywords.Add("halt", (int)Tokens.HALT);

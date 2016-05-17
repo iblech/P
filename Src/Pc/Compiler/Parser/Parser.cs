@@ -505,12 +505,12 @@
             stmtStack.Push(sendStmt);
         }
 
-        private void PushMonitor(bool hasArgs, string name, Span nameSpan, Span span)
+        private void PushAnnounce(bool hasArgs, string name, Span nameSpan, Span span)
         {
             Contract.Assert(!hasArgs || exprsStack.Count > 0);
             Contract.Assert(valueExprStack.Count > 0);
 
-            var monitorStmt = P_Root.MkMonitor();
+            var monitorStmt = P_Root.MkAnnounce();
             monitorStmt.Span = span;
             monitorStmt.info = MkSourceInfo(span);
             if (hasArgs)
@@ -523,14 +523,14 @@
                 }
                 else
                 {
-                    monitorStmt.arg = (P_Root.IArgType_Monitor__1)arg;
+                    monitorStmt.arg = (P_Root.IArgType_Announce__1)arg;
                 }
 
-                monitorStmt.ev = (P_Root.IArgType_Monitor__0)valueExprStack.Pop();
+                monitorStmt.ev = (P_Root.IArgType_Announce__0)valueExprStack.Pop();
             }
             else
             {
-                monitorStmt.ev = (P_Root.IArgType_Monitor__0)valueExprStack.Pop();
+                monitorStmt.ev = (P_Root.IArgType_Announce__0)valueExprStack.Pop();
                 monitorStmt.arg = MkUserCnst(P_Root.UserCnstKind.NIL, span);
             }
 

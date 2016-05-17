@@ -9,13 +9,13 @@
 }
 
 %token INT BOOL ANY SEQ MAP ID
-%token TYPE INCLUDE MAIN EVENT MACHINE MONITOR ASSUME MONITOR
+%token TYPE INCLUDE MAIN EVENT MACHINE ASSUME SPEC
 
 %token VAR START HOT COLD MODEL STATE FUN ACTION GROUP STATIC MODELS OBSERVES
 
 %token ENTRY EXIT DEFER IGNORE GOTO ON DO PUSH AS WITH
 
-%token IF WHILE THIS NEW RETURN ID POP ASSERT PRINT CALL RAISE SEND DEFAULT FRESH HALT NULL RECEIVE CASE
+%token IF WHILE THIS NEW RETURN ID POP ASSERT PRINT CALL RAISE SEND DEFAULT FRESH HALT NULL RECEIVE CASE ANNOUNCE
 %token LPAREN RPAREN LCBRACE RCBRACE LBRACKET RBRACKET SIZEOF KEYS VALUES
 
 %token TRUE FALSE
@@ -139,7 +139,7 @@ Sends
 	;
 	/***************** Monitor Declaration *********************/
 MonitorDecl
-	: MONITOR ID ObservesList MachAnnotOrNone LCBRACE MachineBody RCBRACE			   { AddMachine(P_Root.UserCnstKind.MONITOR, $2.str, ToSpan(@2), ToSpan(@1)); }
+	: SPEC ID ObservesList MachAnnotOrNone LCBRACE MachineBody RCBRACE			   { AddMachine(P_Root.UserCnstKind.MONITOR, $2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
 ObservesList
@@ -385,8 +385,8 @@ Stmt
 	| RAISE Exp COMMA SingleExprArgList SEMICOLON             { PushRaise(true,  ToSpan(@1));                            }
 	| QualifierOrNone SEND Exp COMMA Exp SEMICOLON                            { PushSend(false, ToSpan(@1)); }
 	| QualifierOrNone SEND Exp COMMA Exp COMMA SingleExprArgList SEMICOLON    { PushSend(true,  ToSpan(@1)); }
-	| MONITOR Exp SEMICOLON									  { PushMonitor(false, $2.str, ToSpan(@2), ToSpan(@1));      }
-	| MONITOR Exp COMMA SingleExprArgList SEMICOLON           { PushMonitor(true, $2.str, ToSpan(@2), ToSpan(@1));       }
+	| ANNOUNCE Exp SEMICOLON									  { PushAnnounce(false, $2.str, ToSpan(@2), ToSpan(@1));      }
+	| ANNOUNCE Exp COMMA SingleExprArgList SEMICOLON			  { PushAnnounce(true, $2.str, ToSpan(@2), ToSpan(@1));       }
 	| ReceiveStmt LCBRACE CaseList RCBRACE						  { PushReceive(ToSpan(@1)); }
 	;
 

@@ -29,7 +29,7 @@ sends halt, REGISTER_CLIENT;
 				nodemap += (n, true);
 				i = i + 1;
 			}
-			monitor L_INIT, nodemap;
+			announce L_INIT, nodemap;
 			fd = new FailureDetector(nodeseq);
 			send fd, REGISTER_CLIENT, this;
 			i = 0;
@@ -44,7 +44,7 @@ sends halt, REGISTER_CLIENT;
 
 event M_PING: machine;
 event M_PONG: machine;
-monitor Safety observes M_PING, M_PONG {
+spec Safety observes M_PING, M_PONG {
 	var pending: map[machine, int];
     start state Init {
 	    on M_PING do (payload: machine) { 

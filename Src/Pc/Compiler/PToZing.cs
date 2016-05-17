@@ -2484,9 +2484,9 @@ namespace Microsoft.Pc
             {
                 return FoldSend(ft, children, ctxt);
             }
-            else if (funName == PData.Con_Monitor.Node.Name)
+            else if (funName == PData.Con_Announce.Node.Name)
             {
-                return FoldMonitor(ft, children, ctxt);
+                return FoldAnnounce(ft, children, ctxt);
             }
             else if (funName == PData.Con_FunStmt.Node.Name)
             {
@@ -3262,7 +3262,7 @@ namespace Microsoft.Pc
             }
         }
 
-        ZingTranslationInfo FoldMonitor(FuncTerm ft, IEnumerable<ZingTranslationInfo> children, ZingFoldContext ctxt)
+        ZingTranslationInfo FoldAnnounce(FuncTerm ft, IEnumerable<ZingTranslationInfo> children, ZingFoldContext ctxt)
         {
             using (var it = children.GetEnumerator())
             {
