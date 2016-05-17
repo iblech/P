@@ -4,7 +4,8 @@ event G: int;
 
 interface I E;
 main machine M
-receives F
+receives F, G;
+sends G;
 {
    var x: I;
    var y: int;
@@ -12,7 +13,7 @@ receives F
    {
       entry 
       {
-
+      	 send this, G, 10;
       }   
    }
 }
