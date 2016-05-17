@@ -478,6 +478,14 @@ namespace Microsoft.Pc
                 }
             }
 
+            //add machines with empty receive sets
+            foreach (var machineName in allMachines.Keys)
+            {
+                if (allInterfaces.ContainsKey(machineName))
+                    continue;
+                allInterfaces[machineName] = new List<string>();
+            }
+
             terms = GetBin(factBins, "VarDecl");
             foreach (var term in terms.Select(x => x.Item2))
             {

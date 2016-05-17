@@ -288,6 +288,7 @@ domain PStaticTyping extends PData
 	TypeExpansion(t, t) :- TypeExpansion(_, NmdTupType(_, t)), t : TypeExpr.
 
 	TypeExpansion(type, type)  :- AllTypeExprs(type), type = InterfaceType(_).
+	TypeExpansion(type, type) :- MachineDecl(n, _, _, _, _), no InterfaceTypeEventsDecl(type, _), type = InterfaceType(n).
 	TypeExpansion(type, type)  :- TypeDef(typeName, NIL), no TypeDefError(typeName), type = NameType(typeName).
 	TypeExpansion(type, eType) :- TypeDef(typeName, typeExpr), typeExpr: TypeExpr, no TypeDefError(typeName), type = NameType(typeName), TypeExpansion(typeExpr, eType).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NameType(name), eType = InterfaceType(name), no TypeDef(name, _).
@@ -353,8 +354,7 @@ domain PStaticTyping extends PData
 	
 	
 	// Type of THIS is the receive set implemented by the machine, machine type if the receive set is empty.
-    TypeOf(c, e, i)  :- SubSE(c, e), e = NulApp(THIS), i = InterfaceType(c.owner.name), MachineReceivesDecl(c.owner, _);
-						SubSE(c, e), e = NulApp(THIS), i = BaseType(NULL), no MachineReceivesDecl(c.owner, _).
+    TypeOf(c, e, i)  :- SubSE(c, e), e = NulApp(THIS), i = InterfaceType(c.owner.name).
 
     //THIS is not allowed in static functions
 	[ rule_Classes = '"error, msg: THIS is not allowed inside static functions"']
@@ -429,7 +429,7 @@ domain PStaticTyping extends PData
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k = EMPTY.
 
     TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), t = InterfaceType(n), InterfaceTypeEventsDecl(t, _);
-						 SubSE(c, e), e = New(n, _), t = BaseType(NULL), no InterfaceTypeEventsDecl(InterfaceType(n), _), MachineDecl(n, mt, _, _, _), mt != MONITOR.
+						 SubSE(c, e), e = New(n, _), t = InterfaceType(n), no InterfaceTypeEventsDecl(InterfaceType(n), _), MachineDecl(n, mt, _, _, _), mt != MONITOR.
 
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), MachineDecl(n, MONITOR, _, _, _).
