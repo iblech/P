@@ -1,0 +1,5 @@
+arg: ..\InterfaceType_4.p
+arg: /shortFileNames
+arg: /doNotErase
+arg: /outputDir:..\.
+dsc: pc.exe: 4. Dynamic type checking for interface types

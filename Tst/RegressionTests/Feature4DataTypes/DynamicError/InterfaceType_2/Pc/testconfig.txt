@@ -1,0 +1,5 @@
+arg: ..\InterfaceType_2.p
+arg: /shortFileNames
+arg: /doNotErase
+arg: /outputDir:..\.
+dsc: pc.exe: 4. "any" type in EQ and NE

@@ -1,0 +1,4 @@
+arg: -et:InterfaceType_2.trace
+inc: InterfaceType_2.trace
+del: InterfaceType_2.trace
+dsc: zinger.exe, event being sent is in sends set of the machine.

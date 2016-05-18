@@ -1,0 +1,4 @@
+arg: -et:InterfaceType_4.trace
+inc: InterfaceType_4.trace
+del: InterfaceType_4.trace
+dsc: zinger.exe, Dynamic type checking for interface types.
