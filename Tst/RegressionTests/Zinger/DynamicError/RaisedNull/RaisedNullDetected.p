@@ -15,7 +15,7 @@ main machine Real1 {
 			ev2 = E2;
             send mac, ev2, test;	 
 			raise ev1;   
-			monitor ev1; 
+			announce ev1; 
 				
         } 	
         on E1 do Action1;   

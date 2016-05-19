@@ -12,7 +12,7 @@ main machine Real1 {
     start state Real1_Init {
         entry { 
 			mac = new Real2(this);
-			monitor ev2, true;  //zing error (ev2 is nulll)
+			announce ev2, true;  //zing error (ev2 is nulll)
 			ev1 = E1;			
 			raise ev1;  		
         } 	

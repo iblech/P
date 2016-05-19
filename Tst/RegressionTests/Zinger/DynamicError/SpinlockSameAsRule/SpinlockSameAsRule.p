@@ -131,7 +131,7 @@ var mon, mon0, mon1: machine;
 			while ($) {
 				par = ChooseGuard();
 				ev = ChooseEvent();
-				monitor ev, par;
+				announce ev, par;
 			}
 			/************************/
 		}

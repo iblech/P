@@ -9,11 +9,11 @@ main machine Real1 {
     start state Real1_Init {
         entry { 
 			ev2 = E2;
-			monitor ev2, test;  
+			announce ev2, test;  
 		}
 	}
 }
-spec M monitors E2 {
+spec M observes E2 {
 	start state x {
 		entry {
 		}

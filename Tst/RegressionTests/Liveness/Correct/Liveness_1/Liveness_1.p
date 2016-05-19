@@ -12,7 +12,7 @@ main machine EventHandler
        start state WaitForUser
        {
             entry { 
-				monitor Waiting;
+				announce Waiting;
 				send this, UserEvent;
 				}
             on UserEvent goto HandleEvent;
@@ -21,14 +21,14 @@ main machine EventHandler
        state HandleEvent
        {
             entry { 
-				monitor Computing;
+				announce Computing;
 				send this, Done;
 				}			
             on Done goto WaitForUser;
        }
 }
 
-spec WatchDog monitors Waiting, Computing
+spec WatchDog observes Waiting, Computing
 {
       start cold state CanGetUserInput
       {
