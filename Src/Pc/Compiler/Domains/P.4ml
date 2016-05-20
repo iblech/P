@@ -1346,20 +1346,12 @@ domain PStaticTyping extends PData
 
 	//subtype relation between interface types
 	SubtypeRelInterfaces ::= (i1: InterfaceType, i2: InterfaceType).
-	SubtypeRelInterfaces(n1, n2) :- x is InterfaceTypeEventsDecl(n1, _), y is InterfaceTypeEventsDecl(n2, _), n1 != n2,
+	SubtypeRelInterfaces(n1, n2) :- InterfaceTypeEventsDecl(n1, _), InterfaceTypeEventsDecl(n2, _), n1 != n2,
 							  no { e1 | InterfaceTypeEventsDecl(n1, e1), no InterfaceTypeEventsDecl(n2, e1)},
 							  no { e2 | no InterfaceTypeEventsDecl(n1, e2), InterfaceTypeEventsDecl(n2, e2)}.
-	
-	NotSubtypeRelInterfaces ::= (i1: InterfaceType, i2: InterfaceType).
-	NotSubtypeRelInterfaces(n1, n2) :- x is InterfaceTypeEventsDecl(n1, _), y is InterfaceTypeEventsDecl(n2, _), n1 != n2,
-									   InterfaceTypeEventsDecl(n1, e1), no InterfaceTypeEventsDecl(n2, e1);
-									   x is InterfaceTypeEventsDecl(n1, _), y is InterfaceTypeEventsDecl(n2, _), n1 != n2,
-									   no InterfaceTypeEventsDecl(n1, e2), InterfaceTypeEventsDecl(n2, e2).
 
 	TypeRel(s, t, SUB) :- CompTypeRel(s, t), s : InterfaceType, t : InterfaceType, s != t, SubtypeRelInterfaces(t, s).
 	TypeRel(t, s, SUP) :- CompTypeRel(t, s), s : InterfaceType, t : InterfaceType, s != t, SubtypeRelInterfaces(t, s).
-	TypeRel(s, t, NONEMPTY) :- CompTypeRel(s, t), t : InterfaceType, s : InterfaceType, s != t, NotSubtypeRelInterfaces(s, t).
-	TypeRel(t, s, NONEMPTY) :- CompTypeRel(t, s), t : InterfaceType, s : InterfaceType, s != t, NotSubtypeRelInterfaces(s, t).
 
 	//Interface type is a supertype of NULL
 	TypeRel(s, t, SUB) :- CompTypeRel(s, t), t : InterfaceType, s = BaseType(NULL).
