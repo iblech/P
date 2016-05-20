@@ -40,6 +40,8 @@
 
         private List<P_Root.EventLabel> crntObservesList = new List<P_Root.EventLabel>();
         private List<P_Root.EventLabel> crntReceivesList = new List<P_Root.EventLabel>();
+        private bool isReceivesListAllEvents = false;
+        private bool isSendsListAllEvents = false;
         private List<P_Root.EventLabel> crntSendsList = new List<P_Root.EventLabel>();
 
         private HashSet<string> crntStateNames = new HashSet<string>();
@@ -1783,10 +1785,6 @@
                     var rec = P_Root.MkMachineReceivesDecl(machDecl, (P_Root.IArgType_MachineReceivesDecl__1)e);
                     rec.Span = e.Span;
                     parseProgram.MachineReceivesDecl.Add(rec);
-                    //create interface
-                    var itDecl = P_Root.MkInterfaceTypeEventsDecl(P_Root.MkInterfaceType(MkString(name, nameSpan)), (P_Root.IArgType_InterfaceTypeEventsDecl__1)e);
-                    itDecl.Span = e.Span;
-                    parseProgram.InterfaceEventsDecl.Add(itDecl);
                 }
                 crntReceivesList.Clear();
 
@@ -1798,6 +1796,20 @@
                     parseProgram.MachineSendsDecl.Add(send);
                 }
                 crntSendsList.Clear();
+
+                if(isReceivesListAllEvents)
+                {
+                    var rec = P_Root.MkMachineReceivesAllEvents(machDecl);
+                    parseProgram.MachineReceivesAllEvents.Add(rec);
+                    isReceivesListAllEvents = false;
+                }
+
+                if(isSendsListAllEvents)
+                {
+                    var send = P_Root.MkMachineSendsAllEvents(machDecl);
+                    parseProgram.MachineSendsAllEvents.Add(send);
+                    isSendsListAllEvents = false;
+                }
             }
             parseProgram.Machines.Add(machDecl);
             if (crntMachineNames.Contains(name))

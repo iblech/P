@@ -20,7 +20,7 @@ domain PData
     SeqType         ::= new (x: any TypeExpr).
     MapType         ::= new (k: any TypeExpr, v: any TypeExpr).
     NmdTupTypeField ::= new (qual: Qualifier, name: any String, type: any TypeExpr). 
-	InterfaceType	::= new (name: any String).
+	InterfaceType	::= new (name: String).
     TypeExpr        ::= NameType + BaseType + TupType + NmdTupType + SeqType + MapType + InterfaceType.
         
     /*************************************************************/
@@ -75,6 +75,8 @@ domain PData
 	InterfaceTypeEventsDecl ::= new (it: any InterfaceType, ev: NonNullEventLabel).
 	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 	MachineSendsDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
+	MachineReceivesAllEvents ::= new (mach: any MachineDecl).
+	MachineSendsAllEvents ::= new (mach: any MachineDecl).
 
     /*************************************************************/
     /****************  State Machine Declarations    *************/
@@ -344,6 +346,17 @@ domain PStaticTyping extends PData
     SubSE(c, e) :- SubSE(c, NamedExprs(_, e, _)).
 	SubSE(c, es) :- SubSE(c, NamedExprs(_, _, es)), es: NamedExprs.
 
+	/**************************************************************************/
+	/* Create all the Interfaces for machines with missing sends and receives */
+	/**************************************************************************/
+	MachineSendsDecl(m, s) :- MachineSendsAllEvents(m), EventDecl(s, _, _);
+							  MachineSendsAllEvents(m), s = HALT.
+	MachineReceivesDecl(m, r) :- MachineReceivesAllEvents(m), EventDecl(r, _, _);
+								 MachineReceivesAllEvents(m), r = HALT.
+	InterfaceTypeEventsDecl(i, e) :- MachineReceivesAllEvents(m), i = InterfaceType(m.name), EventDecl(e, _, _);
+									 MachineReceivesAllEvents(m), i = InterfaceType(m.name), e = HALT.
+	InterfaceTypeEventsDecl(i, e) :- m is MachineDecl, i = InterfaceType(m.name), MachineReceivesDecl(m, e).
+									 
     /*************************************************************/
     /*                      Types of Expressions                 */
     /*************************************************************/
@@ -713,11 +726,6 @@ domain PStaticTyping extends PData
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Send(_, _, NIL, _, _), null = BaseType(NULL),   ///// < send has NIL payload,
 	                                  CommStmtPLType(c, e, plt),                                  ///// < constant event expression
 									  TypeRel(null, plt, k), k != SUB, null != plt.               ///// < and null not in event type.
-
-    [ rule_Classes = '"error, msg: invalid payload type in send"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg3(c, e, t1, t2, t3), e : Send,                     ///// < p has non-NIL payload,             
-	                                  CommStmtPLType(c, e, plt),                                  ///// < constant event expression
-									  TypeRel(t3, plt, k), k != SUB, t3 != plt.                   ///// < and pt is not a subtype of plt.
 
 	//// Rules for Announce.
     TypeOf(c, e, NIL)              :- SubSE(c, e), e = Announce(_, NIL, _),                           ///// < Announce has NIL payload,

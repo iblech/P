@@ -19,6 +19,12 @@ domain PWithInferredTypes extends PData
 
 	//// The maximum number of local variables in any context
 	MaxNumLocals ::= new (ctxt: TypingContext + Stmt + Cases, n: Natural).
+
+	//InterfaceTypes added 
+	InterfaceTypeEventsDecl ::= new (it: any InterfaceType, ev: NonNullEventLabel).
+
+	//Events sent by machine
+	MachineSendsDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 }
 
 transform P2PWithInferredTypes (in:: P) returns (out:: PWithInferredTypes)
@@ -27,4 +33,6 @@ transform P2PWithInferredTypes (in:: P) returns (out:: PWithInferredTypes)
 	out.TypeOf(c, e, t) :- in.TypeOf(c, e, t).
 	out.TypeExpansion(type, eType) :- in.TypeExpansion(type, eType).
 	out.MaxNumLocals(c, n) :- in.MaxNumLocals(c, n).
+	out.InterfaceTypeEventsDecl(i, e) :- in.InterfaceTypeEventsDecl(i,e).
+	out.MachineSendsDecl(m,s) :- in.MachineSendsDecl(m,s).
 }

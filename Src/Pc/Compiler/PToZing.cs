@@ -442,50 +442,6 @@ namespace Microsoft.Pc
                 }
             }
 
-            terms = GetBin(factBins, "MachineSendsDecl");
-            foreach (var term in terms.Select(x => x.Item2))
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var machineDecl = (FuncTerm)it.Current;
-                    var machineName = GetName(machineDecl, 0);
-                    it.MoveNext();
-                    var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
-                    allMachines[machineName].sendsEvents.Add(eventName);
-                }
-            }
-
-            terms = GetBin(factBins, "InterfaceTypeEventsDecl");
-            foreach (var term in terms.Select(x => x.Item2))
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var interfaceName = GetName(((FuncTerm)it.Current), 0);
-                    it.MoveNext();
-                    var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    if (allInterfaces.ContainsKey(interfaceName))
-                    {
-                        allInterfaces[interfaceName].Add(eventName);
-                    }
-                    else
-                    {
-                        allInterfaces[interfaceName] = new List<string>();
-                        allInterfaces[interfaceName].Add(eventName);
-                    }
-                }
-            }
-
-            //add machines with empty receive sets
-            foreach (var machineName in allMachines.Keys)
-            {
-                if (allInterfaces.ContainsKey(machineName))
-                    continue;
-                allInterfaces[machineName] = new List<string>();
-            }
-
             terms = GetBin(factBins, "VarDecl");
             foreach (var term in terms.Select(x => x.Item2))
             {
@@ -908,6 +864,50 @@ namespace Microsoft.Pc
                     typeExpansion[type] = eType;
                     typeExpansion[(AST<FuncTerm>)Factory.Instance.ToAST(eType)] = eType;
                 }
+            }
+
+            terms = GetBin(factBins, "MachineSendsDecl");
+            foreach (var term in terms.Select(x => x.Item2))
+            {
+                using (var it = term.Node.Args.GetEnumerator())
+                {
+                    it.MoveNext();
+                    var machineDecl = (FuncTerm)it.Current;
+                    var machineName = GetName(machineDecl, 0);
+                    it.MoveNext();
+                    var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
+                    allMachines[machineName].sendsEvents.Add(eventName);
+                }
+            }
+
+            terms = GetBin(factBins, "InterfaceTypeEventsDecl");
+            foreach (var term in terms.Select(x => x.Item2))
+            {
+                using (var it = term.Node.Args.GetEnumerator())
+                {
+                    it.MoveNext();
+                    var interfaceName = GetName(((FuncTerm)it.Current), 0);
+                    it.MoveNext();
+                    var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
+                    it.MoveNext();
+                    if (allInterfaces.ContainsKey(interfaceName))
+                    {
+                        allInterfaces[interfaceName].Add(eventName);
+                    }
+                    else
+                    {
+                        allInterfaces[interfaceName] = new List<string>();
+                        allInterfaces[interfaceName].Add(eventName);
+                    }
+                }
+            }
+
+            //add machines with empty receive sets
+            foreach (var machineName in allMachines.Keys)
+            {
+                if (allInterfaces.ContainsKey(machineName))
+                    continue;
+                allInterfaces[machineName] = new List<string>();
             }
 
             terms = GetBin(factBins, "MaxNumLocals");

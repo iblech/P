@@ -130,12 +130,14 @@ MachineDecl
 	
 Receives
 	: RECEIVES NonDefaultEventList SEMICOLON         { crntReceivesList.AddRange(crntEventList); crntEventList.Clear(); }
-	|
+	| RECEIVES SEMICOLON
+	|												 { isReceivesListAllEvents = true; }							 
 	;
 
 Sends
 	: SENDS NonDefaultEventList SEMICOLON			{ crntSendsList.AddRange(crntEventList); crntEventList.Clear();}
-	|
+	| SENDS SEMICOLON
+	|												{ isSendsListAllEvents = true; }
 	;
 	/***************** Monitor Declaration *********************/
 MonitorDecl
