@@ -1,0 +1,5 @@
+arg: ..\interfacetype_2.p
+arg: /shortFileNames
+arg: /doNotErase
+arg: /outputDir:..\.
+dsc: 4.3. Testing the interface type

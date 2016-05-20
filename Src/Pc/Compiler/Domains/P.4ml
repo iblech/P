@@ -718,6 +718,9 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: argument 1 of "send" expects a machine or interface type value"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Send, toSymbol(t1) != #InterfaceType, t1 != BaseType(REAL).
 
+	[ rule_Classes = '"error, msg: sent event is not in the sends list of the machine"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Send(_, e2, _, _, _), c.owner != NIL, e2 = Name(n), IsEventCnst(c, n, _), no MachineSendsDecl(c.owner, n).
+
 	[ rule_Classes = '"error, msg: argument 2 of "send" expects an event value"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Send(_, e2, _, _, _), TypeOf(c, e2, t2), t2 != BaseType(EVENT).
 
