@@ -20,8 +20,8 @@
 
 %token TRUE FALSE
 
-%token INTERFACE
-%token RECEIVES SENDS
+%token INTERFACE EVENTSET
+%token RECEIVES EXPORTS SENDS
 
 %token SWAP, XFER
 
@@ -60,6 +60,7 @@ TopDecl
     : IncludeDecl
 	| TypeDefDecl
 	| EventDecl
+	| EventSetDecl
 	| InterfaceDecl
 	| MachineDecl
 	| MonitorDecl
@@ -117,21 +118,32 @@ EventAnnotOrNone
 	|
 	;
 
+EventSetDecl
+	: EVENTSET ID ASSIGN LCBRACE NonDefaultEventList RCBRACE SEMICOLON		{ AddEventSet($2.str, ToSpan(@2), ToSpan(@2)); }
+	;
+
+
+
 /****************** Interface Declarations ******************/
 InterfaceDecl
-	: INTERFACE ID NonDefaultEventList SEMICOLON				{ AddInterfaceType($2.str, ToSpan(@2), ToSpan(@2)); } 
+	: INTERFACE ID InTypeOrNone SEMICOLON			{ AddInterfaceType($2.str, ToSpan(@2), ToSpan(@2)); } 
+	;
+
+InTypeOrNone
+	: COLON Type									{ SetInterfaceConstType(ToSpan(@1));                }
+	|												{ }
 	;
 
 	/******************* Machine Declarations *******************/
 MachineDecl
-	: IsMain MACHINE ID Receives Sends MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE { AddMachine(P_Root.UserCnstKind.REAL, $3.str, ToSpan(@3), ToSpan(@1));    }
-	| IsMain MODEL ID Receives Sends MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE   { AddMachine(P_Root.UserCnstKind.MODEL, $3.str, ToSpan(@3), ToSpan(@1));   }
+	: IsMain MACHINE ID ReceivesOrExports Sends MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE { AddMachine(P_Root.UserCnstKind.REAL, $3.str, ToSpan(@3), ToSpan(@1));    }
+	| IsMain MODEL ID ReceivesOrExports Sends MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE   { AddMachine(P_Root.UserCnstKind.MODEL, $3.str, ToSpan(@3), ToSpan(@1));   }
 	;
 	
-Receives
+ReceivesOrExports
 	: RECEIVES NonDefaultEventList SEMICOLON         { crntReceivesList.AddRange(crntEventList); crntEventList.Clear(); }
 	| RECEIVES SEMICOLON
-	|												 { isReceivesListAllEvents = true; }							 
+	| EXPORTS ID SEMICOLON						     { AddExports($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
 Sends

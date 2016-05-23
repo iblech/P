@@ -64,7 +64,9 @@ event E11;
 event E12;
 event E13;
 
-machine DownloadManagerMachine {
+machine DownloadManagerMachine 
+receives;
+{
     start state Begin
     {
     on BeginDownload do {}
@@ -125,7 +127,9 @@ machine DownloadManagerMachine {
 
 
 
-	main  machine MainMachine {
+	main  machine MainMachine 
+    receives;
+    {
 	    // Fields: 
 
 

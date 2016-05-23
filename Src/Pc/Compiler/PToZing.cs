@@ -880,36 +880,6 @@ namespace Microsoft.Pc
                 }
             }
 
-            terms = GetBin(factBins, "InterfaceTypeEventsDecl");
-            foreach (var term in terms.Select(x => x.Item2))
-            {
-                using (var it = term.Node.Args.GetEnumerator())
-                {
-                    it.MoveNext();
-                    var interfaceName = GetName(((FuncTerm)it.Current), 0);
-                    it.MoveNext();
-                    var eventName = it.Current.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)it.Current).GetStringValue();
-                    it.MoveNext();
-                    if (allInterfaces.ContainsKey(interfaceName))
-                    {
-                        allInterfaces[interfaceName].Add(eventName);
-                    }
-                    else
-                    {
-                        allInterfaces[interfaceName] = new List<string>();
-                        allInterfaces[interfaceName].Add(eventName);
-                    }
-                }
-            }
-
-            //add machines with empty receive sets
-            foreach (var machineName in allMachines.Keys)
-            {
-                if (allInterfaces.ContainsKey(machineName))
-                    continue;
-                allInterfaces[machineName] = new List<string>();
-            }
-
             terms = GetBin(factBins, "MaxNumLocals");
             foreach (var term in terms.Select(x => x.Item2))
             {

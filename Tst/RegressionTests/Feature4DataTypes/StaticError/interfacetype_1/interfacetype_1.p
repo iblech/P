@@ -4,7 +4,7 @@ event B;
 event E;
 event F: machine;
 event G: I1;
-event H: M;
+event H: I1;
 
 interface I1 A, B, E;
 interface I2 E, F, G, A, B;

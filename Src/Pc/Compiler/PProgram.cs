@@ -95,7 +95,7 @@
             private set;
         }
             
-        public List<P_Root.MachineReceivesAllEvents> MachineReceivesAllEvents
+        public List<P_Root.MachineExportsDecl> MachineExportsDecl
         {
             get;
             private set;
@@ -197,9 +197,9 @@
                     yield return send;
                 }
 
-                foreach (var rec in MachineReceivesAllEvents)
+                foreach (var ex in MachineExportsDecl)
                 {
-                    yield return rec;
+                    yield return ex;
                 }
 
                 foreach (var info in FileInfos)
@@ -229,8 +229,8 @@
             Observes = new List<P_Root.ObservesDecl>();
             InterfaceEventsDecl = new List<P_Root.InterfaceTypeEventsDecl>();
             MachineReceivesDecl = new List<P_Root.MachineReceivesDecl>();
+            MachineExportsDecl = new List<P_Root.MachineExportsDecl>();
             MachineSendsDecl = new List<P_Root.MachineSendsDecl>();
-            MachineReceivesAllEvents = new List<P_Root.MachineReceivesAllEvents>();
             MachineSendsAllEvents = new List<P_Root.MachineSendsAllEvents>();
             FileInfos = new List<P_Root.FileInfo>();
             LineInfos = new List<P_Root.LineInfo>();

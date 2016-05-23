@@ -40,7 +40,6 @@
 
         private List<P_Root.EventLabel> crntObservesList = new List<P_Root.EventLabel>();
         private List<P_Root.EventLabel> crntReceivesList = new List<P_Root.EventLabel>();
-        private bool isReceivesListAllEvents = false;
         private bool isSendsListAllEvents = false;
         private List<P_Root.EventLabel> crntSendsList = new List<P_Root.EventLabel>();
 
@@ -1726,6 +1725,11 @@
             crntVarList.Clear();
         }
 
+        private void AddEventSet(string name, Span nameSpan, Span span)
+        {
+            if (IsValidName(name, nameSpan))
+                topDeclNames.eventListNames.Add(name);
+        }
         private void AddInterfaceType(string name, Span nameSpan, Span span)
         {
             if (IsValidName(name, nameSpan))
@@ -1733,12 +1737,9 @@
 
             foreach (var ev in crntEventList)
             {
-                var interfaceType = new P_Root.InterfaceType();
-                interfaceType.Span = nameSpan;
-                interfaceType.name = (P_Root.IArgType_InterfaceType__0)MkString(name, nameSpan);
                 var interfaceDecl = new P_Root.InterfaceTypeEventsDecl();
                 interfaceDecl.Span = ev.Span;
-                interfaceDecl.it = (P_Root.IArgType_InterfaceTypeEventsDecl__0)interfaceType;
+                interfaceDecl.name = MkString(name, nameSpan);
                 interfaceDecl.ev = (P_Root.IArgType_InterfaceTypeEventsDecl__1)ev;
                 parseProgram.InterfaceEventsDecl.Add(interfaceDecl);
             }
@@ -1797,13 +1798,6 @@
                 }
                 crntSendsList.Clear();
 
-                if(isReceivesListAllEvents)
-                {
-                    var rec = P_Root.MkMachineReceivesAllEvents(machDecl);
-                    parseProgram.MachineReceivesAllEvents.Add(rec);
-                    isReceivesListAllEvents = false;
-                }
-
                 if(isSendsListAllEvents)
                 {
                     var send = P_Root.MkMachineSendsAllEvents(machDecl);
@@ -1835,6 +1829,16 @@
             crntFunNames.Clear();
             crntVarNames.Clear();
             crntEventList.Clear();
+        }
+        private void AddExports(string interfaceName, Span interfaceSpan, Span span)
+        {
+            var machDecl = GetCurrentMachineDecl(span);
+
+            var export = new P_Root.MachineExportsDecl();
+            export.iname = (P_Root.IArgType_MachineExportsDecl__1)MkString(interfaceName, interfaceSpan);
+            export.mach = machDecl;
+            export.Span = span;
+            parseProgram.MachineExportsDecl.Add(export);
         }
 
         private void AddMachineAnnots(Span span)

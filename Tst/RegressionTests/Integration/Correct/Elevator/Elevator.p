@@ -24,7 +24,7 @@ receives eCloseDoor, eOpenDoor, eDoorOpened, eTimerFired, eStopTimerReturned, eD
 sends eSendCommandToResetDoor, eSendCommandToOpenDoor, eStartDoorCloseTimer, eStopDoorCloseTimer, eSendCommandToCloseDoor, eSendCommandToStopDoor;
 
 {
-    var TimerV : Timer;
+    var TimerV : machine;
     var DoorV: machine;
 
     start state Init {
@@ -132,7 +132,8 @@ sends eSendCommandToResetDoor, eSendCommandToOpenDoor, eStartDoorCloseTimer, eSt
     }
 }
 
-main model User 
+main model User
+receives;
 sends eOpenDoor, eCloseDoor;
 {
     var ElevatorV : machine;
