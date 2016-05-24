@@ -77,7 +77,13 @@
             private set;
         }
 
-        public List<P_Root.InterfaceTypeEventsDecl> InterfaceEventsDecl
+        public List<P_Root.InterfaceTypeDecl> InterfaceTypeDecl
+        {
+            get;
+            private set;
+        }
+
+        public List<P_Root.EventSetDecl> EventSetDecl
         {
             get;
             private set;
@@ -177,7 +183,13 @@
                 {
                     yield return obs;
                 }
-                foreach (var inter in InterfaceEventsDecl)
+
+                foreach (var ev in EventSetDecl)
+                {
+                    yield return ev;
+                }
+
+                foreach (var inter in InterfaceTypeDecl)
                 {
                     yield return inter;
                 }
@@ -227,7 +239,8 @@
             Dos = new List<P_Root.DoDecl>();
             Annotations = new List<P_Root.Annotation>();
             Observes = new List<P_Root.ObservesDecl>();
-            InterfaceEventsDecl = new List<P_Root.InterfaceTypeEventsDecl>();
+            InterfaceTypeDecl = new List<P_Root.InterfaceTypeDecl>();
+            EventSetDecl = new List<P_Root.EventSetDecl>();
             MachineReceivesDecl = new List<P_Root.MachineReceivesDecl>();
             MachineExportsDecl = new List<P_Root.MachineExportsDecl>();
             MachineSendsDecl = new List<P_Root.MachineSendsDecl>();

@@ -1,4 +1,4 @@
-﻿domain P extends PStaticTyping, PStructuralTyping
+﻿domain	P extends PStaticTyping, PStructuralTyping
 {
 
 }
@@ -73,7 +73,7 @@ domain PData
 	/*************************************************************/
 	////Interface type events
 	EventSetDecl ::= new (name : String, ev: NonNullEventLabel).
-	InterfaceTypeEventsDecl ::= new (esname: String, argType: TypeExpr).
+	InterfaceTypeDecl ::= new (name: String, evsetName: String, argType: TypeExpr).
 	MachineExportsDecl ::= new (mach: any MachineDecl, iname: String).
 	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 	MachineSendsDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
@@ -103,7 +103,7 @@ domain PData
     DoDecl         ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> action: any { DEFER, IGNORE } + AnonFunDecl + String).
 
     PDecl          ::= EventDecl + MachineDecl + VarDecl + AnonFunDecl + FunDecl + StateDecl + TransDecl + DoDecl + ObservesDecl 
-						+ InterfaceTypeEventsDecl + MachineReceivesDecl + MachineSendsDecl + MachineExportsDecl + EventSetDecl.            
+						+ InterfaceTypeDecl + MachineReceivesDecl + MachineSendsDecl + MachineExportsDecl + EventSetDecl.            
 
     AssumeMaxInstances ::= new (bound: Natural).
     AssertMaxInstances ::= new (bound: Natural).
@@ -225,7 +225,7 @@ domain PStructuralTyping extends PData
 
 	//eventset in interface type
 	[rule_Classes = '"error, msg: unknown eventset in interface declaration"']
-	OneDeclError(inter) :- inter is InterfaceTypeEventsDecl(es, _), no EventSetDecl(es, _).
+	OneDeclError(inter) :- inter is InterfaceTypeDecl(_, es, _), no EventSetDecl(es, _).
 
 	//event in receives of a machine
 	[rule_Classes = '"error, msg: event in receives is not declared"']
@@ -237,7 +237,9 @@ domain PStructuralTyping extends PData
 
 	//interface declared in the exports is legal
 	[rule_Classes = '"error, msg: interface in exports is not declared"']
-	OneDeclError(ex) :- ex is MachineExportsDecl(_, i), no InterfaceTypeEventsDecl(i, _).
+	OneDeclError(ex) :- ex is MachineExportsDecl(_, i), no InterfaceTypeDecl(i, _, _).
+
+	
 }
 
 domain PStaticTyping extends PData
@@ -248,7 +250,8 @@ domain PStaticTyping extends PData
 */
 {
     /*************************************************************/
-	conforms no TypeOf(_, _, ERROR). 
+	conforms no TypeOf(_, _, ERROR).
+	conforms no ConstructorTypeError(_).
 	conforms no DupNmdSubE(_, _, _, _).
 	conforms no PurityError(_, _).
 	conforms no MonitorError(_, _).
@@ -270,7 +273,7 @@ domain PStaticTyping extends PData
 	TypeDefError ::= (name: String).
 
 	[rule_Classes = '"error, msg: undefined type"']
-	TypeDefError(name) :- AllTypeExprs(type), type = NameType(name), no TypeDef(name, _), no InterfaceTypeEventsDecl(name, _).
+	TypeDefError(name) :- AllTypeExprs(type), type = NameType(name), no TypeDef(name, _), no InterfaceTypeDecl(name, _, _).
 
 	[rule_Classes = '"error, msg: multiple type definitions for a type name"']
 	TypeDefError(name) :- TypeDef(name, type1), TypeDef(name, type2), type1 != type2.
@@ -301,7 +304,7 @@ domain PStaticTyping extends PData
 	TypeExpansion(type, type)  :- AllTypeExprs(type), type : InterfaceType.
 	TypeExpansion(type, type)  :- TypeDef(typeName, NIL), no TypeDefError(typeName), type = NameType(typeName).
 	TypeExpansion(type, eType) :- TypeDef(typeName, typeExpr), typeExpr: TypeExpr, no TypeDefError(typeName), type = NameType(typeName), TypeExpansion(typeExpr, eType).
-	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NameType(name), no TypeDef(name, _), eType = toList(#InterfaceType, NIL, {ev | InterfaceTypeEventsDecl(name, ev) }), eType : InterfaceType.	
+	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NameType(name), no TypeDef(name, _), InterfaceTypeDecl(name, esname, _), eType = toList(#InterfaceType, NIL, {ev | EventSetDecl(esname, ev) }), eType : InterfaceType.	
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, NIL), TypeExpansion(hd, hd'), eType = TupType(hd', NIL).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, tl), tl != NIL, TypeExpansion(hd, hd'), TypeExpansion(tl, tl'), eType = TupType(hd', tl').
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NmdTupType(NmdTupTypeField(qual, name, hd), NIL), TypeExpansion(hd, hd'), eType = NmdTupType(NmdTupTypeField(qual, name, hd'), NIL).
@@ -355,12 +358,18 @@ domain PStaticTyping extends PData
 	SubSE(c, es) :- SubSE(c, NamedExprs(_, _, es)), es: NamedExprs.
 
 	/**************************************************************************/
-	/*				populate the sends list									  */
+	/*				populate the sends list	and receives list				 */
 	/**************************************************************************/
 	MachineSendsDecl(m, s) :- MachineSendsAllEvents(m), EventDecl(s, _, _);
 							  MachineSendsAllEvents(m), s = HALT.
-									 
-    /*************************************************************/
+	MachineReceivesDecl(m, ev) :- MachineExportsDecl(m, i), EventSetDecl(i, ev).
+	
+	//Checking the constructor type error for each exported interface
+	ConstructorTypeError ::= (ex: MachineExportsDecl).
+	[rule_Classes = '"error, msg: the constructor argument type is not a subtype of the exported interface argument type"']
+	ConstructorTypeError(ex) :- ex is MachineExportsDecl(m, i), InterfaceTypeDecl(i, _, iargt), ConstructorType(m, _, ct), TypeRel(iargt, ct, k), ct != iargt, k != SUB. 						 
+    
+	/*************************************************************/
     /*                      Types of Expressions                 */
     /*************************************************************/
     
@@ -441,10 +450,8 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Cast can never succeed"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k = EMPTY.
 
-    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), InterfaceTypeEventsDecl(n, _), TypeExpansion(NameType(n), t);
-						 SubSE(c, e), e = New(n, _), no InterfaceTypeEventsDecl(n, _), MachineDecl(n, mt, _, _, _), mt != MONITOR, 
-						 t = toList(#InterfaceType, NIL, {ev | MachineReceivesDecl(c.owner, ev)}), t : InterfaceType;
-						 SubSE(c, e), e = New(n, _), no InterfaceTypeEventsDecl(n, _), MachineDecl(n, mt, _, _, _), mt != MONITOR, 
+    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _), InterfaceTypeDecl(n, _, _), TypeExpansion(NameType(n), t);
+						 SubSE(c, e), e = New(n, _), MachineDecl(n, mt, _, _, _), mt != MONITOR, 
 						 no MachineReceivesDecl(c.owner, _), t = BaseType(REAL).
 
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
@@ -681,8 +688,8 @@ domain PStaticTyping extends PData
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : While, t1 != BaseType(BOOL).
     
 	          
-    TypeOf(c, e, NIL)   :- SubSE(c, e), e = NewStmt(n, _, _), InterfaceTypeEventsDecl(n, _);
-						   SubSE(c, e), e = NewStmt(n, _, _), no InterfaceTypeEventsDecl(n, _), MachineDecl(n, mt, _, _, _), mt != MONITOR.
+    TypeOf(c, e, NIL)   :- SubSE(c, e), e = NewStmt(n, _, _), no MachineDecl(n, _, _, _, _), InterfaceTypeDecl(n, _, _);
+						   SubSE(c, e), e = NewStmt(n, _, _), MachineDecl(n, mt, _, _, _), mt != MONITOR.
 						  
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), MachineDecl(n, MONITOR, _, _, _).
@@ -1377,7 +1384,7 @@ domain PStaticTyping extends PData
     /*************************************************************/
     /*                      Payload Checking                    */
     /*************************************************************/	
-        ConstructorType ::= (m: MachineDecl, s: StateDecl, t: TypeExpr).
+    ConstructorType ::= (m: MachineDecl, s: StateDecl, t: TypeExpr).
 	ConstructorType(m, s, ft) :- s is StateDecl, m = s.owner, s.name = m.start, PayloadVarType(s, ft).
 
 	EventPayloadType ::= (e: String + { NULL, HALT }, t: TypeExpr).
@@ -1413,18 +1420,32 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Payload type for event must be subtype of payload type of case function;"']
 	PayloadError(cases) :- SubSE(_, cases), cases: Cases, EventPayloadType(cases.trig, et), PayloadVarType(cases, ft),
 						   TypeRel(et, ft, k), et != ft, k != SUB. 
+
 	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
-	PayloadError(n) :- SubSE(c, n), n = New(name, NIL), ConstructorType(m, _, ft), m.name = name, type = BaseType(NULL), 
+	PayloadError(n) :- SubSE(c, n), n = New(name, NIL), ConstructorType(m, _, ft), m.name = name, no MachineReceivesDecl(m, _), ft != BaseType(NULL).
+
+	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of the created interface;"']
+	PayloadError(n) :- SubSE(c, n), n = New(name, NIL), InterfaceTypeDecl(name, _, ft), ft != BaseType(NULL).
+	
+	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
+	PayloadError(n) :- SubSE(c, n), n = New(name, _), ConstructorType(m, _, ft), m.name = name, no MachineReceivesDecl(m, _), TypeOfArg1(c, n, type), type: TypeExpr, 
 					   TypeRel(type, ft, k), type != ft, k != SUB.
-	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
-	PayloadError(n) :- SubSE(c, n), n = New(name, _), ConstructorType(m, _, ft), m.name = name, TypeOfArg1(c, n, type), type: TypeExpr, 
+
+	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of the created interface;"']
+	PayloadError(n) :- SubSE(c, n), n = New(name, _), InterfaceTypeDecl(name, _, ft), TypeOfArg1(c, n, type), type: TypeExpr, 
 					   TypeRel(type, ft, k), type != ft, k != SUB.
+
 	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
-	PayloadError(n) :- SubSE(c, n), n = NewStmt(name, NIL, _), ConstructorType(m, _, ft), m.name = name, type = BaseType(NULL),
-					   TypeRel(type, ft, k), type != ft, k != SUB.	
+	PayloadError(n) :- SubSE(c, n), n = NewStmt(name, NIL, _), ConstructorType(m, _, ft), m.name = name, no MachineReceivesDecl(m, _), ft != BaseType(NULL).	
+	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of the created interface;"']
+	PayloadError(n) :- SubSE(c, n), n = NewStmt(name, NIL, _), InterfaceTypeDecl(name, _, ft), ft != BaseType(NULL).
+
 	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
-	PayloadError(n) :- SubSE(c, n), n = NewStmt(name, _, _), ConstructorType(m, _, ft), m.name = name, TypeOfArg1(c, n, type), type: TypeExpr,
-					   TypeRel(type, ft, k), type != ft, k != SUB.	
+	PayloadError(n) :- SubSE(c, n), n = NewStmt(name, _, _), ConstructorType(m, _, ft), m.name = name, no MachineReceivesDecl(m, _), TypeOfArg1(c, n, type), type: TypeExpr,
+					   TypeRel(type, ft, k), type != ft, k != SUB.
+	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of the created interface;"']
+	PayloadError(n) :- SubSE(c, n), n = NewStmt(name, _, _), InterfaceTypeDecl(name, _, ft), TypeOfArg1(c, n, type), type: TypeExpr,
+					   TypeRel(type, ft, k), type != ft, k != SUB.
 
 	[ rule_Classes = '"error, msg: Null type must be subtype of payload type of entry function of start state;"']
 	PayloadError(s) :- ConstructorType(m, s, ft), m.isMain = TRUE, type = BaseType(NULL), TypeRel(type, ft, k), type != ft, k != SUB.
