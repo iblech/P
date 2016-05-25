@@ -126,7 +126,7 @@ EventSetDecl
 
 /****************** Interface Declarations ******************/
 InterfaceDecl
-	: INTERFACE ID LBRACKET InTypeOrNone RBRACKET COLON ID SEMICOLON			{ AddInterfaceType($2.str, $7.str, ToSpan(@2), ToSpan(@7), ToSpan(@1)); } 
+	: INTERFACE ID LPAREN InTypeOrNone RPAREN COLON ID SEMICOLON			{ AddInterfaceType($2.str, $7.str, ToSpan(@2), ToSpan(@7), ToSpan(@1)); } 
 	;
 
 InTypeOrNone

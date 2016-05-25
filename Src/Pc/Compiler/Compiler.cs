@@ -621,6 +621,7 @@
             var errors = new SortedSet<Flag>(default(FlagSorter));
             //// Enumerate typing errors
             AddErrors(task.Result, "TypeOf(_, _, ERROR)", errors, 1);
+            AddErrors(task.Result, "ConstructorTypeError(_)", errors, 0);
             AddErrors(task.Result, "DupNmdSubE(_, _, _, _)", errors, 1);
             AddErrors(task.Result, "PurityError(_, _)", errors, 1);
             AddErrors(task.Result, "MonitorError(_, _)", errors, 1);

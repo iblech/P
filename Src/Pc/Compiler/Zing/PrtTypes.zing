@@ -57,10 +57,9 @@ class PRT_TYPE {
 		return type;
     }
 
-	static PRT_TYPE PrtMkInterfaceType(SM_EVENT_SET interfaceSet) {
+	static PRT_TYPE PrtMkInterfaceType() {
 		PRT_TYPE type;
 		type = BuildDefault(PRT_TYPE_KIND.PRT_KIND_INTERFACE);
-		type.interfaceSet = interfaceSet;
 		return type;
 	}
 

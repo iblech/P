@@ -20,7 +20,7 @@ domain PData
     SeqType         ::= new (x: any TypeExpr).
     MapType         ::= new (k: any TypeExpr, v: any TypeExpr).
     NmdTupTypeField ::= new (qual: Qualifier, name: any String, type: any TypeExpr). 
-	InterfaceType	::= new (ev: NonNullEventLabel, tail: any InterfaceType + {NIL}).
+	InterfaceType	::= new (ev: any NonNullEventLabel, tail: any InterfaceType + {NIL}).
     TypeExpr        ::= NameType + BaseType + TupType + NmdTupType + SeqType + MapType + InterfaceType.
         
     /*************************************************************/
@@ -73,7 +73,7 @@ domain PData
 	/*************************************************************/
 	////Interface type events
 	EventSetDecl ::= new (name : String, ev: NonNullEventLabel).
-	InterfaceTypeDecl ::= new (name: String, evsetName: String, argType: TypeExpr).
+	InterfaceTypeDecl ::= new (name: String, evsetName: String, argType: any TypeExpr).
 	MachineExportsDecl ::= new (mach: any MachineDecl, iname: String).
 	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 	MachineSendsDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
@@ -456,9 +456,13 @@ domain PStaticTyping extends PData
 
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), MachineDecl(n, MONITOR, _, _, _).
-	[ rule_Classes = '"error, msg: Undefined machine type"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _).
+	[ rule_Classes = '"error, msg: Undefined machine or interface type"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _), no InterfaceTypeDecl(n, _, _).
+	[ rule_Classes = '"error, msg: "new" of a machine is allowed only if the machine has empty receive set"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), m is MachineDecl(n, _, _, _, _), MachineReceivesDecl(m, _).
+
 	
+
     TypeOf(c, e, t2)               :- TypeOfArg2(c, e, _, t2), e : Field, t2 != ERROR.
 	[ rule_Classes = '"error, msg: Bad field name"']
     TypeOf(c, e, ERROR)            :- TypeOfArg2(c, e, _, t2), e : Field, t2 = ERROR.
@@ -693,8 +697,10 @@ domain PStaticTyping extends PData
 						  
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), MachineDecl(n, MONITOR, _, _, _).
-	[ rule_Classes = '"error, msg: Undeclared machine"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), no MachineDecl(n, _, _, _, _).
+	[ rule_Classes = '"error, msg: Undefined machine or interface type"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), no MachineDecl(n, _, _, _, _), no InterfaceTypeDecl(n, _, _).
+	[ rule_Classes = '"error, msg: "new" of a machine is allowed only if the machine has empty receive set"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), m is MachineDecl(n, _, _, _, _), MachineReceivesDecl(m, _).
 
 	//// Rules for raise.
     TypeOf(c, e, NIL)              :- CommStmtPLType(c, e, plt), e = Raise(_, NIL, _),              ///// < raise has NIL payload,
