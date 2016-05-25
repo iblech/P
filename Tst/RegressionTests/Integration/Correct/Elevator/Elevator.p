@@ -18,19 +18,19 @@ event eUnit assert 1;
 event eStopTimerReturned assert 1;
 event eObjectEncountered assert 1;
 
-machine Elevator 
-receives eCloseDoor, eOpenDoor, eDoorOpened, eTimerFired, eStopTimerReturned, eDoorClosed,
-		 eObjectDetected, eDoorStopped, eOperationSuccess, eOperationFailure;
-sends eSendCommandToResetDoor, eSendCommandToOpenDoor, eStartDoorCloseTimer, eStopDoorCloseTimer, eSendCommandToCloseDoor, eSendCommandToStopDoor;
+eventset elevator_receives = {eCloseDoor, eOpenDoor, eDoorOpened, eTimerFired, eStopTimerReturned, eDoorClosed, eObjectDetected, eDoorStopped, eOperationSuccess, eOperationFailure};
+interface iElevator() : elevator_receives;
 
+machine Elevator 
+exports iElevator;
 {
     var TimerV : machine;
     var DoorV: machine;
 
     start state Init {
         entry {
-            TimerV = new Timer(this);
-            DoorV = new Door(this);
+            TimerV = new iTimer(this);
+            DoorV = new iDoor(this);
             raise eUnit;
         }
 
@@ -134,13 +134,12 @@ sends eSendCommandToResetDoor, eSendCommandToOpenDoor, eStartDoorCloseTimer, eSt
 
 main model User
 receives;
-sends eOpenDoor, eCloseDoor;
 {
     var ElevatorV : machine;
 
     start state Init {
         entry {
-            ElevatorV = new Elevator();
+            ElevatorV = new iElevator();
             raise eUnit; 
         }
 
@@ -161,10 +160,11 @@ sends eOpenDoor, eCloseDoor;
     }
 }
 
+eventset Door_Receives = {eSendCommandToOpenDoor, eSendCommandToCloseDoor, eObjectEncountered, eSendCommandToStopDoor, eSendCommandToResetDoor};
+interface iDoor(machine) : Door_Receives;
+
 model Door 
-receives eSendCommandToOpenDoor, eSendCommandToCloseDoor, 
-		 eObjectEncountered, eSendCommandToStopDoor, eSendCommandToResetDoor;
-sends eDoorOpened, eObjectDetected, eDoorClosed, eDoorStopped;
+exports iDoor; 
 {
     var ElevatorV : machine;
 
@@ -238,9 +238,11 @@ sends eDoorOpened, eObjectDetected, eDoorClosed, eDoorStopped;
     }
 }
 
-model Timer 
-receives eStartDoorCloseTimer, eStopDoorCloseTimer;
-sends eTimerFired, eOperationFailure, eOperationSuccess;
+eventset Timer_Receives = { eStartDoorCloseTimer, eStopDoorCloseTimer };
+interface iTimer(machine): Timer_Receives;
+
+model Timer
+exports iTimer;
 {
     var ElevatorV : machine;
 

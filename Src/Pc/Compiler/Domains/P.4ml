@@ -239,7 +239,9 @@ domain PStructuralTyping extends PData
 	[rule_Classes = '"error, msg: interface in exports is not declared"']
 	OneDeclError(ex) :- ex is MachineExportsDecl(_, i), no InterfaceTypeDecl(i, _, _).
 
-	
+	//TODO for module system: This will be remove when the compiler is updated for module system
+	[rule_Classes = '"error, msg: multiple machines export the same interface"']
+	TwoDeclError(ex1, ex2) :- ex1 is MachineExportsDecl(m1, i), ex2 is MachineExportsDecl(m2, i), m1 != m2.
 }
 
 domain PStaticTyping extends PData
@@ -304,7 +306,8 @@ domain PStaticTyping extends PData
 	TypeExpansion(type, type)  :- AllTypeExprs(type), type : InterfaceType.
 	TypeExpansion(type, type)  :- TypeDef(typeName, NIL), no TypeDefError(typeName), type = NameType(typeName).
 	TypeExpansion(type, eType) :- TypeDef(typeName, typeExpr), typeExpr: TypeExpr, no TypeDefError(typeName), type = NameType(typeName), TypeExpansion(typeExpr, eType).
-	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NameType(name), no TypeDef(name, _), InterfaceTypeDecl(name, esname, _), eType = toList(#InterfaceType, NIL, {ev | EventSetDecl(esname, ev) }), eType : InterfaceType.	
+	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NameType(name), InterfaceTypeDecl(name, esname, _), eType = toList(#InterfaceType, NIL, {ev | EventSetDecl(esname, ev) }), eType : InterfaceType.	
+	TypeExpansion(type, eType) :- MachineExportsDecl(m, name), type = NameType(name), InterfaceTypeDecl(name, esname, _), eType = toList(#InterfaceType, NIL, {ev | EventSetDecl(esname, ev) }), eType : InterfaceType.	
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, NIL), TypeExpansion(hd, hd'), eType = TupType(hd', NIL).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, tl), tl != NIL, TypeExpansion(hd, hd'), TypeExpansion(tl, tl'), eType = TupType(hd', tl').
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = NmdTupType(NmdTupTypeField(qual, name, hd), NIL), TypeExpansion(hd, hd'), eType = NmdTupType(NmdTupTypeField(qual, name, hd'), NIL).
@@ -362,7 +365,7 @@ domain PStaticTyping extends PData
 	/**************************************************************************/
 	MachineSendsDecl(m, s) :- MachineSendsAllEvents(m), EventDecl(s, _, _);
 							  MachineSendsAllEvents(m), s = HALT.
-	MachineReceivesDecl(m, ev) :- MachineExportsDecl(m, i), EventSetDecl(i, ev).
+	MachineReceivesDecl(m, ev) :- MachineExportsDecl(m, i), InterfaceTypeDecl(i, es, _), EventSetDecl(es, ev).
 	
 	//Checking the constructor type error for each exported interface
 	ConstructorTypeError ::= (ex: MachineExportsDecl).
@@ -453,16 +456,16 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Cast can never succeed"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k = EMPTY.
 
-    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _), InterfaceTypeDecl(n, _, _), TypeExpansion(NameType(n), t);
-						 SubSE(c, e), e = New(n, _), MachineDecl(n, mt, _, _, _), mt != MONITOR, 
-						 no MachineReceivesDecl(c.owner, _), t = BaseType(REAL).
+    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), MachineDecl(n, mt, _, _, _), mt != MONITOR, no MachineReceivesDecl(c.owner, _), t = BaseType(REAL);
+						 SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _), MachineExportsDecl(_, n), TypeExpansion(NameType(n), t);
+						 SubSE(c, e), e = New(n, _), MachineDecl(n, _, _, _, _), MachineReceivesDecl(m, _), MachineExportsDecl(_, n), TypeExpansion(NameType(n), t).
 
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), MachineDecl(n, MONITOR, _, _, _).
-	[ rule_Classes = '"error, msg: Undefined machine or interface type"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _), no InterfaceTypeDecl(n, _, _).
+	[ rule_Classes = '"error, msg: Undefined machine or no machine exports the created interface"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _), no MachineExportsDecl(_, n).
 	[ rule_Classes = '"error, msg: "new" of a machine is allowed only if the machine has empty receive set"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), m is MachineDecl(n, _, _, _, _), MachineReceivesDecl(m, _).
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), m is MachineDecl(n, _, _, _, _), MachineReceivesDecl(m, _), no MachineExportsDecl(_, n).
 
 	
 
@@ -695,15 +698,16 @@ domain PStaticTyping extends PData
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : While, t1 != BaseType(BOOL).
     
 	          
-    TypeOf(c, e, NIL)   :- SubSE(c, e), e = NewStmt(n, _, _), no MachineDecl(n, _, _, _, _), InterfaceTypeDecl(n, _, _);
-						   SubSE(c, e), e = NewStmt(n, _, _), MachineDecl(n, mt, _, _, _), mt != MONITOR.
+    TypeOf(c, e, NIL)   :- SubSE(c, e), e = NewStmt(n, _, _), no MachineDecl(n, _, _, _, _), MachineExportsDecl(_, n);
+						   SubSE(c, e), e = NewStmt(n, _, _), MachineDecl(n, mt, _, _, _), mt != MONITOR, no MachineReceivesDecl(c.owner, _);
+						   SubSE(c, e), e = NewStmt(n, _, _), MachineDecl(n, _, _, _, _), MachineReceivesDecl(m, _), MachineExportsDecl(_, n).
 						  
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), MachineDecl(n, MONITOR, _, _, _).
-	[ rule_Classes = '"error, msg: Undefined machine or interface type"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), no MachineDecl(n, _, _, _, _), no InterfaceTypeDecl(n, _, _).
+	[ rule_Classes = '"error, msg: Undefined machine or no machine exports the created interface"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), no MachineDecl(n, _, _, _, _), no MachineExportsDecl(_, n).
 	[ rule_Classes = '"error, msg: "new" of a machine is allowed only if the machine has empty receive set"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), m is MachineDecl(n, _, _, _, _), MachineReceivesDecl(m, _).
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = NewStmt(n, _, _), m is MachineDecl(n, _, _, _, _), MachineReceivesDecl(m, _), no MachineExportsDecl(_, n).
 
 	//// Rules for raise.
     TypeOf(c, e, NIL)              :- CommStmtPLType(c, e, plt), e = Raise(_, NIL, _),              ///// < raise has NIL payload,

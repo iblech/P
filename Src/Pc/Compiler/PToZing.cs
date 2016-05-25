@@ -2641,10 +2641,20 @@ namespace Microsoft.Pc
                 }
                 
                 AST<Node> retVal;
-                MachineInfo machineInfo = allMachines[typeName];
+                string machineName;
+                //This will be fixed when module system is introduced
+                if(allMachines.ContainsKey(typeName) && allMachines[typeName].exportsInterface == "")
+                {
+                    machineName = typeName;
+                }
+                else
+                {
+                    machineName = allMachines.Keys.Where(x => allMachines[x].exportsInterface == typeName).First();
+                }
+                MachineInfo machineInfo = allMachines[machineName];
 
                 var newMachine = ctxt.GetTmpVar(SmHandle, "newMachine");
-                ctxt.AddSideEffect(MkZingAssign(newMachine, MkZingCall(MkZingDot("Main", string.Format("CreateMachine_{0}", typeName)), tmpVar)));
+                ctxt.AddSideEffect(MkZingAssign(newMachine, MkZingCall(MkZingDot("Main", string.Format("CreateMachine_{0}", machineName)), tmpVar)));
                 string afterLabel = ctxt.GetFreshLabel();
                 ctxt.AddSideEffect(MkZingCallStmt(MkZingCall(MkZingDot("entryCtxt", "NewMachine"), Factory.Instance.MkCnst(ctxt.LabelToId(afterLabel)), MkZingIdentifier("locals"), newMachine)));
                 ctxt.AddSideEffect(MkZingReturn(ZingData.Cnst_Nil));

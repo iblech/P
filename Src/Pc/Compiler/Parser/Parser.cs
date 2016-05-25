@@ -365,6 +365,7 @@
                     break;
                 case TopDecl.Interface:
                 case TopDecl.Machine:
+                case TopDecl.TypeDef:
                     if (topDeclNames.machineNames.Contains(name))
                     {
                         errorMessage = string.Format("A machine with name {0} already declared", name);
@@ -373,6 +374,11 @@
                     else if (topDeclNames.interfaceNames.Contains(name))
                     {
                         errorMessage = string.Format("A interface with name {0} already declared", name);
+                        error = true;
+                    }
+                    else if (topDeclNames.typeNames.Contains(name))
+                    {
+                        errorMessage = string.Format("A test case with name {0} already declared", name);
                         error = true;
                     }
                     break;
@@ -390,13 +396,7 @@
                         error = true;
                     }
                     break;
-                case TopDecl.TypeDef:
-                    if (topDeclNames.typeNames.Contains(name))
-                    {
-                        errorMessage = string.Format("A test case with name {0} already declared", name);
-                        error = true;
-                    }
-                    break;
+               
             }
 
             if (error)
@@ -1864,7 +1864,6 @@
         private void AddExports(string interfaceName, Span interfaceSpan, Span span)
         {
             var machDecl = GetCurrentMachineDecl(span);
-
             var export = new P_Root.MachineExportsDecl();
             export.iname = (P_Root.IArgType_MachineExportsDecl__1)MkString(interfaceName, interfaceSpan);
             export.mach = machDecl;
@@ -1997,6 +1996,7 @@
             crntInterfaceDecl.argType = (P_Root.IArgType_InterfaceTypeDecl__2)MkBaseType(P_Root.UserCnstKind.NULL, Span.Unknown);
             return crntInterfaceDecl;
         }
+
         private P_Root.FunDecl GetCurrentFunDecl(Span span)
         {
             if (crntFunDecl != null)

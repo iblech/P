@@ -8,14 +8,14 @@ eventset es1 = {e1, e2};
 
 interface I1(): es1;
 main machine MyMachine
-	receives;
+	exports I1;
 	sends e2, e1;
 {
 	var x : I1;
 	start state Init {
 		defer e1, e2;
 		entry {
-			//x = new I1();
+			x = new I1();
 			send x, e1;
 			send this, e2, x as I1;
 		}

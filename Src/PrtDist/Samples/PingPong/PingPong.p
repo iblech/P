@@ -6,8 +6,11 @@ event M_Pong;
 
 include "PrtDistHelp.p" 
 
+eventset Ping_Receives = { Pong };
+interface iPing(any): Ping_Receives;
+
 machine PING 
-receives Pong;
+exports iPing;
 sends Ping;
 {
     var pongMachine: (machine,machine);
@@ -42,8 +45,11 @@ sends Ping;
      state Done {}
 }
 
+eventset Pong_Receives = { Ping };
+interface iPong() : Pong_Receives;
+
 machine PONG
-receives Ping;
+exports iPong;
 sends Pong;
 {
     start state Init {
@@ -87,11 +93,11 @@ static fun _CREATEMACHINE(cner: machine, typeOfMachine: int, param : any, newMac
 {
 	if(typeOfMachine == 1)
 	{
-		newMachine = new PING(param);
+		newMachine = new iPing(param);
 	}
 	else if(typeOfMachine == 2)
 	{
-		newMachine = new PONG();
+		newMachine = new iPong();
 	}
 	else
 	{
@@ -101,6 +107,7 @@ static fun _CREATEMACHINE(cner: machine, typeOfMachine: int, param : any, newMac
 }
 
 main machine GodMachine 
+receives;
 {
 	var container : machine;
     var pongMachine_1: machine;
