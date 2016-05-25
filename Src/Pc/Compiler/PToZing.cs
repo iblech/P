@@ -274,6 +274,7 @@ namespace Microsoft.Pc
         public static AST<Node> SmEventSet = Factory.Instance.MkCnst("SM_EVENT_SET");
         public const string PRT_VALUE = "PRT_VALUE";
         public static AST<Node> PrtValue = Factory.Instance.MkCnst("PRT_VALUE");
+        public static AST<Node> PrtType = Factory.Instance.MkCnst("PRT_TYPE");
         public static AST<Node> PrtCastValue = MkZingDot("PRT_VALUE", "PrtCastValue");
         public static AST<Node> PrtMkDefaultValue = MkZingDot("PRT_VALUE", "PrtMkDefaultValue");
         public static AST<Node> PrtCloneValue = MkZingDot("PRT_VALUE", "PrtCloneValue");
@@ -2822,9 +2823,14 @@ namespace Microsoft.Pc
             }
             else if (op == PData.Cnst_This.Node.Name)
             {
-                var this_type = LookupType(ctxt, ft);
                 var tmpVar = ctxt.GetTmpVar(PrtValue, "tmp");
-                ctxt.AddSideEffect(MkZingAssign(tmpVar, MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(this_type))));
+                var tmpTypeVar = ctxt.GetTmpVar(PrtType, "tmp");
+                ctxt.AddSideEffect(MkZingAssign(tmpTypeVar, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkInterfaceType"))));
+                var currentEventSet = MkZingDot(tmpTypeVar, "interfaceSet");
+                List<AST<Node>> stmts = new List<AST<Node>>();
+                AddEventSet(stmts, allMachines[ctxt.machineName].receivesEvents, currentEventSet);
+                ctxt.AddSideEffect(MkZingSeq(stmts));
+                ctxt.AddSideEffect(MkZingAssign(tmpVar, MkZingCall(PrtMkDefaultValue, tmpTypeVar)));
                 ctxt.AddSideEffect(MkZingCallStmt(MkZingCall(MkZingDot(PRT_VALUE, "PrtPrimSetMachine"), tmpVar, MkZingIdentifier("myHandle"))));
                 retVal = tmpVar;
             }

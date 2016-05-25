@@ -4,17 +4,18 @@
 event e1;
 event e2: I1;
 event e3;
+eventset es1 = {e1, e2};
 
-interface I1 e1, e2;
+interface I1(): es1;
 main machine MyMachine
-	receives e1, e2;
+	receives;
 	sends e2, e1;
 {
-	var x : machine;
+	var x : I1;
 	start state Init {
 		defer e1, e2;
 		entry {
-			x = this as MyMachine;
+			//x = new I1();
 			send x, e1;
 			send this, e2, x as I1;
 		}
