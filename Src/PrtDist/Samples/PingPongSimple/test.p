@@ -5,8 +5,11 @@ event PING assert 1: machine;
 event PONG assert 1; 
 event SUCCESS;
 
+eventset Ping_Receives = { PONG };
+type Client() = Ping_Receives;
+
 main machine Client 
-receives PONG;
+exports Client;
 sends PING;
 {
   var server: machine;
@@ -30,8 +33,11 @@ sends PING;
   }
 }
 
+eventset Server_Receives = { PING, TIMEOUT };
+type Server() = Server_Receives;
+
 machine Server 
-receives PING, TIMEOUT;
+exports Server;
 sends PONG, START;
 { 
   var timer: machine;

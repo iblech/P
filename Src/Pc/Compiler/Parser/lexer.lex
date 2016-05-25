@@ -114,7 +114,6 @@
 
 			 //related to module system
 			 keywords.Add("eventset", (int)Tokens.EVENTSET);
-			 keywords.Add("interface", (int)Tokens.INTERFACE);
 			 keywords.Add("receives", (int)Tokens.RECEIVES);
 			 keywords.Add("exports", (int)Tokens.EXPORTS);
 			 keywords.Add("sends", (int)Tokens.SENDS);
