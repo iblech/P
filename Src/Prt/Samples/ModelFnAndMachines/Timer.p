@@ -4,9 +4,12 @@ event START: int;
 event TIMEOUT: machine;
 
 // local event for control transfer within timer
+eventset TimerRec = { START };
+type Timer(machine) = TimerRec;
+
 event UNIT; 
 model Timer 
-receives START;
+exports Timer;
 sends TIMEOUT;
 {
   var client: machine;

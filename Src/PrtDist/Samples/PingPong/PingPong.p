@@ -7,7 +7,7 @@ event M_Pong;
 include "PrtDistHelp.p" 
 
 eventset Ping_Receives = { Pong };
-interface iPing(any): Ping_Receives;
+type iPing(any) = Ping_Receives;
 
 machine PING 
 exports iPing;
@@ -46,7 +46,7 @@ sends Ping;
 }
 
 eventset Pong_Receives = { Ping };
-interface iPong() : Pong_Receives;
+type iPong() = Pong_Receives;
 
 machine PONG
 exports iPong;

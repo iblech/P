@@ -78,6 +78,10 @@ domain PData
 	MachineSendsDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 	MachineSendsAllEvents ::= new (mach: any MachineDecl).
 
+	//the following map is used for C code gen and mapping between new I to machine name.
+	MapInterfaceToMachine ::= (iname: String, mname: String). 
+	MapInterfaceToMachine(m.name, m.name) :- m is MachineDecl, no MachineReceivesDecl(m, _).
+	MapInterfaceToMachine(i, m.name) :- MachineExportsDecl(m, i).
     /*************************************************************/
     /****************  State Machine Declarations    *************/
     /*************************************************************/
@@ -1412,21 +1416,23 @@ domain PStaticTyping extends PData
 						   SubSE(c, n), n: NewStmt, TypeOf(c, n.arg, et), et: TypeExpr, PayloadVarType(_, ft).
 
     PayloadError ::= (TransDecl + DoDecl + StateDecl + Cases + New + NewStmt).
-
+	
+	////Rules for checking the constructor parameters with event handlers
 	[ rule_Classes = '"error, msg: Payload type for event must be subtype of payload type of transition function;"']
 	PayloadError(t) :- t is TransDecl, EventPayloadType(t.trig, et), PayloadVarType(t, ft),
-	                   TypeRel(et, ft, k), et != ft, k != SUB.
+	                   TypeRel(et, ft, k), et != ft, k != SUB, ft != BaseType(NULL).
 	[ rule_Classes = '"error, msg: Payload type for event must be subtype of payload type of do function;"']
 	PayloadError(d) :- d is DoDecl, EventPayloadType(d.trig, et), PayloadVarType(d, ft),
-	                   TypeRel(et, ft, k), et != ft, k != SUB.
+	                   TypeRel(et, ft, k), et != ft, k != SUB, ft != BaseType(NULL).
 	[ rule_Classes = '"error, msg: Payload type for event on incoming transition must be subtype of payload type of state entry function;"']
 	PayloadError(s) :- t is TransDecl, EventPayloadType(t.trig, et), 
 					   s is StateDecl, s.name = t.dst, s.owner = t.src.owner, PayloadVarType(s, ft),
-					   TypeRel(et, ft, k), et != ft, k != SUB.
+					   TypeRel(et, ft, k), et != ft, k != SUB, ft != BaseType(NULL).
 	[ rule_Classes = '"error, msg: Payload type for event must be subtype of payload type of case function;"']
 	PayloadError(cases) :- SubSE(_, cases), cases: Cases, EventPayloadType(cases.trig, et), PayloadVarType(cases, ft),
-						   TypeRel(et, ft, k), et != ft, k != SUB. 
+						   TypeRel(et, ft, k), et != ft, k != SUB, ft != BaseType(NULL). 
 
+	//// Rules for checking the constructor parameters during new
 	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
 	PayloadError(n) :- SubSE(c, n), n = New(name, NIL), ConstructorType(m, _, ft), m.name = name, no MachineReceivesDecl(m, _), ft != BaseType(NULL).
 

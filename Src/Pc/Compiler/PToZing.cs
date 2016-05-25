@@ -3893,7 +3893,9 @@ namespace Microsoft.Pc
                     Contract.Assert(((Id)type.Function).Name == "InterfaceType");
                     while (true)
                     {
-                        events.Add(GetName(iter, 0));
+                        var item = GetArgByIndex(iter, 0);
+                        var eventName = item.NodeKind == NodeKind.Id ? HaltEvent : ((Cnst)item).GetStringValue();
+                        events.Add(eventName);
                         var arg2 = GetArgByIndex(iter, 1);
                         if (arg2 is Id && (arg2 as Id).Name == "NIL")
                         {

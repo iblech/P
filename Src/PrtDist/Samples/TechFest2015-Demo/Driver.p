@@ -9,8 +9,11 @@ static fun CreateNode(container: machine) : machine
 	return newMachine;
 } 
 
+eventset DriverReceives = { NODE_DOWN };
+type Driver() = DriverReceives;
+
 main machine Driver 
-receives NODE_DOWN;
+exports Driver;
 sends halt, REGISTER_CLIENT;
 {
     var fd: machine;

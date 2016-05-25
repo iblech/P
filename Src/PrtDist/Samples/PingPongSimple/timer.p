@@ -10,9 +10,11 @@ event CANCEL_SUCCESS: machine;
 event CANCEL_FAILURE: machine;
 
 // local event for control transfer within timer 
+eventset Timer_Receives = { CANCEL, START };
+type Timer(machine) = Timer_Receives;
 event UNIT; 
 model Timer 
-receives CANCEL, START;
+exports Timer;
 sends CANCEL_FAILURE, CANCEL_SUCCESS, TIMEOUT;
 { 
     var client: machine; 

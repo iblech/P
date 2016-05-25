@@ -3,8 +3,11 @@ type StringType;
 event sendback : (TestMachine, any);
 event getback : any;
 
+eventset TestMachineRev = { getback };
+type TestMachine() = TestMachineRev;
+
 main machine TestMachine
-receives getback;
+exports TestMachine;
 sends sendback;
 {
 	var someStringV : StringType;
@@ -30,8 +33,11 @@ sends sendback;
 
 }
 
+eventset ForwardingMachineRev = { sendback };
+type ForwardingMachine() = ForwardingMachineRev;
+
 machine ForwardingMachine 
-receives sendback;
+exports ForwardingMachine;
 sends getback;
 {
 	start state Init {

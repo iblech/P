@@ -9,8 +9,11 @@ event UNREGISTER_CLIENT: machine;
 event NODE_DOWN: machine;
 event TIMER_CANCELED;
 
+eventset FDReceives = { REGISTER_CLIENT, UNREGISTER_CLIENT, PONG, TIMEOUT, ROUND_DONE, CANCEL_FAILURE, CANCEL_SUCCESS };
+type FailureDetector(seq[machine]) = FDReceives;
+
 machine FailureDetector 
-receives REGISTER_CLIENT, UNREGISTER_CLIENT, PONG, TIMEOUT, ROUND_DONE, CANCEL_FAILURE, CANCEL_SUCCESS;
+exports FailureDetector;
 sends CANCEL, PING, NODE_DOWN, START;
 {
 	var nodes: seq[machine];
@@ -108,8 +111,10 @@ sends CANCEL, PING, NODE_DOWN, START;
 	 }
 }
 
+eventset NodeReceives = {PING, halt};
+type Node() = NodeReceives;
 machine Node 
-receives PING, halt;
+exports Node;
 sends PONG;
 {
 	start state WaitPing {

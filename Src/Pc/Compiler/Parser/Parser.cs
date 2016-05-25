@@ -364,14 +364,8 @@
                     }
                     break;
                 case TopDecl.Interface:
-                case TopDecl.Machine:
                 case TopDecl.TypeDef:
-                    if (topDeclNames.machineNames.Contains(name))
-                    {
-                        errorMessage = string.Format("A machine with name {0} already declared", name);
-                        error = true;
-                    }
-                    else if (topDeclNames.interfaceNames.Contains(name))
+                    if (topDeclNames.interfaceNames.Contains(name))
                     {
                         errorMessage = string.Format("A interface with name {0} already declared", name);
                         error = true;
@@ -379,6 +373,13 @@
                     else if (topDeclNames.typeNames.Contains(name))
                     {
                         errorMessage = string.Format("A test case with name {0} already declared", name);
+                        error = true;
+                    }
+                    break;
+                case TopDecl.Machine:
+                    if (topDeclNames.machineNames.Contains(name))
+                    {
+                        errorMessage = string.Format("A machine with name {0} already declared", name);
                         error = true;
                     }
                     break;
@@ -2077,7 +2078,7 @@
             var field = P_Root.MkNmdTupTypeField(
                                    P_Root.MkUserCnst(P_Root.UserCnstKind.NONE),
                                    P_Root.MkString("_payload_skip"),
-                                   (P_Root.IArgType_NmdTupTypeField__2)MkBaseType(P_Root.UserCnstKind.ANY, Span.Unknown));
+                                   (P_Root.IArgType_NmdTupTypeField__2)MkBaseType(P_Root.UserCnstKind.NULL, Span.Unknown));
             var decl = P_Root.MkAnonFunDecl(owner, P_Root.MkUserCnst(P_Root.UserCnstKind.NIL), stmt, (P_Root.IArgType_AnonFunDecl__3)P_Root.MkNmdTupType(field, P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)));
             decl.Span = span;
             parseProgram.AnonFunctions.Add(decl);

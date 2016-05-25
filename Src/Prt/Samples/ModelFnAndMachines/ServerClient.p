@@ -11,8 +11,11 @@ static model fun PrintTime() {
 	//something here
 }
 
+eventset ServerRev = { req, halt };
+type Server() = ServerRev;
+
 main machine Server
-receives req, halt;
+exports Server;
 sends resp;
 {
 	var cl: machine;
@@ -33,8 +36,11 @@ sends resp;
 	}
 }
 
+eventset ClientRev = {resp, TIMEOUT} ;
+type Client(Server) = ClientRev;
+
 machine Client
-receives resp, TIMEOUT;
+exports Client;
 sends req, START, halt;
 {
 	var sr: machine;

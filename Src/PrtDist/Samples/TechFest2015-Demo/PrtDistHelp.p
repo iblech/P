@@ -10,7 +10,9 @@ static model fun _CREATECONTAINER() : machine {
 	return retVal;
 }
 
-machine Container {
+machine Container 
+receives;
+{
 	start state Init {
 		
 	}
