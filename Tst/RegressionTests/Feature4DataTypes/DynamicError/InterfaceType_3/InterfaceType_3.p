@@ -2,12 +2,16 @@
 // 1) Event being sent is in the interface set assocated with the target.
 
 event e1;
-event e2: I1;
+event e2: MyMachine;
 event e3;
 
-interface I1 e1, e2, e3;
+eventset es = {e1, e2, e3};
+eventset es1 = {e1};
+type MyMachine() = es;
+type MyMachine1() = es1;
+
 main machine MyMachine
-	receives e1, e2;
+	exports MyMachine;
 	sends e2, e1;
 {
 	var x : machine;
@@ -16,7 +20,7 @@ main machine MyMachine
 		entry {
 			x = this;
 			send x, e1;
-			send this, e2, x as I1;
+			send this, e2, x as MyMachine1;
 		}
 	}
 

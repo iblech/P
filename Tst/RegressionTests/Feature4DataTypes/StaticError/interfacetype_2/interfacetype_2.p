@@ -6,12 +6,14 @@ event F: machine;
 event G: I1;
 event H: M;
 
-interface I1 A, B, E;
-interface I2 E, F, G, A, B;
+eventset es1 = {A, B, E};
+eventset es2 = {E, F, A, B};
+type I1() = es1;
+type I2() = es2;
 
 main machine M
-receives F, G, null;
-sends G, null;
+exports I3;
+sends G;
 {
    var x: I1;
    var y: machine;

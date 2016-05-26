@@ -4,7 +4,12 @@ event myCount:int;
 event Req;
 event Resp;
 
-main model Scheduler {
+eventset SRevs = {Req, Resp};
+type Scheduler() = SRevs;
+
+main model Scheduler 
+exports Scheduler;
+{
 	var p1:machine;
 	var p2:machine;
 	var p3:machine;
@@ -44,7 +49,12 @@ main model Scheduler {
     }
 }
 
-machine Process {
+eventset PRevs = {myCount, init, Resp};
+type Process(machine) = PRevs;
+
+machine Process 
+exports Process;
+{
 	var count:int;
 	var parent:machine;
 	var other1:machine;

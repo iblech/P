@@ -6,16 +6,18 @@ event e2;
 event e3;
 
 main machine MyMachine
-	receives e1, e3;
-	sends e2, e1;
+	receives e1, e2;
+	sends e1;
 {
 	var x : machine;
+	var y : event;
 	start state Init {
 		defer e1;
 		entry {
 			x = this;
 			send x, e1;
-			send this, e2;
+			y = e2;
+			send this, y;
 		}
 	}
 

@@ -5,9 +5,11 @@ event e1;
 event e2: MyMachine;
 event e3;
 
-interface I1 e1, e2, e3;
+eventset es = {e1, e2, e3};
+type MyMachine() = es;
+
 main machine MyMachine
-	receives e1, e2;
+	exports MyMachine;
 	sends e2, e1;
 {
 	var x : machine;

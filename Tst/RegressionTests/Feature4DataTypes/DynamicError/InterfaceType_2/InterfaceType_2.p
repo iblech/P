@@ -7,7 +7,7 @@ event e3;
 
 main machine MyMachine
 	receives e1, e3;
-	sends e2;
+	sends e2, e1;
 {
 	var x : machine;
 	start state Init {

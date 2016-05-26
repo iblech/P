@@ -19,7 +19,7 @@ event eStopTimerReturned assert 1;
 event eObjectEncountered assert 1;
 
 eventset elevator_receives = {eCloseDoor, eOpenDoor, eDoorOpened, eTimerFired, eStopTimerReturned, eDoorClosed, eObjectDetected, eDoorStopped, eOperationSuccess, eOperationFailure};
-interface iElevator() : elevator_receives;
+type iElevator() = elevator_receives;
 
 machine Elevator 
 exports iElevator;
@@ -161,7 +161,7 @@ receives;
 }
 
 eventset Door_Receives = {eSendCommandToOpenDoor, eSendCommandToCloseDoor, eObjectEncountered, eSendCommandToStopDoor, eSendCommandToResetDoor};
-interface iDoor(machine) : Door_Receives;
+type iDoor(machine) = Door_Receives;
 
 model Door 
 exports iDoor; 
@@ -239,7 +239,7 @@ exports iDoor;
 }
 
 eventset Timer_Receives = { eStartDoorCloseTimer, eStopDoorCloseTimer };
-interface iTimer(machine): Timer_Receives;
+type iTimer(machine) = Timer_Receives;
 
 model Timer
 exports iTimer;
