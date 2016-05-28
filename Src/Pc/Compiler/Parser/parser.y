@@ -20,8 +20,9 @@
 
 %token TRUE FALSE
 
-%token EVENTSET
-%token RECEIVES EXPORTS SENDS
+%token MODULE HIDE EXPORT SAFE ASSUME ASSERT RENAME TO 
+%token EVENTSET 
+%token RECEIVES SENDS
 
 %token SWAP, XFER
 
@@ -62,9 +63,11 @@ TopDecl
 	| EventDecl
 	| EventSetDecl
 	| InterfaceDecl
-	| MachineDecl
 	| MonitorDecl
-	| StaticFunDecl
+	| ModuleDecl
+	| NamedModuleDecl
+	| TestDecl
+	| ImplementationDecl
 	;
 
 /******************* Annotations *******************/ 
@@ -124,14 +127,81 @@ EventSetDecl
 
 
 
-/****************** Interface Declarations ******************/
+	/****************** Module System Related Declarations ******************/
+/* Interface Type */
 InterfaceDecl
-	: TYPE ID LPAREN InTypeOrNone RPAREN ASSIGN ID SEMICOLON			{ AddInterfaceType($2.str, $7.str, ToSpan(@2), ToSpan(@7), ToSpan(@1)); } 
+	: TYPE ID LPAREN InTypeOrNone RPAREN ASSIGN ID SEMICOLON	{ AddInterfaceType($2.str, $7.str, ToSpan(@2), ToSpan(@7), ToSpan(@1)); } 
 	;
 
 InTypeOrNone
-	: Type											{ SetInterfaceConstType(ToSpan(@1));    }
+	: Type														{ SetInterfaceConstType(ToSpan(@1));    }
 	|												
+	;
+
+/* Module */
+ModuleDecl
+	| MODULE ID LCBRACE ModuleBody RCBRACE			{ AddModule($2.str, ToSpan(@2), ToSpan(@1)); }
+	;
+
+ModuleBody
+	: ModuleBodyItem
+	| ModuleBodyItem ModuleBody 
+	;
+
+ModuleBodyItem
+	: MachineDecl
+	| StaticFunDecl
+	;
+
+
+/* Module Expression */
+Module
+	: HideExpr
+	| AssertExpr
+	| AssumeExpr
+	| ExportExpr
+	| SafeExpr
+	| RenameExpr
+	| ID								{ PushModule($1.str, ToSpan(@1)); }
+	;
+ModuleExpr 
+	: Module							{ PushModuleExpr(ToSpan(@1), true); }
+	| Module COMMA ModuleExpr			{ PushModuleExpr(ToSpan(@1), false); }
+	;
+
+/* Hide */
+HideExpr
+	: LPAREN HIDE NonDefaultEventList IN ModuleExpr RPAREN		{ PushHideExpr(ToSpan(@1)); }
+	;
+
+/* Safe */
+SafeExpr
+	: LPAREN SAFE ModuleExpr RPAREN		{ PushHideExpr(ToSpan(@1)); }
+	;
+/* Assert */
+AssertExpr
+	: LPAREN ASSERT IDList IN ModuleExpr RPAREN		{ PushAssertExpr(ToSpan(@1)); }
+	;
+
+/* Assume */
+AssumeExpr
+	: LPAREN ASSUME IDList IN ModuleExpr RPAREN		{ PushAssumeExpr(ToSpan(@1)); }
+	;
+
+/* Export */
+ExportExpr
+	: LPAREN EXPORT ID AS ID IN ModuleExpr RPAREN		{ PushExportExpr($3.str, $5.str, ToSpan(@3), ToSpan(@5), ToSpan(@1)); }
+	;
+
+/* Rename */
+RenameExpr
+	: LPAREN RENAME LPAREN IDList RPAREN IN ModuleExpr RPAREN		{ PushRenameExpr(ToSpan(@1)); }
+	;
+
+/* IDList */
+IDList 
+	: ID					{ PushID($1.str, ToSpan(@1), true); }
+	| ID COMMA IDList		{ PushID($1.str, ToSpan(@1), false); }
 	;
 
 	/******************* Machine Declarations *******************/
