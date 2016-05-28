@@ -115,8 +115,15 @@
 			 //related to module system
 			 keywords.Add("eventset", (int)Tokens.EVENTSET);
 			 keywords.Add("receives", (int)Tokens.RECEIVES);
-			 keywords.Add("exports", (int)Tokens.EXPORTS);
 			 keywords.Add("sends", (int)Tokens.SENDS);
+			 keywords.Add("module", (int)Tokens.MODULE);
+			 keywords.Add("hide", (int)Tokens.HIDE);
+			 keywords.Add("export", (int)Tokens.EXPORT);
+			 keywords.Add("assume", (int)Tokens.ASSUME);
+			 keywords.Add("safe", (int)Tokens.SAFE);
+			 keywords.Add("rename", (int)Tokens.RENAME);
+			 keywords.Add("to", (int)Tokens.TO);
+
 		 }
 
          int GetIdToken(string txt)

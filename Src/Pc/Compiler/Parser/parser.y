@@ -143,7 +143,7 @@ MachineDecl
 ReceivesOrExports
 	: RECEIVES NonDefaultEventList SEMICOLON         { crntReceivesList.AddRange(crntEventList); crntEventList.Clear(); }
 	| RECEIVES SEMICOLON
-	| EXPORTS ID SEMICOLON						     { AddExports($2.str, ToSpan(@2), ToSpan(@1)); }
+	| COLON ID										 { AddExports($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
 Sends
