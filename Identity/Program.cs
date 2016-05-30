@@ -59,14 +59,15 @@ namespace Microsoft.Identity
 
         private static void gen_TupType(P_Root.TupType t, StringBuilder sb)
         {
+            var x = t;
             sb.Append("(");
-            while (t.hd != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            while (x.tl != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
             {
-                gen_type(t.hd as P_Root.IArgType_TypeDef__1, sb);
+                gen_type(x.hd as P_Root.IArgType_TypeDef__1, sb);
                 sb.Append(", ");
-                t = t.tl as P_Root.TupType;
+                x = x.tl as P_Root.TupType;
             }
-            sb.Length -= 2;
+            gen_type(x.hd as P_Root.IArgType_TypeDef__1, sb);
             sb.Append(')');
         }
 
@@ -80,13 +81,13 @@ namespace Microsoft.Identity
         private static void gen_NmdTupType(P_Root.NmdTupType t, StringBuilder sb)
         {
             sb.Append("(");
-            while(t.hd != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            while(t.tl != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
             {
                 gen_NmbTupTypeField(t.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(", ");
                 t = t.tl as P_Root.NmdTupType;
             }
-            sb.Length -= 2;
+            gen_NmbTupTypeField(t.hd as P_Root.NmdTupTypeField, sb);
             sb.Append(')');
         }
 
@@ -290,6 +291,7 @@ namespace Microsoft.Identity
             sb.Append(".");
             if (e.name == P_Root.MkUserCnst(P_Root.TypeCnstKind.String))
             {
+                Console.WriteLine((e.name as P_Root.StringCnst).Value);
                 sb.Append((e.name as P_Root.StringCnst).Value);
             }
             else if (e.name == P_Root.MkUserCnst(P_Root.TypeCnstKind.Natural))
@@ -301,6 +303,16 @@ namespace Microsoft.Identity
 
         private static void gen_Exprs(P_Root.Exprs e, StringBuilder sb)
         {
+            var x = e;
+            while(x.tail != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            {
+                gen_Qualifier(x.qual as P_Root.Qualifier, sb);
+                sb.Append(", ");
+                gen_Expr(x.head as P_Root.Expr, sb);
+                x = x.tail as P_Root.Exprs;
+            }
+            sb.Length -= 2;
+            sb.Append(')');
 
         }
 
