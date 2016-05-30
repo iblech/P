@@ -57,6 +57,7 @@ namespace Microsoft.Identity
             return;
         }
 
+        //Can't we have empty tuples?
         private static void gen_TupType(P_Root.TupType t, StringBuilder sb)
         {
             var x = t;
@@ -80,14 +81,15 @@ namespace Microsoft.Identity
 
         private static void gen_NmdTupType(P_Root.NmdTupType t, StringBuilder sb)
         {
+            var x = t;
             sb.Append("(");
-            while(t.tl != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            while(x.tl != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
             {
-                gen_NmbTupTypeField(t.hd as P_Root.NmdTupTypeField, sb);
+                gen_NmbTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(", ");
-                t = t.tl as P_Root.NmdTupType;
+                x = x.tl as P_Root.NmdTupType;
             }
-            gen_NmbTupTypeField(t.hd as P_Root.NmdTupTypeField, sb);
+            gen_NmbTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
             sb.Append(')');
         }
 
@@ -172,6 +174,37 @@ namespace Microsoft.Identity
             sb.Append("(");
             gen_Expr(e.args as P_Root.Expr, sb);
             sb.Append(")");
+        }
+
+        private static void gen_NulApp(P_Root.NulApp e, StringBuilder sb)
+        {
+            switch(e.op.Symbol as String)
+            {
+                case "TRUE":
+                    sb.Append("true");
+                    break;
+                case "FALSE":
+                    sb.Append("false");
+                    break;
+                case "THIS":
+                    sb.Append("this");
+                    break;
+                case "NONDET":
+                    sb.Append("$");
+                    break;
+                case "FAIRNONDET":
+                    sb.Append("$$");
+                    break;
+                case "NULL":
+                    sb.Append("null");
+                    break;
+                case "HALT":
+                    sb.Append("halt");
+                    break;
+                default: //Actually must be error. However, not sure how to get an integer constant value out of this.
+                    sb.Append(e.op as P_Root.Natural); //Fix this as well.
+                    break;
+            }
         }
 
         private static void gen_UnApp(P_Root.UnApp e, StringBuilder sb)
@@ -284,6 +317,7 @@ namespace Microsoft.Identity
             return;
         }
 
+        //Heavily screwed up. Need some help!
         private static void gen_Field(P_Root.Field e, StringBuilder sb)
         {
             //DEBUG
@@ -298,22 +332,6 @@ namespace Microsoft.Identity
             {
                 //sb.Append((e.name as P_Root.Natural).Value);
             }
-        }
-
-
-        private static void gen_Exprs(P_Root.Exprs e, StringBuilder sb)
-        {
-            var x = e;
-            while(x.tail != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
-            {
-                gen_Qualifier(x.qual as P_Root.Qualifier, sb);
-                sb.Append(", ");
-                gen_Expr(x.head as P_Root.Expr, sb);
-                x = x.tail as P_Root.Exprs;
-            }
-            sb.Length -= 2;
-            sb.Append(')');
-
         }
 
         private static void gen_Default(P_Root.Default e, StringBuilder sb)
@@ -332,37 +350,106 @@ namespace Microsoft.Identity
             return;
         }
 
-        private static int gen_Expr(P_Root.Expr expr, StringBuilder sb)
+        private static int gen_Exprs(P_Root.Exprs e, StringBuilder sb)
         {
-            if (expr == P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)) { } //Do Nothing.
-
-            if(expr == typeof(P_Root.Name)) 
+            var x = e;
+            int i = 0;
+            while (x.tail != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
             {
-                
+                gen_Qualifier(x.qual as P_Root.Qualifier, sb);
+                gen_Expr(x.head as P_Root.Expr, sb);
+                sb.Append(", ");
+                x = x.tail as P_Root.Exprs;
+                i++;
             }
-            else if(t == typeof(P_Root.New))
-            {
-                
-            }
-            else if(t == typeof(P_Root.SeqType))
-            {
-                gen_SeqType(t as P_Root.SeqType, sb);
-            }
-            else if(t == typeof(P_Root.TupType))
-            {
-                gen_TupType(t as P_Root.TupType, sb);
-            }
-            else if (t == typeof(P_Root.NmdTupType))
-            {
-                gen_NmdTupType(t as P_Root.NmdTupType, sb);
-            }
-            else if (t == typeof(P_Root.MapType))
-            {
-                gen_MapType(t as P_Root.MapType, sb);
-            }
-            return 0;
+            gen_Qualifier(x.qual as P_Root.Qualifier, sb);
+            gen_Expr(x.head as P_Root.Expr, sb);
+            if(x.head !=  P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))   
+                i++;
+            return i;
         }
 
+        private static void gen_NamedExprs(P_Root.NamedExprs e, StringBuilder sb)
+        {
+            var x = e;
+            while (x.tail != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            {
+                sb.Append(getName(x.field) + " = ");
+                gen_Expr(x.exp as P_Root.Expr, sb);
+                sb.Append(", ");
+                x = x.tail as P_Root.NamedExprs;
+            }
+            sb.Append(getName(x.field) + " = ");
+            gen_Expr(x.exp as P_Root.Expr, sb);
+        }
+        
+        private static void gen_Tuple(P_Root.Tuple e, StringBuilder sb)
+        {
+            //(Ugly?) Tuple generation logic. We need to put a comma at the end iff we have a singleton tuple
+            //like (1,). We thus return the # of terms from gen_Exprs().
+            sb.Append('(');
+            if (gen_Exprs(e.body as P_Root.Exprs, sb) == 1)
+                sb.Append(',');
+            sb.Append(')');
+
+        }
+
+        private static void gen_NamedTuple(P_Root.NamedTuple e, StringBuilder sb)
+        {
+            sb.Append('(');
+            gen_NamedExprs(e.body as P_Root.NamedExprs, sb);
+            sb.Append(')');
+        }
+
+        private static void gen_Expr(P_Root.Expr e, StringBuilder sb)
+        {
+            if (e == P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)) { } //Do Nothing.
+            else if (e == typeof(P_Root.Name))
+            {
+                gen_Name((e as P_Root.Name), sb);
+            }
+            else if (e == typeof(P_Root.New))
+            {
+                gen_New((e as P_Root.New), sb);
+            }
+            else if (e == typeof(P_Root.FunApp))
+            {
+                gen_FunApp((e as P_Root.FunApp), sb);
+            }
+            else if (e == typeof(P_Root.NulApp))
+            {
+                gen_NulApp((e as P_Root.NulApp), sb);
+            }
+            else if (e == typeof(P_Root.UnApp))
+            {
+                gen_UnApp((e as P_Root.UnApp), sb);
+            }
+            else if (e == typeof(P_Root.BinApp))
+            {
+                gen_BinApp((e as P_Root.BinApp), sb);
+            }
+            else if (e == typeof(P_Root.Field))
+            {
+                gen_Field((e as P_Root.Field), sb);
+            }
+            else if (e == typeof(P_Root.Default))
+            {
+                gen_Default((e as P_Root.Default), sb);
+            }
+            else if (e == typeof(P_Root.Cast))
+            {
+                gen_Cast((e as P_Root.Cast), sb);
+            }
+            else if (e == typeof(P_Root.Tuple))
+            {
+                gen_Tuple((e as P_Root.Tuple), sb);
+            }
+            else if (e == typeof(P_Root.NamedTuple))
+            {
+                gen_NamedTuple((e as P_Root.NamedTuple), sb);
+            }
+            return;
+        }
 
 
         private int gen_EventDecl(P_Root.EventDecl event_, TextWriter writer)
