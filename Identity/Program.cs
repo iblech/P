@@ -114,7 +114,7 @@ namespace Microsoft.Identity
             gen_type(t.v, sb);
             sb.Append("]");
         }
-       private static void gen_type(ICSharpTerm t, StringBuilder sb)
+        private static void gen_type(ICSharpTerm t, StringBuilder sb)
         {
             //t: any TypeExpr. This means we can check its derived type as we wish.
             if(t == typeof(P_Root.NameType)) 
@@ -143,15 +143,215 @@ namespace Microsoft.Identity
             }
         }
 
-        private int gen_TypeDef(P_Root.TypeDef typeDef, TextWriter writer)
+        private static int gen_TypeDef(P_Root.TypeDef typeDef, TextWriter writer)
         {
             StringBuilder sb = new StringBuilder("type ");
-            sb.Append(getName(typeDef.type)+" = ");
+            sb.Append(getName(typeDef.name)+" = ");
             gen_type(typeDef.type, sb);
             writer.WriteLine(sb.ToString());
-
             return 0;
         }
+
+        private static void gen_Name(P_Root.Name e, StringBuilder sb)
+        {
+            sb.Append(getName(e));
+        }
+        private static void gen_New(P_Root.New e, StringBuilder sb)
+        {
+            sb.Append("new ");
+            sb.Append(getName(e));
+            sb.Append("(");
+            gen_Expr(e.arg as P_Root.Expr, sb);
+            sb.Append(")");
+        }
+
+        private static void gen_FunApp(P_Root.FunApp e, StringBuilder sb)
+        {
+            sb.Append(getName(e.name));
+            sb.Append("(");
+            gen_Expr(e.args as P_Root.Expr, sb);
+            sb.Append(")");
+        }
+
+        private static void gen_UnApp(P_Root.UnApp e, StringBuilder sb)
+        {
+            Console.WriteLine(e.op.Symbol as String);
+            switch (e.op.Symbol as String)
+            {
+                case "NOT":
+                    sb.Append("!");
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    break;
+                case "NEG":
+                    sb.Append("-");
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    break;
+                case "KEYS":
+                    sb.Append("keys(");
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(')');
+                    break;
+                case "VALUES":
+                    sb.Append("values(");
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(')');
+                    break;
+                case "SIZEOF":
+                    sb.Append("sizeof(");
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(')');
+                    break;
+            }
+            return;
+        }
+
+        private static void gen_BinApp(P_Root.BinApp e, StringBuilder sb)
+        {
+            switch (e.op.Symbol as String)
+            {
+                case "ADD":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" + ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "SUB":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" - ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "MUL":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" * ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "INTDIV":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" / ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "AND":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" & ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "OR":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" | ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "EQ":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" == ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "NEQ":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" != ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "LT":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" < ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "LE":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" <= ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "GT":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" > ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "GE":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" >= ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "IDX": //****************REVIEW//****************
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" + ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+                case "IN":
+                    gen_Expr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(" in ");
+                    gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    break;
+            }
+            return;
+        }
+
+        private static void gen_Field(P_Root.Field e, StringBuilder sb)
+        {
+            //DEBUG
+            gen_Expr(e.arg as P_Root.Expr, sb);
+            sb.Append(".");
+            if (e.name == P_Root.MkUserCnst(P_Root.TypeCnstKind.String))
+            {
+                sb.Append((e.name as P_Root.StringCnst).Value);
+            }
+            else if (e.name == P_Root.MkUserCnst(P_Root.TypeCnstKind.Natural))
+            {
+                //sb.Append((e.name as P_Root.Natural).Value);
+            }
+        }
+
+
+        private static void gen_Exprs(P_Root.Exprs e, StringBuilder sb)
+        {
+
+        }
+
+        private static void gen_Default(P_Root.Default e, StringBuilder sb)
+        {
+            sb.Append("default(");
+            gen_type(e.type, sb);
+            sb.Append(")");
+            return;
+        }
+
+        private static void gen_Cast(P_Root.Cast e, StringBuilder sb)
+        {
+            gen_Expr(e.arg as P_Root.Expr, sb);
+            sb.Append(" as ");
+            gen_type(e.type, sb);
+            return;
+        }
+
+        private static int gen_Expr(P_Root.Expr expr, StringBuilder sb)
+        {
+            if (expr == P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)) { } //Do Nothing.
+
+            if(expr == typeof(P_Root.Name)) 
+            {
+                
+            }
+            else if(t == typeof(P_Root.New))
+            {
+                
+            }
+            else if(t == typeof(P_Root.SeqType))
+            {
+                gen_SeqType(t as P_Root.SeqType, sb);
+            }
+            else if(t == typeof(P_Root.TupType))
+            {
+                gen_TupType(t as P_Root.TupType, sb);
+            }
+            else if (t == typeof(P_Root.NmdTupType))
+            {
+                gen_NmdTupType(t as P_Root.NmdTupType, sb);
+            }
+            else if (t == typeof(P_Root.MapType))
+            {
+                gen_MapType(t as P_Root.MapType, sb);
+            }
+            return 0;
+        }
+
+
 
         private int gen_EventDecl(P_Root.EventDecl event_, TextWriter writer)
         {
