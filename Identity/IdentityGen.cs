@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.Pc.Domains.P_Root;
 using Microsoft.Formula.API.Generators;
 
-
 namespace Microsoft.Identity
 {
 
@@ -23,7 +22,6 @@ namespace Microsoft.Identity
         {
             this.writer = writer;
         }
-    
         private static string getName(ICSharpTerm x)
         {
             return (x as P_Root.StringCnst).Value;
@@ -72,7 +70,7 @@ namespace Microsoft.Identity
             sb.Append(')');
         }
 
-        private static void gen_NmbTupTypeField(P_Root.NmdTupTypeField f, StringBuilder sb)
+        private static void gen_NmdTupTypeField(P_Root.NmdTupTypeField f, StringBuilder sb)
         {
             gen_Qualifier(f.qual as P_Root.Qualifier, sb);
             sb.Append(" " + getName(f.name) + ": ");
@@ -85,11 +83,11 @@ namespace Microsoft.Identity
             sb.Append("(");
             while(x.tl != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
             {
-                gen_NmbTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
+                gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(", ");
                 x = x.tl as P_Root.NmdTupType;
             }
-            gen_NmbTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
+            gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
             sb.Append(')');
         }
 
@@ -451,7 +449,58 @@ namespace Microsoft.Identity
             return;
         }
 
+        private static void gen_NewStmt(P_Root.NewStmt s, StringBuilder sb)
+        {
+            //TODO look at info
+            sb.Append("new ");
+            sb.Append(getName(s.name));
+           // if(s.arg == typeof(P_Root.NamedTuple) || s.arg == typeof(P_Root.Tuple))
+            //{
+              //  gen_Expr(s.arg as P_Root.Expr, sb);
+            //}else{
+            sb.Append('(');
+            gen_Expr(s.arg as P_Root.Expr, sb);
+            sb.Append(')');
+            //}
+        }
 
+        private static void gen_Raise(P_Root.Raise s, StringBuilder sb)
+        {
+            sb.Append("raise ");
+            gen_Expr(s.ev as P_Root.Expr, sb);
+            sb.Append(" ");
+            gen_Expr(s.arg as P_Root.Expr, sb);
+            sb.Append(";\n");
+        }
+
+        private static void gen_Send(P_Root.Send s, StringBuilder sb)
+        {
+            gen_Qualifier(s.qual as P_Root.Qualifier, sb);
+            sb.Append("send ");
+            gen_Expr(s.dest as P_Root.Expr, sb);
+            sb.Append(", ");
+            gen_Expr(s.ev as P_Root.Expr, sb);
+            sb.Append(", "); 
+            gen_Expr(s.arg as P_Root.Expr, sb);
+            return;
+        }
+
+        private static void gen_Monitor(P_Root.Monitor s, StringBuilder sb)
+        {
+            sb.Append("monitor ");
+            gen_Expr(s.ev as P_Root.Expr, sb);
+            sb.Append(", ");
+            gen_Expr(s.arg as P_Root.Expr, sb);
+            sb.Append(";\n");
+        }
+        
+        private void gen_FunStmt(P_Root.FunStmt s, StringBuilder sb)
+        {
+            sb.Append();
+        }
+            
+            
+            
         private int gen_EventDecl(P_Root.EventDecl event_, TextWriter writer)
         {
             StringBuilder sb = new StringBuilder("event ");

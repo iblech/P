@@ -107,6 +107,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PingPongFast", "Src\PrtDist
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity", "Identity\Identity.csproj", "{0F1AFACB-2EC2-4499-8F47-E8DD76EE24AA}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P2Boogie", "ConsoleApplication2\P2Boogie.csproj", "{81930522-38C2-40BA-96F6-E3EB4380DE0F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -413,6 +415,18 @@ Global
 		{0F1AFACB-2EC2-4499-8F47-E8DD76EE24AA}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{0F1AFACB-2EC2-4499-8F47-E8DD76EE24AA}.Release|x64.ActiveCfg = Release|Any CPU
 		{0F1AFACB-2EC2-4499-8F47-E8DD76EE24AA}.Release|x86.ActiveCfg = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|x64.ActiveCfg = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
