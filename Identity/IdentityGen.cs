@@ -550,10 +550,19 @@ namespace Microsoft.Identity
             gen_Expr(s.cond as P_Root.Expr, sb);
             sb.Append(")\n{\n");
             gen_Stmt(s.@true as P_Root.Stmt, sb);
-
-            sb.Append("\n}else{\n");
-
+            if (s.@false != null)
+            {
+                sb.Append("\n}else ");
+                gen_Stmt(s.@false as P_Root.Stmt, sb);
+                sb.Append("}\n");
+            }
+            else 
+            {
+                sb.Append("}\n");                
+            }
         }
+
+        private static void gen_
 
         private static void gen_Stmt(P_Root.Stmt s, StringBuilder sb)
         {
