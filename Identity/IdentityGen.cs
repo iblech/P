@@ -470,7 +470,6 @@ namespace Microsoft.Identity
             gen_Expr(s.ev as P_Root.Expr, sb);
             sb.Append(" ");
             gen_Expr(s.arg as P_Root.Expr, sb);
-            sb.Append(";\n");
         }
 
         private static void gen_Send(P_Root.Send s, StringBuilder sb)
@@ -491,16 +490,78 @@ namespace Microsoft.Identity
             gen_Expr(s.ev as P_Root.Expr, sb);
             sb.Append(", ");
             gen_Expr(s.arg as P_Root.Expr, sb);
-            sb.Append(";\n");
         }
         
         private void gen_FunStmt(P_Root.FunStmt s, StringBuilder sb)
         {
-            sb.Append();
+            sb.Append(getName(s.name));
+            sb.Append('(');
+            gen_Exprs(s.args as P_Root.Exprs, sb);
+            sb.Append(")");
+            return;
         }
+        
+        private static void gen_NulStmt(P_Root.NulStmt s, StringBuilder sb)
+        {
+            if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.POP))
+                sb.Append("pop");
+            else if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.SKIP))
+                sb.Append("skip");
+        }
+
+        private static void gen_BinStmt(P_Root.BinStmt s, StringBuilder sb)
+        {
+            gen_Expr(s.arg1 as P_Root.Expr, sb);
             
-            
-            
+            if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.REMOVE))
+            {
+                sb.Append(" -= ");
+            }else if(s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.ASSIGN))
+            {
+                sb.Append(" = ");
+            }
+            else if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.INSERT))
+            {
+                sb.Append(" += ");
+            }
+
+            gen_Expr(s.arg2 as P_Root.Expr, sb);
+        }
+
+        private static void gen_Return(P_Root.Return s, StringBuilder sb)
+        {
+            sb.Append("return ");
+            gen_Expr(s.expr as P_Root.Expr, sb);
+        }
+
+        private static void gen_While(P_Root.While s, StringBuilder sb)
+        {
+            sb.Append("while(");
+            gen_Expr(s.cond as P_Root.Expr, sb);
+            sb.Append(")\n{\n");
+            gen_Stmt(s.body as P_Root.Stmt, sb);
+            sb.Append("\n}\n");
+            return;
+        }
+
+        private static void gen_Ite(P_Root.Ite s, StringBuilder sb)
+        {
+            sb.Append("if(");
+            gen_Expr(s.cond as P_Root.Expr, sb);
+            sb.Append(")\n{\n");
+            gen_Stmt(s.@true as P_Root.Stmt, sb);
+
+            sb.Append("\n}else{\n");
+
+        }
+
+        private static void gen_Stmt(P_Root.Stmt s, StringBuilder sb)
+        {
+            return;
+        }
+
+
+
         private int gen_EventDecl(P_Root.EventDecl event_, TextWriter writer)
         {
             StringBuilder sb = new StringBuilder("event ");
