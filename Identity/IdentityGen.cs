@@ -9,7 +9,6 @@ using System.Threading.Tasks;
 using Microsoft.Pc.Domains.P_Root;
 using Microsoft.Formula.API.Generators;
 
-
 namespace Microsoft.Identity
 {
 
@@ -23,7 +22,6 @@ namespace Microsoft.Identity
         {
             this.writer = writer;
         }
-    
         private static string getName(ICSharpTerm x)
         {
             return (x as P_Root.StringCnst).Value;
@@ -72,7 +70,7 @@ namespace Microsoft.Identity
             sb.Append(')');
         }
 
-        private static void gen_NmbTupTypeField(P_Root.NmdTupTypeField f, StringBuilder sb)
+        private static void gen_NmdTupTypeField(P_Root.NmdTupTypeField f, StringBuilder sb)
         {
             gen_Qualifier(f.qual as P_Root.Qualifier, sb);
             sb.Append(" " + getName(f.name) + ": ");
@@ -85,11 +83,11 @@ namespace Microsoft.Identity
             sb.Append("(");
             while(x.tl != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
             {
-                gen_NmbTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
+                gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(", ");
                 x = x.tl as P_Root.NmdTupType;
             }
-            gen_NmbTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
+            gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
             sb.Append(')');
         }
 
@@ -450,6 +448,127 @@ namespace Microsoft.Identity
             }
             return;
         }
+
+        private static void gen_NewStmt(P_Root.NewStmt s, StringBuilder sb)
+        {
+            //TODO look at info
+            sb.Append("new ");
+            sb.Append(getName(s.name));
+           // if(s.arg == typeof(P_Root.NamedTuple) || s.arg == typeof(P_Root.Tuple))
+            //{
+              //  gen_Expr(s.arg as P_Root.Expr, sb);
+            //}else{
+            sb.Append('(');
+            gen_Expr(s.arg as P_Root.Expr, sb);
+            sb.Append(')');
+            //}
+        }
+
+        private static void gen_Raise(P_Root.Raise s, StringBuilder sb)
+        {
+            sb.Append("raise ");
+            gen_Expr(s.ev as P_Root.Expr, sb);
+            sb.Append(" ");
+            gen_Expr(s.arg as P_Root.Expr, sb);
+        }
+
+        private static void gen_Send(P_Root.Send s, StringBuilder sb)
+        {
+            gen_Qualifier(s.qual as P_Root.Qualifier, sb);
+            sb.Append("send ");
+            gen_Expr(s.dest as P_Root.Expr, sb);
+            sb.Append(", ");
+            gen_Expr(s.ev as P_Root.Expr, sb);
+            sb.Append(", "); 
+            gen_Expr(s.arg as P_Root.Expr, sb);
+            return;
+        }
+
+        private static void gen_Monitor(P_Root.Monitor s, StringBuilder sb)
+        {
+            sb.Append("monitor ");
+            gen_Expr(s.ev as P_Root.Expr, sb);
+            sb.Append(", ");
+            gen_Expr(s.arg as P_Root.Expr, sb);
+        }
+        
+        private void gen_FunStmt(P_Root.FunStmt s, StringBuilder sb)
+        {
+            sb.Append(getName(s.name));
+            sb.Append('(');
+            gen_Exprs(s.args as P_Root.Exprs, sb);
+            sb.Append(")");
+            return;
+        }
+        
+        private static void gen_NulStmt(P_Root.NulStmt s, StringBuilder sb)
+        {
+            if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.POP))
+                sb.Append("pop");
+            else if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.SKIP))
+                sb.Append("skip");
+        }
+
+        private static void gen_BinStmt(P_Root.BinStmt s, StringBuilder sb)
+        {
+            gen_Expr(s.arg1 as P_Root.Expr, sb);
+            
+            if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.REMOVE))
+            {
+                sb.Append(" -= ");
+            }else if(s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.ASSIGN))
+            {
+                sb.Append(" = ");
+            }
+            else if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.INSERT))
+            {
+                sb.Append(" += ");
+            }
+
+            gen_Expr(s.arg2 as P_Root.Expr, sb);
+        }
+
+        private static void gen_Return(P_Root.Return s, StringBuilder sb)
+        {
+            sb.Append("return ");
+            gen_Expr(s.expr as P_Root.Expr, sb);
+        }
+
+        private static void gen_While(P_Root.While s, StringBuilder sb)
+        {
+            sb.Append("while(");
+            gen_Expr(s.cond as P_Root.Expr, sb);
+            sb.Append(")\n{\n");
+            gen_Stmt(s.body as P_Root.Stmt, sb);
+            sb.Append("\n}\n");
+            return;
+        }
+
+        private static void gen_Ite(P_Root.Ite s, StringBuilder sb)
+        {
+            sb.Append("if(");
+            gen_Expr(s.cond as P_Root.Expr, sb);
+            sb.Append(")\n{\n");
+            gen_Stmt(s.@true as P_Root.Stmt, sb);
+            if (s.@false != null)
+            {
+                sb.Append("\n}else ");
+                gen_Stmt(s.@false as P_Root.Stmt, sb);
+                sb.Append("}\n");
+            }
+            else 
+            {
+                sb.Append("}\n");                
+            }
+        }
+
+        private static void gen_
+
+        private static void gen_Stmt(P_Root.Stmt s, StringBuilder sb)
+        {
+            return;
+        }
+
 
 
         private int gen_EventDecl(P_Root.EventDecl event_, TextWriter writer)

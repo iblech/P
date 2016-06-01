@@ -108,6 +108,7 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity", "Identity\Identity.csproj", "{0F1AFACB-2EC2-4499-8F47-E8DD76EE24AA}"
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "BoogieExprTranslator", "Src\BoogieExprTranslator\BoogieExprTranslator.fsproj", "{DD849437-50D3-498F-A0B4-2E06B8387AA9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P2Boogie", "ConsoleApplication2\P2Boogie.csproj", "{81930522-38C2-40BA-96F6-E3EB4380DE0F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -427,6 +428,18 @@ Global
 		{DD849437-50D3-498F-A0B4-2E06B8387AA9}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{DD849437-50D3-498F-A0B4-2E06B8387AA9}.Release|x64.ActiveCfg = Release|Any CPU
 		{DD849437-50D3-498F-A0B4-2E06B8387AA9}.Release|x86.ActiveCfg = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|x64.ActiveCfg = Release|Any CPU
+		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
