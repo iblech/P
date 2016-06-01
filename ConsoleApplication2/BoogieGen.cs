@@ -18,6 +18,7 @@ namespace Microsoft.P2Boogie
         private TextWriter writer;
 
         private static const string tab = "  ";
+
    /****************************************************************************
     *                                                                          *
     *  The basic definitions of P primitives and some basic functions.         *
@@ -182,8 +183,5 @@ implementation {:inline 1} $get_next_event(mid: int) returns (r: Event)
         {
             return (x as P_Root.StringCnst).Value;
         }
-
-
-
     }
 }

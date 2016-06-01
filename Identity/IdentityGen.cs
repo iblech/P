@@ -402,7 +402,7 @@ namespace Microsoft.Identity
         private static void gen_Expr(P_Root.Expr e, StringBuilder sb)
         {
             if (e == P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)) { } //Do Nothing.
-            else if (e == typeof(P_Root.Name))
+            else if (e.GetType() == typeof(P_Root.Name))
             {
                 gen_Name((e as P_Root.Name), sb);
             }
@@ -492,7 +492,7 @@ namespace Microsoft.Identity
             gen_Expr(s.arg as P_Root.Expr, sb);
         }
         
-        private void gen_FunStmt(P_Root.FunStmt s, StringBuilder sb)
+        private static void gen_FunStmt(P_Root.FunStmt s, StringBuilder sb)
         {
             sb.Append(getName(s.name));
             sb.Append('(');
@@ -562,14 +562,111 @@ namespace Microsoft.Identity
             }
         }
 
-        private static void gen_
+        private static void gen_Seq(P_Root.Seq s, StringBuilder sb)
+        {
+            gen_Stmt(s.s1 as P_Root.Stmt, sb);
+            gen_Stmt(s.s2 as P_Root.Stmt, sb);
+        }
+
+        //Come back and review.
+        private static void gen_Cases(P_Root.Cases s, StringBuilder sb)
+        {
+            sb.Append("case " + getName(s.trig) + ": ");
+            gen_AnonFunDecl(s.action as P_Root.AnonFunDecl, sb);
+            if (s.cases != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            {
+                gen_Cases(s.cases as P_Root.Cases, sb);
+            }
+        }
+
+        private static void gen_Receive(P_Root.Receive s,  StringBuilder sb)
+        {
+            sb.Append("receive {");
+            gen_Cases(s.cases as P_Root.Cases, sb);
+            sb.Append("\n}\n");
+        }
+
+        private static void gen_Assert(P_Root.Assert s, StringBuilder sb)
+        {
+            sb.Append("assert ");
+            gen_Expr(s.arg as P_Root.Expr, sb);
+            if (s.msg != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+                sb.Append(", " + getName(s.msg));
+            sb.Append(";");
+        }
+
+        private static void gen_Print(P_Root.Print s, StringBuilder sb)
+        {
+            sb.Append("print " + getName(s.msg));
+        }
 
         private static void gen_Stmt(P_Root.Stmt s, StringBuilder sb)
         {
+            if (s == P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)) { } //Do nothing.
+            else if (s.GetType() == typeof(P_Root.NewStmt))
+            {
+                gen_NewStmt(s as P_Root.NewStmt, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.Raise))
+            {
+                gen_Raise(s as P_Root.Raise, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.Send))
+            {
+                gen_Send(s as P_Root.Send, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.Monitor))
+            {
+                gen_Monitor(s as P_Root.Monitor, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.FunStmt))
+            {
+                gen_FunStmt(s as P_Root.FunStmt, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.NulStmt))
+            {
+                gen_NulStmt(s as P_Root.NulStmt, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.BinStmt))
+            {
+                gen_BinStmt(s as P_Root.BinStmt, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.Return))
+            {
+                gen_Return(s as P_Root.Return, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.While))
+            {
+                gen_While(s as P_Root.While, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.Ite))
+            {
+                gen_Ite(s as P_Root.Ite, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.Seq))
+            {
+                gen_Seq(s as P_Root.Seq, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.Receive))
+            {
+                gen_Receive(s as P_Root.Receive, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.Assert))
+            {
+                gen_Assert(s as P_Root.Assert, sb);
+            }
+            else if (s.GetType() == typeof(P_Root.Print))
+            {
+                gen_Print(s as P_Root.Print, sb);
+            }
+            sb.Append(";\n");
             return;
         }
 
-
+        private static void gen_AnonFunDecl(P_Root.AnonFunDecl d, StringBuilder sb)
+        {
+            return;
+        }
 
         private int gen_EventDecl(P_Root.EventDecl event_, TextWriter writer)
         {
@@ -598,7 +695,7 @@ namespace Microsoft.Identity
             return 0;
         }
 
-        private StringBuilder gen_MachineDecl(P_Root.MachineDecl machine)
+        private static StringBuilder gen_MachineDecl(P_Root.MachineDecl machine)
         {
             StringBuilder sb = new StringBuilder("");
             if (machine.isMain == P_Root.MkUserCnst(P_Root.UserCnstKind.TRUE))
