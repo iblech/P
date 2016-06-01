@@ -78,16 +78,45 @@ domain PData
 	MachineSendsDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 	MachineSendsAllEvents ::= new (mach: any MachineDecl).
 
+	//// Module Declarations
+	ModuleDecl ::= (name: String).
+	NamedModuleDecl ::= (name: String, mod: ModuleExpr).
+	HideExpr ::= new (evtNames: StringList, mod: ModuleExpr). 
+	RenameExpr ::= new (mNames: StringList, mNames: StringList, mod: ModuleExpr).
+	ExportExpr ::= new (mName: String, iName: String, mod: ModuleExpr).
+	AssumeExpr ::= new (monNames: StringList, mod: ModuleExpr).
+	AssertExpr ::= new (monNames: StringList, mod: ModuleExpr)
+	SafeExpr ::= new (mod: ModuleExpr).
+	ModuleExpr ::= new (mod: ModuleDecl, tl: ModuleExpr + { NIL }).
+
+	TestDecl ::= new (name: String, mod: ModuleExpr).
+	RefinementDecl ::= new (name: String, lhs: ModuleExpr, rhs: ModuleExpr).
+	ImplementationDecl ::= new (mod: ModuleExpr).
+
+	////Move this to type checking
+	ModulePrivate ::= (mod: ModuleExpr, ev: String).
+	ModuleSends ::= new (mod: ModuleExpr, ev: String).
+	ModuleReceives ::= new (mod: ModuleExpr, ev: String).
+	ModuleExports ::= new (mod: ModuleExpr, i: String).  // use canonical representation of interface set
+	ModuleCreates ::= new (mod: ModuleExpr, i: String).  // use canonical representation of interface set
+
+	ModuleLinkMap ::= (mod: ModuleExpr, newName: String, origName : String, newName: String).
+	ModuleRenameMap ::= (mod: ModuleExpr, newName: String, origName: String).  // for both machines and monitors
+	ModuleSafeMap ::= (mod: ModuleExpr, newName: String, isSafe: Boolean).
+	ModuleMonitorMap ::= (mod: ModuleExpr, newMonitorName: String, newMachineName: String).
+
+
 	//the following map is used for C code gen and mapping between new I to machine name.
 	MapInterfaceToMachine ::= (iname: String, mname: String). 
 	MapInterfaceToMachine(m.name, m.name) :- m is MachineDecl, no MachineReceivesDecl(m, _).
 	MapInterfaceToMachine(i, m.name) :- MachineExportsDecl(m, i).
+
     /*************************************************************/
     /****************  State Machine Declarations    *************/
     /*************************************************************/
 
     EventDecl      ::= fun (name: String -> card: any QueueConstraint, type: any TypeExpr + { NIL }).    
-    MachineDecl    ::= fun (name: String -> kind: { REAL, MODEL, MONITOR }, card: any QueueConstraint, start: any QualifiedName, isMain: Boolean).
+    MachineDecl    ::= fun (name: String, mod: ModuleDecl + { NIL } -> kind: { REAL, MODEL, MONITOR }, card: any QueueConstraint, start: any QualifiedName, isMain: Boolean).
 
 	ObservesDecl   ::= new (monitor: MachineDecl, ev: NonNullEventLabel).
 
@@ -98,8 +127,8 @@ domain PData
 	// For FunDecl, the order of params is left to right.
 	// For AnonFunDecl, the order of envVars is left to right and top to bottom.
 	// Thus, the numbering of variables is consistent across nested scopes.
-    FunDecl        ::= fun (name: String, owner: MachineDecl + { NIL } -> kind: { REAL, PURE, MODEL }, params: any NmdTupType + { NIL }, return: any TypeExpr + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt).
-    AnonFunDecl    ::= new (owner: MachineDecl + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt, envVars: any NmdTupType).
+    FunDecl        ::= fun (name: String, owner: MachineDecl + ModuleDecl -> kind: { REAL, PURE, MODEL }, params: any NmdTupType + { NIL }, return: any TypeExpr + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt).
+    AnonFunDecl    ::= new (owner: MachineDecl + ModuleDecl, locals: any NmdTupType + { NIL }, body: any Stmt, envVars: any NmdTupType).
     
     StateDecl      ::= fun (name: any QualifiedName, owner: MachineDecl -> entryAction: any AnonFunDecl + String, exitFun: any AnonFunDecl + String, temperature: { HOT, WARM, COLD }).
     TransDecl      ::= fun (src: StateDecl, trig: String + { NULL, HALT } -> dst: any QualifiedName, action: any { PUSH } + AnonFunDecl + String).

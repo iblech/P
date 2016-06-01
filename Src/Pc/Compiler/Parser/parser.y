@@ -21,6 +21,7 @@
 %token TRUE FALSE
 
 %token MODULE HIDE EXPORT SAFE ASSUME ASSERT RENAME TO 
+%token IMPLEMENTATION TEST REFINES
 %token EVENTSET 
 %token RECEIVES SENDS
 
@@ -138,6 +139,10 @@ InTypeOrNone
 	|												
 	;
 
+/* Named Module Expr */
+NamedModuleDecl
+	: MODULE ID ASSIGN ModuleExpr SEMICOLON			{ AddNamedModule($2.str, ToSpan(@2), ToSpan(@1)); }
+
 /* Module */
 ModuleDecl
 	| MODULE ID LCBRACE ModuleBody RCBRACE			{ AddModule($2.str, ToSpan(@2), ToSpan(@1)); }
@@ -195,13 +200,24 @@ ExportExpr
 
 /* Rename */
 RenameExpr
-	: LPAREN RENAME LPAREN IDList RPAREN IN ModuleExpr RPAREN		{ PushRenameExpr(ToSpan(@1)); }
+	: LPAREN RENAME LPAREN IDList RPAREN TO LPAREN IDList RPAREN IN ModuleExpr RPAREN		{ PushRenameExpr(ToSpan(@1)); }
 	;
 
 /* IDList */
 IDList 
 	: ID					{ PushID($1.str, ToSpan(@1), true); }
 	| ID COMMA IDList		{ PushID($1.str, ToSpan(@1), false); }
+	;
+
+/* Test Declaration */
+TestDecl
+	: TEST ID ModuleExpr SEMICOLON							{ AddTestDeclaration($2.str, ToSpan(@2), ToSpan(@1)); }
+	| TEST ID ModuleExpr REFINES ModuleExpr SEMICOLON		{ AddRefinementDeclaration($2.str, ToSpan(@2), ToSpan(@1)); }
+	;
+
+/* Implementation Declaration */
+ImplementationDecl
+	: IMPLEMENTATION ModuleExpr SEMICOLON		{ AddImplementation(ToSpan(@1)); }
 	;
 
 	/******************* Machine Declarations *******************/

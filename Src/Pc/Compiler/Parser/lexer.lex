@@ -123,6 +123,9 @@
 			 keywords.Add("safe", (int)Tokens.SAFE);
 			 keywords.Add("rename", (int)Tokens.RENAME);
 			 keywords.Add("to", (int)Tokens.TO);
+			 keywords.Add("implementation", (int)Tokens.IMPLEMENTATION);
+			 keywords.Add("test", (int)Tokens.TEST);
+			 keywords.Add("refines", (int)Tokens.REFINES);
 
 		 }
 
