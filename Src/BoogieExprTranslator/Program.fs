@@ -8,8 +8,14 @@ type Expr = Const of int | Var of string | Op of Expr * Expr | Dot of Expr * int
 type Lval = Var of string | Dot of Lval * int
 type Stmt = Assign of Lval * Expr | Assume of Expr | Send of Expr
 
+let rec lval_to_expr lval =
+  match lval with
+  | Lval.Var(v) -> Expr.Var(v)
+  | Lval.Dot(l, i) -> Expr.Dot(lval_to_expr l, i)
+
 (* Input program *)
 let stmtlist = [ 
+                 Assign(Lval.Var("c"), Expr.Tuple [Expr.Const 1; Expr.Const 2]);  // c = (1,2)
                  Assign(Lval.Var("x"), Expr.Var("y"));  // x = y
                  Assign(Lval.Var("d"), Expr.Var("c"));  // d = c
                  Assign(Lval.Var("c"), Expr.Cast(Expr.Var("d"), Type.Tuple [INT; INT]));  // d = c
@@ -131,23 +137,30 @@ let map_all_types stmtlist G =
   ret
 
 
+let tuple_size t =
+  match t with
+  | Type.Tuple ls -> (List.length ls)
+  | _ -> 0
+  
 (* find max tuple size *)
 let max_tuple_size m = 
-  let tuple_size t =
-    match t with
-    | Type.Tuple ls -> (List.length ls)
-    | _ -> 0
-  in
   Map.fold (fun max t _ -> if(max < tuple_size t) then tuple_size t else max) 0 m
 
 
+(* global counter for fresh variables *)
+let global_fresh_cnt = ref 0 in
+let get_fresh_var () =
+  begin
+    let name = sprintf "_tmp%d" !global_fresh_cnt in
+    global_fresh_cnt := !global_fresh_cnt + 1
+    name
+  end
 
 (* Takes an expr as input, returns the re-written expr, a set of statements and updated environemt *)
 let rec remove_side_effects_expr expr G =
-  let cnt = ref 0 in
+  
   let get_local ty G =
-    let name = sprintf "_tmp%d" !cnt in
-    cnt := !cnt + 1
+    let name = get_fresh_var() in
     (name, fun s -> if s = name then ty else G s)
   in
   let (nexpr, stlist, nG) =
@@ -214,7 +227,25 @@ let remove_side_effects_stlist stlist G =
     ) ([], G) stlist
 
 
-(* Translation of side-effect-free programs to Boogie *)
+let rec normalize_lval_stmt st G =
+  match st with
+  | Assign(l, e) ->
+    begin
+      match l with
+      | Lval.Dot(l', f) -> 
+        begin
+          let t = tuple_size (typeof_lval l' G) in
+          let rhs = ref [] in
+          for i = (t-1) downto 0 do
+            if i = f then rhs := e :: !rhs 
+            else rhs := Expr.Dot(lval_to_expr l', f) :: !rhs
+          normalize_lval_stmt (Assign(l', Expr.Tuple !rhs)) G
+        end
+      | _ -> Assign(l, e)
+    end
+  | _ -> st
+  
+(* Translation of normalized side-effect-free programs to Boogie *)
 let translate_type t =
   match t with
   | INT -> "int"
@@ -234,17 +265,80 @@ let rec translate_expr expr G =
 
 (*
 let rec enumerate_struct expr G =
-
-
-
-let rec translate_assign lval expr G =
-  let lhs = "blah" in
-  match expr with 
-  | Expr.Cast(e, _) -> 
-    begin
-      printfn "call %s = AllocatePrtRef();" lhs
 *)
 
+
+let translate_assign lval expr G typemap =
+  let lhs = match lval with
+            | Lval.Var(v) -> v
+            | _ -> raise Not_defined
+  in
+  let do_copy_int e G lhs_var rhs_var =
+    match typeof e G with
+    | INT -> printfn "%s := %s;" lhs_var rhs_var
+    | ANY -> printfn "%s := PrtSelectFn_int(%s);" lhs_var rhs_var
+    | _ -> raise Not_defined
+  in
+  let do_copy_any e G lhs_var rhs_var =
+    match typeof e G with
+    | INT -> 
+      begin
+        printfn "call %s := AllocatePrtRef();" lhs_var
+        printfn "assume PrtSelectFn_int(%s) == %s;" lhs_var rhs_var
+      end
+    | _ -> printfn "%s := %s;" lhs_var rhs_var
+  in
+  let do_copy l e G lhs_var rhs_var =
+    match typeof_lval l G with
+    | INT -> do_copy_int e G lhs_var rhs_var
+    | _ -> do_copy_any e G lhs_var rhs_var
+  in
+
+  let gen_rhs_value e G =
+    let rhs_var =     
+      match typeof e G with
+      | INT -> "tmp_rhs_value_int"
+      | _ -> "tmp_rhs_value_PrtRef"
+    in
+    printfn "%s := %s" rhs_var (translate_expr e G)
+    rhs_var
+  in
+  let gen_type_assertion e G t =
+    match typeof e G with
+    | INT -> () (* redundant cast *)
+    | _ -> printfn "assert PrtSubType(PrtDynamicType(tmp_rhs_value_PrtRef), PrtType%d);" (Map.find t typemap)
+  in
+  match expr with 
+  | Expr.Cast(e, t) -> 
+    begin
+      (* evaluate rhs *)
+      let rhs_var = gen_rhs_value e G in
+      (* generate type assertion *)
+      gen_type_assertion e G t
+      do_copy lval e G lhs rhs_var
+    end
+  | Expr.Tuple(es) ->
+    begin
+      for i = 0 to (List.length es) - 1 do
+        let ei = (List.nth es i) in
+        printfn "tmp_rhs_value_%d_%s := %s;" i (translate_type (typeof ei G)) (translate_expr ei G)
+      printfn "call %s := AllocatePrtRef();" lhs
+      printfn "assume PrtDynamicType(%s) == PrtType%d;" lhs (Map.find (typeof_lval lval G) typemap)
+      for i = 0 to (List.length es) - 1 do
+        let ti = translate_type (typeof (List.nth es i) G) in
+        printfn "assume PrtSelectFn_%d_%s(%s) == tmp_rhs_value_%d_%s;" i ti lhs i ti
+    end
+  | _ ->
+    begin
+      (* evaluate rhs *)
+      let rhs_var = gen_rhs_value expr G in
+      do_copy lval expr G lhs rhs_var
+    end
+
+let translate_stmt stmt G typemap =
+  match stmt with
+  | Assign(l, e) -> translate_assign l e G typemap
+  | _ -> ()
   
 [<EntryPoint>]
 let main argv = 
@@ -256,10 +350,11 @@ let main argv =
     let G = fun v -> if Map.containsKey v env then Map.find v env else raise Not_defined in
 
     (* Remove side effects *)
-    let (new_stlist, newG) = remove_side_effects_stlist stmtlist G in
+    let stmtlist = List.map (fun s -> normalize_lval_stmt s G) stmtlist in
+    let (stmtlist, G) = remove_side_effects_stlist stmtlist G in
 
     printfn "Side-effect-free program:"
-    List.iter (fun s -> printfn "%s" (print_stmt s)) new_stlist;
+    List.iter (fun s -> printfn "%s" (print_stmt s)) stmtlist;
 
     (* Enumerate types in the program *)
     printfn "type PrtType;";
@@ -294,13 +389,13 @@ let main argv =
     printfn ""
 
     (* Allocation *)
-    printfn "var PrtRefAlloc: [PrtRef]bool;"
-    printfn "const null: PrtRef;"
+    printfn "//var PrtRefAlloc: [PrtRef]bool;"
+    printfn "//const null: PrtRef;"
     printfn "procedure AllocatePrtRef() returns (x: PrtRef) {"
-    printfn "  assume !PrtRefAlloc[x] && x != null;"
-    printfn "  PrtRefAlloc[x] := true;"
+    printfn "  //assume !PrtRefAlloc[x] && x != null;"
+    printfn "  //PrtRefAlloc[x] := true;"
     printfn "}"
     printfn ""
 
-
+    List.iter (fun s -> translate_stmt s G typemap) stmtlist
     0 // return an integer exit code
