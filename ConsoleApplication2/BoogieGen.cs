@@ -1,4 +1,25 @@
-﻿using System;
+﻿/***********************************NOTES*******************************************************************************************
+ * Static fields are stored in the heap, just like instance fields.                                       
+ * In particular, fields are translated as follows:                                                       
+ *      o.f translates to Heap[o, C f] 
+ *      C.g translates to Heap[TypeObject(C), C g]
+ *  where fields f and g are declared by class C and o is an expression of type C .
+ *  
+ * Boogie models reference parameters by performing copy-in/copy-out for the purposes of verification.
+ * Using copy-in/copy-out is sound only if there is no aliasing amongst the actual arguments for reference parameters
+ * 
+ * For translating method calls, we distinguish two cases. When we can determine 
+ * the exact target of a call (that is, the call is statically bound, such as for a
+ * non-virtual method or a base call), it is translated into a call to the associated 
+ * procedure. When the call is dynamically bound, we translate the call into a call
+ * of an additional BoogiePL procedure that we generate for virtual methods. 
+ * 
+ * 
+ * **********************************************************************************************************************************/
+
+
+
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
