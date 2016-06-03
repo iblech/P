@@ -7,7 +7,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Pc.Domains.P_Root;
+
 using Microsoft.Formula.API.Generators;
+using Microsoft.Formula.API.ProgramName;
 
 namespace Microsoft.Identity
 {
@@ -19,9 +21,7 @@ namespace Microsoft.Identity
 
 
         //TODO Finish
-        public IdentityGen(string inputFileName)
-        {
-        }
+        public IdentityGen() { }
 
         private static string getName(ICSharpTerm x)
         {
@@ -733,7 +733,86 @@ namespace Microsoft.Identity
             return;
         }
 
-        public void gen_identity(TextWriter writer)
+        public bool  gen_identity(TextWriter writer)
+        {
+            var InputProgramNames = new HashSet<Microsoft.Formula.API.ProgramName>();
+            var flags = new List<Flag>();
+            RootFileName = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, inputFileName));
+            try
+            {
+                RootProgramName = new ProgramName(RootFileName);
+            }
+            catch (Exception e)
+            {
+                flags.Add(
+                    new Flag(
+                        SeverityKind.Error,
+                        default(Span),
+                        Constants.BadFile.ToString(string.Format("{0} : {1}", inputFileName, e.Message)),
+                        Constants.BadFile.Code));
+                return false;
+            }
+
+            HashSet<string> crntEventNames = new HashSet<string>();
+            HashSet<string> crntMachineNames = new HashSet<string>();
+
+            InstallResult uninstallResult;
+            var uninstallDidStart = CompilerEnv.Uninstall(SeenFileNames.Values, out uninstallResult);
+            // Contract.Assert(uninstallDidStart && uninstallResult.Succeeded);
+
+            SeenFileNames = new Dictionary<string, ProgramName>(StringComparer.OrdinalIgnoreCase);
+            Dictionary<string, PProgram> parsedPrograms = new Dictionary<string, PProgram>(StringComparer.OrdinalIgnoreCase);
+            Queue<string> parserWorkQueue = new Queue<string>();
+            SeenFileNames[RootFileName] = RootProgramName;
+            InputProgramNames.Add(RootProgramName);
+            parserWorkQueue.Enqueue(RootFileName);
+            while (parserWorkQueue.Count > 0)
+            {
+                PProgram prog;
+                List<string> includedFileNames;
+                List<Flag> parserFlags;
+                string currFileName = parserWorkQueue.Dequeue();
+                var parser = new Parser.Parser();
+                var result = parser.ParseFile(SeenFileNames[currFileName], Options, crntEventNames, crntMachineNames, out parserFlags, out prog, out includedFileNames);
+                flags.AddRange(parserFlags);
+                if (!result)
+                {
+                    return false;
+                }
+
+                parsedPrograms.Add(currFileName, prog);
+
+                string currDirectoryName = Path.GetDirectoryName(Path.GetFullPath(currFileName));
+                foreach (var fileName in includedFileNames)
+                {
+                    string fullFileName = Path.GetFullPath(Path.Combine(currDirectoryName, fileName));
+                    ProgramName programName;
+                    if (SeenFileNames.ContainsKey(fullFileName)) continue;
+                    try
+                    {
+                        programName = new ProgramName(fullFileName);
+                    }
+                    catch (Exception e)
+                    {
+                        flags.Add(
+                            new Flag(
+                                SeverityKind.Error,
+                                default(Span),
+                                Constants.BadFile.ToString(string.Format("{0} : {1}", fullFileName, e.Message)),
+                                Constants.BadFile.Code));
+                        return false;
+                    }
+                    SeenFileNames[fullFileName] = programName;
+                    InputProgramNames.Add(programName);
+                    parserWorkQueue.Enqueue(fullFileName);
+                }
+            }
+
+
+            return true;
+        }
+
+        public void gen_text(TextWriter writer)
         {
             foreach (var program in parsedPrograms)
             {
