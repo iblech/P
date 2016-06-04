@@ -1,17 +1,21 @@
 ﻿open System
 
 (* Types *)
-type Type = INT | ANY | Tuple of Type list
+type Type = INT | ANY | Seq of Type | Tuple of Type list
 
 (* Expressions *)
 type Expr = Const of int | Var of string | Op of Expr * Expr | Dot of Expr * int | Cast of Expr * Type | Tuple of Expr list
-type Lval = Var of string | Dot of Lval * int
-type Stmt = Assign of Lval * Expr | Assume of Expr | Send of Expr
+            | Index of Expr * Expr
+
+type Lval = Var of string | Dot of Lval * int | Index of Lval * Expr
+
+type Stmt = Assign of Lval * Expr | Insert of Lval * Expr * Expr | Remove of Lval * Expr | Assume of Expr | Send of Expr
 
 let rec lval_to_expr lval =
   match lval with
   | Lval.Var(v) -> Expr.Var(v)
   | Lval.Dot(l, i) -> Expr.Dot(lval_to_expr l, i)
+  | Lval.Index(l, e) -> Expr.Index(lval_to_expr l, e)
 
 (* Input program *)
 let stmtlist = [ 
@@ -45,12 +49,8 @@ let rec print_type t =
   | INT -> "int"
   | ANY -> "any"
   | Type.Tuple(ls) -> sprintf "(%s)" (print_list print_type ls)
+  | Type.Seq(t) -> sprintf "seq[%s]" (print_type t)
 
-let rec print_lval (l: Lval) =
-  match l with
-  | Lval.Var(v) -> v
-  | Lval.Dot(v, i) -> sprintf "%s.%d" (print_lval v) i
-   
 let rec print_expr (e: Expr) =
   match e with
   | Const(i) -> i.ToString()
@@ -59,10 +59,19 @@ let rec print_expr (e: Expr) =
   | Expr.Dot(e, i) -> (print_expr e) + "." + i.ToString()
   | Cast(e, t) -> sprintf "(%s as %s)" (print_expr e) (print_type t)
   | Tuple(ls) -> sprintf "(%s)" (print_list print_expr ls)
+  | Expr.Index(e1, e2) -> sprintf "%s[%s]" (print_expr e1) (print_expr e2) 
  
+let rec print_lval (l: Lval) =
+  match l with
+  | Lval.Var(v) -> v
+  | Lval.Dot(v, i) -> sprintf "%s.%d" (print_lval v) i
+  | Lval.Index(l, e) -> sprintf "%s[%s]" (print_lval l) (print_expr e) 
+
 let print_stmt s =
   match s with
   | Assign(l, e) -> sprintf "%s = %s" (print_lval l) (print_expr e)
+  | Insert(l, e1, e2) -> sprintf "%s += (%s, %s)" (print_lval l) (print_expr e1) (print_expr e2)
+  | Remove(l, e) -> sprintf "%s -= %s" (print_lval l) (print_expr e)
   | Assume(e) -> sprintf "assume %s" (print_expr e)
   | Send(e) -> sprintf "send %s" (print_expr e)
 
@@ -72,24 +81,35 @@ let rec typeof expr G =
   | Expr.Var(v) -> G v
   | Op(e1, e2) -> INT
   | Expr.Dot(e, i) -> 
-  begin
-    let ts = typeof e G in
-    match ts with
-    | Type.Tuple(ls) -> List.nth ls i
-    | _ -> raise Not_defined
-  end
+    begin
+      let ts = typeof e G in
+      match ts with
+      | Type.Tuple(ls) -> List.nth ls i
+      | _ -> raise Not_defined
+    end
   | Cast(e, t) -> t
   | Expr.Tuple(es) -> Type.Tuple(List.map (fun e -> typeof e G) es)
+  | Expr.Index(e1, e2) ->
+    begin
+      let (Type.Seq(t)) = typeof e1 G in (* incomplete match, else raise *)
+      t
+    end
 
 let rec typeof_lval lval G =
   match lval with
   | Lval.Var(v) -> G v
   | Lval.Dot(l, i) -> 
     begin
-    match (typeof_lval l G) with
-    | Type.Tuple(ls) -> List.nth ls i
-    | _ -> raise Not_defined
-  end
+      match (typeof_lval l G) with
+      | Type.Tuple(ls) -> List.nth ls i
+      | _ -> raise Not_defined
+    end
+  | Lval.Index(l, e) ->
+    begin
+      match typeof_lval l G with
+      | Type.Seq(t) -> t
+      | _ -> raise Not_defined
+    end
 
 (* Quadratic time; can optimize *)
 let rec find_all_types stmt G =
@@ -102,17 +122,24 @@ let rec find_all_types stmt G =
         | Expr.Dot(e', _) -> all_exprs e'
         | Cast(e, t) -> all_exprs e
         | Expr.Tuple(es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
+        | Expr.Index(e1, e2) -> Set.union (all_exprs e1) (all_exprs e2)
     in 
     ret.Add(e)
   in
   let all_types_expr e G = Set.map (fun e -> typeof e G) (all_exprs e) in
   let rec all_types_lval lval G =
-    match lval with
-    | Lval.Var(v) -> Set.singleton (G v)
-    | Lval.Dot(l, _) -> Set.union (Set.singleton (typeof_lval lval G)) (Set.singleton (typeof_lval l G))
+    let ret =
+      match lval with
+      | Lval.Var(v) -> Set.empty
+      | Lval.Dot(l, _) -> all_types_lval l G
+      | Lval.Index(l, e) -> Set.union (all_types_lval l G) (all_types_expr e G)
+    in
+    ret.Add(typeof_lval lval G)
   in
   match stmt with
   | Assign(l, e) -> Set.union (all_types_expr e G) (all_types_lval l G)
+  | Insert(l, e1, e2) -> Set.unionMany [(all_types_lval l G); (all_types_expr e1 G); (all_types_expr e2 G)]
+  | Remove(l, e) -> Set.union (all_types_expr e G) (all_types_lval l G)
   | Assume(e) -> all_types_expr e G
   | Send(e) -> all_types_expr e G
 
@@ -129,6 +156,7 @@ let rec is_subtype t1 t2 =
         List.fold (fun p b -> p && b) false z
       end
     end
+  | (Type.Seq(t1'), Type.Seq(t2')) -> is_subtype t1' t2'
   | _ -> false
 
 let map_all_types stmtlist G =
@@ -156,13 +184,12 @@ let get_fresh_var () =
     name
   end
 
+let get_local ty G =
+  let name = get_fresh_var() in
+  (name, fun s -> if s = name then ty else G s)
+
 (* Takes an expr as input, returns the re-written expr, a set of statements and updated environemt *)
 let rec remove_side_effects_expr expr G =
-  
-  let get_local ty G =
-    let name = get_fresh_var() in
-    (name, fun s -> if s = name then ty else G s)
-  in
   let (nexpr, stlist, nG) =
     match expr with
     | Expr.Const(_) 
@@ -172,6 +199,12 @@ let rec remove_side_effects_expr expr G =
         let (e1', s1, G') = remove_side_effects_expr e1 G in
         let (e2', s2, G'') = remove_side_effects_expr e2 G' in
         (Expr.Op(e1', e2'), s1 @ s2, G'')
+      end
+    | Expr.Index(e1, e2) ->
+      begin
+        let (e1', s1, G') = remove_side_effects_expr e1 G in
+        let (e2', s2, G'') = remove_side_effects_expr e2 G' in
+        (Expr.Index(e1', e2'), s1 @ s2, G'')
       end
     | Expr.Dot(e,f) ->
       begin
@@ -206,6 +239,17 @@ let remove_side_effects_stmt stmt G =
       let (e', d, G') = remove_side_effects_expr e G in
       (d @ [Assign(l, e')], G')
     end
+  | Insert(l, e1, e2) ->
+    begin
+      let (e1', d1, G') = remove_side_effects_expr e1 G in
+      let (e2', d2, G'') = remove_side_effects_expr e2 G' in
+      (d1 @ d2 @ [Insert(l, e1', e2')], G'')
+    end
+  | Remove(l, e) ->
+    begin
+      let (e', d, G') = remove_side_effects_expr e G in
+      (d @ [Remove(l, e')], G')
+    end
   | Assume(e) ->
     begin
       let (e', d, G') = remove_side_effects_expr e G in
@@ -226,7 +270,7 @@ let remove_side_effects_stlist stlist G =
     end
     ) ([], G) stlist
 
-
+(* returns a list of statements and a new G *)
 let rec normalize_lval_stmt st G =
   match st with
   | Assign(l, e) ->
@@ -241,9 +285,9 @@ let rec normalize_lval_stmt st G =
             else rhs := Expr.Dot(lval_to_expr l', f) :: !rhs
           normalize_lval_stmt (Assign(l', Expr.Tuple !rhs)) G
         end
-      | _ -> Assign(l, e)
+      | _ -> (Assign(l, e), G)
     end
-  | _ -> st
+  | _ -> (st, G)
   
 (* Translation of normalized side-effect-free programs to Boogie *)
 let translate_type t =
