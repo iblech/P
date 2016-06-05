@@ -156,7 +156,7 @@ let rec is_subtype t1 t2 =
       else begin
         let z = List.zip ls1 ls2 in
         let z = List.map (fun (a,b) -> (is_subtype a b)) z in
-        List.fold (fun p b -> p && b) false z
+        List.fold (fun p b -> p && b) true z
       end
     end
   | (Type.Seq(t1'), Type.Seq(t2')) -> is_subtype t1' t2'
@@ -432,8 +432,8 @@ let translate_assign lval expr G typemap =
     | _ -> printfn "assert PrtSubType(PrtDynamicType(tmp_rhs_value_PrtRef), PrtType%d);" (Map.find t typemap)
   in
   let get_lhs_var lval = match lval with
-                        | Lval.Var(v) -> v
-                        | _ -> raise Not_defined
+                         | Lval.Var(v) -> v
+                         | _ -> raise Not_defined
   in
 
   match (lval, expr) with 
