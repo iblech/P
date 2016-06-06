@@ -73,7 +73,7 @@
             }
             private Stack<P_Root.IArgType_NmdTupType__1> contextStack;
 
-            private List<string> crntLocalVarList;
+            private List<P_Root.StringCnst> crntLocalVarList;
             private P_Root.IArgType_NmdTupType__1 localVarDecl;
             public P_Root.IArgType_NmdTupType__1 LocalVarDecl
             {
@@ -91,7 +91,7 @@
                 this.parser = parser;
                 this.contextLocalVarDecl = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
                 this.contextStack = new Stack<P_Root.IArgType_NmdTupType__1>();
-                this.crntLocalVarList = new List<string>();
+                this.crntLocalVarList = new List<P_Root.StringCnst>();
                 this.localVarDecl = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
                 this.localStack = new Stack<P_Root.IArgType_NmdTupType__1>();
                 this.caseEventStack = new Stack<List<P_Root.EventLabel>>();
@@ -104,7 +104,7 @@
                 this.parser = parser;
                 this.contextLocalVarDecl = Reverse(parameters);
                 this.contextStack = new Stack<P_Root.IArgType_NmdTupType__1>();
-                this.crntLocalVarList = new List<string>();
+                this.crntLocalVarList = new List<P_Root.StringCnst>();
                 this.localVarDecl = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
                 this.localStack = new Stack<P_Root.IArgType_NmdTupType__1>();
                 this.caseEventStack = new Stack<List<P_Root.EventLabel>>();
@@ -186,7 +186,9 @@
 
             public void AddLocalVar(string name, Span span)
             {
-                crntLocalVarList.Add(name);
+                var nameTerm = P_Root.MkString(name);
+                nameTerm.Span = span;
+                crntLocalVarList.Add(nameTerm);
             }
 
             public void CompleteCrntLocalVarList()
@@ -195,7 +197,7 @@
                 var typeExpr = (P_Root.IArgType_NmdTupTypeField__2)parser.typeExprStack.Pop();
                 foreach (var v in crntLocalVarList)
                 {
-                    var field = P_Root.MkNmdTupTypeField(P_Root.MkUserCnst(P_Root.UserCnstKind.NONE), P_Root.MkString(v), typeExpr);
+                    var field = P_Root.MkNmdTupTypeField(P_Root.MkUserCnst(P_Root.UserCnstKind.NONE), v, typeExpr);
                     localVarDecl = P_Root.MkNmdTupType(field, localVarDecl);
                     contextLocalVarDecl = P_Root.MkNmdTupType(field, contextLocalVarDecl);
                 }

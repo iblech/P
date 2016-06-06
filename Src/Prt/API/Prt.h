@@ -70,6 +70,17 @@ extern "C"{
         PRT_BOOLEAN			isModel;	  /**< Indicates whether this is a model machine. */
     } PRT_MACHINEINST;
 
+    /** The scheduling policy determines how the state machine is executed.  
+    * On the caller's thread or on a separate thread.
+    *   @see PrtSetSchedulingPolicy
+    */
+    typedef enum PRT_SCHEDULINGPOLICY
+    {
+        PRT_SCHEDULINGPOLICY_TASKNEUTRAL,   /**< The default policy is task neutral, meaning the caller's thread is used to run the state machine */
+        PRT_SCHEDULINGPOLICY_COOPERATIVE    /**< This policy means the caller plans to advance the state machine from a separate thread using PrtRunProcess */
+    } PRT_SCHEDULINGPOLICY;
+
+
     /** An error function that will be called whenever an error arises. */
     typedef void(PRT_CALL_CONV * PRT_ERROR_FUN)(PRT_STATUS, PRT_MACHINEINST *);
 
@@ -92,10 +103,58 @@ extern "C"{
         _In_ PRT_LOG_FUN loggerFun
         );
 
+    /** Set the scheduling policy for this process.  The default policy is TaskNeutral
+    *   @param[in] policy The new policy.
+    *   @see PRT_PROCESS
+    *   @see PRT_SCHEDULINGPOLICY
+    *   @see PrtStartProcess
+    */
+    PRT_API void PRT_CALL_CONV PrtSetSchedulingPolicy(_In_ PRT_PROCESS *process, _In_ PRT_SCHEDULINGPOLICY policy);
+
+    /** Call this method if you set PRT_SCHEDULINGPOLICY to Cooperative.  This means the caller wants to control which thread
+    *   runs the state machine, where this thread will block when there is no work to do, and it will automatically wake up
+    *   via a semaphore when there is work to do.  It will terminate when you call PrtStopProcess.  You must then ensure you
+    *   do not call PrtRunProcess after PrtStopProcess because the process will be deleted at that point.
+    *   @param[in] process The process defines which state machines this method will run.
+    *   @see PRT_SCHEDULINGPOLICY
+    *   @see PrtSetSchedulingPolicy
+    */
+    PRT_API void PRT_CALL_CONV PrtRunProcess(PRT_PROCESS *process);
+
+
+    typedef enum PRT_STEP_RESULT
+    {
+        PRT_STEP_IDLE = 0,         /**< No more work */
+        PRT_STEP_MORE = 1,         /**< More work is available */
+        PRT_STEP_TERMINATING = 2,  /**< We are terminating the process  */
+    } PRT_STEP_RESULT;
+
+
+    /** Call this method if you set PRT_SCHEDULINGPOLICY to Cooperative.  This means the caller wants to control which thread
+    *   runs the state machine. PrtStepProcess does one step and returns so the caller can also yield 
+    *   the thread, this is how this method is different from PrtRunProcess.   It returns PRT_FALSE if there is no work to do, 
+    *   at which time you should call PrtWaitForWork.  It will terminate if you call PrtStopProcess.  
+    *   @param[in] process The process defines which state machines this method will run.
+    *   @see PRT_SCHEDULINGPOLICY
+    *   @see PrtSetSchedulingPolicy
+    */
+    PRT_API PRT_STEP_RESULT PRT_CALL_CONV PrtStepProcess(PRT_PROCESS *process);
+
+
+    /** Call this method when PrtStepProcess returns PRT_STEP_IDLE.  This means PrtStepProcess has found that all machines
+    * are waiting for work.  This method will block on a semaphore until more work becomes available.  It will also return
+    * if you call PrtStopProcess.
+    *   @param[in] process The process defines which state machines this method will run.
+    *   @returns   PRT_TRUE if we are terminating (PrtStopProcess has been called).
+    *   @see PrtStepProcess
+    */
+    PRT_API PRT_BOOLEAN PRT_CALL_CONV PrtWaitForWork(PRT_PROCESS *process);
+
     /** Stops a started process. Reclaims all resources allocated to the process.
     *   Client must call exactly once for each started process. Once called,
     *   no other API function affecting this process can occur from any thread.
     *   Once called, no interaction with data owned by this process should occur from any thread.
+    *  This method also causes PrtRunProcess and PrtWaitForWork to terminate.
     *   @param[in,out] process The process to stop.
     *   @see PRT_PROCESS
     *   @see PrtStartProcess

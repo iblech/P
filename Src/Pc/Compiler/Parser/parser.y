@@ -25,7 +25,7 @@
 %token EVENTSET 
 %token RECEIVES SENDS
 
-%token SWAP, XFER
+%token SWAP, REF, XFER
 
 %token ASSIGN REMOVE INSERT
 %token EQ NE LT GT LE GE IN
@@ -305,6 +305,10 @@ PayloadVarDeclOrNone
 	|                             { localVarStack.AddPayloadVar(); localVarStack.Push(); }
 	;
 
+PayloadNone
+	:                             { localVarStack.AddPayloadVar(); localVarStack.Push(); }
+	;
+
 /******************* Function Declarations *******************/
 Static 
 	: STATIC { isStaticFun = true; }
@@ -385,7 +389,7 @@ StateBody
 StateBodyItem
 	: ENTRY PayloadVarDeclOrNone LCBRACE StmtBlock RCBRACE					{ SetStateEntry(ToSpan(@3), ToSpan(@5));                                  }	
 	| ENTRY ID SEMICOLON													{ SetStateEntry($2.str, ToSpan(@2)); }			
-	| EXIT LCBRACE StmtBlock RCBRACE										{ localVarStack.AddPayloadVar(); localVarStack.Push(); SetStateExit(ToSpan(@2), ToSpan(@4));                                   }
+	| EXIT PayloadNone LCBRACE StmtBlock RCBRACE							{ SetStateExit(ToSpan(@2), ToSpan(@4));                                   }
 	| EXIT ID SEMICOLON														{ SetStateExit($2.str, ToSpan(@2));                                 }
 	| DEFER NonDefaultEventList TrigAnnotOrNone SEMICOLON					{ AddDefersOrIgnores(true,  ToSpan(@1));            }		
 	| IGNORE NonDefaultEventList TrigAnnotOrNone SEMICOLON					{ AddDefersOrIgnores(false, ToSpan(@1));            }
@@ -449,7 +453,7 @@ TupTypeList
 	;
 
 QualifierOrNone
-	: SWAP		{ qualifier.Push(MkUserCnst(P_Root.UserCnstKind.SWAP, ToSpan(@1))); }
+	: REF		{ qualifier.Push(MkUserCnst(P_Root.UserCnstKind.REF, ToSpan(@1))); }
 	| XFER		{ qualifier.Push(MkUserCnst(P_Root.UserCnstKind.XFER, ToSpan(@1))); }
 	|			{ qualifier.Push(P_Root.MkUserCnst(P_Root.UserCnstKind.NONE)); }
 	;

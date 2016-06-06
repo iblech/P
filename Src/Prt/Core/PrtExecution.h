@@ -24,9 +24,16 @@ extern "C"{
 	typedef enum PRT_FUN_PARAM_STATUS
 	{
 		PRT_FUN_PARAM_CLONE,
-		PRT_FUN_PARAM_SWAP,
+		PRT_FUN_PARAM_REF,
 		PRT_FUN_PARAM_XFER
 	} PRT_FUN_PARAM_STATUS;
+
+    typedef struct PRT_COOPERATIVE_SCHEDULER
+    {
+        PRT_SEMAPHORE           workAvailable;      /* semaphore to signal blocked PrtRunProcess threads */
+        PRT_UINT32              threadsWaiting;     /* number of PrtRunProcess threads waiting for work */
+        PRT_SEMAPHORE           allThreadsStopped;  /* all PrtRunProcess threads have terminated */
+    } PRT_COOPERATIVE_SCHEDULER;
 
 	typedef struct PRT_PROCESS_PRIV {
 		PRT_GUID				guid;
@@ -37,6 +44,10 @@ extern "C"{
 		PRT_UINT32				numMachines;
 		PRT_UINT32				machineCount;
 		PRT_MACHINEINST			**machines;
+        PRT_BOOLEAN             terminating;        /* PrtStopProcess has been called */
+        PRT_SCHEDULINGPOLICY    schedulingPolicy;
+        void*                   schedulerInfo;      /* for example, this could be PRT_COOPERATIVE_SCHEDULER */
+
 	} PRT_PROCESS_PRIV;
 
 	typedef enum PRT_LASTOPERATION
@@ -45,6 +56,23 @@ extern "C"{
 		PopStatement,
 		RaiseStatement
 	} PRT_LASTOPERATION;
+
+    typedef enum PRT_NEXTOPERATION
+    {
+        EntryOperation,
+        DequeueOperation,
+        HandleEventOperation,
+        ReceiveOperation
+    } PRT_NEXTOPERATION;
+
+	typedef enum PRT_EXITREASON
+	{
+		NotExit,
+		OnTransition,
+		OnTransitionAfterExit,
+		OnPopStatement,
+		OnUnhandledEvent
+	} PRT_EXITREASON;
 
 	typedef struct PRT_EVENT
 	{
@@ -106,6 +134,9 @@ extern "C"{
 		PRT_VALUE			**varValues;
 		PRT_RECURSIVE_MUTEX stateMachineLock;
 		PRT_BOOLEAN			isRunning;
+        PRT_NEXTOPERATION   nextOperation;
+		PRT_EXITREASON		exitReason;
+		PRT_UINT32			eventValue;
 		PRT_BOOLEAN			isHalted;
 		PRT_UINT32			currentState;
 		PRT_RECEIVEDECL		*receive;
@@ -185,8 +216,14 @@ extern "C"{
 	FORCEINLINE
 		void
 		PrtRunExitFunction(
-		_In_ PRT_MACHINEINST_PRIV			*context,
-		_In_ PRT_UINT32						transIndex
+		_In_ PRT_MACHINEINST_PRIV			*context
+		);
+
+	FORCEINLINE
+		void
+		PrtRunTransitionFunction(
+			_In_ PRT_MACHINEINST_PRIV			*context,
+			_In_ PRT_UINT32						transIndex
 		);
 
 	PRT_UINT32
@@ -246,7 +283,8 @@ extern "C"{
 	FORCEINLINE
 		PRT_DODECL*
 		PrtGetAction(
-		_In_ PRT_MACHINEINST_PRIV		*context
+		_In_ PRT_MACHINEINST_PRIV		*context,
+		_In_ PRT_UINT32					currEvent
 		);
 
 	FORCEINLINE
@@ -482,8 +520,7 @@ extern "C"{
 
 	PRT_API void
 		PrtRunStateMachine(
-		_Inout_ PRT_MACHINEINST_PRIV	    *context,
-		_In_ PRT_BOOLEAN				doDequeue
+		_Inout_ PRT_MACHINEINST_PRIV	    *context
 		);
 
 	PRT_API void PRT_CALL_CONV PrtEnqueueInOrder(

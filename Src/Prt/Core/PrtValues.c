@@ -20,25 +20,26 @@ const PRT_UINT32 PrtHashtableCapacities[] =
 /** The null machine id */
 const PRT_MACHINEID PrtNullMachineId = { { 0, 0, 0, 0 }, PRT_SPECIAL_EVENT_NULL };
 
-PRT_UINT32 PRT_CALL_CONV PrtGetHashCodeFieldName(_In_ PRT_STRING name)
-{
-	PRT_UINT32 i;
-	PRT_UINT32 code = 0;
-	PRT_UINT64 len = strnlen(name, PRT_MAXFLDNAME_LENGTH);
-	for (i = 0; i < len; ++i)
-	{
-		code += name[i];
-		code += (code << 10);
-		code ^= (code >> 6);
-	}
+// this function is not used.
+//static PRT_UINT32 PRT_CALL_CONV PrtGetHashCodeFieldName(_In_ PRT_STRING name)
+//{
+//	PRT_UINT32 i;
+//	PRT_UINT32 code = 0;
+//	PRT_UINT64 len = strnlen(name, PRT_MAXFLDNAME_LENGTH);
+//	for (i = 0; i < len; ++i)
+//	{
+//		code += name[i];
+//		code += (code << 10);
+//		code ^= (code >> 6);
+//	}
+//
+//	code += (code << 3);
+//	code ^= (code >> 11);
+//	code += (code << 15);
+//	return code;
+//}
 
-	code += (code << 3);
-	code ^= (code >> 11);
-	code += (code << 15);
-	return code;
-}
-
-PRT_UINT32 PRT_CALL_CONV PrtGetHashCodeUInt32(_In_ PRT_UINT32 value)
+static PRT_UINT32 PRT_CALL_CONV PrtGetHashCodeUInt32(_In_ PRT_UINT32 value)
 {
 	PRT_UINT32 i;
 	PRT_UINT32 code = 0;
@@ -56,7 +57,7 @@ PRT_UINT32 PRT_CALL_CONV PrtGetHashCodeUInt32(_In_ PRT_UINT32 value)
 	return code;
 }
 
-PRT_UINT32 PRT_CALL_CONV PrtGetHashCodeTwoUInt32(_In_ PRT_UINT32 value1, _In_ PRT_UINT32 value2)
+static PRT_UINT32 PRT_CALL_CONV PrtGetHashCodeTwoUInt32(_In_ PRT_UINT32 value1, _In_ PRT_UINT32 value2)
 {
 	PRT_UINT32 i;
 	PRT_UINT32 code = 0;
@@ -82,7 +83,7 @@ PRT_UINT32 PRT_CALL_CONV PrtGetHashCodeTwoUInt32(_In_ PRT_UINT32 value1, _In_ PR
 	return code;
 }
 
-PRT_UINT32 PRT_CALL_CONV PrtGetHashCodeMachineId(_In_ PRT_MACHINEID id)
+static PRT_UINT32 PRT_CALL_CONV PrtGetHashCodeMachineId(_In_ PRT_MACHINEID id)
 {
 	PRT_UINT32 i;
 	PRT_UINT32 code = 0;
@@ -429,13 +430,12 @@ void PRT_CALL_CONV PrtSeqUpdate(_Inout_ PRT_VALUE *seq, _In_ PRT_VALUE *index, _
 	PrtSeqUpdateEx(seq, index, value, PRT_TRUE);
 }
 
-void PRT_CALL_CONV PrtSeqInsertEx(_Inout_ PRT_VALUE *seq, _In_ PRT_VALUE *index, _In_ PRT_VALUE* value, PRT_BOOLEAN cloneValue)
+void PRT_CALL_CONV PrtSeqInsertExIntIndex(_Inout_ PRT_VALUE *seq, _In_ PRT_UINT32 index, _In_ PRT_VALUE* value, PRT_BOOLEAN cloneValue)
 {
 	PrtAssert(PrtIsValidValue(seq), "Invalid value expression.");
 	PrtAssert(PrtIsValidValue(value), "Invalid value expression.");
 	PrtAssert(seq->discriminator == PRT_VALKIND_SEQ, "Invalid value");
-	PrtAssert(index->discriminator == PRT_VALKIND_INT, "Invalid value");
-	PrtAssert(0 <= index->valueUnion.nt && (PRT_UINT32)index->valueUnion.nt <= seq->valueUnion.seq->size, "Invalid index");
+	PrtAssert(0 <= index && index <= seq->valueUnion.seq->size, "Invalid index");
 
 	PRT_VALUE *clone;
 	clone = cloneValue == PRT_TRUE ? PrtCloneValue(value) : value;
@@ -451,7 +451,7 @@ void PRT_CALL_CONV PrtSeqInsertEx(_Inout_ PRT_VALUE *seq, _In_ PRT_VALUE *index,
 		PRT_VALUE **values = seq->valueUnion.seq->values;
 		if (seq->valueUnion.seq->size > 0)
 		{
-			for (i = seq->valueUnion.seq->size - 1; i >= (PRT_UINT32)index->valueUnion.nt; --i)
+			for (i = seq->valueUnion.seq->size - 1; i >= index; --i)
 			{
 				values[i + 1] = values[i];
 				if (i == 0)
@@ -461,7 +461,7 @@ void PRT_CALL_CONV PrtSeqInsertEx(_Inout_ PRT_VALUE *seq, _In_ PRT_VALUE *index,
 			}
 		}
 
-		values[index->valueUnion.nt] = clone;
+		values[index] = clone;
 	}
 	else
 	{
@@ -471,7 +471,7 @@ void PRT_CALL_CONV PrtSeqInsertEx(_Inout_ PRT_VALUE *seq, _In_ PRT_VALUE *index,
 		values = (PRT_VALUE **)PrtCalloc(seq->valueUnion.seq->capacity, sizeof(PRT_VALUE*));
 		for (i = 0; i < seq->valueUnion.seq->size; ++i)
 		{
-			if (i < (PRT_UINT32)index->valueUnion.nt)
+			if (i < index)
 			{
 				values[i] = seq->valueUnion.seq->values[i];
 			}
@@ -481,12 +481,30 @@ void PRT_CALL_CONV PrtSeqInsertEx(_Inout_ PRT_VALUE *seq, _In_ PRT_VALUE *index,
 			}
 		}
 
-		values[index->valueUnion.nt] = clone;
+		values[index] = clone;
 		PrtFree(seq->valueUnion.seq->values);
 		seq->valueUnion.seq->values = values;
 	}
 
 	seq->valueUnion.seq->size = seq->valueUnion.seq->size + 1;
+}
+
+
+
+PRT_VALUE * PRT_CALL_CONV PrtSeqGetNCIntIndex(_In_ PRT_VALUE *seq, _In_ PRT_UINT32 index)
+{
+	PrtAssert(PrtIsValidValue(seq), "Invalid value expression.");
+	PrtAssert(seq->discriminator == PRT_VALKIND_SEQ, "Invalid value");
+	PrtAssert(0 <= index && index < seq->valueUnion.seq->size, "Invalid index");
+
+	return seq->valueUnion.seq->values[index];
+}
+
+
+void PRT_CALL_CONV PrtSeqInsertEx(_Inout_ PRT_VALUE *seq, _In_ PRT_VALUE *index, _In_ PRT_VALUE* value, PRT_BOOLEAN cloneValue)
+{
+	PrtAssert(index->discriminator == PRT_VALKIND_INT, "Invalid value");
+	return PrtSeqInsertExIntIndex(seq, index->valueUnion.nt, value, cloneValue);
 }
 
 void PRT_CALL_CONV PrtSeqInsert(_Inout_ PRT_VALUE *seq, _In_ PRT_VALUE *index, _In_ PRT_VALUE* value)
@@ -525,12 +543,9 @@ PRT_VALUE * PRT_CALL_CONV PrtSeqGet(_In_ PRT_VALUE *seq, _In_ PRT_VALUE *index)
 
 PRT_VALUE * PRT_CALL_CONV PrtSeqGetNC(_In_ PRT_VALUE *seq, _In_ PRT_VALUE *index)
 {
-	PrtAssert(PrtIsValidValue(seq), "Invalid value expression.");
-	PrtAssert(seq->discriminator == PRT_VALKIND_SEQ, "Invalid value");
 	PrtAssert(index->discriminator == PRT_VALKIND_INT, "Invalid value");
-	PrtAssert(0 <= index->valueUnion.nt && (PRT_UINT32)index->valueUnion.nt < seq->valueUnion.seq->size, "Invalid index");
 
-	return seq->valueUnion.seq->values[index->valueUnion.nt];
+	return PrtSeqGetNCIntIndex(seq, index->valueUnion.nt);
 }
 
 PRT_UINT32 PRT_CALL_CONV PrtSeqSizeOf(_In_ PRT_VALUE *seq)
@@ -542,7 +557,7 @@ PRT_UINT32 PRT_CALL_CONV PrtSeqSizeOf(_In_ PRT_VALUE *seq)
 }
 
 /** Expands the map and rehashes its key-value pairs */
-void PRT_CALL_CONV PrtMapExpand(_Inout_ PRT_VALUE *map)
+static void PRT_CALL_CONV PrtMapExpand(_Inout_ PRT_VALUE *map)
 {
 	if (map->valueUnion.map->capNum + 1 >= sizeof(PrtHashtableCapacities) / sizeof(PRT_UINT32))
 	{
@@ -893,7 +908,7 @@ PRT_BOOLEAN PRT_CALL_CONV PrtMapExists(_In_ PRT_VALUE *map, _In_ PRT_VALUE *key)
 	return PRT_FALSE;
 }
 
-PRT_BOOLEAN PRT_CALL_CONV PrtMapIsSameMapping(_In_ PRT_VALUE *map, _In_ PRT_VALUE* key, _In_ PRT_VALUE* value)
+static PRT_BOOLEAN PRT_CALL_CONV PrtMapIsSameMapping(_In_ PRT_VALUE *map, _In_ PRT_VALUE* key, _In_ PRT_VALUE* value)
 {
 	PrtAssert(PrtIsValidValue(map), "Invalid value expression.");
 	PrtAssert(PrtIsValidValue(key), "Invalid value expression.");
