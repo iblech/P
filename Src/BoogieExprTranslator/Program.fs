@@ -426,10 +426,11 @@ let translate_assign lval expr G typemap =
     printfn "%s := %s;" rhs_var (translate_expr e G)
     rhs_var
   in
-  let gen_type_assertion e G t =
-    match typeof e G with
-    | INT -> () (* redundant cast *)
-    | _ -> printfn "assert PrtSubType(PrtDynamicType(tmp_rhs_value_PrtRef), PrtType%d);" (Map.find t typemap)
+  let gen_type_assertion rhs_var e G t =
+    if is_subtype (typeof e G) t then
+      ()   (* redundant cast *)
+    else
+      printfn "assert PrtSubType(PrtDynamicType(%s), PrtType%d);" rhs_var (Map.find t typemap)
   in
   let get_lhs_var lval = match lval with
                          | Lval.Var(v) -> v
@@ -442,7 +443,7 @@ let translate_assign lval expr G typemap =
       (* evaluate rhs *)
       let rhs_var = gen_rhs_value e G in
       (* generate type assertion *)
-      gen_type_assertion e G t
+      gen_type_assertion rhs_var e G t
       do_copy lval e G (get_lhs_var lval) rhs_var
     end
   | _, Expr.Tuple(es) ->
