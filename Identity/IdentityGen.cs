@@ -16,16 +16,31 @@ namespace Microsoft.Identity
 
     class IdentityGen
     {
-        private List<PProgram> parsedPrograms;
+        private List<PProgram> parsedPrograms { get; private set; }
         private Dictionary<P_Root.MachineDecl, StringBuilder> machineDeclToSB = new Dictionary<P_Root.MachineDecl, StringBuilder>();
-
-
+        private Compiler compiler;
         //TODO Finish
-        public IdentityGen() { }
+        public IdentityGen(CommandLineOptions options) 
+        {
+            options.analyzeOnly = true;
+            compiler = new Compiler(options);
+        }
 
         private static string getName(ICSharpTerm x)
         {
             return (x as P_Root.StringCnst).Value;
+        }
+        private static string getValue(ICSharpTerm x)
+        {
+            Microsoft.Formula.Common.Rational a =  (x as P_Root.RealCnst).Value;
+            if (a.IsInteger)
+            {
+                return a.ToString(0);
+            }
+            else
+            {
+                return a.ToString(100); //Can be improved!
+            }
         }
         private static void gen_BaseType(P_Root.BaseType t, StringBuilder sb)
         {
@@ -176,6 +191,11 @@ namespace Microsoft.Identity
 
         private static void gen_NulApp(P_Root.NulApp e, StringBuilder sb)
         {
+            if(e.op.GetType() == typeof(P_Root.RealCnst))
+            {
+                sb.Append(getValue(e.op));
+                return;
+            }
             switch(e.op.Symbol as String)
             {
                 case "TRUE":
@@ -199,8 +219,8 @@ namespace Microsoft.Identity
                 case "HALT":
                     sb.Append("halt");
                     break;
-                default: //Actually must be error. However, not sure how to get an integer constant value out of this.
-                    sb.Append(e.op as P_Root.Natural); //Fix this as well.
+                default:
+                    Console.WriteLine("Error!");
                     break;
             }
         }
@@ -301,7 +321,7 @@ namespace Microsoft.Identity
                     sb.Append(" >= ");
                     gen_Expr(e.arg2 as P_Root.Expr, sb);
                     break;
-                case "IDX": //****************REVIEW//****************
+                case "IDX": //****************REVIEW*****************\\
                     gen_Expr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" + ");
                     gen_Expr(e.arg2 as P_Root.Expr, sb);
@@ -733,83 +753,36 @@ namespace Microsoft.Identity
             return;
         }
 
-        public bool  gen_identity(TextWriter writer)
+        public void genIdentity(string inputFileName, TextWriter writer)
         {
-            var InputProgramNames = new HashSet<Microsoft.Formula.API.ProgramName>();
-            var flags = new List<Flag>();
-            RootFileName = Path.GetFullPath(Path.Combine(Environment.CurrentDirectory, inputFileName));
-            try
+            //Read the file and parse it. If it's good, go ahead and emit code.
+            if (ReadFile(inputFileName))
             {
-                RootProgramName = new ProgramName(RootFileName);
+                gen_text(writer);
             }
-            catch (Exception e)
+            else
             {
-                flags.Add(
-                    new Flag(
-                        SeverityKind.Error,
-                        default(Span),
-                        Constants.BadFile.ToString(string.Format("{0} : {1}", inputFileName, e.Message)),
-                        Constants.BadFile.Code));
+                Environment.Exit(-1);
+            }
+        }
+
+
+        private bool ReadFile(string inputFileName)
+        {
+            List<Microsoft.Formula.API.Flag> flags;
+            var result = compiler.Compile(inputFileName, out flags);
+
+            if (result)
+            {
+                parsedPrograms = new List<PProgram>(compiler.ParsedPrograms.Values);
+                return true;
+            }
+            else
+            {
+                Console.WriteLine("Compilation failed. Compile from command line to see detailed error messages. Terminating...");
                 return false;
             }
 
-            HashSet<string> crntEventNames = new HashSet<string>();
-            HashSet<string> crntMachineNames = new HashSet<string>();
-
-            InstallResult uninstallResult;
-            var uninstallDidStart = CompilerEnv.Uninstall(SeenFileNames.Values, out uninstallResult);
-            // Contract.Assert(uninstallDidStart && uninstallResult.Succeeded);
-
-            SeenFileNames = new Dictionary<string, ProgramName>(StringComparer.OrdinalIgnoreCase);
-            Dictionary<string, PProgram> parsedPrograms = new Dictionary<string, PProgram>(StringComparer.OrdinalIgnoreCase);
-            Queue<string> parserWorkQueue = new Queue<string>();
-            SeenFileNames[RootFileName] = RootProgramName;
-            InputProgramNames.Add(RootProgramName);
-            parserWorkQueue.Enqueue(RootFileName);
-            while (parserWorkQueue.Count > 0)
-            {
-                PProgram prog;
-                List<string> includedFileNames;
-                List<Flag> parserFlags;
-                string currFileName = parserWorkQueue.Dequeue();
-                var parser = new Parser.Parser();
-                var result = parser.ParseFile(SeenFileNames[currFileName], Options, crntEventNames, crntMachineNames, out parserFlags, out prog, out includedFileNames);
-                flags.AddRange(parserFlags);
-                if (!result)
-                {
-                    return false;
-                }
-
-                parsedPrograms.Add(currFileName, prog);
-
-                string currDirectoryName = Path.GetDirectoryName(Path.GetFullPath(currFileName));
-                foreach (var fileName in includedFileNames)
-                {
-                    string fullFileName = Path.GetFullPath(Path.Combine(currDirectoryName, fileName));
-                    ProgramName programName;
-                    if (SeenFileNames.ContainsKey(fullFileName)) continue;
-                    try
-                    {
-                        programName = new ProgramName(fullFileName);
-                    }
-                    catch (Exception e)
-                    {
-                        flags.Add(
-                            new Flag(
-                                SeverityKind.Error,
-                                default(Span),
-                                Constants.BadFile.ToString(string.Format("{0} : {1}", fullFileName, e.Message)),
-                                Constants.BadFile.Code));
-                        return false;
-                    }
-                    SeenFileNames[fullFileName] = programName;
-                    InputProgramNames.Add(programName);
-                    parserWorkQueue.Enqueue(fullFileName);
-                }
-            }
-
-
-            return true;
         }
 
         public void gen_text(TextWriter writer)
@@ -819,14 +792,14 @@ namespace Microsoft.Identity
                 //Go over the fields of class PProgram one by one and generate
                 //the P code again. We do not really care about indentation.
 
-                foreach (var typedef in program.TypeDefs)
+                foreach(var typedef in program.TypeDefs)
                 {
                     StringBuilder sb = new StringBuilder();
                     gen_TypeDef(typedef, sb);
                     writer.WriteLine(sb);
                 }
                 
-                foreach (var event_ in program.Events)
+                foreach(var event_ in program.Events)
                 {
                     StringBuilder sb = new StringBuilder();
                     gen_EventDecl(event_, sb);
