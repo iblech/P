@@ -1,18 +1,19 @@
-﻿using System;
+﻿using Microsoft.Pc;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Microsoft.Pc
+namespace Microsoft.Identity
 {
-    public class CommandLine
+    public class Program
     {
         public static int Main(string[] args)
         {
             string inputFileName = null;
-            var options = new CommandLineOptions();
+            CommandLineOptions options = new CommandLineOptions();
             if (args.Length == 0)
             {
                 goto error;
@@ -132,13 +133,8 @@ namespace Microsoft.Pc
             }
             if (inputFileName.Length > 2 && inputFileName.EndsWith(".p"))
             {
-                var identityGen = new Identity.IdentityGen();
-                var result = identityGen.gen_identity(Console.Out);
-                if (!result)
-                {
-                    return -1;
-                }
-                return 0;
+                var identityGen = new IdentityGen(options);
+                identityGen.genIdentity(inputFileName, Console.Out);
             }
             else
             {
@@ -146,7 +142,7 @@ namespace Microsoft.Pc
             }
         error:
             {
-                Console.WriteLine("USAGE: Pc.exe file.p [options]");
+                Console.WriteLine("USAGE: Identity.exe file.p [options]");
                 Console.WriteLine("/outputDir:path");
                 Console.WriteLine("/outputFileName:name");
                 Console.WriteLine("/doNotErase");
@@ -162,4 +158,4 @@ namespace Microsoft.Pc
             }
         }
     }
-}
+}                 
