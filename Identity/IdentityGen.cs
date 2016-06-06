@@ -23,7 +23,7 @@ namespace Microsoft.Identity
             compiler = new Compiler(options);
         }
 
-        private static string getName(ICSharpTerm x)
+        private static string getName(Microsoft.Formula.API.Generators.ICSharpTerm x)
         {
             return (x as P_Root.StringCnst).Value;
         }
@@ -41,27 +41,27 @@ namespace Microsoft.Identity
         }
         private static void gen_BaseType(P_Root.BaseType t, StringBuilder sb)
         {
-            if(t._0 == P_Root.MkUserCnst(P_Root.UserCnstKind.INT))
+            if(t._0.Symbol == "INT")
             {
                 sb.Append("int");
             }
-            else if (t._0 == P_Root.MkUserCnst(P_Root.UserCnstKind.BOOL))
+            else if (t._0.Symbol == "BOOL")
             {
                 sb.Append("bool");
             }
-            else if (t._0 == P_Root.MkUserCnst(P_Root.UserCnstKind.REAL))
+            else if (t._0.Symbol == "REAL")
             {
                 sb.Append("machine");
             }
-            else if (t._0 == P_Root.MkUserCnst(P_Root.UserCnstKind.ANY))
+            else if (t._0.Symbol == "ANY")
             {
                 sb.Append("any");
             }
-            else if (t._0 == P_Root.MkUserCnst(P_Root.UserCnstKind.EVENT))
+            else if (t._0.Symbol == "EVENT")
             {
                 sb.Append("event");
             }
-            else if (t._0 == P_Root.MkUserCnst(P_Root.UserCnstKind.NULL))
+            else if (t._0.Symbol == "NULL")
             {
                 sb.Append("null");
             }
@@ -73,13 +73,13 @@ namespace Microsoft.Identity
         {
             var x = t;
             sb.Append("(");
-            while (x.tl != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            while (x.tl.Symbol != "NIL")
             {
-                gen_type(x.hd as P_Root.IArgType_TypeDef__1, sb);
+                gen_type(x.hd as P_Root.TypeExpr, sb);
                 sb.Append(", ");
                 x = x.tl as P_Root.TupType;
             }
-            gen_type(x.hd as P_Root.IArgType_TypeDef__1, sb);
+            gen_type(x.hd as P_Root.TypeExpr, sb);
             sb.Append(')');
         }
 
@@ -87,14 +87,14 @@ namespace Microsoft.Identity
         {
             gen_Qualifier(f.qual as P_Root.Qualifier, sb);
             sb.Append(" " + getName(f.name) + ": ");
-            gen_type(f.type as P_Root.IArgType_TypeDef__1, sb);
+            gen_type(f.type as P_Root.TypeExpr, sb);
         }
 
         private static void gen_NmdTupType(P_Root.NmdTupType t, StringBuilder sb)
         {
             var x = t;
             sb.Append("(");
-            while(x.tl != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            while(x.tl.Symbol != "NIL")
             {
                 gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(", ");
@@ -106,9 +106,9 @@ namespace Microsoft.Identity
 
         private static void gen_Qualifier(P_Root.Qualifier q, StringBuilder sb)
         {
-            if (q == P_Root.MkUserCnst(P_Root.UserCnstKind.SWAP))
+            if (q.Symbol == "SWAP")
                 sb.Append("swap ");
-            else if (q == P_Root.MkUserCnst(P_Root.UserCnstKind.XFER))
+            else if (q.Symbol == "XFER")
                 sb.Append("xfer ");
             return;
         }
@@ -116,42 +116,42 @@ namespace Microsoft.Identity
         private static void gen_SeqType(P_Root.SeqType t, StringBuilder sb)
         {
             sb.Append("seq[");
-            gen_type(t.x as P_Root.IArgType_TypeDef__1, sb);
+            gen_type(t.x as P_Root.TypeExpr, sb);
             sb.Append("]");
         }
 
         private static void gen_MapType(P_Root.MapType t, StringBuilder sb)
         {
             sb.Append("map[");
-            gen_type(t.k, sb);
+            gen_type(t.k as P_Root.TypeExpr, sb);
             sb.Append(", ");
-            gen_type(t.v, sb);
+            gen_type(t.v as P_Root.TypeExpr, sb);
             sb.Append("]");
         }
-        private static void gen_type(ICSharpTerm t, StringBuilder sb)
+        private static void gen_type(P_Root.TypeExpr t, StringBuilder sb)
         {
             //t: any TypeExpr. This means we can check its derived type as we wish.
-            if(t == typeof(P_Root.NameType)) 
+            if(t is P_Root.NameType) 
             {
                 sb.Append(getName(t));
             }
-            else if(t == typeof(P_Root.BaseType))
+            else if(t is P_Root.BaseType)
             {
                 gen_BaseType(t as P_Root.BaseType, sb);
             }
-            else if(t == typeof(P_Root.SeqType))
+            else if(t is P_Root.SeqType)
             {
                 gen_SeqType(t as P_Root.SeqType, sb);
             }
-            else if(t == typeof(P_Root.TupType))
+            else if(t is P_Root.TupType)
             {
                 gen_TupType(t as P_Root.TupType, sb);
             }
-            else if (t == typeof(P_Root.NmdTupType))
+            else if (t is P_Root.NmdTupType)
             {
                 gen_NmdTupType(t as P_Root.NmdTupType, sb);
             }
-            else if (t == typeof(P_Root.MapType))
+            else if (t is P_Root.MapType)
             {
                 gen_MapType(t as P_Root.MapType, sb);
             }
@@ -161,7 +161,7 @@ namespace Microsoft.Identity
         {
             sb.Append("type ");
             sb.Append(getName(typeDef.name)+" = ");
-            gen_type(typeDef.type, sb);
+            gen_type(typeDef.type as P_Root.TypeExpr, sb);
             return 0;
         }
 
@@ -188,7 +188,7 @@ namespace Microsoft.Identity
 
         private static void gen_NulApp(P_Root.NulApp e, StringBuilder sb)
         {
-            if(e.op.GetType() == typeof(P_Root.RealCnst))
+            if(e.op.GetType() is P_Root.RealCnst)
             {
                 sb.Append(getValue(e.op));
                 return;
@@ -338,12 +338,12 @@ namespace Microsoft.Identity
             //DEBUG
             gen_Expr(e.arg as P_Root.Expr, sb);
             sb.Append(".");
-            if (e.name == P_Root.MkUserCnst(P_Root.TypeCnstKind.String))
+            if (e.name.Symbol == "String")
             {
-                Console.WriteLine((e.name as P_Root.StringCnst).Value);
-                sb.Append((e.name as P_Root.StringCnst).Value);
+                Console.WriteLine(getName(e.name));
+                sb.Append(getName(e.name));
             }
-            else if (e.name == P_Root.MkUserCnst(P_Root.TypeCnstKind.Natural))
+            else if (e.name.Symbol == "Natural")
             {
                 sb.Append(((e.name as P_Root.Natural).Symbol).ToString());
             }
@@ -352,7 +352,7 @@ namespace Microsoft.Identity
         private static void gen_Default(P_Root.Default e, StringBuilder sb)
         {
             sb.Append("default(");
-            gen_type(e.type, sb);
+            gen_type(e.type as P_Root.TypeExpr, sb);
             sb.Append(")");
             return;
         }
@@ -361,7 +361,7 @@ namespace Microsoft.Identity
         {
             gen_Expr(e.arg as P_Root.Expr, sb);
             sb.Append(" as ");
-            gen_type(e.type, sb);
+            gen_type(e.type as P_Root.TypeExpr, sb);
             return;
         }
 
@@ -369,7 +369,7 @@ namespace Microsoft.Identity
         {
             var x = e;
             int i = 0;
-            while (x.tail != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            while (x.tail.Symbol != "NIL")
             {
                 gen_Qualifier(x.qual as P_Root.Qualifier, sb);
                 gen_Expr(x.head as P_Root.Expr, sb);
@@ -379,7 +379,7 @@ namespace Microsoft.Identity
             }
             gen_Qualifier(x.qual as P_Root.Qualifier, sb);
             gen_Expr(x.head as P_Root.Expr, sb);
-            if(x.head !=  P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))   
+            if(x.head .Symbol!=  "NIL")   
                 i++;
             return i;
         }
@@ -387,7 +387,7 @@ namespace Microsoft.Identity
         private static void gen_NamedExprs(P_Root.NamedExprs e, StringBuilder sb)
         {
             var x = e;
-            while (x.tail != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            while (x.tail.Symbol != "NIL")
             {
                 sb.Append(getName(x.field) + " = ");
                 gen_Expr(x.exp as P_Root.Expr, sb);
@@ -418,48 +418,48 @@ namespace Microsoft.Identity
 
         private static void gen_Expr(P_Root.Expr e, StringBuilder sb)
         {
-            if (e == P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)) { } //Do Nothing.
-            else if (e.GetType() == typeof(P_Root.Name))
+            if (e.Symbol == "NIL") { } //Do Nothing.
+            else if (e is P_Root.Name)
             {
                 gen_Name((e as P_Root.Name), sb);
             }
-            else if (e == typeof(P_Root.New))
+            else if (e is P_Root.New)
             {
                 gen_New((e as P_Root.New), sb);
             }
-            else if (e == typeof(P_Root.FunApp))
+            else if (e is P_Root.FunApp)
             {
                 gen_FunApp((e as P_Root.FunApp), sb);
             }
-            else if (e == typeof(P_Root.NulApp))
+            else if (e is P_Root.NulApp)
             {
                 gen_NulApp((e as P_Root.NulApp), sb);
             }
-            else if (e == typeof(P_Root.UnApp))
+            else if (e is P_Root.UnApp)
             {
                 gen_UnApp((e as P_Root.UnApp), sb);
             }
-            else if (e == typeof(P_Root.BinApp))
+            else if (e is P_Root.BinApp)
             {
                 gen_BinApp((e as P_Root.BinApp), sb);
             }
-            else if (e == typeof(P_Root.Field))
+            else if (e is P_Root.Field)
             {
                 gen_Field((e as P_Root.Field), sb);
             }
-            else if (e == typeof(P_Root.Default))
+            else if (e is P_Root.Default)
             {
                 gen_Default((e as P_Root.Default), sb);
             }
-            else if (e == typeof(P_Root.Cast))
+            else if (e is P_Root.Cast)
             {
                 gen_Cast((e as P_Root.Cast), sb);
             }
-            else if (e == typeof(P_Root.Tuple))
+            else if (e is P_Root.Tuple)
             {
                 gen_Tuple((e as P_Root.Tuple), sb);
             }
-            else if (e == typeof(P_Root.NamedTuple))
+            else if (e is P_Root.NamedTuple)
             {
                 gen_NamedTuple((e as P_Root.NamedTuple), sb);
             }
@@ -471,7 +471,7 @@ namespace Microsoft.Identity
             //TODO look at info
             sb.Append("new ");
             sb.Append(getName(s.name));
-           // if(s.arg == typeof(P_Root.NamedTuple) || s.arg == typeof(P_Root.Tuple))
+           // if(s.arg is P_Root.NamedTuple || s.arg is P_Root.Tuple)
             //{
               //  gen_Expr(s.arg as P_Root.Expr, sb);
             //}else{
@@ -520,9 +520,9 @@ namespace Microsoft.Identity
         
         private static void gen_NulStmt(P_Root.NulStmt s, StringBuilder sb)
         {
-            if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.POP))
+            if (s.op.Symbol == "POP")
                 sb.Append("pop");
-            else if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.SKIP))
+            else if (s.op.Symbol == "SKIP")
                 sb.Append("skip");
         }
 
@@ -530,14 +530,14 @@ namespace Microsoft.Identity
         {
             gen_Expr(s.arg1 as P_Root.Expr, sb);
             
-            if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.REMOVE))
+            if (s.op.Symbol == "REMOVE")
             {
                 sb.Append(" -= ");
-            }else if(s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.ASSIGN))
+            }else if(s.op.Symbol == "ASSIGN")
             {
                 sb.Append(" = ");
             }
-            else if (s.op == P_Root.MkUserCnst(P_Root.UserCnstKind.INSERT))
+            else if (s.op.Symbol == "INSERT")
             {
                 sb.Append(" += ");
             }
@@ -590,7 +590,7 @@ namespace Microsoft.Identity
         {
             sb.Append("case " + getName(s.trig) + ": ");
             gen_AnonFunDecl(s.action as P_Root.AnonFunDecl, sb);
-            if (s.cases != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            if (s.cases.Symbol != "NIL")
             {
                 gen_Cases(s.cases as P_Root.Cases, sb);
             }
@@ -607,7 +607,7 @@ namespace Microsoft.Identity
         {
             sb.Append("assert ");
             gen_Expr(s.arg as P_Root.Expr, sb);
-            if (s.msg != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL))
+            if (s.msg.Symbol != "NIL")
                 sb.Append(", " + getName(s.msg));
             sb.Append(";");
         }
@@ -619,60 +619,60 @@ namespace Microsoft.Identity
 
         private static void gen_Stmt(P_Root.Stmt s, StringBuilder sb)
         {
-            if (s == P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)) { } //Do nothing.
-            else if (s.GetType() == typeof(P_Root.NewStmt))
+            if (s.Symbol == "NIL") { } //Do nothing.
+            else if (s is P_Root.NewStmt)
             {
                 gen_NewStmt(s as P_Root.NewStmt, sb);
             }
-            else if (s.GetType() == typeof(P_Root.Raise))
+            else if (s is P_Root.Raise)
             {
                 gen_Raise(s as P_Root.Raise, sb);
             }
-            else if (s.GetType() == typeof(P_Root.Send))
+            else if (s is P_Root.Send)
             {
                 gen_Send(s as P_Root.Send, sb);
             }
-            else if (s.GetType() == typeof(P_Root.Monitor))
+            else if (s is P_Root.Monitor)
             {
                 gen_Monitor(s as P_Root.Monitor, sb);
             }
-            else if (s.GetType() == typeof(P_Root.FunStmt))
+            else if (s is P_Root.FunStmt)
             {
                 gen_FunStmt(s as P_Root.FunStmt, sb);
             }
-            else if (s.GetType() == typeof(P_Root.NulStmt))
+            else if (s is P_Root.NulStmt)
             {
                 gen_NulStmt(s as P_Root.NulStmt, sb);
             }
-            else if (s.GetType() == typeof(P_Root.BinStmt))
+            else if (s is P_Root.BinStmt)
             {
                 gen_BinStmt(s as P_Root.BinStmt, sb);
             }
-            else if (s.GetType() == typeof(P_Root.Return))
+            else if (s is P_Root.Return)
             {
                 gen_Return(s as P_Root.Return, sb);
             }
-            else if (s.GetType() == typeof(P_Root.While))
+            else if (s is P_Root.While)
             {
                 gen_While(s as P_Root.While, sb);
             }
-            else if (s.GetType() == typeof(P_Root.Ite))
+            else if (s is P_Root.Ite)
             {
                 gen_Ite(s as P_Root.Ite, sb);
             }
-            else if (s.GetType() == typeof(P_Root.Seq))
+            else if (s is P_Root.Seq)
             {
                 gen_Seq(s as P_Root.Seq, sb);
             }
-            else if (s.GetType() == typeof(P_Root.Receive))
+            else if (s is P_Root.Receive)
             {
                 gen_Receive(s as P_Root.Receive, sb);
             }
-            else if (s.GetType() == typeof(P_Root.Assert))
+            else if (s is P_Root.Assert)
             {
                 gen_Assert(s as P_Root.Assert, sb);
             }
-            else if (s.GetType() == typeof(P_Root.Print))
+            else if (s is P_Root.Print)
             {
                 gen_Print(s as P_Root.Print, sb);
             }
@@ -689,22 +689,23 @@ namespace Microsoft.Identity
         {
             sb.Append("event ");
             sb.Append(getName(d.name));
-            if (d.card.GetType() == typeof (P_Root.AssertMaxInstances))
+            if (d.card is P_Root.AssertMaxInstances)
             {
                 sb.Append(" assert ");
                 sb.Append((d.card as Microsoft.Pc.Domains.P_Root.RealCnst).Value.ToString());
             }
-            else if (d.card.GetType() == typeof(Microsoft.Pc.Domains.P_Root.AssumeMaxInstances))
+            else if (d.card is P_Root.AssumeMaxInstances)
             {
                 sb.Append(" assume ");
                 sb.Append((d.card as Microsoft.Pc.Domains.P_Root.RealCnst).Value.ToString());
             }
 
-            if (d.type != P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)) //Not NIL
+            if (d.type.Symbol != "NIL") //Not NIL
             
             {
                 sb.Append(" : ");
-                sb.Append((d.type as Microsoft.Pc.Domains.P_Root.TypeDef).ToString());
+                //sb.Append((d.type as Microsoft.Pc.Domains.P_Root.TypeExpr).ToString());
+                gen_type(d.type as P_Root.TypeExpr, sb);
             }
 
             sb.Append(";");
@@ -713,18 +714,18 @@ namespace Microsoft.Identity
 
         private static void gen_MachineDecl(P_Root.MachineDecl d, StringBuilder sb)
         {
-            if (d.isMain == P_Root.MkUserCnst(P_Root.UserCnstKind.TRUE))
+            if (d.isMain.Symbol == "TRUE")
                 sb.Append("main ");
-            if (d.kind == P_Root.MkUserCnst(P_Root.UserCnstKind.MODEL))
+            if (d.kind.Symbol == "MODEL")
                 sb.Append("model ");
-            else if (d.kind == P_Root.MkUserCnst(P_Root.UserCnstKind.MONITOR))
+            else if (d.kind.Symbol == "MONITOR")
             {
                 sb.Append("spec ");
                 sb.Append(getName(d.name));
                 return;
             }
             //TODO add ObservesDecl.
-            else if (d.kind == P_Root.MkUserCnst(P_Root.UserCnstKind.REAL))
+            else if (d.kind.Symbol == "REAL")
                 sb.Append("machine ");
             sb.Append(getName(d.name) + " ");
             sb.Append("\n{\n");
@@ -808,14 +809,13 @@ namespace Microsoft.Identity
                     StringBuilder sb = new StringBuilder();
                     gen_MachineDecl(machine, sb);
                     machineDeclToSB[machine] = sb;
-                    //DEBUG - remove
-                    Console.WriteLine("//** "+ getName(machine.name) + " **\\\\\n");
                 }
 
                 foreach(var state in program.States)
                 {
                     StringBuilder sb = machineDeclToSB[state.owner as P_Root.MachineDecl];
                     gen_StateDecl(state, sb);
+                    //Console.WriteLine(sb);
                 }
 
                 foreach(var variable in program.Variables)
