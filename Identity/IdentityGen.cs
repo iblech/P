@@ -6,17 +6,14 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Pc.Domains.P_Root;
 
 using Microsoft.Formula.API.Generators;
-using Microsoft.Formula.API.ProgramName;
 
 namespace Microsoft.Identity
 {
-
     class IdentityGen
     {
-        private List<PProgram> parsedPrograms { get; private set; }
+        private List<PProgram> parsedPrograms { get; set; }
         private Dictionary<P_Root.MachineDecl, StringBuilder> machineDeclToSB = new Dictionary<P_Root.MachineDecl, StringBuilder>();
         private Compiler compiler;
         //TODO Finish

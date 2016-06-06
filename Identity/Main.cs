@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Identity
 {
-    public class Main
+    public class Program
     {
         public static int Main(string[] args)
         {
