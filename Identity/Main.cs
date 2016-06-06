@@ -39,13 +39,7 @@ namespace Microsoft.Identity
                                 goto error;
                             options.profile = true;
                             break;
-
-                        case "/dumpFormulaModel":
-                            if (colonArg != null)
-                                goto error;
-                            options.outputFormula = true;
-                            break;
-
+                                                
                         case "/outputDir":
                             if (colonArg == null)
                             {
@@ -75,41 +69,6 @@ namespace Microsoft.Identity
                             options.erase = false;
                             break;
 
-                        case "/shortFileNames":
-                            if (colonArg != null)
-                                goto error;
-                            options.shortFileNames = true;
-                            break;
-
-                        case "/printTypeInference":
-                            if (colonArg != null)
-                                goto error;
-                            options.printTypeInference = true;
-                            break;
-
-                        case "/liveness":
-                            if (colonArg == null)
-                                options.liveness = LivenessOption.Standard;
-                            else if (colonArg == "mace")
-                                options.liveness = LivenessOption.Mace;
-                            else
-                                goto error;
-                            break;
-                        case "/noZing":
-                            if (colonArg != null)
-                                goto error;
-                            options.noZingOutput = true;
-                            break;
-                        case "/test":
-                            if (colonArg != null)
-                                goto error;
-                            options.cTest = true;
-                            break;
-                        case "/noC":
-                            if (colonArg != null)
-                                goto error;
-                            options.noCOutput = true;
-                            break;
                         case "/noSourceInfo":
                             if (colonArg != null)
                                 goto error;
@@ -134,7 +93,18 @@ namespace Microsoft.Identity
             if (inputFileName.Length > 2 && inputFileName.EndsWith(".p"))
             {
                 var identityGen = new IdentityGen(options);
-                identityGen.genIdentity(inputFileName, Console.Out);
+                if (options.outputFileName != null)
+                {
+                    using (StreamWriter writer = new StreamWriter(options.outputFileName))
+                    {
+                        identityGen.genIdentity(inputFileName, writer);
+                    }
+                }
+                else
+                {
+                    identityGen.genIdentity(inputFileName, Console.Out);
+                }
+                return 0;
             }
             else
             {
@@ -145,14 +115,7 @@ namespace Microsoft.Identity
                 Console.WriteLine("USAGE: Identity.exe file.p [options]");
                 Console.WriteLine("/outputDir:path");
                 Console.WriteLine("/outputFileName:name");
-                Console.WriteLine("/doNotErase");
-                Console.WriteLine("/liveness[:mace]");
-                Console.WriteLine("/shortFileNames");
-                Console.WriteLine("/printTypeInference");
-                Console.WriteLine("/dumpFormulaModel");
                 Console.WriteLine("/profile");
-                Console.WriteLine("/noZing");
-                Console.WriteLine("/noC");
                 Console.WriteLine("/noSourceInfo");
                 return 0;
             }
