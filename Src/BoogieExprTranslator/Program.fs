@@ -23,6 +23,7 @@ let stmtlist = [
                  Assign(Lval.Var("x"), Expr.Var("y"));  // x = y
                  Assign(Lval.Var("d"), Expr.Var("c"));  // d = c
                  Assign(Lval.Var("c"), Expr.Cast(Expr.Var("d"), Type.Tuple [INT; INT]));  // d = c
+                 Insert(Lval.Index(Lval.Var("f"), Expr.Const(0)), Expr.Index(Expr.Var("e"), Expr.Const(1)), Expr.Const(2)); // f[0] += (e[1], 2)
                ]
 
 let env = Map.ofList [ 
@@ -30,6 +31,8 @@ let env = Map.ofList [
             ("b", ANY); 
             ("c", Type.Tuple [INT; INT]); 
             ("d", Type.Tuple [ANY; ANY]); 
+            ("e", Type.Seq INT);
+            ("f", Type.Seq (Type.Seq INT));
             ("x", INT); 
             ("y", INT) 
           ]
@@ -153,7 +156,7 @@ let rec is_subtype t1 t2 =
       else begin
         let z = List.zip ls1 ls2 in
         let z = List.map (fun (a,b) -> (is_subtype a b)) z in
-        List.fold (fun p b -> p && b) false z
+        List.fold (fun p b -> p && b) true z
       end
     end
   | (Type.Seq(t1'), Type.Seq(t2')) -> is_subtype t1' t2'
@@ -232,23 +235,42 @@ let rec remove_side_effects_expr expr G =
       end
     in (nexpr, stlist, nG) 
 
+(* Takes an lval as input, returns the re-written lval, a set of statements and updated environemt *)
+let rec remove_side_effects_lval lval G =
+  match lval with
+  | Lval.Var(_) -> (lval, [], G)
+  | Lval.Dot(l, f) -> 
+    begin
+      let (l', stlist, G') = remove_side_effects_lval l G in
+      (Lval.Dot(l', f), stlist, G')
+    end
+  | Lval.Index(l, e) ->
+    begin
+      let (e', stlist1, G') = remove_side_effects_expr e G in
+      let (l', stlist2, G'') = remove_side_effects_lval l G in
+      (Lval.Index(l', e'), stlist1 @ stlist2, G'')
+    end
+
 let remove_side_effects_stmt stmt G =
   match stmt with
   | Assign(l, e) -> 
     begin
-      let (e', d, G') = remove_side_effects_expr e G in
-      (d @ [Assign(l, e')], G')
+      let (l', d1, G') = remove_side_effects_lval l G in
+      let (e', d2, G'') = remove_side_effects_expr e G' in
+      (d1 @ d2 @ [Assign(l', e')], G'')
     end
   | Insert(l, e1, e2) ->
     begin
-      let (e1', d1, G') = remove_side_effects_expr e1 G in
-      let (e2', d2, G'') = remove_side_effects_expr e2 G' in
-      (d1 @ d2 @ [Insert(l, e1', e2')], G'')
+      let (l', d1, G') = remove_side_effects_lval l G in
+      let (e1', d2, G'') = remove_side_effects_expr e1 G' in
+      let (e2', d3, G''') = remove_side_effects_expr e2 G'' in
+      (d1 @ d2 @ d3 @ [Insert(l', e1', e2')], G''')
     end
   | Remove(l, e) ->
     begin
-      let (e', d, G') = remove_side_effects_expr e G in
-      (d @ [Remove(l, e')], G')
+      let (l', d1, G') = remove_side_effects_lval l G in
+      let (e', d2, G'') = remove_side_effects_expr e G' in
+      (d1 @ d2 @ [Remove(l', e')], G'')
     end
   | Assume(e) ->
     begin
@@ -273,22 +295,87 @@ let remove_side_effects_stlist stlist G =
 (* returns a list of statements and a new G *)
 let rec normalize_lval_stmt st G =
   match st with
-  | Assign(l, e) ->
+  | Assign(lval, e) ->
     begin
-      match l with
-      | Lval.Dot(l', f) -> 
+      match lval with
+         (* l.f = e
+          * ==> 
+          * l = (l.0, l.1, ..., e)
+          *)
+      | Lval.Dot(l, f) -> 
         begin
-          let t = tuple_size (typeof_lval l' G) in
+          let t = tuple_size (typeof_lval l G) in
           let rhs = ref [] in
           for i = (t-1) downto 0 do
             if i = f then rhs := e :: !rhs 
-            else rhs := Expr.Dot(lval_to_expr l', f) :: !rhs
-          normalize_lval_stmt (Assign(l', Expr.Tuple !rhs)) G
+            else rhs := Expr.Dot(lval_to_expr l, f) :: !rhs
+          normalize_lval_stmt (Assign(l, Expr.Tuple !rhs)) G
         end
-      | _ -> (Assign(l, e), G)
+      | Lval.Index(Lval.Var(_), _) -> ([st], G)
+         (* l[e'] = e
+          * ==> 
+          * t = l; t[e'] = e; l = t
+          *)
+      | Lval.Index(l, e') ->
+        begin
+          let (t, G') = get_local (typeof_lval l G) G in
+          let s1 = Assign(Lval.Var(t), lval_to_expr l) in
+          let s2 = Assign(Lval.Index(Lval.Var(t), e'), e) in
+          let s3 = Assign(l, Expr.Var(t)) in
+          let (s3list, G'') = normalize_lval_stmt s3 G' in
+          ([s1; s2] @ s3list, G'')
+        end
+      | _ -> ([st], G)
     end
-  | _ -> (st, G)
-  
+  | Remove(lval, e) ->
+    begin
+      match lval with
+      (* lval -= e
+       * ==>
+       * t = lval; t -= e; lval = t
+       *)
+      | Lval.Dot(_ ,_)
+      | Lval.Index(_, _) ->
+        begin
+          let (t, G') = get_local (typeof_lval lval G) G in
+          let s1 = Assign(Lval.Var(t), lval_to_expr lval) in
+          let s2 = Remove(Lval.Var(t), e) in
+          let s3 = Assign(lval, Expr.Var(t)) in
+          let (s3list, G'') = normalize_lval_stmt s3 G' in
+          ([s1; s2] @s3list, G'')
+        end
+      | _ -> ([st], G)
+    end
+  | Insert(lval, e1, e2) ->
+    begin
+      match lval with
+      (* lval += (e1,e2)
+       * ==>
+       * t = lval; t += (e1,e2); lval = t
+       *)
+      | Lval.Dot(_, _) 
+      | Lval.Index(_, _) ->
+        begin
+          let (t, G') = get_local (typeof_lval lval G) G in
+          let s1 = Assign(Lval.Var(t), lval_to_expr lval) in
+          let s2 = Insert(Lval.Var(t), e1, e2) in
+          let s3 = Assign(lval, Expr.Var(t)) in
+          let (s3list, G'') = normalize_lval_stmt s3 G' in
+          ([s1; s2] @s3list, G'')
+        end
+      | _ -> ([st], G)
+    end
+  | _ -> ([st], G)
+
+(* returns new list of statements and the new G *)
+let normalize_lval_stlist stlist G =
+  List.fold (fun (partial_stlist, partial_G) stmt ->
+    begin
+      let (d, G') = normalize_lval_stmt stmt partial_G in
+      (partial_stlist @ d, G')
+    end
+    ) ([], G) stlist
+      
 (* Translation of normalized side-effect-free programs to Boogie *)
 let translate_type t =
   match t with
@@ -304,19 +391,11 @@ let rec translate_expr expr G =
   | Expr.Var(v) -> v
   | Expr.Op(e1, e2) -> sprintf "(%s + %s)" (translate_expr e1 G) (translate_expr e2 G)
   | Expr.Dot(e, f) -> sprintf "PrtSelectFn_%d_%s(%s)" f (translate_type (typeof expr G)) (translate_expr expr G)
+  | Expr.Index(e1, e2) -> sprintf "ReadSeq_%s(%s, %s)" (translate_type (typeof expr G)) (translate_expr e1 G) (translate_expr e2 G)
   | Expr.Cast(_, _) -> raise Not_defined
   | Expr.Tuple(_) -> raise Not_defined
 
-(*
-let rec enumerate_struct expr G =
-*)
-
-
 let translate_assign lval expr G typemap =
-  let lhs = match lval with
-            | Lval.Var(v) -> v
-            | _ -> raise Not_defined
-  in
   let do_copy_int e G lhs_var rhs_var =
     match typeof e G with
     | INT -> printfn "%s := %s;" lhs_var rhs_var
@@ -344,7 +423,7 @@ let translate_assign lval expr G typemap =
       | INT -> "tmp_rhs_value_int"
       | _ -> "tmp_rhs_value_PrtRef"
     in
-    printfn "%s := %s" rhs_var (translate_expr e G)
+    printfn "%s := %s;" rhs_var (translate_expr e G)
     rhs_var
   in
   let gen_type_assertion e G t =
@@ -352,53 +431,76 @@ let translate_assign lval expr G typemap =
     | INT -> () (* redundant cast *)
     | _ -> printfn "assert PrtSubType(PrtDynamicType(tmp_rhs_value_PrtRef), PrtType%d);" (Map.find t typemap)
   in
-  match expr with 
-  | Expr.Cast(e, t) -> 
+  let get_lhs_var lval = match lval with
+                         | Lval.Var(v) -> v
+                         | _ -> raise Not_defined
+  in
+
+  match (lval, expr) with 
+  | _, Expr.Cast(e, t) -> 
     begin
       (* evaluate rhs *)
       let rhs_var = gen_rhs_value e G in
       (* generate type assertion *)
       gen_type_assertion e G t
-      do_copy lval e G lhs rhs_var
+      do_copy lval e G (get_lhs_var lval) rhs_var
     end
-  | Expr.Tuple(es) ->
+  | _, Expr.Tuple(es) ->
     begin
       for i = 0 to (List.length es) - 1 do
         let ei = (List.nth es i) in
         printfn "tmp_rhs_value_%d_%s := %s;" i (translate_type (typeof ei G)) (translate_expr ei G)
-      printfn "call %s := AllocatePrtRef();" lhs
-      printfn "assume PrtDynamicType(%s) == PrtType%d;" lhs (Map.find (typeof_lval lval G) typemap)
+      printfn "call %s := AllocatePrtRef();" (get_lhs_var lval)
+      printfn "assume PrtDynamicType(%s) == PrtType%d;" (get_lhs_var lval) (Map.find (typeof_lval lval G) typemap)
       for i = 0 to (List.length es) - 1 do
         let ti = translate_type (typeof (List.nth es i) G) in
-        printfn "assume PrtSelectFn_%d_%s(%s) == tmp_rhs_value_%d_%s;" i ti lhs i ti
+        printfn "assume PrtSelectFn_%d_%s(%s) == tmp_rhs_value_%d_%s;" i ti (get_lhs_var lval) i ti
     end
-  | _ ->
+  | Lval.Index(Lval.Var(lhs_var), e), _ ->
+    begin
+      printfn "call %s := WriteSeq_%s(%s, %s, %s);" lhs_var (translate_type (typeof_lval lval G)) lhs_var (translate_expr e G) (translate_expr expr G)
+    end
+  | _, _ ->
     begin
       (* evaluate rhs *)
       let rhs_var = gen_rhs_value expr G in
-      do_copy lval expr G lhs rhs_var
+      do_copy lval expr G (get_lhs_var lval) rhs_var
     end
+
+let translate_insert v e1 e2 G =
+  printfn "call %s := InsertSeq_%s(%s, %s, %s);" v (translate_type (typeof e2 G)) v (translate_expr e1 G) (translate_expr e2 G)
+
+let translate_remove v e1 G =
+  printfn "call %s := RemoveSeq_%s(%s, %s);" v (translate_type (typeof (Expr.Index(Expr.Var(v), e1)) G)) v (translate_expr e1 G)
 
 let translate_stmt stmt G typemap =
   match stmt with
   | Assign(l, e) -> translate_assign l e G typemap
-  | _ -> ()
-  
+  | Insert(Lval.Var(v), e1, e2) -> translate_insert v e1 e2 G
+  | Remove(Lval.Var(v), e1) -> translate_remove v e1 G
+  | Assume(e) -> printfn "assume %s;" (translate_expr e G)
+  | Send(e) -> printfn "call PrtSend(%s);" (translate_expr e G)
+  | _ -> raise Not_defined
+
+let printfn_comment x = 
+  printf "// "
+  printfn x
+   
 [<EntryPoint>]
 let main argv = 
-    printfn "Input program:";
-    List.iter (fun s -> printfn "%s" (print_stmt s)) stmtlist;
-    printfn "Input type environment";
-    Map.iter (fun v t -> printfn "%s -> %s" v (print_type t)) env;
+    printfn_comment "Input program:";
+    List.iter (fun s -> printfn_comment "%s" (print_stmt s)) stmtlist;
+    printfn_comment "Input type environment";
+    Map.iter (fun v t -> printfn_comment "%s -> %s" v (print_type t)) env;
 
     let G = fun v -> if Map.containsKey v env then Map.find v env else raise Not_defined in
 
     (* Remove side effects *)
-    let stmtlist = List.map (fun s -> normalize_lval_stmt s G) stmtlist in
+    let (stmtlist, G) = normalize_lval_stlist stmtlist G in
     let (stmtlist, G) = remove_side_effects_stlist stmtlist G in
 
-    printfn "Side-effect-free program:"
-    List.iter (fun s -> printfn "%s" (print_stmt s)) stmtlist;
+    printfn_comment "Side-effect-free program:"
+    List.iter (fun s -> printfn_comment "%s" (print_stmt s)) stmtlist;
 
     (* Enumerate types in the program *)
     printfn "type PrtType;";
@@ -441,5 +543,32 @@ let main argv =
     printfn "}"
     printfn ""
 
+    (* Sequence *)
+    printfn "function SizeofSeq(PrtRef) : int;"
+    printfn "axiom (forall r: PrtRef :: SizeofSeq(r) >= 0);"
+    printfn ""
+    printfn "function MapofSeq_int(PrtRef) : [int]int;" (* seq[int] *)
+    printfn "function MapofSeq_PrtRef(PrtRef) : [int]PrtRef;" (* seq[T] *)
+
+    printfn "function {:inline} SeqIndexInBounds(seq: PrtRef, index: int) : bool"
+    printfn "{ 0 <= index && index < SizeofSeq(seq) }"
+
+    printfn "function {:inline} ReadSeq_int(seq: PrtRef, index: int) : int"
+    printfn "{ MapofSeq_int(seq)[index] }"
+    printfn "function {:inline} ReadSeq_PrtRef(seq: PrtRef, index: int) : PrtRef"
+    printfn "{ MapofSeq_PrtRef(seq)[index] }"
+
+    printfn "procedure {:inline} WriteSeq_int(seq: PrtRef, index: int, value: int) returns (nseq: PrtRef);"
+    printfn "procedure {:inline} WriteSeq_PrtRef(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
+
+    printfn "procedure {:inline} InsertSeq_int(seq: PrtRef, index: int, value: int) returns (nseq: PrtRef);"
+    printfn "procedure {:inline} InsertSeq_PrtRef(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
+
+    printfn "procedure {:inline} RemoveSeq_int(seq: PrtRef, index: int) returns (nseq: PrtRef);"
+    printfn "procedure {:inline} RemoveSeq_PrtRef(seq: PrtRef, index: int)  returns (nseq: PrtRef);"
+
+    printfn "procedure main() {"
     List.iter (fun s -> translate_stmt s G typemap) stmtlist
+    printfn "}"
+
     0 // return an integer exit code
