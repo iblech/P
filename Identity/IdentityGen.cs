@@ -41,27 +41,27 @@ namespace Microsoft.Identity
         }
         private static void gen_BaseType(P_Root.BaseType t, StringBuilder sb)
         {
-            if(t._0.Symbol == "INT")
+            if(t._0.Symbol.ToString() == "INT")
             {
                 sb.Append("int");
             }
-            else if (t._0.Symbol == "BOOL")
+            else if (t._0.Symbol.ToString() == "BOOL")
             {
                 sb.Append("bool");
             }
-            else if (t._0.Symbol == "REAL")
+            else if (t._0.Symbol.ToString() == "REAL")
             {
                 sb.Append("machine");
             }
-            else if (t._0.Symbol == "ANY")
+            else if (t._0.Symbol.ToString() == "ANY")
             {
                 sb.Append("any");
             }
-            else if (t._0.Symbol == "EVENT")
+            else if (t._0.Symbol.ToString() == "EVENT")
             {
                 sb.Append("event");
             }
-            else if (t._0.Symbol == "NULL")
+            else if (t._0.Symbol.ToString() == "NULL")
             {
                 sb.Append("null");
             }
@@ -73,7 +73,7 @@ namespace Microsoft.Identity
         {
             var x = t;
             sb.Append("(");
-            while (x.tl.Symbol != "NIL")
+            while (x.tl.Symbol.ToString() != "NIL")
             {
                 gen_type(x.hd as P_Root.TypeExpr, sb);
                 sb.Append(", ");
@@ -94,7 +94,7 @@ namespace Microsoft.Identity
         {
             var x = t;
             sb.Append("(");
-            while(x.tl.Symbol != "NIL")
+            while(x.tl.Symbol.ToString() != "NIL")
             {
                 gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(", ");
@@ -106,9 +106,9 @@ namespace Microsoft.Identity
 
         private static void gen_Qualifier(P_Root.Qualifier q, StringBuilder sb)
         {
-            if (q.Symbol == "SWAP")
+            if (q.Symbol.ToString() == "SWAP")
                 sb.Append("swap ");
-            else if (q.Symbol == "XFER")
+            else if (q.Symbol.ToString() == "XFER")
                 sb.Append("xfer ");
             return;
         }
@@ -193,7 +193,7 @@ namespace Microsoft.Identity
                 sb.Append(getValue(e.op));
                 return;
             }
-            switch(e.op.Symbol as String)
+            switch(e.op.Symbol.ToString() as String)
             {
                 case "TRUE":
                     sb.Append("true");
@@ -224,8 +224,8 @@ namespace Microsoft.Identity
 
         private static void gen_UnApp(P_Root.UnApp e, StringBuilder sb)
         {
-            Console.WriteLine(e.op.Symbol as String);
-            switch (e.op.Symbol as String)
+            Console.WriteLine(e.op.Symbol.ToString() as String);
+            switch (e.op.Symbol.ToString() as String)
             {
                 case "NOT":
                     sb.Append("!");
@@ -256,7 +256,7 @@ namespace Microsoft.Identity
 
         private static void gen_BinApp(P_Root.BinApp e, StringBuilder sb)
         {
-            switch (e.op.Symbol as String)
+            switch (e.op.Symbol.ToString() as String)
             {
                 case "ADD":
                     gen_Expr(e.arg1 as P_Root.Expr, sb);
@@ -338,14 +338,14 @@ namespace Microsoft.Identity
             //DEBUG
             gen_Expr(e.arg as P_Root.Expr, sb);
             sb.Append(".");
-            if (e.name.Symbol == "String")
+            if (e.name.Symbol.ToString() == "String")
             {
                 Console.WriteLine(getName(e.name));
                 sb.Append(getName(e.name));
             }
-            else if (e.name.Symbol == "Natural")
+            else if (e.name.Symbol.ToString() == "Natural")
             {
-                sb.Append(((e.name as P_Root.Natural).Symbol).ToString());
+                sb.Append(((e.name as P_Root.Natural).Symbol.ToString()).ToString());
             }
         }
 
@@ -369,7 +369,7 @@ namespace Microsoft.Identity
         {
             var x = e;
             int i = 0;
-            while (x.tail.Symbol != "NIL")
+            while (x.tail.Symbol.ToString() != "NIL")
             {
                 gen_Qualifier(x.qual as P_Root.Qualifier, sb);
                 gen_Expr(x.head as P_Root.Expr, sb);
@@ -379,7 +379,7 @@ namespace Microsoft.Identity
             }
             gen_Qualifier(x.qual as P_Root.Qualifier, sb);
             gen_Expr(x.head as P_Root.Expr, sb);
-            if(x.head .Symbol!=  "NIL")   
+            if(x.head .Symbol.ToString()!=  "NIL")   
                 i++;
             return i;
         }
@@ -387,7 +387,7 @@ namespace Microsoft.Identity
         private static void gen_NamedExprs(P_Root.NamedExprs e, StringBuilder sb)
         {
             var x = e;
-            while (x.tail.Symbol != "NIL")
+            while (x.tail.Symbol.ToString() != "NIL")
             {
                 sb.Append(getName(x.field) + " = ");
                 gen_Expr(x.exp as P_Root.Expr, sb);
@@ -418,7 +418,7 @@ namespace Microsoft.Identity
 
         private static void gen_Expr(P_Root.Expr e, StringBuilder sb)
         {
-            if (e.Symbol == "NIL") { } //Do Nothing.
+            if (e.Symbol.ToString() == "NIL") { } //Do Nothing.
             else if (e is P_Root.Name)
             {
                 gen_Name((e as P_Root.Name), sb);
@@ -520,9 +520,9 @@ namespace Microsoft.Identity
         
         private static void gen_NulStmt(P_Root.NulStmt s, StringBuilder sb)
         {
-            if (s.op.Symbol == "POP")
+            if (s.op.Symbol.ToString() == "POP")
                 sb.Append("pop");
-            else if (s.op.Symbol == "SKIP")
+            else if (s.op.Symbol.ToString() == "SKIP")
                 sb.Append("skip");
         }
 
@@ -530,14 +530,14 @@ namespace Microsoft.Identity
         {
             gen_Expr(s.arg1 as P_Root.Expr, sb);
             
-            if (s.op.Symbol == "REMOVE")
+            if (s.op.Symbol.ToString() == "REMOVE")
             {
                 sb.Append(" -= ");
-            }else if(s.op.Symbol == "ASSIGN")
+            }else if(s.op.Symbol.ToString() == "ASSIGN")
             {
                 sb.Append(" = ");
             }
-            else if (s.op.Symbol == "INSERT")
+            else if (s.op.Symbol.ToString() == "INSERT")
             {
                 sb.Append(" += ");
             }
@@ -590,7 +590,7 @@ namespace Microsoft.Identity
         {
             sb.Append("case " + getName(s.trig) + ": ");
             gen_AnonFunDecl(s.action as P_Root.AnonFunDecl, sb);
-            if (s.cases.Symbol != "NIL")
+            if (s.cases.Symbol.ToString() != "NIL")
             {
                 gen_Cases(s.cases as P_Root.Cases, sb);
             }
@@ -607,7 +607,7 @@ namespace Microsoft.Identity
         {
             sb.Append("assert ");
             gen_Expr(s.arg as P_Root.Expr, sb);
-            if (s.msg.Symbol != "NIL")
+            if (s.msg.Symbol.ToString() != "NIL")
                 sb.Append(", " + getName(s.msg));
             sb.Append(";");
         }
@@ -619,7 +619,7 @@ namespace Microsoft.Identity
 
         private static void gen_Stmt(P_Root.Stmt s, StringBuilder sb)
         {
-            if (s.Symbol == "NIL") { } //Do nothing.
+            if (s.Symbol.ToString() == "NIL") { } //Do nothing.
             else if (s is P_Root.NewStmt)
             {
                 gen_NewStmt(s as P_Root.NewStmt, sb);
@@ -700,7 +700,7 @@ namespace Microsoft.Identity
                 sb.Append((d.card as Microsoft.Pc.Domains.P_Root.RealCnst).Value.ToString());
             }
 
-            if (d.type.Symbol != "NIL") //Not NIL
+            if (d.type.Symbol.ToString() != "NIL") //Not NIL
             
             {
                 sb.Append(" : ");
@@ -714,18 +714,18 @@ namespace Microsoft.Identity
 
         private static void gen_MachineDecl(P_Root.MachineDecl d, StringBuilder sb)
         {
-            if (d.isMain.Symbol == "TRUE")
+            if (d.isMain.Symbol.ToString() == "TRUE")
                 sb.Append("main ");
-            if (d.kind.Symbol == "MODEL")
+            if (d.kind.Symbol.ToString()== "MODEL")
                 sb.Append("model ");
-            else if (d.kind.Symbol == "MONITOR")
+            else if (d.kind.Symbol.ToString() == "MONITOR")
             {
                 sb.Append("spec ");
                 sb.Append(getName(d.name));
                 return;
             }
             //TODO add ObservesDecl.
-            else if (d.kind.Symbol == "REAL")
+            else if (d.kind.Symbol.ToString() == "REAL")
                 sb.Append("machine ");
             sb.Append(getName(d.name) + " ");
             sb.Append("\n{\n");
