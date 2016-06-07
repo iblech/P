@@ -43,6 +43,7 @@ namespace Microsoft.Identity
                 return a.ToString(100); 
             }
         }
+
         private static void gen_BaseType(P_Root.BaseType t, StringBuilder sb)
         {
             if(t._0.Symbol.ToString() == "INT")
@@ -75,21 +76,23 @@ namespace Microsoft.Identity
         //Can't we have empty tuples?
         private static void gen_TupType(P_Root.TupType t, StringBuilder sb)
         {
+            //Looks like singleton tuple TYPES do not need a comma in their DECLARATION.
+
             var x = t;
             sb.Append("(");
-            int i = 0;
+          //  int i = 0;
             while (x.tl.Symbol.ToString() != "NIL")
             {
                 gen_type(x.hd as P_Root.TypeExpr, sb);
                 sb.Append(", ");
                 x = x.tl as P_Root.TupType;
-                i++;
+            //    i++;
             }
             gen_type(x.hd as P_Root.TypeExpr, sb);
-            i++;
+            //i++;
             //Singletons
-            if (i == 1)
-                sb.Append(',');
+            //if (i == 1)
+              //  sb.Append(',');
             sb.Append(')');
         }
 
@@ -102,21 +105,22 @@ namespace Microsoft.Identity
 
         private static void gen_NmdTupType(P_Root.NmdTupType t, StringBuilder sb)
         {
+            //Looks like singleton named tuple TYPES do not need a comma in their DECLARATION.
             var x = t;
-            int i = 0;
+            //int i = 0;
             sb.Append("(");
             while(x.tl.Symbol.ToString() != "NIL")
             {
                 gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(", ");
                 x = x.tl as P_Root.NmdTupType;
-                i++;
+                //i++;
             }
             gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
-            i++;
+            //i++;
             //Singletons
-            if (i == 1) 
-                sb.Append(',');
+            //if (i == 1) 
+             //   sb.Append(',');
             sb.Append(')');
         }
 
@@ -144,6 +148,7 @@ namespace Microsoft.Identity
             gen_type(t.v as P_Root.TypeExpr, sb);
             sb.Append("]");
         }
+
         private static void gen_type(P_Root.TypeExpr t, StringBuilder sb)
         {
             //t: any TypeExpr. This means we can check its derived type as we wish.
@@ -697,11 +702,6 @@ namespace Microsoft.Identity
             return;
         }
 
-        private static void gen_AnonFunDecl(P_Root.AnonFunDecl d, StringBuilder sb)
-        {
-            return;
-        }
-    
         private static void gen_EventDecl(P_Root.EventDecl d, StringBuilder sb)
         {
             sb.Append("event ");
@@ -753,7 +753,7 @@ namespace Microsoft.Identity
         private static void gen_ObservesDecl(P_Root.ObservesDecl d, StringBuilder sb)
         {
             gen_MachineDecl(d.monitor as P_Root.MachineDecl, sb);
-            sb.Append(" monitors " + getName(d.ev));
+            sb.Append(" monitors " + getName(d.ev) + "{\n");
             return;
         }
 
@@ -789,6 +789,43 @@ namespace Microsoft.Identity
             gen_AnonFunDecl(state.exitFun as P_Root.AnonFunDecl, sb);
 
         }
+
+        private static void gen_FuncDecl(P_Root.FunDecl d, StringBuilder sb)
+        {
+            if (d.kind.Symbol == "MODEL")
+            {
+                sb.Append("model ");
+            }
+            sb.Append("fun " + getName(d.name) + "(");
+            if (d.@params.Symbol != "NIL")
+            {
+                gen_NmdTupType(d.@params as P_Root.NmdTupType, sb);
+            }
+            sb.Append(") 7z "); //" 7z " is for a possible annotation.
+            if (d.@return.Symbol != "NIL")
+            {
+                sb.Append(" : ");
+                gen_type(d.@return as P_Root.TypeExpr, sb);
+            }
+            sb.Append("{\n");
+            if (d.locals.Symbol != "NIL")
+            {
+                sb.Append("var ");
+                gen_NmdTupType(d.locals as P_Root.NmdTupType, sb);
+                sb.Append(";\n");
+            }
+            gen_Stmt(d.body as P_Root.Stmt, sb);
+            sb.Append("\n}\n");
+            return;
+        }
+
+        private static void gen_AnonFunDecl(P_Root.AnonFunDecl d, StringBuilder sb)
+        {
+            sb.Append("{\n");
+
+            return;
+        }
+
 
         public void genIdentity(string inputFileName, TextWriter writer)
         {
@@ -875,9 +912,17 @@ namespace Microsoft.Identity
 
                 foreach(var function in program.Functions)
                 {
-                    StringBuilder sb = new StringBuilder("");
-
-                    writer.WriteLine(sb.ToString());
+                    if (function.owner.Symbol == "NIL")
+                    {
+                        StringBuilder sb = new StringBuilder("static ");
+                        gen_FuncDecl(function, sb);
+                        writer.WriteLine(sb.ToString());
+                    }
+                    else
+                    {
+                        StringBuilder sb = machineDeclToSB[function.owner as P_Root.MachineDecl];
+                        gen_FuncDecl(function, sb);
+                    }
                 }
 
                 foreach(var anonfunction in program.AnonFunctions)
@@ -893,13 +938,16 @@ namespace Microsoft.Identity
 
                     writer.WriteLine(sb.ToString());
                 }
-
+               /*TODO fix annotations. There are no examples of annotations in the test code, 
+                * nor are they used anywhere in the semantic analysis in the 4ml file.
+                *
                 foreach(var annotation in program.Annotations)
                 {
                     StringBuilder sb = new StringBuilder("");
 
                     writer.WriteLine(sb.ToString());
                 }
+                 */
 
                 foreach(var observe in program.Observes)
                 {

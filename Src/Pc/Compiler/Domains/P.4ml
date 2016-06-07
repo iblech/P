@@ -82,6 +82,7 @@ domain PData
 	// For FunDecl, the order of params is left to right.
 	// For AnonFunDecl, the order of envVars is left to right and top to bottom.
 	// Thus, the numbering of variables is consistent across nested scopes.
+	// Also, if owner of the function is NIL, it is static.
     FunDecl        ::= fun (name: String, owner: MachineDecl + { NIL } -> kind: { REAL, PURE, MODEL }, params: any NmdTupType + { NIL }, return: any TypeExpr + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt).
     AnonFunDecl    ::= new (owner: MachineDecl + { NIL }, locals: any NmdTupType + { NIL }, body: any Stmt, envVars: any NmdTupType).
     
