@@ -15,10 +15,11 @@ namespace Microsoft.Identity
     {
         private List<PProgram> parsedPrograms { get; set; }
         private Dictionary<P_Root.MachineDecl, StringBuilder> machineDeclToSB = new Dictionary<P_Root.MachineDecl, StringBuilder>();
+        private Dictionary<P_Root.StateDecl, StringBuilder> stateDeclToSB = new Dictionary<P_Root.StateDecl, StringBuilder>();
         private Compiler compiler;
         private int level;  //Indent. DO LAST!
 
-        public IdentityGen(CommandLineOptions options) 
+        public IdentityGen(CommandLineOptions options)
         {
             level = 0;
             options.analyzeOnly = true;
@@ -32,7 +33,7 @@ namespace Microsoft.Identity
 
         private static string getValue(ICSharpTerm x)
         {
-            Microsoft.Formula.Common.Rational a =  (x as P_Root.RealCnst).Value;
+            Microsoft.Formula.Common.Rational a = (x as P_Root.RealCnst).Value;
             //Can be improved!
             if (a.IsInteger)
             {
@@ -40,13 +41,13 @@ namespace Microsoft.Identity
             }
             else
             {
-                return a.ToString(100); 
+                return a.ToString(100);
             }
         }
 
         private static void gen_BaseType(P_Root.BaseType t, StringBuilder sb)
         {
-            if(t._0.Symbol.ToString() == "INT")
+            if (t._0.Symbol.ToString() == "INT")
             {
                 sb.Append("int");
             }
@@ -80,19 +81,19 @@ namespace Microsoft.Identity
 
             var x = t;
             sb.Append("(");
-          //  int i = 0;
+            //  int i = 0;
             while (x.tl.Symbol.ToString() != "NIL")
             {
                 gen_type(x.hd as P_Root.TypeExpr, sb);
                 sb.Append(", ");
                 x = x.tl as P_Root.TupType;
-            //    i++;
+                //    i++;
             }
             gen_type(x.hd as P_Root.TypeExpr, sb);
             //i++;
             //Singletons
             //if (i == 1)
-              //  sb.Append(',');
+            //  sb.Append(',');
             sb.Append(')');
         }
 
@@ -109,7 +110,7 @@ namespace Microsoft.Identity
             var x = t;
             //int i = 0;
             sb.Append("(");
-            while(x.tl.Symbol.ToString() != "NIL")
+            while (x.tl.Symbol.ToString() != "NIL")
             {
                 gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(", ");
@@ -120,7 +121,7 @@ namespace Microsoft.Identity
             //i++;
             //Singletons
             //if (i == 1) 
-             //   sb.Append(',');
+            //   sb.Append(',');
             sb.Append(')');
         }
 
@@ -152,19 +153,19 @@ namespace Microsoft.Identity
         private static void gen_type(P_Root.TypeExpr t, StringBuilder sb)
         {
             //t: any TypeExpr. This means we can check its derived type as we wish.
-            if(t is P_Root.NameType) 
+            if (t is P_Root.NameType)
             {
                 sb.Append(getName(t));
             }
-            else if(t is P_Root.BaseType)
+            else if (t is P_Root.BaseType)
             {
                 gen_BaseType(t as P_Root.BaseType, sb);
             }
-            else if(t is P_Root.SeqType)
+            else if (t is P_Root.SeqType)
             {
                 gen_SeqType(t as P_Root.SeqType, sb);
             }
-            else if(t is P_Root.TupType)
+            else if (t is P_Root.TupType)
             {
                 gen_TupType(t as P_Root.TupType, sb);
             }
@@ -181,20 +182,20 @@ namespace Microsoft.Identity
         private static int gen_TypeDef(P_Root.TypeDef typeDef, StringBuilder sb)
         {
             sb.Append("type ");
-            sb.Append(getName(typeDef.name)+" = ");
+            sb.Append(getName(typeDef.name) + " = ");
             gen_type(typeDef.type as P_Root.TypeExpr, sb);
             return 0;
         }
 
         private static void gen_Name(P_Root.Name e, StringBuilder sb)
         {
-            sb.Append(getName(e));
+            sb.Append(getName(e.name));
         }
 
         private static void gen_New(P_Root.New e, StringBuilder sb)
         {
             sb.Append("new ");
-            sb.Append(getName(e));
+            sb.Append(getName(e.name));
             sb.Append("(");
             gen_Expr(e.arg as P_Root.Expr, sb);
             sb.Append(")");
@@ -210,12 +211,12 @@ namespace Microsoft.Identity
 
         private static void gen_NulApp(P_Root.NulApp e, StringBuilder sb)
         {
-            if(e.op is P_Root.Integer)
+            if (e.op is P_Root.Integer)
             {
                 sb.Append(getValue(e.op));
                 return;
             }
-            switch(e.op.Symbol.ToString() as String)
+            switch (e.op.Symbol.ToString() as String)
             {
                 case "TRUE":
                     sb.Append("true");
@@ -401,7 +402,7 @@ namespace Microsoft.Identity
             }
             gen_Qualifier(x.qual as P_Root.Qualifier, sb);
             gen_Expr(x.head as P_Root.Expr, sb);
-            if(x.head .Symbol.ToString()!=  "NIL")   
+            if (x.head.Symbol.ToString() != "NIL")
                 i++;
             return i;
         }
@@ -419,7 +420,7 @@ namespace Microsoft.Identity
             sb.Append(getName(x.field) + " = ");
             gen_Expr(x.exp as P_Root.Expr, sb);
         }
-        
+
         private static void gen_Tuple(P_Root.Tuple e, StringBuilder sb)
         {
             //(Ugly?) Tuple generation logic. We need to put a comma at the end iff we have a singleton tuple
@@ -493,9 +494,9 @@ namespace Microsoft.Identity
             //TODO look at info
             sb.Append("new ");
             sb.Append(getName(s.name));
-           // if(s.arg is P_Root.NamedTuple || s.arg is P_Root.Tuple)
+            // if(s.arg is P_Root.NamedTuple || s.arg is P_Root.Tuple)
             //{
-              //  gen_Expr(s.arg as P_Root.Expr, sb);
+            //  gen_Expr(s.arg as P_Root.Expr, sb);
             //}else{
             sb.Append('(');
             gen_Expr(s.arg as P_Root.Expr, sb);
@@ -518,8 +519,11 @@ namespace Microsoft.Identity
             gen_Expr(s.dest as P_Root.Expr, sb);
             sb.Append(", ");
             gen_Expr(s.ev as P_Root.Expr, sb);
-            sb.Append(", "); 
-            gen_Expr(s.arg as P_Root.Expr, sb);
+            if (s.arg.Symbol.ToString() != "NIL")
+            {
+                sb.Append(", ");
+                gen_Expr(s.arg as P_Root.Expr, sb);
+            }
             return;
         }
 
@@ -530,7 +534,7 @@ namespace Microsoft.Identity
             sb.Append(", ");
             gen_Expr(s.arg as P_Root.Expr, sb);
         }
-        
+
         private static void gen_FunStmt(P_Root.FunStmt s, StringBuilder sb)
         {
             sb.Append(getName(s.name));
@@ -539,7 +543,7 @@ namespace Microsoft.Identity
             sb.Append(")");
             return;
         }
-        
+
         private static void gen_NulStmt(P_Root.NulStmt s, StringBuilder sb)
         {
             if (s.op.Symbol.ToString() == "POP")
@@ -551,11 +555,12 @@ namespace Microsoft.Identity
         private static void gen_BinStmt(P_Root.BinStmt s, StringBuilder sb)
         {
             gen_Expr(s.arg1 as P_Root.Expr, sb);
-            
+
             if (s.op.Symbol.ToString() == "REMOVE")
             {
                 sb.Append(" -= ");
-            }else if(s.op.Symbol.ToString() == "ASSIGN")
+            }
+            else if (s.op.Symbol.ToString() == "ASSIGN")
             {
                 sb.Append(" = ");
             }
@@ -595,9 +600,9 @@ namespace Microsoft.Identity
                 gen_Stmt(s.@false as P_Root.Stmt, sb);
                 sb.Append("}\n");
             }
-            else 
+            else
             {
-                sb.Append("}\n");                
+                sb.Append("}\n");
             }
         }
 
@@ -618,7 +623,7 @@ namespace Microsoft.Identity
             }
         }
 
-        private static void gen_Receive(P_Root.Receive s,  StringBuilder sb)
+        private static void gen_Receive(P_Root.Receive s, StringBuilder sb)
         {
             sb.Append("receive {");
             gen_Cases(s.cases as P_Root.Cases, sb);
@@ -718,7 +723,6 @@ namespace Microsoft.Identity
             }
 
             if (d.type.Symbol.ToString() != "NIL") //Not NIL
-            
             {
                 sb.Append(" : ");
                 //sb.Append((d.type as Microsoft.Pc.Domains.P_Root.TypeExpr).ToString());
@@ -731,7 +735,7 @@ namespace Microsoft.Identity
         {
             if (d.isMain.Symbol.ToString() == "TRUE")
                 sb.Append("main ");
-            if (d.kind.Symbol.ToString()== "MODEL")
+            if (d.kind.Symbol.ToString() == "MODEL")
                 sb.Append("model ");
             else if (d.kind.Symbol.ToString() == "MONITOR")
             {
@@ -765,18 +769,18 @@ namespace Microsoft.Identity
 
         private static void gen_QualifiedName(P_Root.QualifiedName n, StringBuilder sb)
         {
-            sb.Append(getName(n) + " ");
-            if (n.qualifier.Symbol != "NULL")
+            sb.Append(getName(n.name) + " ");
+            if (n.qualifier.Symbol.ToString() != "NIL")
                 gen_QualifiedName(n.qualifier as P_Root.QualifiedName, sb);
         }
 
         private static void gen_StateDecl(P_Root.StateDecl state, StringBuilder sb)
         {
-            if (state.temperature.Symbol == "HOT")
+            if (state.temperature.Symbol.ToString() == "HOT")
             {
                 sb.Append("hot ");
             }
-            else if (state.temperature.Symbol == "COLD")
+            else if (state.temperature.Symbol.ToString() == "COLD")
             {
                 sb.Append("cold ");
             }
@@ -792,23 +796,23 @@ namespace Microsoft.Identity
 
         private static void gen_FuncDecl(P_Root.FunDecl d, StringBuilder sb)
         {
-            if (d.kind.Symbol == "MODEL")
+            if (d.kind.Symbol.ToString() == "MODEL")
             {
                 sb.Append("model ");
             }
-            sb.Append("fun " + getName(d.name) + "(");
-            if (d.@params.Symbol != "NIL")
+            sb.Append("fun " + getName(d.name));
+            if (d.@params.Symbol.ToString() != "NIL")
             {
                 gen_NmdTupType(d.@params as P_Root.NmdTupType, sb);
             }
-            sb.Append(") 7z "); //" 7z " is for a possible annotation.
-            if (d.@return.Symbol != "NIL")
+            //sb.Append(") 7z "); //" 7z " is for a possible annotation.
+            if (d.@return.Symbol.ToString() != "NIL")
             {
                 sb.Append(" : ");
                 gen_type(d.@return as P_Root.TypeExpr, sb);
             }
             sb.Append("{\n");
-            if (d.locals.Symbol != "NIL")
+            if (d.locals.Symbol.ToString() != "NIL")
             {
                 sb.Append("var ");
                 gen_NmdTupType(d.locals as P_Root.NmdTupType, sb);
@@ -822,10 +826,49 @@ namespace Microsoft.Identity
         private static void gen_AnonFunDecl(P_Root.AnonFunDecl d, StringBuilder sb)
         {
             sb.Append("{\n");
-
+            if (d.locals.Symbol.ToString() != "NIL")
+            {
+                sb.Append("var ");
+                gen_NmdTupType(d.locals as P_Root.NmdTupType, sb);
+                sb.Append(";\n");
+            }
+            gen_Stmt(d.body as P_Root.Stmt, sb);
+            //TODO any envVars?
+            sb.Append("\n}\n");
             return;
         }
 
+        private static void gen_TransDecl(P_Root.TransDecl t, StringBuilder sb)
+        {
+            sb.Append("on ");
+            if (t.trig.Symbol.ToString() == "NULL")
+            {
+                sb.Append("null");
+            }
+            else if (t.trig.Symbol.ToString() == "HALT")
+            {
+                sb.Append("halt");
+            }
+            else
+            {
+                sb.Append(getName(t.trig));
+            }
+
+            if (t.action.Symbol.ToString() == "PUSH")
+            {
+                sb.Append(" push ");
+            }
+            else if (t.action is P_Root.AnonFunDecl)
+            {
+                gen_AnonFunDecl(t.action as P_Root.AnonFunDecl, sb);
+            }
+            else
+            {
+                sb.Append(" goto ");
+                gen_QualifiedName(t.dst as P_Root.QualifiedName, sb);
+            }
+            return;
+        }
 
         public void genIdentity(string inputFileName, TextWriter writer)
         {
@@ -865,25 +908,26 @@ namespace Microsoft.Identity
                 //Go over the fields of class PProgram one by one and generate
                 //the P code again. We do not really care about indentation.
 
-                foreach(var typedef in program.TypeDefs)
+                StringBuilder builder = new StringBuilder();
+
+                //Write TypeDefs and Event Declarations first.
+                foreach (var typedef in program.TypeDefs)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    //Indent(sb);                    
-                    gen_TypeDef(typedef, sb);
-                    sb.Append(";");
-                    writer.WriteLine(sb);
-                }
-                
-                foreach(var event_ in program.Events)
-                {
-                    StringBuilder sb = new StringBuilder();
-                    //Indent(sb);
-                    gen_EventDecl(event_, sb);
-                    sb.Append(";");
-                    writer.WriteLine(sb);
+                    gen_TypeDef(typedef, builder);
+                    builder.Append(";");
+                    writer.WriteLine(builder);
+                    builder.Clear();
                 }
 
-                foreach(var machine in program.Machines)
+                foreach (var event_ in program.Events)
+                {
+                    gen_EventDecl(event_, builder);
+                    builder.Append(";");
+                    writer.WriteLine(builder);
+                    builder.Clear();
+                }
+                //Start generating code for machines.
+                foreach (var machine in program.Machines)
                 {
                     StringBuilder sb = new StringBuilder();
                     //Indent(sb);
@@ -892,27 +936,41 @@ namespace Microsoft.Identity
                     machineDeclToSB[machine] = sb;
                 }
 
-                foreach(var state in program.States)
+                foreach (var observer in program.Observes)
                 {
-                    StringBuilder sb = machineDeclToSB[state.owner as P_Root.MachineDecl];
+                    StringBuilder sb = new StringBuilder();
+                    level++;
+                    gen_ObservesDecl(observer as P_Root.ObservesDecl, sb);
+                    machineDeclToSB[observer.monitor as P_Root.MachineDecl] = sb;
+                }
+                //Bind the variable, function and state declarations to the relevant machine, 
+                //and the transitions to the relevant state.
+                foreach (var variable in program.Variables)
+                {
+                    //NO global variables.
+                    StringBuilder sb = machineDeclToSB[variable.owner as P_Root.MachineDecl];
+                    gen_VarDecl(variable, sb);
+                    sb.Append(";\n");
+                    //writer.WriteLine(sb.ToString());
+                }
+
+                foreach (var state in program.States)
+                {
+                    StringBuilder sb = new StringBuilder();
+                    stateDeclToSB[state] = sb;
                     gen_StateDecl(state, sb);
                     //level++;
                 }
 
-                foreach(var variable in program.Variables)
+                foreach (var transition in program.Transitions)
                 {
-
-                    //writer.WriteLine(sb.ToString());
+                    StringBuilder sb = stateDeclToSB[transition.src as P_Root.StateDecl];
+                    gen_TransDecl(transition, sb);
                 }
 
-                foreach(var transition in program.Transitions)
+                foreach (var function in program.Functions)
                 {
-                    StringBuilder sb = null;
-                }
-
-                foreach(var function in program.Functions)
-                {
-                    if (function.owner.Symbol == "NIL")
+                    if (function.owner.Symbol.ToString() == "NIL")
                     {
                         StringBuilder sb = new StringBuilder("static ");
                         gen_FuncDecl(function, sb);
@@ -925,39 +983,22 @@ namespace Microsoft.Identity
                     }
                 }
 
-                foreach(var anonfunction in program.AnonFunctions)
+                foreach (var do_ in program.Dos)
                 {
                     StringBuilder sb = new StringBuilder("");
 
                     writer.WriteLine(sb.ToString());
                 }
 
-                foreach(var do_ in program.Dos)
+                //Iterate over states again to find the relevant machine so as to 
+                //join the state declaration to that machine.
+                foreach (var state in program.States)
                 {
-                    StringBuilder sb = new StringBuilder("");
-
-                    writer.WriteLine(sb.ToString());
-                }
-               /*TODO fix annotations. There are no examples of annotations in the test code, 
-                * nor are they used anywhere in the semantic analysis in the 4ml file.
-                *
-                foreach(var annotation in program.Annotations)
-                {
-                    StringBuilder sb = new StringBuilder("");
-
-                    writer.WriteLine(sb.ToString());
-                }
-                 */
-
-                foreach(var observe in program.Observes)
-                {
-                    StringBuilder sb = new StringBuilder("");
-
-                    writer.WriteLine(sb.ToString());
+                    machineDeclToSB[state.owner as P_Root.MachineDecl].Append(stateDeclToSB[state]);
                 }
 
-                //Write the machine declarations to the TextWriter.
-                foreach(var machine in program.Machines)
+                //Write out the machine declarations.
+                foreach (var machine in program.Machines)
                 {
                     writer.WriteLine(machineDeclToSB[machine]);
                     level--;
@@ -968,3 +1009,10 @@ namespace Microsoft.Identity
         }
     }
 }
+
+/***************************************TODO*****************************************
+ *                                                                                  *
+ *      Fix AnonFunctions and Annotations. The former do not seem to appear freely  *
+ *      in the program; the latter do not have SEMANTIC significance.               *
+ *                                                                                  *
+ ************************************************************************************/
