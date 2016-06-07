@@ -1,44 +1,95 @@
 ﻿open System
 
 (* Types *)
-type Type = INT | ANY | Seq of Type | Tuple of Type list
+type Type = Null | Bool | Int | Machine | Event | Any 
+           | Seq of Type | Map of Type * Type 
+           | Tuple of Type list
+
+(* operators *)
+type BinOp = Add | Sub | Mul | Intdiv | And | Or | Eq | Neq | Lt | Le | Gt | Ge | Idx | In
+
+type UnOp = Not | Neg | Keys | Values | Sizeof
 
 (* Expressions *)
-type Expr = Const of int | Var of string | Op of Expr * Expr | Dot of Expr * int | Cast of Expr * Type | Tuple of Expr list
-            | Index of Expr * Expr
+type Expr = 
+  | Nil 
+  | ConstInt of int 
+  | ConstBool of bool 
+  | Event of string
+  | This
+  | Nondet
+  | Var of string 
+  | Bin of BinOp * Expr * Expr 
+  | Un of UnOp * Expr
+  | Dot of Expr * int 
+  | Cast of Expr * Type 
+  | Tuple of Expr list
 
 type Lval = Var of string | Dot of Lval * int | Index of Lval * Expr
 
-type Stmt = Assign of Lval * Expr | Insert of Lval * Expr * Expr | Remove of Lval * Expr | Assume of Expr | Send of Expr
+(* Statements *)
+type Stmt = Assign of Lval * Expr | Insert of Lval * Expr * Expr | Remove of Lval * Expr | Assume of Expr 
 
+(* Input program *)
+let stmtlist = [ 
+                 Assign(Lval.Var("c"), Expr.Tuple [Expr.ConstInt 1; Expr.ConstInt 2]);  // c = (1,2)
+                 Assign(Lval.Var("x"), Expr.Var("y"));  // x = y
+                 Assign(Lval.Var("d"), Expr.Var("c"));  // d = c
+                 Assign(Lval.Var("c"), Expr.Cast(Expr.Var("d"), Type.Tuple [Int; Int]));  // d = c
+                 Insert(Lval.Index(Lval.Var("f"), Expr.ConstInt(0)), Expr.Bin(Idx, Expr.Var("e"), Expr.ConstInt(1)), Expr.ConstInt(2)); // f[0] += (e[1], 2)
+               ]
+
+let env = Map.ofList [ 
+            ("a", Int); 
+            ("b", Any); 
+            ("c", Type.Tuple [Int; Int]); 
+            ("d", Type.Tuple [Any; Any]); 
+            ("e", Type.Seq Int);
+            ("f", Type.Seq (Type.Seq Int));
+            ("x", Int); 
+            ("y", Int) 
+          ]
+
+(* Helpers *)
 let rec lval_to_expr lval =
   match lval with
   | Lval.Var(v) -> Expr.Var(v)
   | Lval.Dot(l, i) -> Expr.Dot(lval_to_expr l, i)
-  | Lval.Index(l, e) -> Expr.Index(lval_to_expr l, e)
+  | Lval.Index(l, e) -> Expr.Bin(Idx, lval_to_expr l, e)
 
-(* Input program *)
-let stmtlist = [ 
-                 Assign(Lval.Var("c"), Expr.Tuple [Expr.Const 1; Expr.Const 2]);  // c = (1,2)
-                 Assign(Lval.Var("x"), Expr.Var("y"));  // x = y
-                 Assign(Lval.Var("d"), Expr.Var("c"));  // d = c
-                 Assign(Lval.Var("c"), Expr.Cast(Expr.Var("d"), Type.Tuple [INT; INT]));  // d = c
-                 Insert(Lval.Index(Lval.Var("f"), Expr.Const(0)), Expr.Index(Expr.Var("e"), Expr.Const(1)), Expr.Const(2)); // f[0] += (e[1], 2)
-               ]
+let is_intop op =
+  match op with
+  | Add 
+  | Sub 
+  | Mul 
+  | Intdiv -> true
+  | _ -> false
 
-let env = Map.ofList [ 
-            ("a", INT); 
-            ("b", ANY); 
-            ("c", Type.Tuple [INT; INT]); 
-            ("d", Type.Tuple [ANY; ANY]); 
-            ("e", Type.Seq INT);
-            ("f", Type.Seq (Type.Seq INT));
-            ("x", INT); 
-            ("y", INT) 
-          ]
+let is_relop op =
+  match op with
+  | Lt 
+  | Le 
+  | Gt 
+  | Ge -> true
+  | _ -> false
+
+let is_boolop op =
+  match op with
+  | And 
+  | Or -> true
+  | _ -> false
+
+let is_comparison op =
+  match op with
+  | Eq
+  | Neq -> true
+  | _ -> false
 
 (* Exception for everything that we don't want to do *)
 exception Not_defined;
+
+(* Type exception for everything we don't want to type *)
+exception Type_exception of string;
 
 (* Printing functions *)
 let rec print_list fn ls =
@@ -49,20 +100,56 @@ let rec print_list fn ls =
 
 let rec print_type t =
   match t with
-  | INT -> "int"
-  | ANY -> "any"
+  | Null -> "null"
+  | Bool -> "bool"
+  | Int -> "int"
+  | Machine -> "real"
+  | Type.Event -> "event"
+  | Any -> "any"
   | Type.Tuple(ls) -> sprintf "(%s)" (print_list print_type ls)
   | Type.Seq(t) -> sprintf "seq[%s]" (print_type t)
+  | Type.Map(t1, t2) -> sprintf "map[%s, %s]" (print_type t1) (print_type t2)
+
+let print_binop op =
+  match op with
+  | Add -> "+"
+  | Sub -> "-"
+  | Mul -> "*"
+  | Intdiv -> "/"
+  | And -> "&&"
+  | Or -> "!!"
+  | Eq -> "=="
+  | Neq -> "!="
+  | Lt -> "<"
+  | Le -> "<="
+  | Gt -> ">"
+  | Ge -> ">="
+  | Idx -> "[]"
+  | In -> "in"
+
+let print_uop op =
+  match op with
+  | Not -> "!"
+  | Neg -> "~"
+  | Keys -> "keys"
+  | Values -> "values"
+  | Sizeof -> "sizeof"
 
 let rec print_expr (e: Expr) =
   match e with
-  | Const(i) -> i.ToString()
+  | Nil -> "nil"
+  | ConstBool(b) -> b.ToString()
+  | ConstInt(i) -> i.ToString()
+  | This -> "this"
+  | Nondet -> "*"
+  | Event(s) -> s
   | Expr.Var(s) -> s
-  | Op(e1,e2) -> sprintf "(%s + %s)" (print_expr e1) (print_expr e2)
+  | Expr.Bin(Idx, e1, e2) -> sprintf "%s[%s]" (print_expr e1) (print_expr e2) 
+  | Expr.Bin(op, e1, e2) -> sprintf "(%s %s %s)" (print_expr e1) (print_binop op) (print_expr e2)
+  | Expr.Un(op, e1) -> sprintf "%s(%s)" (print_uop op) (print_expr e1)
   | Expr.Dot(e, i) -> (print_expr e) + "." + i.ToString()
   | Cast(e, t) -> sprintf "(%s as %s)" (print_expr e) (print_type t)
   | Tuple(ls) -> sprintf "(%s)" (print_list print_expr ls)
-  | Expr.Index(e1, e2) -> sprintf "%s[%s]" (print_expr e1) (print_expr e2) 
  
 let rec print_lval (l: Lval) =
   match l with
@@ -76,13 +163,82 @@ let print_stmt s =
   | Insert(l, e1, e2) -> sprintf "%s += (%s, %s)" (print_lval l) (print_expr e1) (print_expr e2)
   | Remove(l, e) -> sprintf "%s -= %s" (print_lval l) (print_expr e)
   | Assume(e) -> sprintf "assume %s" (print_expr e)
-  | Send(e) -> sprintf "send %s" (print_expr e)
+
+(* Typing *)
+let type_assert b s =
+  if (not b) then raise (Type_exception s)
+
+let rec is_subtype t1 t2 =
+  match (t1, t2) with
+  | (_, Any) -> true
+  | (Null, Machine) -> true
+  | (Null, Type.Event) -> true
+  | (a,b) when a = b -> true
+  | (Type.Tuple(ls1), Type.Tuple(ls2)) ->
+    begin
+      if List.length ls1 <> List.length ls2 then false
+      else begin
+        let z = List.zip ls1 ls2 in
+        let z = List.map (fun (a,b) -> (is_subtype a b)) z in
+        List.fold (fun p b -> p && b) true z
+      end
+    end
+  | _ -> false
+
 
 let rec typeof expr G =
   match expr with
-  | Const(_) -> INT
+  | Nil -> Null
+  | ConstBool _ -> Bool
+  | ConstInt _ -> Int
+  | This -> Machine
+  | Nondet -> Bool
+  | Event _ -> Type.Event
   | Expr.Var(v) -> G v
-  | Op(e1, e2) -> INT
+  | Expr.Bin(Idx, e1, e2) ->
+    begin
+      match typeof e1 G with
+      | Seq(t1) -> 
+        begin
+          type_assert (is_subtype (typeof e1 G) Int) "Type error in indexing sequence"
+          t1
+        end
+      | Map(t1, t2) ->
+        begin
+          type_assert (is_subtype (typeof e1 G) t1) "Type error in indexing map"
+          t2
+        end
+      | _ -> raise Not_defined
+    end
+  | Expr.Bin(In, e1, e2) ->
+    begin
+      match typeof e2 G with
+      | Map(t1, _) ->
+        begin
+          type_assert (is_subtype (typeof e1 G) t1) "Type error in key lookup"
+          Bool
+        end
+      | _ -> raise Not_defined
+    end
+  | Expr.Bin(op, e1, e2) when is_intop op -> Int
+  | Expr.Bin(op, e1, e2) when is_boolop op -> Bool
+  | Expr.Bin(op, e1, e2) when is_relop op -> Bool
+  | Expr.Bin(op, e1, e2) when is_comparison op -> Bool
+  | Expr.Un(Not, e1) -> Bool
+  | Expr.Un(Neg, e1) -> Int
+  | Expr.Un(Keys, e1) -> 
+    begin
+      match typeof e1 G with
+      | Map(t1, t2) -> Seq(t1)
+      | _ -> raise Not_defined
+    end
+  | Expr.Un(Values, e1) ->
+    begin
+      match typeof e1 G with
+      | Map(t1, t2) -> Seq(t2)
+      | _ -> raise Not_defined
+    end
+  | Expr.Un(Sizeof, e1) -> Int
   | Expr.Dot(e, i) -> 
     begin
       let ts = typeof e G in
@@ -92,11 +248,7 @@ let rec typeof expr G =
     end
   | Cast(e, t) -> t
   | Expr.Tuple(es) -> Type.Tuple(List.map (fun e -> typeof e G) es)
-  | Expr.Index(e1, e2) ->
-    begin
-      let (Type.Seq(t)) = typeof e1 G in (* incomplete match, else raise *)
-      t
-    end
+  | _ -> raise Not_defined
 
 let rec typeof_lval lval G =
   match lval with
@@ -114,18 +266,39 @@ let rec typeof_lval lval G =
       | _ -> raise Not_defined
     end
 
+let typecheck_stmt st G =
+  match st with
+  | Assign(l, e) -> type_assert (is_subtype (typeof_lval l G) (typeof e G)) (sprintf "Invalid assignment: %s" (print_stmt st))
+  | Assume e ->  type_assert (is_subtype (typeof e G) Bool) (sprintf "Invalid assume: %s" (print_stmt st))
+  | Insert(l, e1, e2) -> 
+    match typeof_lval l G with
+    | Seq(t) -> type_assert ((is_subtype (typeof e1 G) Int) && (is_subtype (typeof e2 G) t)) (sprintf "Invalid insert: %s" (print_stmt st))
+    | Map(t1,t2) -> type_assert ((is_subtype (typeof e1 G) t1) && (is_subtype (typeof e2 G) t2)) (sprintf "Invalid insert: %s" (print_stmt st))
+    | _ -> type_assert false (sprintf "Invalid insert: %s" (print_stmt st))
+  | Remove(l, e) ->
+    match typeof_lval l G with
+    | Seq(t) -> type_assert (is_subtype (typeof e G) Int) (sprintf "Invalid remove: %s" (print_stmt st))
+    | Map(t1,t2) -> type_assert (is_subtype (typeof e G) t1) (sprintf "Invalid remove: %s" (print_stmt st))
+    | _ -> type_assert false (sprintf "Invalid remove: %s" (print_stmt st))
+
+
 (* Quadratic time; can optimize *)
 let rec find_all_types stmt G =
   let rec all_exprs e =
     let ret =
         match e with
-        | Const(_) -> Set.empty
-        | Expr.Var(v) -> Set.empty
-        | Op(e1, e2) -> Set.union (all_exprs e1) (all_exprs e2)
+        | Nil
+        | ConstInt _
+        | ConstBool _
+        | Event _
+        | This
+        | Nondet
+        | Expr.Var _ -> Set.empty
+        | Bin(_, e1, e2) -> Set.union (all_exprs e1) (all_exprs e2)
+        | Un(_, e') -> all_exprs e'
         | Expr.Dot(e', _) -> all_exprs e'
         | Cast(e, t) -> all_exprs e
         | Expr.Tuple(es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
-        | Expr.Index(e1, e2) -> Set.union (all_exprs e1) (all_exprs e2)
     in 
     ret.Add(e)
   in
@@ -144,30 +317,12 @@ let rec find_all_types stmt G =
   | Insert(l, e1, e2) -> Set.unionMany [(all_types_lval l G); (all_types_expr e1 G); (all_types_expr e2 G)]
   | Remove(l, e) -> Set.union (all_types_expr e G) (all_types_lval l G)
   | Assume(e) -> all_types_expr e G
-  | Send(e) -> all_types_expr e G
-
-let rec is_subtype t1 t2 =
-  match (t1, t2) with
-  | (_, ANY) -> true
-  | (a,b) when a = b -> true
-  | (Type.Tuple(ls1), Type.Tuple(ls2)) ->
-    begin
-      if List.length ls1 <> List.length ls2 then false
-      else begin
-        let z = List.zip ls1 ls2 in
-        let z = List.map (fun (a,b) -> (is_subtype a b)) z in
-        List.fold (fun p b -> p && b) true z
-      end
-    end
-  | (Type.Seq(t1'), Type.Seq(t2')) -> is_subtype t1' t2'
-  | _ -> false
 
 let map_all_types stmtlist G =
   let types = List.fold (fun s stmt -> Set.union s (find_all_types stmt G)) Set.empty stmtlist in
-  let types = Set.add INT types  in
+  let types = Set.add Int types  in
   let (ret,_) = Set.fold (fun (m,i) t -> (Map.add t i m, i+1)) (Map.empty, 0) types in
   ret
-
 
 let tuple_size t =
   match t with
@@ -196,19 +351,23 @@ let get_local ty G =
 let rec remove_side_effects_expr expr G =
   let (nexpr, stlist, nG) =
     match expr with
-    | Expr.Const(_) 
+    | Nil
+    | ConstInt _
+    | ConstBool _
+    | Event _
+    | This
+    | Nondet
     | Expr.Var(_) -> (expr, [], G)
-    | Expr.Op(e1, e2) ->
+    | Bin(op, e1, e2) ->
       begin
         let (e1', s1, G') = remove_side_effects_expr e1 G in
         let (e2', s2, G'') = remove_side_effects_expr e2 G' in
-        (Expr.Op(e1', e2'), s1 @ s2, G'')
+        (Bin(op, e1', e2'), s1 @ s2, G'')
       end
-    | Expr.Index(e1, e2) ->
+    | Un(op, e) ->
       begin
-        let (e1', s1, G') = remove_side_effects_expr e1 G in
-        let (e2', s2, G'') = remove_side_effects_expr e2 G' in
-        (Expr.Index(e1', e2'), s1 @ s2, G'')
+        let (e', s, G') = remove_side_effects_expr e G in
+        (Un(op, e'), s, G')
       end
     | Expr.Dot(e,f) ->
       begin
@@ -277,11 +436,6 @@ let remove_side_effects_stmt stmt G =
     begin
       let (e', d, G') = remove_side_effects_expr e G in
       (d @ [Assume(e')], G')
-    end
-  | Send(e) ->
-    begin
-      let (e', d, G') = remove_side_effects_expr e G in
-      (d @ [Send(e')], G')
     end
 
 (* returns new list of statements and the new G *)
@@ -379,9 +533,6 @@ let normalize_lval_stlist stlist G =
       
 (* Translation of normalized side-effect-free programs to Boogie *)
 
-let translate_decl env =
-  Map.iter (fun v t -> printfn "var %s: PrtRef" v) env
-
 let rec translate_expr expr G =
   match expr with
   | Expr.Const(i) -> sprintf "PrtFromInt(%d)" i 
@@ -402,6 +553,9 @@ let translate_assign lval expr G typemap =
     if is_subtype t1 t2 then
       ()   (* redundant cast *)
     else
+      (* TODO: This is more strict than what P allows *)
+      (* P will actually go inspect all keys/values inside seq and maps and assert they are of the right type *)
+      (* We avoid this enumeration of the data structure, but may reject some valid P programs *)
       printfn "assert PrtSubType(PrtDynamicType(%s), PrtType%d);" rhs_var (Map.find t2 typemap)
   in
   let get_lhs_var lval = match lval with
@@ -500,7 +654,7 @@ let main argv =
     printfn "function PrtToInt(PrtRef) : int;"
     printfn "function PrtFromInt(int) : PrtRef;"
     printfn "axiom (forall x : int :: {PrtToInt(PrtFromInt(x))} PrtToInt(PrtFromInt(x)) == x);"
-    printfn "axiom (forall x : int :: {PrtDynamicType(PrtFromInt(x))} PrtDynamicType(PrtFromInt(x)) == PrtType%d);" (Map.find INT typemap)
+    printfn "axiom (forall x : int :: {PrtDynamicType(PrtFromInt(x))} PrtDynamicType(PrtFromInt(x)) == PrtType%d);" (Map.find Int typemap)
     for i = 0 to (max_fields-1) do
       printfn "function PrtSelectFn_%d(PrtRef) : PrtRef;" i
     printfn ""
