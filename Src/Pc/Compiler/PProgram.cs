@@ -107,6 +107,12 @@
             private set;
         }
 
+        public List<P_Root.ModuleDecl> ModuleDecl
+        {
+            get;
+            private set;
+        }
+
         public List<P_Root.MachineSendsAllEvents> MachineSendsAllEvents
         {
             get;
@@ -142,6 +148,11 @@
                 foreach (var md in Machines)
                 {
                     yield return md;
+                }
+
+                foreach (var mod in ModuleDecl)
+                {
+                    yield return mod;
                 }
 
                 foreach (var s in States)
@@ -244,6 +255,7 @@
             MachineReceivesDecl = new List<P_Root.MachineReceivesDecl>();
             MachineExportsDecl = new List<P_Root.MachineExportsDecl>();
             MachineSendsDecl = new List<P_Root.MachineSendsDecl>();
+            ModuleDecl = new List<P_Root.ModuleDecl>();
             MachineSendsAllEvents = new List<P_Root.MachineSendsAllEvents>();
             FileInfos = new List<P_Root.FileInfo>();
             LineInfos = new List<P_Root.LineInfo>();

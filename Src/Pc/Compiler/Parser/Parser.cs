@@ -27,7 +27,9 @@
         private Span crntAnnotSpan;
         private bool isTrigAnnotated = false;
         private bool isStaticFun = false;
+        private bool isPublic = false;
         private P_Root.FunDecl crntFunDecl = null;
+        private P_Root.ModuleDecl crntModuleDecl = null;
         private P_Root.EventDecl crntEventDecl = null;
         private P_Root.MachineDecl crntMachDecl = null;
         private P_Root.InterfaceTypeDecl crntInterfaceDecl = null;
@@ -54,6 +56,8 @@
         private Stack<P_Root.ExprsExt> exprsStack = new Stack<P_Root.ExprsExt>();
         private Stack<P_Root.TypeExpr> typeExprStack = new Stack<P_Root.TypeExpr>();
         private Stack<P_Root.Stmt> stmtStack = new Stack<P_Root.Stmt>();
+        private Stack<P_Root.ModuleExpr> ModuleListStack = new Stack<P_Root.ModuleExpr>();
+        private Stack<P_Root.Modules> moduleStack = new Stack<P_Root.Modules>();
         private Stack<P_Root.QualifiedName> groupStack = new Stack<P_Root.QualifiedName>();
         private int nextTrampolineLabel = 0;
         private int nextPayloadVarLabel = 0;
@@ -399,7 +403,13 @@
                         error = true;
                     }
                     break;
-               
+                case TopDecl.StaticFun:
+                    if(topDeclNames.staticFunNames.Contains(name))
+                    {
+                        errorMessage = string.Format("A static function with name {0} already declared", name);
+                        error = true;
+                    }
+                    break;
             }
 
             if (error)
@@ -417,8 +427,17 @@
             return !error;
         
     }
-    #region Pushers
-    private void PushAnnotationSet()
+        #region Pushers
+
+        //Module helpers
+        private void PushModule(string name, Span nameSpan)
+        {
+            var moduleDecl = new P_Root.ModuleDecl();
+            moduleDecl.name = (P_Root.IArgType_ModuleDecl__0)MkString(name, nameSpan);
+            moduleDecl.Span = nameSpan;
+            moduleStack.Push(moduleDecl);
+        }
+        private void PushAnnotationSet()
         {
             crntAnnotStack.Push(crntAnnotList);
             crntAnnotList = new List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>>();
@@ -683,6 +702,27 @@
             stmtStack.Push(funStmt);
         }
 
+        private void PushStaticFunStmt(string modName, Span modNameSpan, string funName, Span funNameSpan, bool hasArgs, Span span)
+        {
+            Contract.Assert(!hasArgs || exprsStack.Count > 0);
+            var staticFunStmt = P_Root.MkFunStmt();
+            staticFunStmt.name = MkString(funName, funNameSpan);
+            staticFunStmt.mod = MkString(modName, modNameSpan);
+            staticFunStmt.aout = MkUserCnst(P_Root.UserCnstKind.NIL, span);
+            staticFunStmt.Span = span;
+            staticFunStmt.label = P_Root.MkNumeric(GetNextTrampolineLabel());
+            if (hasArgs)
+            {
+                staticFunStmt.args = (P_Root.Exprs)exprsStack.Pop();
+            }
+            else
+            {
+                staticFunStmt.args = MkUserCnst(P_Root.UserCnstKind.NIL, span);
+            }
+
+            stmtStack.Push(staticFunStmt);
+        }
+
         private void PushFunExpr(string name, bool hasArgs, Span span)
         {
             Contract.Assert(!hasArgs || exprsStack.Count > 0);
@@ -699,6 +739,25 @@
             }
 
             valueExprStack.Push(funExpr);
+        }
+
+        private void PushStaticFunExpr(string modName, Span modNameSpan, string funName, Span funNameSpan, bool hasArgs, Span span)
+        {
+            Contract.Assert(!hasArgs || exprsStack.Count > 0);
+            var staticFunExpr = P_Root.MkFunApp();
+            staticFunExpr.name = MkString(funName, funNameSpan);
+            staticFunExpr.mod = MkString(modName, modNameSpan);
+            staticFunExpr.Span = span;
+            if (hasArgs)
+            {
+                staticFunExpr.args = (P_Root.Exprs)exprsStack.Pop();
+            }
+            else
+            {
+                staticFunExpr.args = MkUserCnst(P_Root.UserCnstKind.NIL, span);
+            }
+
+            valueExprStack.Push(staticFunExpr);
         }
 
         private void PushTupleExpr(bool isUnaryTuple)
@@ -983,8 +1042,10 @@
                 P_Root.FunApp funCall = arg2 as P_Root.FunApp;
                 var funStmt = P_Root.MkFunStmt();
                 funStmt.name = (P_Root.IArgType_FunStmt__0)funCall.name;
-                funStmt.args = (P_Root.IArgType_FunStmt__1)funCall.args;
-                funStmt.aout = (P_Root.IArgType_FunStmt__2)aout;
+                funStmt.mod = (P_Root.IArgType_FunStmt__1)funCall.mod;
+                funStmt.args = (P_Root.IArgType_FunStmt__2)funCall.args;
+                
+                funStmt.aout = (P_Root.IArgType_FunStmt__3)aout;
                 funStmt.label = MkNumeric(GetNextTrampolineLabel(), span);
                 funStmt.Span = span;
                 funStmt.info = MkSourceInfo(span);
@@ -1798,6 +1859,23 @@
             crntEventDecl = null;
         }
 
+        private void AddModule(string name, Span nameSpan, Span span)
+        {
+            var moduleDecl = GetCurrentModuleDecl(span);
+            moduleDecl.Span = span;
+            moduleDecl.name = MkString(name, nameSpan);
+
+            //add the module decl
+            if (IsValidName(TopDecl.Module, name, nameSpan))
+            {
+                topDeclNames.moduleNames.Add(name);
+            }
+            parseProgram.ModuleDecl.Add(moduleDecl);
+            //clear the machine names and static function names
+            topDeclNames.machineNames.Clear();
+            topDeclNames.staticFunNames.Clear();
+        }
+
         private void AddMachine(P_Root.UserCnstKind kind, string name, Span nameSpan, Span span)
         {
             var machDecl = GetCurrentMachineDecl(span);
@@ -2023,7 +2101,20 @@
             crntState.temperature = MkUserCnst(P_Root.UserCnstKind.WARM, span);
             return crntState;
         }
-        
+
+        private P_Root.ModuleDecl GetCurrentModuleDecl(Span span)
+        {
+            if (crntModuleDecl != null)
+            {
+                return crntModuleDecl;
+            }
+
+            crntModuleDecl = P_Root.MkModuleDecl();
+            crntModuleDecl.name = MkString(string.Empty, span);
+            crntModuleDecl.Span = span;
+            return crntModuleDecl;
+        }
+
         private P_Root.MachineDecl GetCurrentMachineDecl(Span span)
         {
             if (crntMachDecl != null)
@@ -2156,6 +2247,7 @@
             crntObservesList.Clear();
             crntReceivesList.Clear();
             crntSendsList.Clear();
+            topDeclNames.Reset();
         }
         #endregion
     }
