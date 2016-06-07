@@ -164,6 +164,7 @@ let rec is_subtype t1 t2 =
 
 let map_all_types stmtlist G =
   let types = List.fold (fun s stmt -> Set.union s (find_all_types stmt G)) Set.empty stmtlist in
+  let types = Set.add INT types  in
   let (ret,_) = Set.fold (fun (m,i) t -> (Map.add t i m, i+1)) (Map.empty, 0) types in
   ret
 
@@ -377,59 +378,31 @@ let normalize_lval_stlist stlist G =
     ) ([], G) stlist
       
 (* Translation of normalized side-effect-free programs to Boogie *)
-let translate_type t =
-  match t with
-  | INT -> "int"
-  | _ -> "PrtRef"
 
 let translate_decl env =
-  Map.iter (fun v t -> printfn "var %s: %s" v (translate_type t)) env
+  Map.iter (fun v t -> printfn "var %s: PrtRef" v) env
 
 let rec translate_expr expr G =
   match expr with
-  | Expr.Const(i) -> i.ToString()
+  | Expr.Const(i) -> sprintf "PrtFromInt(%d)" i 
   | Expr.Var(v) -> v
-  | Expr.Op(e1, e2) -> sprintf "(%s + %s)" (translate_expr e1 G) (translate_expr e2 G)
-  | Expr.Dot(e, f) -> sprintf "PrtSelectFn_%d_%s(%s)" f (translate_type (typeof expr G)) (translate_expr expr G)
-  | Expr.Index(e1, e2) -> sprintf "ReadSeq_%s(%s, %s)" (translate_type (typeof expr G)) (translate_expr e1 G) (translate_expr e2 G)
+  | Expr.Op(e1, e2) -> sprintf "PrtFromInt(PrtToInt(%s) + PrtToInt(%s))" (translate_expr e1 G) (translate_expr e2 G)
+  | Expr.Dot(e, f) -> sprintf "PrtSelectFn_%d(%s)" f (translate_expr expr G)
+  | Expr.Index(e1, e2) -> sprintf "ReadSeq(%s, PrtToInt(%s))" (translate_expr e1 G) (translate_expr e2 G)
   | Expr.Cast(_, _) -> raise Not_defined
   | Expr.Tuple(_) -> raise Not_defined
 
 let translate_assign lval expr G typemap =
-  let do_copy_int e G lhs_var rhs_var =
-    match typeof e G with
-    | INT -> printfn "%s := %s;" lhs_var rhs_var
-    | ANY -> printfn "%s := PrtSelectFn_int(%s);" lhs_var rhs_var
-    | _ -> raise Not_defined
-  in
-  let do_copy_any e G lhs_var rhs_var =
-    match typeof e G with
-    | INT -> 
-      begin
-        printfn "call %s := AllocatePrtRef();" lhs_var
-        printfn "assume PrtSelectFn_int(%s) == %s;" lhs_var rhs_var
-      end
-    | _ -> printfn "%s := %s;" lhs_var rhs_var
-  in
-  let do_copy l e G lhs_var rhs_var =
-    match typeof_lval l G with
-    | INT -> do_copy_int e G lhs_var rhs_var
-    | _ -> do_copy_any e G lhs_var rhs_var
-  in
-
   let gen_rhs_value e G =
-    let rhs_var =     
-      match typeof e G with
-      | INT -> "tmp_rhs_value_int"
-      | _ -> "tmp_rhs_value_PrtRef"
-    in
+    let rhs_var = "tmp_rhs_value" in
     printfn "%s := %s;" rhs_var (translate_expr e G)
     rhs_var
   in
-  let gen_type_assertion e G t =
-    match typeof e G with
-    | INT -> () (* redundant cast *)
-    | _ -> printfn "assert PrtSubType(PrtDynamicType(tmp_rhs_value_PrtRef), PrtType%d);" (Map.find t typemap)
+  let gen_type_assertion rhs_var t1 t2 =
+    if is_subtype t1 t2 then
+      ()   (* redundant cast *)
+    else
+      printfn "assert PrtSubType(PrtDynamicType(%s), PrtType%d);" rhs_var (Map.find t2 typemap)
   in
   let get_lhs_var lval = match lval with
                          | Lval.Var(v) -> v
@@ -442,36 +415,32 @@ let translate_assign lval expr G typemap =
       (* evaluate rhs *)
       let rhs_var = gen_rhs_value e G in
       (* generate type assertion *)
-      gen_type_assertion e G t
-      do_copy lval e G (get_lhs_var lval) rhs_var
+      gen_type_assertion rhs_var (typeof e G) t
+      printfn "%s := %s;" (get_lhs_var lval) rhs_var      
     end
   | _, Expr.Tuple(es) ->
     begin
       for i = 0 to (List.length es) - 1 do
         let ei = (List.nth es i) in
-        printfn "tmp_rhs_value_%d_%s := %s;" i (translate_type (typeof ei G)) (translate_expr ei G)
+        printfn "tmp_rhs_value_%d := %s;" i (translate_expr ei G)
       printfn "call %s := AllocatePrtRef();" (get_lhs_var lval)
       printfn "assume PrtDynamicType(%s) == PrtType%d;" (get_lhs_var lval) (Map.find (typeof_lval lval G) typemap)
       for i = 0 to (List.length es) - 1 do
-        let ti = translate_type (typeof (List.nth es i) G) in
-        printfn "assume PrtSelectFn_%d_%s(%s) == tmp_rhs_value_%d_%s;" i ti (get_lhs_var lval) i ti
+        printfn "assume PrtSelectFn_%d(%s) == tmp_rhs_value_%d;" i (get_lhs_var lval) i
     end
   | Lval.Index(Lval.Var(lhs_var), e), _ ->
     begin
-      printfn "call %s := WriteSeq_%s(%s, %s, %s);" lhs_var (translate_type (typeof_lval lval G)) lhs_var (translate_expr e G) (translate_expr expr G)
+      printfn "call %s := WriteSeq(%s, PrtToInt(%s), %s);" lhs_var lhs_var (translate_expr e G) (translate_expr expr G)
     end
   | _, _ ->
-    begin
-      (* evaluate rhs *)
-      let rhs_var = gen_rhs_value expr G in
-      do_copy lval expr G (get_lhs_var lval) rhs_var
-    end
+      printfn "%s := %s;" (get_lhs_var lval) (translate_expr expr G)
+
 
 let translate_insert v e1 e2 G =
-  printfn "call %s := InsertSeq_%s(%s, %s, %s);" v (translate_type (typeof e2 G)) v (translate_expr e1 G) (translate_expr e2 G)
+  printfn "call %s := InsertSeq(%s, %s, %s);" v v (translate_expr e1 G) (translate_expr e2 G)
 
 let translate_remove v e1 G =
-  printfn "call %s := RemoveSeq_%s(%s, %s);" v (translate_type (typeof (Expr.Index(Expr.Var(v), e1)) G)) v (translate_expr e1 G)
+  printfn "call %s := RemoveSeq(%s, %s);" v v (translate_expr e1 G)
 
 let translate_stmt stmt G typemap =
   match stmt with
@@ -528,10 +497,12 @@ let main argv =
     (* fields *)
     let max_fields = max_tuple_size typemap in
 
-    printfn "function PrtSelectFn_int(PrtRef) : int;"
+    printfn "function PrtToInt(PrtRef) : int;"
+    printfn "function PrtFromInt(int) : PrtRef;"
+    printfn "axiom (forall x : int :: {PrtToInt(PrtFromInt(x))} PrtToInt(PrtFromInt(x)) == x);"
+    printfn "axiom (forall x : int :: {PrtDynamicType(PrtFromInt(x))} PrtDynamicType(PrtFromInt(x)) == PrtType%d);" (Map.find INT typemap)
     for i = 0 to (max_fields-1) do
-      printfn "function PrtSelectFn_%d_int(PrtRef) : int;" i
-      printfn "function PrtSelectFn_%d_PrtRef(PrtRef) : PrtRef;" i
+      printfn "function PrtSelectFn_%d(PrtRef) : PrtRef;" i
     printfn ""
 
     (* Allocation *)
@@ -547,25 +518,17 @@ let main argv =
     printfn "function SizeofSeq(PrtRef) : int;"
     printfn "axiom (forall r: PrtRef :: SizeofSeq(r) >= 0);"
     printfn ""
-    printfn "function MapofSeq_int(PrtRef) : [int]int;" (* seq[int] *)
-    printfn "function MapofSeq_PrtRef(PrtRef) : [int]PrtRef;" (* seq[T] *)
+    printfn "function MapofSeq(PrtRef) : [int]PrtRef;" 
 
     printfn "function {:inline} SeqIndexInBounds(seq: PrtRef, index: int) : bool"
     printfn "{ 0 <= index && index < SizeofSeq(seq) }"
 
-    printfn "function {:inline} ReadSeq_int(seq: PrtRef, index: int) : int"
-    printfn "{ MapofSeq_int(seq)[index] }"
-    printfn "function {:inline} ReadSeq_PrtRef(seq: PrtRef, index: int) : PrtRef"
-    printfn "{ MapofSeq_PrtRef(seq)[index] }"
+    printfn "function {:inline} ReadSeq(seq: PrtRef, index: int) : PrtRef"
+    printfn "{ MapofSeq(seq)[index] }"
 
-    printfn "procedure {:inline} WriteSeq_int(seq: PrtRef, index: int, value: int) returns (nseq: PrtRef);"
-    printfn "procedure {:inline} WriteSeq_PrtRef(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
-
-    printfn "procedure {:inline} InsertSeq_int(seq: PrtRef, index: int, value: int) returns (nseq: PrtRef);"
-    printfn "procedure {:inline} InsertSeq_PrtRef(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
-
-    printfn "procedure {:inline} RemoveSeq_int(seq: PrtRef, index: int) returns (nseq: PrtRef);"
-    printfn "procedure {:inline} RemoveSeq_PrtRef(seq: PrtRef, index: int)  returns (nseq: PrtRef);"
+    printfn "procedure {:inline} WriteSeq(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
+    printfn "procedure {:inline} InsertSeq(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
+    printfn "procedure {:inline} RemoveSeq(seq: PrtRef, index: int)  returns (nseq: PrtRef);"
 
     printfn "procedure main() {"
     List.iter (fun s -> translate_stmt s G typemap) stmtlist
