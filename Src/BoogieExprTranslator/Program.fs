@@ -640,49 +640,57 @@ let main argv =
       end
       ) typemap) typemap;
 
+    let max_fields = max_tuple_size typemap in
+
     (* ref type *)
-    printfn "type PrtRef;"
+    printfn "type {:datatype} PrtRef;"
+    printfn "function {:constructor} Null() : PrtRef;"
+    printfn "function {:constructor} ConstInt(value:int) : PrtRef;"
+    printfn "function {:constructor} ConstBool(value:bool) : PrtRef;"
+    printfn "function {:constructor} Machine(mid:int) : PrtRef;"
+    printfn "function {:constructor} Event(typ:int) : PrtRef;"
+    for i = 1 to max_fields do
+      printf "function {:constructor} Tuple%d(" i
+      for j = 0 to (i-1) do
+        printf "f%d:PrtRef" j
+      printfn "): PrtRef;"
+    printfn "function {:constructor} Seq(size:int, map: [int]PrtRef) : PrtRef;"
+    printfn "function {:constructor} Map(size:int, keys: [int]PrtRef, values: [int]PrtRef, lookup_index: [PrtRef]int, keyset: [PrtRef]bool) : PrtRef;"
     printfn ""
 
     (* runtime type *)
     printfn "function PrtDynamicType(PrtRef):PrtType;"
     printfn ""
 
-    (* fields *)
-    let max_fields = max_tuple_size typemap in
-
-    printfn "function PrtToInt(PrtRef) : int;"
-    printfn "function PrtFromInt(int) : PrtRef;"
-    printfn "axiom (forall x : int :: {PrtToInt(PrtFromInt(x))} PrtToInt(PrtFromInt(x)) == x);"
-    printfn "axiom (forall x : int :: {PrtDynamicType(PrtFromInt(x))} PrtDynamicType(PrtFromInt(x)) == PrtType%d);" (Map.find Int typemap)
-    for i = 0 to (max_fields-1) do
-      printfn "function PrtSelectFn_%d(PrtRef) : PrtRef;" i
-    printfn ""
-
     (* Allocation *)
-    printfn "//var PrtRefAlloc: [PrtRef]bool;"
-    printfn "//const null: PrtRef;"
-    printfn "procedure AllocatePrtRef() returns (x: PrtRef) {"
-    printfn "  //assume !PrtRefAlloc[x] && x != null;"
-    printfn "  //PrtRefAlloc[x] := true;"
-    printfn "}"
+    printfn "procedure {:allocator} AllocatePrtRef() returns (x: PrtRef);"
     printfn ""
 
     (* Sequence *)
-    printfn "function SizeofSeq(PrtRef) : int;"
-    printfn "axiom (forall r: PrtRef :: SizeofSeq(r) >= 0);"
-    printfn ""
-    printfn "function MapofSeq(PrtRef) : [int]PrtRef;" 
-
     printfn "function {:inline} SeqIndexInBounds(seq: PrtRef, index: int) : bool"
-    printfn "{ 0 <= index && index < SizeofSeq(seq) }"
+    printfn "{ 0 <= index && index < size#Seq(seq) }"
 
     printfn "function {:inline} ReadSeq(seq: PrtRef, index: int) : PrtRef"
-    printfn "{ MapofSeq(seq)[index] }"
+    printfn "{ map#Seq(seq)[index] }"
 
     printfn "procedure {:inline} WriteSeq(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
     printfn "procedure {:inline} InsertSeq(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
     printfn "procedure {:inline} RemoveSeq(seq: PrtRef, index: int)  returns (nseq: PrtRef);"
+
+    (* Maps *)
+    printfn "function {:inline} MapContainsKey(m: PrtRef, index: PrtRef) : bool"
+    printfn "{ keyset#Map[index] }"
+
+    printfn "function {:inline} ReadMap(m: PrtRef, index: PrtRef) : PrtRef"
+    printfn "{ values#Map(m)[lookup_index#Map(m)[index]] }"
+
+    printfn "function {:inline} MapGetKeys(m: PrtRef) : PrtRef"
+    printfn "{  }"
+
+
+    printfn "procedure {:inline} WriteMap(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
+    printfn "procedure {:inline} InsertMap(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
+    printfn "procedure {:inline} RemoveMap(seq: PrtRef, index: int)  returns (nseq: PrtRef);"
 
     printfn "procedure main() {"
     List.iter (fun s -> translate_stmt s G typemap) stmtlist
