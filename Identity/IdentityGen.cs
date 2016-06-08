@@ -78,22 +78,15 @@ namespace Microsoft.Identity
         private static void gen_TupType(P_Root.TupType t, StringBuilder sb)
         {
             //Looks like singleton tuple TYPES do not need a comma in their DECLARATION.
-
             var x = t;
             sb.Append("(");
-            //  int i = 0;
             while (x.tl.Symbol.ToString() != "NIL")
             {
                 gen_type(x.hd as P_Root.TypeExpr, sb);
                 sb.Append(", ");
                 x = x.tl as P_Root.TupType;
-                //    i++;
             }
             gen_type(x.hd as P_Root.TypeExpr, sb);
-            //i++;
-            //Singletons
-            //if (i == 1)
-            //  sb.Append(',');
             sb.Append(')');
         }
 
@@ -108,20 +101,14 @@ namespace Microsoft.Identity
         {
             //Looks like singleton named tuple TYPES do not need a comma in their DECLARATION.
             var x = t;
-            //int i = 0;
             sb.Append("(");
             while (x.tl.Symbol.ToString() != "NIL")
             {
                 gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(", ");
                 x = x.tl as P_Root.NmdTupType;
-                //i++;
             }
             gen_NmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
-            //i++;
-            //Singletons
-            //if (i == 1) 
-            //   sb.Append(',');
             sb.Append(')');
         }
 
@@ -279,7 +266,7 @@ namespace Microsoft.Identity
 
         private static void gen_BinApp(P_Root.BinApp e, StringBuilder sb)
         {
-            switch (e.op.Symbol.ToString() as String)
+            switch (e.op.Symbol.ToString())
             {
                 case "ADD":
                     gen_Expr(e.arg1 as P_Root.Expr, sb);
@@ -303,12 +290,12 @@ namespace Microsoft.Identity
                     break;
                 case "AND":
                     gen_Expr(e.arg1 as P_Root.Expr, sb);
-                    sb.Append(" & ");
+                    sb.Append(" && ");
                     gen_Expr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "OR":
                     gen_Expr(e.arg1 as P_Root.Expr, sb);
-                    sb.Append(" | ");
+                    sb.Append(" || ");
                     gen_Expr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "EQ":
@@ -341,10 +328,11 @@ namespace Microsoft.Identity
                     sb.Append(" >= ");
                     gen_Expr(e.arg2 as P_Root.Expr, sb);
                     break;
-                case "IDX": //****************REVIEW*****************\\
+                case "IDX":
                     gen_Expr(e.arg1 as P_Root.Expr, sb);
-                    sb.Append(" + ");
+                    sb.Append("[");
                     gen_Expr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append("]");
                     break;
                 case "IN":
                     gen_Expr(e.arg1 as P_Root.Expr, sb);
@@ -357,18 +345,9 @@ namespace Microsoft.Identity
 
         private static void gen_Field(P_Root.Field e, StringBuilder sb)
         {
-            //DEBUG
             gen_Expr(e.arg as P_Root.Expr, sb);
             sb.Append(".");
-            if (e.name.Symbol.ToString() == "String")
-            {
-                Console.WriteLine(getName(e.name));
-                sb.Append(getName(e.name));
-            }
-            else if (e.name.Symbol.ToString() == "Natural")
-            {
-                sb.Append(((e.name as P_Root.Natural).Symbol.ToString()).ToString());
-            }
+            sb.Append(e.name.Symbol.ToString());
         }
 
         private static void gen_Default(P_Root.Default e, StringBuilder sb)
@@ -627,8 +606,9 @@ namespace Microsoft.Identity
 
         private static void gen_Assert(P_Root.Assert s, StringBuilder sb)
         {
-            sb.Append("assert ");
+            sb.Append("assert (");
             gen_Expr(s.arg as P_Root.Expr, sb);
+            sb.Append(")");
             if (s.msg.Symbol.ToString() != "NIL")
                 sb.Append(", " + getName(s.msg));
         }
@@ -683,6 +663,7 @@ namespace Microsoft.Identity
             else if (s is P_Root.Seq)
             {
                 gen_Seq(s as P_Root.Seq, sb);
+                return; //To avoid duplicate semicolons.
             }
             else if (s is P_Root.Receive)
             {
@@ -736,14 +717,11 @@ namespace Microsoft.Identity
                 sb.Append(getName(d.name));
                 return;
             }
-            //TODO add ObservesDecl.
             else if (d.kind.Symbol.ToString() == "REAL")
                 sb.Append("machine ");
             sb.Append(getName(d.name) + " ");
             sb.Append("\n");
-            //Indent(sb);
             sb.Append("{\n");
-            //writer.WriteLine(sb.ToString());
             return;
         }
 
@@ -894,14 +872,14 @@ namespace Microsoft.Identity
             {
                 sb.Append("on ");
                 gen_Trig(d.trig, sb);
-                sb.Append(" ");
+                sb.Append(" do ");
                 gen_AnonFunDecl(d.action as P_Root.AnonFunDecl, sb);
             }
             else
             {
                 sb.Append("on ");
                 gen_Trig(d.trig, sb);
-                sb.Append(" ");
+                sb.Append(" do ");
                 sb.Append(getName(d.action));
             }
             return;
