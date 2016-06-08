@@ -631,7 +631,6 @@ namespace Microsoft.Identity
             gen_Expr(s.arg as P_Root.Expr, sb);
             if (s.msg.Symbol.ToString() != "NIL")
                 sb.Append(", " + getName(s.msg));
-            sb.Append(";");
         }
 
         private static void gen_Print(P_Root.Print s, StringBuilder sb)
@@ -1031,7 +1030,12 @@ namespace Microsoft.Identity
                 //join the state declaration to that machine.
                 foreach (var state in program.States)
                 {
+                    if ((state.owner as P_Root.MachineDecl).start as P_Root.QualifiedName == state.name)
+                    {
+                        machineDeclToSB[state.owner as P_Root.MachineDecl].Append("start ");
+                    }
                     machineDeclToSB[state.owner as P_Root.MachineDecl].Append(stateDeclToSB[state]);
+                    machineDeclToSB[state.owner as P_Root.MachineDecl].Append("}\n");
                 }
 
                 //Write out the machine declarations.
