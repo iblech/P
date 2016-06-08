@@ -23,6 +23,7 @@ namespace Microsoft.Identity
         {
             level = 0;
             options.analyzeOnly = true;
+            options.profile = true;
             compiler = new Compiler(options);
         }
 
@@ -74,7 +75,6 @@ namespace Microsoft.Identity
             return;
         }
 
-        //Can't we have empty tuples?
         private static void gen_TupType(P_Root.TupType t, StringBuilder sb)
         {
             //Looks like singleton tuple TYPES do not need a comma in their DECLARATION.
@@ -355,7 +355,6 @@ namespace Microsoft.Identity
             return;
         }
 
-        //Heavily screwed up. Need some help!
         private static void gen_Field(P_Root.Field e, StringBuilder sb)
         {
             //DEBUG
@@ -441,8 +440,7 @@ namespace Microsoft.Identity
 
         private static void gen_Expr(P_Root.Expr e, StringBuilder sb)
         {
-            if (e.Symbol.ToString() == "NIL") { } //Do Nothing.
-            else if (e is P_Root.Name)
+            if (e is P_Root.Name)
             {
                 gen_Name((e as P_Root.Name), sb);
             }
@@ -491,18 +489,12 @@ namespace Microsoft.Identity
 
         private static void gen_NewStmt(P_Root.NewStmt s, StringBuilder sb)
         {
-            //TODO look at info
             sb.Append("new ");
             sb.Append(getName(s.name));
-            // if(s.arg is P_Root.NamedTuple || s.arg is P_Root.Tuple)
-            //{
-            //  gen_Expr(s.arg as P_Root.Expr, sb);
-            //}else{
             sb.Append('(');
             gen_Expr(s.arg as P_Root.Expr, sb);
             sb.Append(')');
-            //}
-        }
+       }
 
         private static void gen_Raise(P_Root.Raise s, StringBuilder sb)
         {
@@ -531,8 +523,11 @@ namespace Microsoft.Identity
         {
             sb.Append("monitor ");
             gen_Expr(s.ev as P_Root.Expr, sb);
-            sb.Append(", ");
-            gen_Expr(s.arg as P_Root.Expr, sb);
+            if(s.arg.Symbol.ToString() != "NIL")
+            {
+                sb.Append(", ");
+                gen_Expr(s.arg as P_Root.Expr, sb);
+            }
         }
 
         private static void gen_FunStmt(P_Root.FunStmt s, StringBuilder sb)
@@ -646,8 +641,7 @@ namespace Microsoft.Identity
 
         private static void gen_Stmt(P_Root.Stmt s, StringBuilder sb)
         {
-            if (s.Symbol.ToString() == "NIL") { } //Do nothing.
-            else if (s is P_Root.NewStmt)
+            if (s is P_Root.NewStmt)
             {
                 gen_NewStmt(s as P_Root.NewStmt, sb);
             }
@@ -825,6 +819,10 @@ namespace Microsoft.Identity
 
         private static void gen_AnonFunDecl(P_Root.AnonFunDecl d, StringBuilder sb)
         {
+            if (d.envVars.Symbol.ToString() != "NIL")
+            {
+                gen_NmdTupType(d.envVars as P_Root.NmdTupType, sb);
+            }
             sb.Append("{\n");
             if (d.locals.Symbol.ToString() != "NIL")
             {
@@ -833,39 +831,79 @@ namespace Microsoft.Identity
                 sb.Append(";\n");
             }
             gen_Stmt(d.body as P_Root.Stmt, sb);
-            //TODO any envVars?
             sb.Append("\n}\n");
             return;
         }
 
-        private static void gen_TransDecl(P_Root.TransDecl t, StringBuilder sb)
+        private static void gen_Trig(ICSharpTerm t, StringBuilder sb)
         {
-            sb.Append("on ");
-            if (t.trig.Symbol.ToString() == "NULL")
+            if (t.Symbol.ToString() == "NULL")
             {
                 sb.Append("null");
             }
-            else if (t.trig.Symbol.ToString() == "HALT")
+            else if (t.Symbol.ToString() == "HALT")
             {
                 sb.Append("halt");
             }
             else
             {
-                sb.Append(getName(t.trig));
+                sb.Append(getName(t));
             }
+        }
 
+        private static void gen_TransDecl(P_Root.TransDecl t, StringBuilder sb)
+        {
+            sb.Append("on ");
+            gen_Trig(t.trig, sb);
             if (t.action.Symbol.ToString() == "PUSH")
             {
                 sb.Append(" push ");
+                gen_QualifiedName(t.dst as P_Root.QualifiedName, sb);
+                sb.Append(";\n");
+                return;
             }
             else if (t.action is P_Root.AnonFunDecl)
             {
+                sb.Append(" goto ");
+                gen_QualifiedName(t.dst as P_Root.QualifiedName, sb);
+                sb.Append(" with ");
                 gen_AnonFunDecl(t.action as P_Root.AnonFunDecl, sb);
             }
             else
             {
                 sb.Append(" goto ");
                 gen_QualifiedName(t.dst as P_Root.QualifiedName, sb);
+                sb.Append(" with ");
+                sb.Append(getName(t.action));
+            }
+            return;
+        }
+
+        private static void gen_DoDecl(P_Root.DoDecl d, StringBuilder sb)
+        {
+            if(d.action.Symbol.ToString() == "DEFER")
+            {
+                sb.Append("defer ");
+                gen_Trig(d.trig, sb);
+            }
+            else if (d.action.Symbol.ToString() == "IGNORE")
+            {
+                sb.Append("ignore ");
+                gen_Trig(d.trig, sb);
+            }
+            else if(d.action is P_Root.AnonFunDecl)
+            {
+                sb.Append("on ");
+                gen_Trig(d.trig, sb);
+                sb.Append(" ");
+                gen_AnonFunDecl(d.action as P_Root.AnonFunDecl, sb);
+            }
+            else
+            {
+                sb.Append("on ");
+                gen_Trig(d.trig, sb);
+                sb.Append(" ");
+                sb.Append(getName(d.action));
             }
             return;
         }
@@ -962,12 +1000,6 @@ namespace Microsoft.Identity
                     //level++;
                 }
 
-                foreach (var transition in program.Transitions)
-                {
-                    StringBuilder sb = stateDeclToSB[transition.src as P_Root.StateDecl];
-                    gen_TransDecl(transition, sb);
-                }
-
                 foreach (var function in program.Functions)
                 {
                     if (function.owner.Symbol.ToString() == "NIL")
@@ -983,11 +1015,16 @@ namespace Microsoft.Identity
                     }
                 }
 
+                foreach (var transition in program.Transitions)
+                {
+                    StringBuilder sb = stateDeclToSB[transition.src as P_Root.StateDecl];
+                    gen_TransDecl(transition, sb);
+                }
+
                 foreach (var do_ in program.Dos)
                 {
-                    StringBuilder sb = new StringBuilder("");
-
-                    writer.WriteLine(sb.ToString());
+                    StringBuilder sb = stateDeclToSB[do_.src as P_Root.StateDecl];
+                    gen_DoDecl(do_, sb);
                 }
 
                 //Iterate over states again to find the relevant machine so as to 
