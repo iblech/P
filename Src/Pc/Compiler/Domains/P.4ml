@@ -83,7 +83,7 @@ domain PData
 	//// Module Declarations
 	ModuleName ::= new (name: String).
 	ModuleDecl ::= new (name: String).
-	NamedModuleDecl ::= new (name: ModuleName, mod: ModuleExpr).
+	NamedModuleDecl ::= new (mname: ModuleName, mod: ModuleExpr).
 	HideExpr ::= new (evtNames: StringList, mod: any ModuleExpr). 
 	RenameExpr ::= new (mNames: StringList, mNames': StringList, mod: any ModuleExpr).
 	ExportExpr ::= new (mName: String, iName: String, mod: any ModuleExpr).
@@ -91,7 +91,7 @@ domain PData
 	AssertExpr ::= new (monNames: StringList, mod: any ModuleExpr).
 	SafeExpr ::= new (mod: any ModuleExpr).
 	ModuleExpr ::= new (mod: any Modules, tl: any ModuleExpr + { NIL }).
-	Modules ::= SafeExpr + HideExpr + ModuleName + RenameExpr + ExportExpr + AssumeExpr + AssertExpr + ModuleDecl.
+	Modules ::= SafeExpr + HideExpr + ModuleName + RenameExpr + ExportExpr + AssumeExpr + AssertExpr + ModuleDecl + ModuleExpr.
 
 	//// Test Declarations and Implementation
 	TestDecl ::= new (name: String, mod: ModuleExpr).
@@ -391,30 +391,27 @@ domain PStaticTyping extends PData
 	/*************************************************/
 	/* Expanding the Module Expressions				*/
 	/************************************************/
-	AllModules ::= sub (Modules).
+	AllModuleExprs ::= sub (ModuleExpr).
 	NamedModuleError ::= (name: String).
-
+	
 	[rule_Classes = '"error, msg: undefined module"']
-	NamedModuleError(name) :- AllModules(mod), mod = ModuleName(name), no ModuleDecl(name), no NamedModuleDecl(mod, _).
+	NamedModuleError(name) :- AllModuleExprs(modEx), modEx.mod = ModuleName(name), no ModuleDecl(name), no NamedModuleDecl(mod, _).
 
 	[rule_Classes = '"error, msg: multiple named module definitions for the same name"']
-	NamedModuleError(name) :- NamedModuleDecl(name, expr1), NamedModuleDecl(name, expr2), expr1 != expr2.
+	NamedModuleError(modName.name) :- NamedModuleDecl(modName, expr1), NamedModuleDecl(modName, expr2), expr1 != expr2.
 
 	NamedModuleDepends ::= sub (NamedModule: NamedModuleDecl, mName: ModuleName).
 	ModuleNameDepends ::= (name1: String, name2: String).
-	ModuleNameDepends(nmodule.name, modName.name) :- NamedModuleDepends(nmodule, modName).
-	NamedModuleDepends(name1, name3) :- ModuleNameDepends(name1, name2), ModuleNameDepends(name2, name3).
+	ModuleNameDepends(name1, name2) :- NamedModuleDepends(nmodule, modName), name1 = nmodule.mname.name, name2 = modName.name.
+	ModuleNameDepends(name1, name3) :- ModuleNameDepends(name1, name2), ModuleNameDepends(name2, name3).
 	[rule_Classes = '"error, msg: named module depends on itself"']
-	NamedModuleError(name) :- NamedModuleDepends(name, name).
+	NamedModuleError(name) :- ModuleNameDepends(name, name).
 
 	ModuleExprExpansion ::= (modExpr: ModuleExpr, eModExpr: ModuleExpr).
 
-	ModuleExprExpansion(ModuleDecl(_), ModuleDecl(_)).
-	ModuleExprExpansion(mod, emod) :- AllModules(mod), mod = ModuleName(name), no NamedModuleDecl(mod, _), emod = ModuleDecl(name).
-	ModuleExprExpansion(mod, emod) :- AllModules(mod), mod = ModuleName(name), no NamedModuleError(name),  no ModuleDecl(name), ModuleExprExpansion(modExpr, emod), NamedModuleDecl(mod, modExpr).
-	ModuleExprExpansion(mod, emod) :- AllModules(mod), mod = SafeExpr(mod), ModuleExprExpansion(modExpr, emodExpr), emod = SafeExpr(emodExpr).
-	ModuleExprExpansion(mod, emod) :- AllModules(mod), mod = SafeExpr(mod), ModuleExprExpansion(modExpr, emodExpr), emod = SafeExpr(emodExpr).
-
+	ModuleExprExpansion(modexpr, emodexpr) :- AllModuleExprs(modexpr), modexpr = ModuleExpr(ModuleName(name), tail), no NamedModuleDecl(mod, _), emodexpr = ModuleExpr(ModuleDecl(name), etail), ModuleExprExpansion(tail, etail).
+	ModuleExprExpansion(modexpr, emodexpr) :- AllModuleExprs(modexpr), modexpr = ModuleExpr(ModuleName(name), tail), no NamedModuleError(name),  no ModuleDecl(name), ModuleExprExpansion(nModExpr, enModExpr), NamedModuleDecl(ModuleName(name), nModExpr), ModuleExprExpansion(tail, etail), emodexpr = ModuleExpr(enModExpr, etail).
+	
 	/**************************************************************************/
 	/*     C Code Helpers
 	/**************************************************************************/
