@@ -533,6 +533,7 @@ let normalize_lval_stlist stlist G =
       
 (* Translation of normalized side-effect-free programs to Boogie *)
 
+(*
 let rec translate_expr expr G =
   match expr with
   | Expr.Const(i) -> sprintf "PrtFromInt(%d)" i 
@@ -557,7 +558,7 @@ let translate_assign lval expr G typemap =
       (* P will actually go inspect all keys/values inside seq and maps and assert they are of the right type *)
       (* We avoid this enumeration of the data structure, but may reject some valid P programs *)
       printfn "assert PrtSubType(PrtDynamicType(%s), PrtType%d);" rhs_var (Map.find t2 typemap)
-  in
+  in 
   let get_lhs_var lval = match lval with
                          | Lval.Var(v) -> v
                          | _ -> raise Not_defined
@@ -697,3 +698,4 @@ let main argv =
     printfn "}"
 
     0 // return an integer exit code
+*)
