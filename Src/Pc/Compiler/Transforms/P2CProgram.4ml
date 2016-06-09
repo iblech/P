@@ -2262,8 +2262,8 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	ExprDepNum(i, e) :- SubSE(_, e), e = in.New(_, e'), ExprDepNum(j, e'), i = j + 1. 
 
 	//// Fun app has zero or one depenencies.
-	ExprDepNum(0, e) :- SubSE(_, e), e = in.FunApp(_, NIL). 
-	ExprDepNum(i, e) :- SubSE(_, e), e = in.FunApp(_, e'), ExprDepNum(j, e'), i = j + 1.
+	ExprDepNum(0, e) :- SubSE(_, e), e = in.FunApp(_, _, NIL). 
+	ExprDepNum(i, e) :- SubSE(_, e), e = in.FunApp(_, _, e'), ExprDepNum(j, e'), i = j + 1.
 
 	//// These expressions have one depenency.
 	ExprDepNum(i, e) :- SubSE(_, e), e = in.UnApp(_, e'), ExprDepNum(j, e'), i = j + 1. 
@@ -2305,8 +2305,8 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	RhsMaxOrder(s, 0, k) :- SubSE(_, s), s = in.NewStmt(_, e, _), e : in.Expr, RhsEvalOrder(s, 0, e, k).
 	StmtExprSize(s, 1)   :- SubSE(_, s), s : in.NewStmt.
 	
-	RhsCntxt(s, 0, e)    :- SubSE(_, s), s = in.FunStmt(_, e, _, _, _), e : in.Exprs.
-	RhsMaxOrder(s, 0, k) :- SubSE(_, s), s = in.FunStmt(_, e, _, _, _), e : in.Exprs,
+	RhsCntxt(s, 0, e)    :- SubSE(_, s), s = in.FunStmt(_, _, e, _, _, _), e : in.Exprs.
+	RhsMaxOrder(s, 0, k) :- SubSE(_, s), s = in.FunStmt(_, _, e, _, _, _), e : in.Exprs,
 							k = maxAll(0, { k' | RhsEvalOrder(s, 0, _, k') }), k: Natural.
 	StmtExprSize(s, 1)   :- SubSE(_, s), s : in.FunStmt.
 	
@@ -2349,7 +2349,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	RhsCntxt(s, i, e') :- RhsCntxt(s, i, e), e = in.New(_, e'), e' : in.Expr. 
 	RhsCntxt(s, i, e') :- RhsCntxt(s, i, e), e = in.New(_, NIL), e' = in.NulApp(NULL). 
 
-	RhsCntxt(s, i, e') :- RhsCntxt(s, i, e), e = in.FunApp(_, e'), e' : in.Exprs.
+	RhsCntxt(s, i, e') :- RhsCntxt(s, i, e), e = in.FunApp(_, _, e'), e' : in.Exprs.
 	RhsCntxt(s, i, e') :- RhsCntxt(s, i, e), e = in.UnApp(_, e').
 	RhsCntxt(s, i, e') :- RhsCntxt(s, i, e), e = in.Field(e', _).
 	RhsCntxt(s, i, e') :- RhsCntxt(s, i, e), e = in.Cast(e', _).
