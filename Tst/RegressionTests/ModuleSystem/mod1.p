@@ -1,13 +1,13 @@
-//Testing static function return type
-type foo = int;
+module X = M1;
+module X1 = M1, M1, X;
 
-static fun Foo() : (foo, int) {
-       return 0;
+module M1 {
+	main model MainMachine 
+	receives;
+	{
+	    start state Init
+	    {
+	    }
+	}
 }
 
-main model MainMachine
-{
-    start state Init
-    {
-    }
-}

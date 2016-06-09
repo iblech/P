@@ -84,7 +84,7 @@ domain PData
 	ModuleDecl ::= new (name: String).
 	ModuleName ::= new (name: String).
 
-	ModuleDef ::= new (name: String, mod: ModuleExpr).
+	ModuleDef ::= new (name: String, mod: any ModuleExpr).
 	HideExpr ::= new (evtNames: StringList, mod: any ModuleExpr). 
 	RenameExpr ::= new (mNames: StringList, mNames': StringList, mod: any ModuleExpr).
 	ExportExpr ::= new (mName: String, iName: String, mod: any ModuleExpr).
@@ -288,7 +288,7 @@ domain PStaticTyping extends PData
 	conforms no BadLabelError(_).
 	conforms no PayloadError(_).
 	conforms no TypeDefError(_).
-	//conforms no NamedModuleError(_).
+	conforms no ModuleDefError(_).
 	conforms no FunDeclQualifierError(_, _).
 	conforms no FunCallQualifierError(_, _, _).
 	conforms no SendQualifierError(_, _).
@@ -393,25 +393,26 @@ domain PStaticTyping extends PData
 	/*		Expanding the Module Expressions		*/
 	/************************************************/
 	AllModuleExprs ::= sub (ModuleExpr).
-	NamedModuleError ::= (name: String).
+	ModuleDefError ::= (name: String).
 	
 	[rule_Classes = '"error, msg: undefined module"']
-	NamedModuleError(name) :- AllModuleExprs(modEx), modEx.mod = ModuleName(name), no ModuleDecl(name), no ModuleDef(name, _).
+	ModuleDefError(name) :- AllModuleExprs(modEx), modEx = ModuleName(name), no ModuleDecl(name), no ModuleDef(name, _).
 
 	[rule_Classes = '"error, msg: multiple named module definitions for the same name"']
-	NamedModuleError(modName) :- ModuleDef(modName, expr1), ModuleDef(modName, expr2), expr1 != expr2.
+	ModuleDefError(modName) :- ModuleDef(modName, expr1), ModuleDef(modName, expr2), expr1 != expr2.
 
 	ModuleDefDepends ::= sub (modDef: ModuleDef, mName: ModuleName).
 	ModuleNameDepends ::= (name1: String, name2: String).
 	ModuleNameDepends(nmodule.name, modName.name) :- ModuleDefDepends(nmodule, modName).
 	ModuleNameDepends(name1, name3) :- ModuleNameDepends(name1, name2), ModuleNameDepends(name2, name3).
 	[rule_Classes = '"error, msg: named module depends on itself"']
-	NamedModuleError(name) :- ModuleNameDepends(name, name).
+	ModuleDefError(name) :- ModuleNameDepends(name, name).
 
+	
 	ModuleExprExpansion ::= (modExpr: ModuleExpr, eModExpr: ModuleExpr).
 	
 	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = ModuleName(name), emodExpr = ModuleDecl(name), no ModuleDef(name, _).
-	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modexpr = ModuleName(name), no NamedModuleError(name),  no ModuleDecl(name), ModuleDef(name, modExpr'), ModuleExprExpansion(modExpr', emodExpr).
+	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = ModuleName(name), no ModuleDefError(name), no ModuleDecl(name), ModuleDef(name, modExpr'), ModuleExprExpansion(modExpr', emodExpr).
 	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = ModuleDecl(name), emodExpr = ModuleDecl(name).
 	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = HideExpr(s, modExpr'), emodExpr = HideExpr(s, emodExpr'),  ModuleExprExpansion(modExpr', emodExpr').
 	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = RenameExpr(s1, s2, modExpr'), emodExpr = RenameExpr(s1, s2, emodExpr'),  ModuleExprExpansion(modExpr', emodExpr').
@@ -419,8 +420,9 @@ domain PStaticTyping extends PData
 	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = AssumeExpr(s, modExpr'), emodExpr = AssumeExpr(s, emodExpr'),  ModuleExprExpansion(modExpr', emodExpr').
 	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = AssertExpr(s, modExpr'), emodExpr = AssertExpr(s, emodExpr'),  ModuleExprExpansion(modExpr', emodExpr').
 	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = SafeExpr(modExpr'), emodExpr = SafeExpr(emodExpr'),  ModuleExprExpansion(modExpr', emodExpr').
-	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = ComposeExpr(modExpr', modExpr''), emodExpr = ComposeExpr(emodExpr', modExpr''),  ModuleExprExpansion(modExpr', emodExpr'), ModuleExprExpansion(modExpr'', emodExpr'').
+	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = ComposeExpr(modExpr', modExpr''), emodExpr = ComposeExpr(emodExpr', emodExpr''), ModuleExprExpansion(modExpr', emodExpr'), ModuleExprExpansion(modExpr'', emodExpr'').
 
+	
 	/**************************************************************************/
 	/*     C Code Helpers
 	/**************************************************************************/
@@ -441,6 +443,7 @@ domain PStaticTyping extends PData
 
 	//FIX ME
 	MapInterfaceToMachine ::= (mname: String, iname: String).
+
 	/**************************************************************************/
 	/*				populate the sends list	and receives list				 */
 	/**************************************************************************/

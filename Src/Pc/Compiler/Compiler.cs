@@ -639,7 +639,7 @@
             AddErrors(task.Result, "BadLabelError(_)", errors, 0);
             AddErrors(task.Result, "PayloadError(_)", errors, 0);
             AddErrors(task.Result, "TypeDefError(_)", errors, 0);
-            AddErrors(task.Result, "NamedModuleError(_)", errors, 0);
+            AddErrors(task.Result, "ModuleDefError(_)", errors, 0);
             AddErrors(task.Result, "FunRetError(_)", errors, 0);
 
             AddErrors(task.Result, "FunDeclQualifierError(_, _)", errors, 1);
@@ -649,7 +649,6 @@
             AddErrors(task.Result, "UnavailableParameterError(_, _)", errors, 1);
 
             //// Enumerate structural errors
-            AddErrors(task.Result, "missingDecl", errors);
             AddErrors(task.Result, "OneDeclError(_)", errors, 0);
             AddErrors(task.Result, "TwoDeclError(_, _)", errors, 1);
             AddErrors(task.Result, "DeclFunError(_, _)", errors, 1);

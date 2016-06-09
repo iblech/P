@@ -2047,6 +2047,7 @@
             var machDecl = GetCurrentMachineDecl(span);
             machDecl.Span = span;
             machDecl.name = MkString(name, nameSpan);
+            machDecl.mod = GetCurrentModuleDecl(span);
             if (!Options.erase && kind == P_Root.UserCnstKind.MODEL)
             {
                 kind = P_Root.UserCnstKind.REAL;
