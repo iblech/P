@@ -113,6 +113,30 @@
             private set;
         }
 
+        public List<P_Root.ModuleDef> ModuleDef
+        {
+            get;
+            private set;
+        }
+
+        public List<P_Root.ImplementationDecl> ImplementationDecl
+        {
+            get;
+            private set;
+        }
+
+        public List<P_Root.RefinementDecl> RefinementDecl
+        {
+            get;
+            private set;
+        }
+
+        public List<P_Root.TestDecl> TestDecl
+        {
+            get;
+            private set;
+        }
+
         public List<P_Root.MachineSendsAllEvents> MachineSendsAllEvents
         {
             get;
@@ -153,6 +177,26 @@
                 foreach (var mod in ModuleDecl)
                 {
                     yield return mod;
+                }
+
+                foreach (var mn in ModuleDef)
+                {
+                    yield return mn;
+                }
+
+                foreach (var imp in ImplementationDecl)
+                {
+                    yield return imp;
+                }
+
+                foreach (var refT in RefinementDecl)
+                {
+                    yield return refT;
+                }
+
+                foreach (var test in RefinementDecl)
+                {
+                    yield return test;
                 }
 
                 foreach (var s in States)
@@ -256,7 +300,11 @@
             MachineExportsDecl = new List<P_Root.MachineExportsDecl>();
             MachineSendsDecl = new List<P_Root.MachineSendsDecl>();
             ModuleDecl = new List<P_Root.ModuleDecl>();
+            ModuleDef = new List<P_Root.ModuleDef>();
             MachineSendsAllEvents = new List<P_Root.MachineSendsAllEvents>();
+            ImplementationDecl = new List<P_Root.ImplementationDecl>();
+            TestDecl = new List<P_Root.TestDecl>();
+            RefinementDecl = new List<P_Root.RefinementDecl>();
             FileInfos = new List<P_Root.FileInfo>();
             LineInfos = new List<P_Root.LineInfo>();
         }

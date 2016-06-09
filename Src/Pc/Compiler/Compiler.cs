@@ -16,7 +16,7 @@
 
     public enum LivenessOption { None, Standard, Mace };
 
-    public enum TopDecl { Event, EventSet, Interface, Module, Machine, Test, TypeDef, StaticFun};
+    public enum TopDecl { Event, EventSet, Interface, Module, Machine, Test, TypeDef};
     public class TopDeclNames
     {
         public HashSet<string> eventNames;
@@ -26,7 +26,6 @@
         public HashSet<string> typeNames;
         public HashSet<string> machineNames;
         public HashSet<string> interfaceNames;
-        public HashSet<string> staticFunNames;
 
         public TopDeclNames()
         {
@@ -37,7 +36,6 @@
             machineNames = new HashSet<string>();
             testNames = new HashSet<string>();
             typeNames = new HashSet<string>();
-            staticFunNames = new HashSet<string>();
         }
 
         public void Reset()
@@ -49,7 +47,6 @@
             machineNames.Clear();
             testNames.Clear();
             typeNames.Clear();
-            staticFunNames.Clear();
         }
 
     }

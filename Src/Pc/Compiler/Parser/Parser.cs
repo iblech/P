@@ -47,7 +47,8 @@
         private List<P_Root.EventLabel> crntSendsList = new List<P_Root.EventLabel>();
 
         private HashSet<string> crntStateNames = new HashSet<string>();
-        private HashSet<string> crntFunNames = new HashSet<string>();
+        private HashSet<string> crntLocalFunNames = new HashSet<string>();
+        private HashSet<string> crntStaticFunNames = new HashSet<string>();
         private HashSet<string> crntVarNames = new HashSet<string>();
 
         private TopDeclNames topDeclNames;
@@ -56,8 +57,8 @@
         private Stack<P_Root.ExprsExt> exprsStack = new Stack<P_Root.ExprsExt>();
         private Stack<P_Root.TypeExpr> typeExprStack = new Stack<P_Root.TypeExpr>();
         private Stack<P_Root.Stmt> stmtStack = new Stack<P_Root.Stmt>();
-        private Stack<P_Root.ModuleExpr> ModuleListStack = new Stack<P_Root.ModuleExpr>();
-        private Stack<P_Root.Modules> moduleStack = new Stack<P_Root.Modules>();
+        private Stack<P_Root.ModuleExpr> moduleExprStack = new Stack<P_Root.ModuleExpr>();
+        private Stack<P_Root.StringList> stringListStack = new Stack<P_Root.StringList>();
         private Stack<P_Root.QualifiedName> groupStack = new Stack<P_Root.QualifiedName>();
         private int nextTrampolineLabel = 0;
         private int nextPayloadVarLabel = 0;
@@ -403,13 +404,6 @@
                         error = true;
                     }
                     break;
-                case TopDecl.StaticFun:
-                    if(topDeclNames.staticFunNames.Contains(name))
-                    {
-                        errorMessage = string.Format("A static function with name {0} already declared", name);
-                        error = true;
-                    }
-                    break;
             }
 
             if (error)
@@ -428,15 +422,116 @@
         
     }
         #region Pushers
+        //Push helper functions
+        private P_Root.StringList ConvertToStringList(List<P_Root.EventLabel> strings)
+        {
+            var stringListStack = new Stack<P_Root.StringList>();
+            var strList = P_Root.MkStringList();
+            strList.str = (P_Root.IArgType_StringList__0)strings[0];
+            strList.tl = MkUserCnst(P_Root.UserCnstKind.NIL, strings[0].Span);
+            stringListStack.Push(strList);
+            crntEventList.RemoveAt(0);
+            foreach (var str in strings)
+            {
+                strList = P_Root.MkStringList();
+                strList.str = (P_Root.IArgType_StringList__0)str;
+                strList.tl = (P_Root.IArgType_StringList__1)stringListStack.Pop();
+                stringListStack.Push(strList);
+            }
+            return stringListStack.Pop();
+        }
 
         //Module helpers
-        private void PushModule(string name, Span nameSpan)
+        private void PushModuleName(string name, Span nameSpan)
         {
-            var moduleDecl = new P_Root.ModuleDecl();
-            moduleDecl.name = (P_Root.IArgType_ModuleDecl__0)MkString(name, nameSpan);
-            moduleDecl.Span = nameSpan;
-            moduleStack.Push(moduleDecl);
+            var moduleName = new P_Root.ModuleName();
+            moduleName.name = (P_Root.IArgType_ModuleName__0)MkString(name, nameSpan);
+            moduleName.Span = nameSpan;
+            moduleExprStack.Push(moduleName);
         }
+
+        private void PushComposeExpr(Span span)
+        {
+            var composeExpr = new P_Root.ComposeExpr();
+            composeExpr.Span = span;
+            Contract.Assert(moduleExprStack.Count >= 2);
+            var mod1 = moduleExprStack.Pop();
+            var mod2 = moduleExprStack.Pop();
+            composeExpr.left = (P_Root.IArgType_ComposeExpr__0)mod1;
+            composeExpr.right = (P_Root.IArgType_ComposeExpr__1)mod2;
+            moduleExprStack.Push(composeExpr);
+        }
+
+        private void PushSafeExpr(Span span)
+        {
+            var safeExpr = new P_Root.SafeExpr();
+            safeExpr.Span = span;
+            Contract.Assert(moduleExprStack.Count >= 1);
+            safeExpr.mod = (P_Root.IArgType_SafeExpr__0) moduleExprStack.Pop(); ;
+            moduleExprStack.Push(safeExpr);
+        }
+
+        private void PushHideExpr(Span span)
+        {
+            var hideExpr = new P_Root.HideExpr();
+            hideExpr.Span = span;
+            Contract.Assert(moduleExprStack.Count >= 1);
+            hideExpr.mod = (P_Root.IArgType_HideExpr__1)moduleExprStack.Pop(); ;
+            Contract.Assert(crntEventList.Count >= 1);
+            //convert the string list to StringList
+            var stringList = ConvertToStringList(crntEventList);
+            hideExpr.evtNames = stringList;
+            moduleExprStack.Push(hideExpr);
+            //clear eventList
+            crntEventList.Clear();
+        }
+
+        private void PushAssumeExpr(Span span)
+        {
+            var assumeExpr = new P_Root.AssumeExpr();
+            assumeExpr.Span = span;
+            Contract.Assert(moduleExprStack.Count >= 1);
+            assumeExpr.mod = (P_Root.IArgType_AssumeExpr__1)moduleExprStack.Pop(); ;
+            Contract.Assert(stringListStack.Count >= 1);
+            assumeExpr.monNames = stringListStack.Pop();
+            moduleExprStack.Push(assumeExpr);
+        }
+
+        private void PushAssertExpr(Span span)
+        {
+            var assertExpr = new P_Root.AssertExpr();
+            assertExpr.Span = span;
+            Contract.Assert(moduleExprStack.Count >= 1);
+            assertExpr.mod = (P_Root.IArgType_AssertExpr__1)moduleExprStack.Pop(); ;
+            Contract.Assert(stringListStack.Count >= 1);
+            assertExpr.monNames = stringListStack.Pop();
+            moduleExprStack.Push(assertExpr);
+        }
+
+        private void PushRenameExpr(Span span)
+        {
+            var renameExpr = new P_Root.RenameExpr();
+            renameExpr.Span = span;
+            Contract.Assert(moduleExprStack.Count >= 1);
+            renameExpr.mod = (P_Root.IArgType_RenameExpr__2)moduleExprStack.Pop(); ;
+            Contract.Assert(stringListStack.Count >= 2);
+            renameExpr.mNames_PRIME1 = stringListStack.Pop();
+            renameExpr.mNames = stringListStack.Pop();
+            moduleExprStack.Push(renameExpr);
+        }
+
+        private void PushExportExpr(string mName, string iName, Span mSpan, Span iSpan, Span span)
+        {
+            var exportExpr = new P_Root.ExportExpr();
+            exportExpr.Span = span;
+            Contract.Assert(moduleExprStack.Count >= 1);
+            exportExpr.mod = (P_Root.IArgType_ExportExpr__2)moduleExprStack.Pop(); ;
+            Contract.Assert(stringListStack.Count >= 2);
+            exportExpr.mName = MkString(mName, mSpan);
+            exportExpr.iName = MkString(iName, iSpan);
+            moduleExprStack.Push(exportExpr);
+        }
+
         private void PushAnnotationSet()
         {
             crntAnnotStack.Push(crntAnnotList);
@@ -461,6 +556,25 @@
             var seqType = P_Root.MkSeqType((P_Root.IArgType_SeqType__0)typeExprStack.Pop());
             seqType.Span = span;
             typeExprStack.Push(seqType);
+        }
+
+        private void PushString(string name, Span nameSpan, bool isLast)
+        {
+            var stringList = P_Root.MkStringList();
+            stringList.Span = nameSpan;
+            if(isLast)
+            {
+                
+                stringList.str = (P_Root.IArgType_StringList__0)MkString(name, nameSpan);
+                stringList.tl = MkUserCnst(P_Root.UserCnstKind.NIL, nameSpan);
+            }
+            else
+            {
+                Contract.Assert(stringListStack.Count > 0);
+                stringList.str = (P_Root.IArgType_StringList__0)MkString(name, nameSpan);
+                stringList.tl = (P_Root.IArgType_StringList__1)stringListStack.Pop();
+            }
+            stringListStack.Push(stringList);
         }
 
         private void PushTupType(Span span, bool isLast)
@@ -1637,9 +1751,9 @@
         private void AddCaseAnonyAction(Span entrySpan, Span exitSpan)
         {
             var stmt = (P_Root.IArgType_AnonFunDecl__2)stmtStack.Pop();
-            P_Root.IArgType_AnonFunDecl__0 owner = 
-                isStaticFun 
-                ? (P_Root.IArgType_AnonFunDecl__0) P_Root.MkUserCnst(P_Root.UserCnstKind.NIL) 
+            P_Root.IArgType_AnonFunDecl__0 owner =
+                isStaticFun
+                ? (P_Root.IArgType_AnonFunDecl__0)GetCurrentModuleDecl(new Span())
                 : (P_Root.IArgType_AnonFunDecl__0) GetCurrentMachineDecl(new Span());
             var anonAction = P_Root.MkAnonFunDecl(owner, (P_Root.IArgType_AnonFunDecl__1)localVarStack.LocalVarDecl, stmt, (P_Root.IArgType_AnonFunDecl__3)localVarStack.ContextLocalVarDecl);
             anonAction.Span = stmt.Span;
@@ -1859,7 +1973,59 @@
             crntEventDecl = null;
         }
 
-        private void AddModule(string name, Span nameSpan, Span span)
+        private void AddImplementationDecl(Span span)
+        {
+            Contract.Assert(moduleExprStack.Count == 1);
+            var impsDecl = P_Root.MkImplementationDecl();
+            impsDecl.Span = span;
+            impsDecl.mod = (P_Root.IArgType_ImplementationDecl__0)moduleExprStack.Pop();
+            parseProgram.ImplementationDecl.Add(impsDecl);
+        }
+
+        private void AddRefinementDeclaration(string name, Span nameSpan, Span span)
+        {
+            if(IsValidName(TopDecl.Test, name, nameSpan))
+            {
+                topDeclNames.testNames.Add(name);
+            }
+            Contract.Assert(moduleExprStack.Count == 2);
+            var refinesDecl = P_Root.MkRefinementDecl();
+            refinesDecl.name = (P_Root.IArgType_RefinementDecl__0)MkString(name, nameSpan);
+            refinesDecl.Span = span;
+            refinesDecl.lhs = (P_Root.IArgType_RefinementDecl__1)moduleExprStack.Pop();
+            refinesDecl.rhs = (P_Root.IArgType_RefinementDecl__2)moduleExprStack.Pop();
+            parseProgram.RefinementDecl.Add(refinesDecl);
+        }
+
+        private void AddTestDeclaration(string name, Span nameSpan, Span span)
+        {
+            if (IsValidName(TopDecl.Test, name, nameSpan))
+            {
+                topDeclNames.testNames.Add(name);
+            }
+            Contract.Assert(moduleExprStack.Count == 1);
+            var testDecl = P_Root.MkTestDecl();
+            testDecl.name = (P_Root.IArgType_TestDecl__0)MkString(name, nameSpan);
+            testDecl.Span = span;
+            testDecl.mod = (P_Root.IArgType_TestDecl__1)moduleExprStack.Pop();
+            parseProgram.TestDecl.Add(testDecl);
+        }
+
+        private void AddModuleDef(string name, Span nameSpan, Span span)
+        {
+            var moduleDef = P_Root.MkModuleDef();
+            moduleDef.Span = span;
+            moduleDef.name = MkString(name, nameSpan);
+            Contract.Assert(moduleExprStack.Count >= 1);
+            moduleDef.mod = (P_Root.IArgType_ModuleDef__1)moduleExprStack.Pop();
+            if (IsValidName(TopDecl.Module, name, nameSpan))
+            {
+                topDeclNames.moduleNames.Add(name);
+            }
+            parseProgram.ModuleDef.Add(moduleDef);
+        }
+
+        private void AddModuleDecl(string name, Span nameSpan, Span span)
         {
             var moduleDecl = GetCurrentModuleDecl(span);
             moduleDecl.Span = span;
@@ -1873,7 +2039,7 @@
             parseProgram.ModuleDecl.Add(moduleDecl);
             //clear the machine names and static function names
             topDeclNames.machineNames.Clear();
-            topDeclNames.staticFunNames.Clear();
+            crntStaticFunNames.Clear();
         }
 
         private void AddMachine(P_Root.UserCnstKind kind, string name, Span nameSpan, Span span)
@@ -1930,7 +2096,7 @@
             }
             crntMachDecl = null;
             crntStateNames.Clear();
-            crntFunNames.Clear();
+            crntLocalFunNames.Clear();
             crntVarNames.Clear();
             crntEventList.Clear();
         }
@@ -2008,26 +2174,27 @@
             }
         }
 
-        private void AddFunction(string name, Span nameSpan, Span span, Span entrySpan, Span exitSpan, bool isGlobal)
+        private void AddFunction(string name, Span nameSpan, Span span, Span entrySpan, Span exitSpan, bool isStatic)
         {
             Contract.Assert(stmtStack.Count > 0);
             
             var funDecl = GetCurrentFunDecl(span);
             funDecl.Span = span;
             funDecl.name = MkString(name, nameSpan);
-            funDecl.owner = isGlobal ? (P_Root.IArgType_FunDecl__1) MkUserCnst(P_Root.UserCnstKind.NIL, span) 
+            funDecl.owner = isStatic ? (P_Root.IArgType_FunDecl__1)GetCurrentModuleDecl(span)
                                      : (P_Root.IArgType_FunDecl__1) GetCurrentMachineDecl(span);
             funDecl.locals = (P_Root.IArgType_FunDecl__5)localVarStack.LocalVarDecl;
             funDecl.body = (P_Root.IArgType_FunDecl__6)stmtStack.Pop();
+            funDecl.isPublic = isPublic ? MkUserCnst(P_Root.UserCnstKind.TRUE, span) : MkUserCnst(P_Root.UserCnstKind.FALSE, span);
             parseProgram.Functions.Add(funDecl);
             AddSourceInfoToProgram(funDecl, entrySpan, exitSpan);
             localVarStack = new LocalVarStack(this);
-            if (crntFunNames.Contains(name))
+            if (crntLocalFunNames.Contains(name) || crntStaticFunNames.Contains(name))
             {
                 var errFlag = new Flag(
                                      SeverityKind.Error,
                                      span,
-                                     Constants.BadSyntax.ToString(string.Format("A function with name {0} already declared", name)),
+                                     Constants.BadSyntax.ToString(string.Format("A (local or static) function with name {0} already declared", name)),
                                      Constants.BadSyntax.Code,
                                      parseSource);
                 parseFailed = true;
@@ -2035,9 +2202,17 @@
             }
             else
             {
-                crntFunNames.Add(name);
+                if (isStatic)
+                {
+                    crntStaticFunNames.Add(name);
+                }
+                else
+                {
+                    crntLocalFunNames.Add(name);
+                }
             }
             crntFunDecl = null;
+            isPublic = false;
             isStaticFun = false;
         }
         #endregion
@@ -2223,6 +2398,7 @@
         private void ResetState()
         {
             stmtStack.Clear();
+            moduleExprStack.Clear();
             valueExprStack.Clear();
             exprsStack.Clear();
             typeExprStack.Clear();
@@ -2242,7 +2418,7 @@
             nextTrampolineLabel = 0;
             nextPayloadVarLabel = 0;
             crntStateNames.Clear();
-            crntFunNames.Clear();
+            crntLocalFunNames.Clear();
             crntVarNames.Clear();
             crntObservesList.Clear();
             crntReceivesList.Clear();

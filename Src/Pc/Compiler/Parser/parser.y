@@ -141,11 +141,11 @@ InTypeOrNone
 
 /* Named Module Expr */
 NamedModuleDecl
-	: MODULE ID ASSIGN ModuleExpr SEMICOLON			{ AddNamedModule($2.str, ToSpan(@2), ToSpan(@1)); }
+	: MODULE ID ASSIGN ModuleExpr SEMICOLON			{ AddModuleDef($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 /* Module */
 ModuleDecl
-	: MODULE ID LCBRACE ModuleBody RCBRACE			{ AddModule($2.str, ToSpan(@2), ToSpan(@1)); }
+	: MODULE ID LCBRACE ModuleBody RCBRACE			{ AddModuleDecl($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
 ModuleBody
@@ -160,18 +160,20 @@ ModuleBodyItem
 
 
 /* Module Expression */
-Module
+ModuleExpr
 	: HideExpr
 	| AssertExpr
 	| AssumeExpr
 	| ExportExpr
 	| SafeExpr
 	| RenameExpr
-	| ID								{ PushModule($1.str, ToSpan(@1)); }
+	| ComposeExpr
+	| ID								{ PushModuleName($1.str, ToSpan(@1)); }
 	;
-ModuleExpr 
-	: Module							{ PushModuleExpr(ToSpan(@1), true); }
-	| Module COMMA ModuleExpr			{ PushModuleExpr(ToSpan(@1), false); }
+
+/* Composition */
+ComposeExpr
+	:  ModuleExpr COMMA ModuleExpr		{ PushComposeExpr(ToSpan(@1)); }
 	;
 
 /* Hide */
@@ -181,16 +183,16 @@ HideExpr
 
 /* Safe */
 SafeExpr
-	: LPAREN SAFE ModuleExpr RPAREN		{ PushHideExpr(ToSpan(@1)); }
+	: LPAREN SAFE ModuleExpr RPAREN		{ PushSafeExpr(ToSpan(@1)); }
 	;
 /* Assert */
 AssertExpr
-	: LPAREN ASSERT IDList IN ModuleExpr RPAREN		{ PushAssertExpr(ToSpan(@1)); }
+	: LPAREN ASSERT StringList IN ModuleExpr RPAREN		{ PushAssertExpr(ToSpan(@1)); }
 	;
 
 /* Assume */
 AssumeExpr
-	: LPAREN ASSUME IDList IN ModuleExpr RPAREN		{ PushAssumeExpr(ToSpan(@1)); }
+	: LPAREN ASSUME StringList IN ModuleExpr RPAREN		{ PushAssumeExpr(ToSpan(@1)); }
 	;
 
 /* Export */
@@ -200,13 +202,13 @@ ExportExpr
 
 /* Rename */
 RenameExpr
-	: LPAREN RENAME LPAREN IDList RPAREN TO LPAREN IDList RPAREN IN ModuleExpr RPAREN		{ PushRenameExpr(ToSpan(@1)); }
+	: LPAREN RENAME LPAREN StringList RPAREN TO LPAREN StringList RPAREN IN ModuleExpr RPAREN		{ PushRenameExpr(ToSpan(@1)); }
 	;
 
-/* IDList */
-IDList 
-	: ID					{ PushID($1.str, ToSpan(@1), true); }
-	| ID COMMA IDList		{ PushID($1.str, ToSpan(@1), false); }
+/* StringList */
+StringList 
+	: ID						{ PushString($1.str, ToSpan(@1), true); }
+	| ID COMMA StringList		{ PushString($1.str, ToSpan(@1), false); }
 	;
 
 /* Test Declaration */
@@ -217,7 +219,7 @@ TestDecl
 
 /* Implementation Declaration */
 ImplementationDecl
-	: IMPLEMENTATION ModuleExpr SEMICOLON		{ AddImplementation(ToSpan(@1)); }
+	: IMPLEMENTATION ModuleExpr SEMICOLON		{ AddImplementationDecl(ToSpan(@1)); }
 	;
 
 	/******************* Machine Declarations *******************/
@@ -316,7 +318,7 @@ IsPublic
 	;
 
 StaticFunDecl
-	: IsPublic IsModel FUN ID ParamsOrNone RetTypeOrNone FunAnnotOrNone StmtBlock { AddFunction($4.str, ToSpan(@4), ToSpan(@1), true); }
+	: IsPublic IsModel FUN ID ParamsOrNone RetTypeOrNone FunAnnotOrNone LCBRACE StmtBlock RCBRACE { AddFunction($4.str, ToSpan(@4), ToSpan(@1), ToSpan(@8), ToSpan(@10), true); }
 	;
 
 FunDecl

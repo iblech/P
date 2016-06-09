@@ -113,7 +113,7 @@ domain PData
 	ModuleMonitorMap ::= (mod: ModuleExpr, newMonitorName: String, newMachineName: String).
 
 	////Helper structs
-	StringList ::= new (name: String, tl: any StringList + { NIL }).
+	StringList ::= new (str: String, tl: any StringList + { NIL }).
 	
     /*************************************************************/
     /****************  State Machine Declarations    *************/
