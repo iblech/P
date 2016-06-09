@@ -439,6 +439,8 @@ domain PStaticTyping extends PData
 	AllImplModules ::= (mod: ModuleDecl).
 	AllImplModules(mod) :- AllModuleDecls(emodExpr, mod), ImplementationDecl(modExpr), ModuleExprExpansion(modExpr, emodExpr).
 
+	//FIX ME
+	MapInterfaceToMachine ::= (mname: String, iname: String).
 	/**************************************************************************/
 	/*				populate the sends list	and receives list				 */
 	/**************************************************************************/

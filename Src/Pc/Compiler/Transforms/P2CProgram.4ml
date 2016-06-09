@@ -149,40 +149,40 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	//// (5) (Anon)FunDecls - Start at Id 1. The id 0 is reserved for the PUSH action.
 	AnonOrNamedFun ::= FunDecl + AnonFunDecl.
 
-	DeclId(d, id, cn) :- d is AnonFunDecl, d.owner = NIL, 
-	                     id = 1 + toOrdinal(d, 0, { d' | d' is AnonFunDecl, d'.owner = NIL }), 
-	                     num = toOrdinal(d, 0, { d' | d' is AnonFunDecl, d'.owner = NIL }),
-						 cn = strJoin("P_FUN_ANON", toString(num)).
-
-	DeclId(d, id, cn) :- d is FunDecl, d.owner = NIL, 
-	                     id = 1 + count({ d' | d' is AnonFunDecl, d'.owner = NIL }) 
-						        + toOrdinal(d, 0, { d' | d' is FunDecl, d'.owner = NIL }), 
-	                     cn = strJoin("P_FUN_", d.name).
-
-	DeclId(d, id, cn) :- d is AnonFunDecl, d.owner.kind = REAL, 
-	                     id = 1 + count({ d' | d' is AnonOrNamedFun, d'.owner = NIL }) 
-								+ toOrdinal(d, 0, { d' | d' is AnonFunDecl, d'.owner = d.owner }), 
-	                     num = toOrdinal(d, 0, { d' | d' is AnonFunDecl, d'.owner = d.owner }),
+	DeclId(d, id, cn) :- d is AnonFunDecl, ImplFunction(d), toSymbol(d.owner) = #ModuleDecl,
+	                     id = 1 + toOrdinal(d, 0, { d' | d' is AnonFunDecl, ImplFunction(d'), toSymbol(d'.owner) = #ModuleDecl }),
+	                     num = toOrdinal(d, 0, { d' | d' is AnonFunDecl, ImplFunction(d'), toSymbol(d'.owner) = #ModuleDecl }),
 						 cn = strJoin("P_FUN_", strJoin(d.owner.name, strJoin("_ANON", toString(num)))).
 
-	DeclId(d, id, cn) :- d is FunDecl, d.owner.kind = REAL, 
-	                     id = 1 + count({ d' | d' is AnonOrNamedFun, d'.owner = NIL }) 
-						        + count({ d' | d' is AnonFunDecl, d'.owner = d.owner }) 
-						        + toOrdinal(d, 0, { d' | d' is FunDecl, d'.owner = d.owner }), 
+	DeclId(d, id, cn) :- d is FunDecl, ImplFunction(d), toSymbol(d.owner) = #ModuleDecl,
+	                     id = 1 + count({ d' | d' is AnonFunDecl, ImplFunction(d'), toSymbol(d'.owner) = #ModuleDecl }) 
+						        + toOrdinal(d, 0, { d' | d' is FunDecl, ImplFunction(d'), toSymbol(d'.owner) = #ModuleDecl }), 
+	                     cn = strJoin("P_FUN_", strJoin(d.owner.name, strJoin("_", d.name))).
+
+	DeclId(d, id, cn) :- d is AnonFunDecl, ImplFunction(d), toSymbol(d.owner) = #MachineDecl,
+	                     id = 1 + count({ d' | d' is AnonOrNamedFun, ImplFunction(d'), toSymbol(d'.owner) = #ModuleDecl }) 
+								+ toOrdinal(d, 0, { d' | d' is AnonFunDecl, ImplFunction(d'), d'.owner = d.owner }), 
+	                     num = toOrdinal(d, 0, { d' | d' is AnonFunDecl, ImplFunction(d'), d'.owner = d.owner }),
+						 cn = strJoin("P_FUN_", strJoin(d.owner.name, strJoin("_ANON", toString(num)))).
+
+	DeclId(d, id, cn) :- d is FunDecl, ImplFunction(d), toSymbol(d.owner) = #MachineDecl,
+	                     id = 1 + count({ d' | d' is AnonOrNamedFun, ImplFunction(d'), toSymbol(d'.owner) = #ModuleDecl }) 
+						        + count({ d' | d' is AnonFunDecl, ImplFunction(d'), d'.owner = d.owner }) 
+						        + toOrdinal(d, 0, { d' | d' is FunDecl, ImplFunction(d'), d'.owner = d.owner }), 
 	                     cn = strJoin("P_FUN_", strJoin(d.owner.name, strJoin("_", d.name))).
 
 	
 	HOut(0, out.EnmDef(NIL, "P_FUNS_STATIC", list)) :- 
 	   list = toList(#Elements, NIL, { enumMember | 
 									   enumMember = Element(IntLit(0, DEC, NIL), "_P_FUN_PUSH_OR_IGN");
-									   DeclId(d, id, cn), d : AnonOrNamedFun, d.owner = NIL, enumMember = Element(IntLit(id, DEC, NIL), cn) }).  
+									   DeclId(d, id, cn), d : AnonOrNamedFun, toSymbol(d.owner) = #ModuleDecl, enumMember = Element(IntLit(id, DEC, NIL), cn) }).  
 
 	HOut(0, out.EnmDef(NIL, enumName, list)) :- 
 	   m is MachineDecl, m.kind = REAL,
 	   enumName = strJoin("P_FUNS_", m.name),
 	   list = toList(#Elements, NIL, { enumMember | 
 									   DeclId(d, id, cn), d : AnonOrNamedFun, d.owner = m, enumMember = Element(IntLit(id, DEC, NIL), cn); 
-									   enumMember = Element(IntLit(size, DEC, NIL), strJoin("_P_FUNS_", strJoin(m.name, "_COUNT"))), size = 1 + count({d | d is AnonOrNamedFun, d.owner = m}) + count({d | d is AnonOrNamedFun, d.owner = NIL}) }).  
+									   enumMember = Element(IntLit(size, DEC, NIL), strJoin("_P_FUNS_", strJoin(m.name, "_COUNT"))), size = 1 + count({d | d is AnonOrNamedFun, d.owner = m}) + count({d | d is AnonOrNamedFun, ImplFunction(d), toSymbol(d.owner) = #ModuleDecl}) }). 
 
 	//// (6) StateDecls - Start at Id 0. Need to encode qualified names.
 	DeclId(d, id, cn) :- d is StateDecl, d.owner.kind = REAL, 
@@ -809,7 +809,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	LocalVarsTable ::= (TypingContext, out.VarDef).
 	LocalVarsTable(c, tmpVar) :- LocalVarsIter(c, out.Defs(tmpVar, tl), _), tmpVar: out.VarDef.
 
-	COut(7, def) :- DeclId(f, id, name), id > 0, f : FunDecl, f.kind = REAL, RealOwner(f),
+	COut(7, def) :- DeclId(f, id, name), id > 0, f : FunDecl, f.kind = REAL, ImplFunction(f),
 	                params = Params(Param(NIL, "context"), NIL),
 				    funType = FunType(PtrType(NmdType(NIL, "PRT_VALUE")), argTypes),
 					argTypes = PrmTypes(PtrType(NmdType(NIL, "PRT_MACHINEINST")), NIL),
@@ -822,8 +822,8 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 
 	PatchReturn ::= (f: in.FunDecl + in.AnonFunDecl, e: out.Stmt).
 	PatchReturn(f, cs) :- DeclId(f, _, _), f: AnonFunDecl, cs = out.Return(Ident("p_tmp_ret")).
-	PatchReturn(f, cs) :- DeclId(f, _, _), f = FunDecl(_, _, _, _, NIL, _, _), cs = out.Return(Ident("p_tmp_ret")).
-	PatchReturn(f, cs) :- DeclId(f, _, _), f = FunDecl(_, _, _, _, type, _, _), type : TypeExpr, ParamsType(f, expr),  
+	PatchReturn(f, cs) :- DeclId(f, _, _), f = FunDecl(_, _, _, _, NIL, _, _, _), cs = out.Return(Ident("p_tmp_ret")).
+	PatchReturn(f, cs) :- DeclId(f, _, _), f = FunDecl(_, _, _, _, type, _, _, _), type : TypeExpr, ParamsType(f, expr),  
 						  cs = out.ITE(BinApp(EQ, Ident("p_tmp_ret"), Ident("NULL")), 
 									   Return(FunApp(Ident("PrtMkDefaultValue"), Args(expr, NIL))),
 									   Return(Ident("p_tmp_ret"))).
@@ -841,7 +841,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	ContextLineInfo(f, s, info) :- SubSE(f, s), %noSourceInfo = FALSE, s = in.Raise(_, _, x), info = out.PpLine(x.line, NIL).
 	ContextLineInfo(f, s, info) :- SubSE(f, s), %noSourceInfo = FALSE, s = in.Send(_, _, _, _, x), info = out.PpLine(x.line, NIL).
 	ContextLineInfo(f, s, info) :- SubSE(f, s), %noSourceInfo = FALSE, s = in.Announce(_, _, x), info = out.PpLine(x.line, NIL).
-	ContextLineInfo(f, s, info) :- SubSE(f, s), %noSourceInfo = FALSE, s = in.FunStmt(_, _, _, _, x), info = out.PpLine(x.line, NIL).
+	ContextLineInfo(f, s, info) :- SubSE(f, s), %noSourceInfo = FALSE, s = in.FunStmt(_, _, _, _, _, x), info = out.PpLine(x.line, NIL).
 	ContextLineInfo(f, s, info) :- SubSE(f, s), %noSourceInfo = FALSE, s = in.NulStmt(_, x), info = out.PpLine(x.line, NIL).
 	ContextLineInfo(f, s, info) :- SubSE(f, s), %noSourceInfo = FALSE, s = in.BinStmt(_, _, _, x), info = out.PpLine(x.line, NIL).
 	ContextLineInfo(f, s, info) :- SubSE(f, s), %noSourceInfo = FALSE, s = in.Return(_, x), info = out.PpLine(x.line, NIL).
@@ -867,7 +867,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 					ContextSourceInfo(f, _, info, exitInfo),
 					body = out.Seq(header, Seq(trampoline, Seq(ctrans, footer))).
 				
-	COut(8, def) :- DeclId(f, id, name), id > 0, f : FunDecl, f.kind = REAL, RealOwner(f),
+	COut(8, def) :- DeclId(f, id, name), id > 0, f : FunDecl, f.kind = REAL, ImplFunction(f),
 				    tmpVars = toList(#Defs, NIL, { varDef | LocalVarsTable(f, varDef), ContextTransStmtExpr(f, out.Ident(varDef.name)) }),
 	                params = Params(Param(NIL, "context"), NIL),
 				    funType = FunType(PtrType(NmdType(NIL, "PRT_VALUE")), argTypes),
@@ -882,8 +882,8 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 					  out.Seq(entryInfo, Block(tmpVars, body))).
 
 	IsRealAnonFunDecl ::= (f: AnonFunDecl).
-	IsRealAnonFunDecl(f) :- DeclId(f, _, _), f: AnonFunDecl, f.owner.kind = REAL; 
-	                        DeclId(f, _, _), f: AnonFunDecl, f.owner = NIL.
+	IsRealAnonFunDecl(f) :- DeclId(f, _, _), f: AnonFunDecl, f.owner.kind = REAL, AllImplMachine(f.owner); 
+	                        DeclId(f, _, _), f: AnonFunDecl, toSymbol(f.owner) = #ModuleDecl, AllImplModules(f.owner).
 
 	COut(8, def) :- DeclId(f, id, name), id > 0, IsRealAnonFunDecl(f),
 					tmpVars = toList(#Defs, NIL, { varDef | LocalVarsTable(f, varDef), ContextTransStmtExpr(f, out.Ident(varDef.name)) }),
@@ -899,7 +899,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 					  params,
 					  out.Seq(entryInfo, Block(tmpVars, body))).
 
-	HOut(1, def) :- DeclId(f, id, name), id > 0, f : FunDecl, f.kind = MODEL, RealOwner(f),
+	HOut(1, def) :- DeclId(f, id, name), id > 0, f : FunDecl, f.kind = MODEL, ImplFunction(f),
 	                params = Params(Param(NIL, "context"), NIL),
 				    funType = FunType(PtrType(NmdType(NIL, "PRT_VALUE")), argTypes),
 					argTypes = PrmTypes(PtrType(NmdType(NIL, "PRT_MACHINEINST")), NIL),
@@ -1085,7 +1085,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	FunDeclConcat ::= (pos: Natural, mach: MachineDecl, arr: out.Args + {NIL}).
 
 	//// Base case
-	FunDeclConcat(c, m, NIL) :- m is MachineDecl, m.kind = REAL, c = 1 + count({f | f is AnonOrNamedFun, f.owner = NIL}) + count({f | f is AnonOrNamedFun, f.owner = m}).
+	FunDeclConcat(c, m, NIL) :- m is MachineDecl, m.kind = REAL, c = 1 + count({f | f is AnonOrNamedFun, ImplFunction(f), toSymbol(f.owner) = #ModuleDecl}) + count({f | f is AnonOrNamedFun, ImplFunction(f), f.owner = m}).
 
     //// Build every fundecl array in reverse order
 	FunDeclConcat(m, d.owner, arr) :-  
@@ -1129,7 +1129,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 							   NIL)))))))))))).
 
   	FunDeclConcat(m, mdecl, arr) :-  
-							DeclId(d, m, cfun), DeclId(mdecl, _, cmach), FunDeclConcat(m + 1, mdecl, after), d : FunDecl, d.owner = NIL,
+							DeclId(d, m, cfun), DeclId(mdecl, _, cmach), FunDeclConcat(m + 1, mdecl, after), d : FunDecl, toSymbol(d.owner) = #ModuleDecl,
 							MaxNumLocals(d, maxNumLocals), 
 							LocalsType(d, localsType),
 							ReceiveDeclInit(d, nReceives, receives), 
@@ -1149,7 +1149,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 							   NIL)))))))))))).
 
 	FunDeclConcat(m, mdecl, arr) :- 
-							DeclId(d, m, cfun), DeclId(mdecl, _, cmach), FunDeclConcat(m + 1, mdecl, after), d : AnonFunDecl, d.owner = NIL,
+							DeclId(d, m, cfun), DeclId(mdecl, _, cmach), FunDeclConcat(m + 1, mdecl, after), d : AnonFunDecl, toSymbol(d.owner) = #ModuleDecl,
 							MaxNumLocals(d, maxNumLocals), 
 							LocalsType(d, localsType),
 							ReceiveDeclInit(d, nReceives, receives),
@@ -1680,22 +1680,22 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	ContainerInNewCall ::= (c: TypingContext, name: String, funName: String, machineName: String, e: out.Args + { NIL }).
 	ContainerInNewCall(c, name, funName, machineName, container) :- 
 										 SubSE(c, _), no Annotation(c, "container", _), container = NIL,
-	                                     machineDecl is MachineDecl(name, REAL, _, _, _), DeclId(machineDecl, _, machineName), 
+	                                     machineDecl is MachineDecl(name, _, REAL, _, _, _), DeclId(machineDecl, _, machineName), 
 										 MkMachineFuncName(funName).
 	
 	ContainerInNewCall(c, name, funName, machineName, container) :- 
 										 c: FunDecl, Annotation(c, "container", f), FormalTrans(c, f, container),
-	                                     machineDecl is MachineDecl(name, REAL, _, _, _), DeclId(machineDecl, _, machineName), 
+	                                     machineDecl is MachineDecl(name, _, REAL, _, _, _), DeclId(machineDecl, _, machineName), 
 										 funName = "PrtMkMachineRemote".
 
 	ContainerInNewCall(c, name, funName, machineName, container) :- 
 										 SubSE(c, _), no Annotation(c, "container", _), container = NIL,
-	                                     machineDecl is MachineDecl(name, MODEL, _, _, _), DeclId(machineDecl, _, machineName), 
+	                                     machineDecl is MachineDecl(name, _, MODEL, _, _, _), DeclId(machineDecl, _, machineName), 
 										 funName = "PrtMkModel".
 	
 	ContainerInNewCall(c, name, funName, machineName, container) :- 
 										 c: FunDecl, Annotation(c, "container", f), FormalTrans(c, f, container),
-	                                     machineDecl is MachineDecl(name, MODEL, _, _, _), DeclId(machineDecl, _, machineName), 
+	                                     machineDecl is MachineDecl(name, _, MODEL, _, _, _), DeclId(machineDecl, _, machineName), 
 										 funName = "PrtMkModelRemote".
 
 	PayloadEvalOrder ::= (s: in.Stmt, i: Natural, p: in.Expr + { NIL }, h: Natural).
@@ -1710,18 +1710,38 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 									ec = out.FunApp(Ident("PrtCloneValue"), Args(out.BinApp(PFLD, newCall, Ident("id")), NIL)).
 
 	//// Function application
-	RhsTrans(c, s, i, j', trans) :- RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), e = in.FunApp(name, NIL), 
-									DeclId(funDecl, funIndex, funName), funDecl.name = name, FunAvailable(funDecl, c.owner), 
+	RhsTrans(c, s, i, j', trans) :- 
+									//normal function app
+									RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), e = in.FunApp(name, NIL, NIL), 
+									DeclId(funDecl, funIndex, funName), funDecl.name = name, FunAvailable(funDecl, c.owner), funDecl.owner = c.owner, 
+									pushFrame = out.FunApp(Ident("PrtPushNewFrame"), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL))),
+									wrapFunStmt = out.FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(0, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL))))),
+									ec = out.FunApp(Ident("P_SEQ"), Args(pushFrame, Args(wrapFunStmt, NIL)));
+
+									//static function app
+									RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), e = in.FunApp(name, modName, NIL), 
+									DeclId(funDecl, funIndex, funName), FunAvailable(funDecl, c.owner), funDecl.name = name, funDecl.owner = ModuleDecl(modName), 
 									pushFrame = out.FunApp(Ident("PrtPushNewFrame"), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL))),
 									wrapFunStmt = out.FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(0, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL))))),
 									ec = out.FunApp(Ident("P_SEQ"), Args(pushFrame, Args(wrapFunStmt, NIL))).
 
-	RhsTrans(c, s, i, j', trans) :- RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), e = in.FunApp(name, args), args != NIL, 
-									DeclId(funDecl, funIndex, funName), funDecl.name = name, FunAvailable(funDecl, c.owner), 
+	RhsTrans(c, s, i, j', trans) :- 
+									//normal function app
+									RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), e = in.FunApp(name, NIL, args), args != NIL, 
+									DeclId(funDecl, funIndex, funName), funDecl.name = name, FunAvailable(funDecl, c.owner), funDecl.owner = c.owner,
+									TransformFunArgs(c, s, i, NIL, ecs', NIL),
+									pushFrame = out.FunApp(Ident("PrtPushNewFrame"), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), lstReverse(#Args, ecs')))),
+									wrapFunStmt = out.FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(0, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL))))),
+									ec = out.FunApp(Ident("P_SEQ"), Args(pushFrame, Args(wrapFunStmt, NIL)));
+
+									//static function app
+									RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), e = in.FunApp(name, NIL, args), args != NIL, 
+									DeclId(funDecl, funIndex, funName), FunAvailable(funDecl, c.owner), funDecl.name = name, funDecl.owner = ModuleDecl(modName),
 									TransformFunArgs(c, s, i, NIL, ecs', NIL),
 									pushFrame = out.FunApp(Ident("PrtPushNewFrame"), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), lstReverse(#Args, ecs')))),
 									wrapFunStmt = out.FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(0, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL))))),
 									ec = out.FunApp(Ident("P_SEQ"), Args(pushFrame, Args(wrapFunStmt, NIL))).
+
 	//// Nullary expressions
 	RhsTrans(c, s, i, j', trans) :- RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), 
 							        e = NulApp(n), n : Integer,
@@ -1931,7 +1951,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	Trampoline(c, s, cs) :- SubSE(c, s), s = in.Raise(_, _, _), cs = NIL.
 	Trampoline(c, s, cs) :- SubSE(c, s), s = in.Send(_, _, _, _, _), cs = NIL.
 	Trampoline(c, s, cs) :- SubSE(c, s), s = in.Announce(_, _, _), cs = NIL.
-	Trampoline(c, s, cs) :- SubSE(c, s), s = in.FunStmt(_, _, _, label, _), ContextSourceInfo(c, _, info, _),
+	Trampoline(c, s, cs) :- SubSE(c, s), s = in.FunStmt(_, _, _, _, label, _), ContextSourceInfo(c, _, info, _),
 	                        cs = out.Seq(info, 
 							             ITE(out.BinApp(EQ, out.BinApp(FLD, Ident("p_tmp_frame"), Ident("returnTo")),
 														    out.IntLit(label, DEC, U)), 
@@ -2109,9 +2129,9 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 
     //// Fun
 	FunStmtCleanup ::= (cntxt: TypingContext, stmt: in.Stmt, trans: out.Stmt).
-	FunStmtCleanup(c, s, cs) :- SubSE(c, s), s = FunStmt(_, _, NIL, _, x), ret = Ident("p_tmp_funstmt_ret"), ContextLineInfo(c, s, info),
+	FunStmtCleanup(c, s, cs) :- SubSE(c, s), s = FunStmt(_, _, _, NIL, _, x), ret = Ident("p_tmp_funstmt_ret"), ContextLineInfo(c, s, info),
 								cs = out.ITE(BinApp(NEQ, ret, Ident("NULL")), Seq(info, FunApp(Ident("PrtFreeValue"), Args(ret, NIL))), NIL).
-	FunStmtCleanup(c, s, cs) :- SubSE(c, s), s = FunStmt(_, _, aout, _, _), aout: in.Name, ret = Ident("p_tmp_funstmt_ret"),
+	FunStmtCleanup(c, s, cs) :- SubSE(c, s), s = FunStmt(_, _, _, aout, _, _), aout: in.Name, ret = Ident("p_tmp_funstmt_ret"),
 								varDecl is VarDecl(aout.name, c.owner, _), DeclId(varDecl, _, varName), no TypeOfLocalVar(c, aout.name, _),
 								cs =  out.FunApp(Ident("PrtSetGlobalVarEx"),
 						                     Args(Ident("p_tmp_mach_priv"),
@@ -2119,7 +2139,7 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 											 Args(ret,
 											 Args(Ident("PRT_FALSE"),
 											      NIL))))).
-	FunStmtCleanup(c, s, cs) :- SubSE(c, s), s = FunStmt(_, _, aout, _, _), aout: in.Name, ret = Ident("p_tmp_funstmt_ret"),
+	FunStmtCleanup(c, s, cs) :- SubSE(c, s), s = FunStmt(_, _, _, aout, _, _), aout: in.Name, ret = Ident("p_tmp_funstmt_ret"),
 								TypeOfLocalVar(c, aout.name, _), LocalVars(c, locals), IndexOf(locals, aout.name, i, _),
 								cs = out.FunApp(Ident("PrtSetLocalVarEx"),
 						                     Args(BinApp(FLD, Ident("p_tmp_frame"), Ident("locals")),
@@ -2128,8 +2148,22 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 											 Args(Ident("PRT_FALSE"),
 											      NIL))))).
 
-	StmtTrans(c, s, cs) :- SubSE(c, s), context = Ident("context"),
-						   s = in.FunStmt(name, NIL, _, label, x), DeclId(funDecl, funIndex, funName), FunAvailable(funDecl, c.owner), funDecl.name = name,
+	StmtTrans(c, s, cs) :- 
+							//normal function statement
+						   SubSE(c, s), context = Ident("context"),
+						   s = in.FunStmt(name, NIL, NIL, _, label, x), DeclId(funDecl, funIndex, funName), FunAvailable(funDecl, c.owner), funDecl.name = name, funDecl.owner = c.owner,
+						   ret = Ident("p_tmp_funstmt_ret"),
+						   pushFrame = out.FunApp(Ident("PrtPushNewFrame"), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL))),
+						   funcall = out.BinApp(ASN, ret, FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(label, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL)))))),
+						   blocked = out.ITE(BinApp(NEQ, BinApp(PFLD, Ident("p_tmp_mach_priv"), Ident("receive")), Ident("NULL")), Seq(info, Return(ret)), NIL),
+						   exception = out.ITE(BinApp(NEQ, BinApp(PFLD, Ident("p_tmp_mach_priv"), Ident("lastOperation")), Ident("ReturnStatement")), Seq(info, Goto("P_EXIT_FUN")), NIL),
+						   FunStmtCleanup(c, s, cleanup),
+						   ContextLineInfo(c, s, info),
+						   cs = out.Seq(pushFrame, Lbl(strJoin("L", toString(label)), Seq(Seq(info, funcall), Seq(Seq(info, blocked), Seq(Seq(info, exception), Seq(info, cleanup))))));
+
+						   //static function statement
+						   SubSE(c, s), context = Ident("context"),
+						   s = in.FunStmt(name, modName, NIL, _, label, x), DeclId(funDecl, funIndex, funName), FunAvailable(funDecl, c.owner), funDecl.name = name, funDecl.owner = ModuleDecl(modName),
 						   ret = Ident("p_tmp_funstmt_ret"),
 						   pushFrame = out.FunApp(Ident("PrtPushNewFrame"), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL))),
 						   funcall = out.BinApp(ASN, ret, FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(label, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL)))))),
@@ -2152,8 +2186,24 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 												RhsTrans(c, s, i, j, out.Args(ec, _)), 
 												args' = out.Args(UnApp(ADDR, ec), Args(Ident("PRT_FUN_PARAM_XFER"), args)).
 
-	StmtTrans(c, s, cs) :- FunStmtRhs(c, s, size, tail), s = in.FunStmt(name, args, _, label, x), args != NIL, 
-	                       DeclId(fn, funIndex, funName), fn.name = name, FunAvailable(fn, c.owner),  
+	StmtTrans(c, s, cs) :- 
+							//normal function call
+						   FunStmtRhs(c, s, size, tail), s = in.FunStmt(name, NIL, args, _, label, x), args != NIL, 
+	                       DeclId(fn, funIndex, funName), fn.name = name, FunAvailable(fn, c.owner), fn.owner = c.owner,
+						   TransformFunArgs(c, s, 0, NIL, ecs', NIL),
+						   ContextLineInfo(c, s, info),
+						   cs = out.Seq(Seq(info, pushFrame), Lbl(strJoin("L", toString(label)), Seq(Seq(info, funCall), Seq(Seq(info, blocked), Seq(Seq(info, exception), Seq(info, cleanup)))))),
+						   pushFrame = out.FunApp(Ident(strJoin("P_EXPR_", toString(size))), Args(out.FunApp(Ident("PrtPushNewFrame"), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), lstReverse(#Args, ecs')))), Args(Ident("PRT_FALSE"), tail))),
+						   funCall = out.BinApp(ASN, ret, FunApp(Ident("PrtWrapFunStmt"), Args(UnApp(ADDR, Ident("p_tmp_frame")), Args(IntLit(label, DEC, U), Args(Ident("p_tmp_mach_priv"), Args(IntLit(funIndex, DEC, U), NIL)))))),
+						   blocked = out.ITE(BinApp(NEQ, BinApp(PFLD, Ident("p_tmp_mach_priv"), Ident("receive")), Ident("NULL")), Seq(info, Return(ret)), NIL),
+						   exception = out.ITE(BinApp(NEQ, BinApp(PFLD, Ident("p_tmp_mach_priv"), Ident("lastOperation")), Ident("ReturnStatement")), Seq(info, Goto("P_EXIT_FUN")), NIL),
+						   FunStmtCleanup(c, s, cleanup),
+						   ret = Ident("p_tmp_funstmt_ret"),
+						   context = Ident("context");
+
+						   //static function call
+						   FunStmtRhs(c, s, size, tail), s = in.FunStmt(name, modName, args, _, label, x), args != NIL, 
+	                       DeclId(fn, funIndex, funName), fn.name = name, FunAvailable(fn, c.owner), fn.owner = ModuleDecl(modName),
 						   TransformFunArgs(c, s, 0, NIL, ecs', NIL),
 						   ContextLineInfo(c, s, info),
 						   cs = out.Seq(Seq(info, pushFrame), Lbl(strJoin("L", toString(label)), Seq(Seq(info, funCall), Seq(Seq(info, blocked), Seq(Seq(info, exception), Seq(info, cleanup)))))),
