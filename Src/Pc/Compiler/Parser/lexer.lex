@@ -113,6 +113,7 @@
 			 keywords.Add("as", (int)Tokens.AS);
 
 			 //related to module system
+			 keywords.Add("creates", (int)Tokens.CREATES);
 			 keywords.Add("eventset", (int)Tokens.EVENTSET);
 			 keywords.Add("receives", (int)Tokens.RECEIVES);
 			 keywords.Add("sends", (int)Tokens.SENDS);

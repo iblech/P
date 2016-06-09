@@ -20,7 +20,7 @@
 
 %token TRUE FALSE
 
-%token MODULE HIDE EXPORT SAFE ASSUME ASSERT RENAME TO 
+%token MODULE HIDE EXPORT SAFE ASSUME ASSERT RENAME TO CREATES
 %token IMPLEMENTATION TEST REFINES
 %token EVENTSET 
 %token RECEIVES SENDS
@@ -224,14 +224,24 @@ ImplementationDecl
 
 	/******************* Machine Declarations *******************/
 MachineDecl
-	: IsMain MACHINE ID ReceivesOrExports Sends MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE { AddMachine(P_Root.UserCnstKind.REAL, $3.str, ToSpan(@3), ToSpan(@1));    }
-	| IsMain MODEL ID ReceivesOrExports Sends MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE   { AddMachine(P_Root.UserCnstKind.MODEL, $3.str, ToSpan(@3), ToSpan(@1));   }
+	: IsMain MACHINE ID ReceivesOrExports Sends Creates MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE { AddMachine(P_Root.UserCnstKind.REAL, $3.str, ToSpan(@3), ToSpan(@1));    }
+	| IsMain MODEL ID ReceivesOrExports Sends Creates MachCardOrNone MachAnnotOrNone LCBRACE MachineBody RCBRACE   { AddMachine(P_Root.UserCnstKind.MODEL, $3.str, ToSpan(@3), ToSpan(@1));   }
 	;
 	
 ReceivesOrExports
 	: RECEIVES NonDefaultEventList SEMICOLON         { crntReceivesList.AddRange(crntEventList); crntEventList.Clear(); }
 	| RECEIVES SEMICOLON
 	| COLON ID										 { AddExports($2.str, ToSpan(@2), ToSpan(@1)); }
+	;
+
+Creates
+	: CREATES InterfaceList SEMICOLON         { AddCreates(ToSpan(@1)); }
+	|
+	;
+
+InterfaceList
+	: ID					 { AddToInterfaceList($1.str, ToSpan(@1)); }
+	| ID COMMA InterfaceList { AddToInterfaceList($1.str, ToSpan(@1)); }
 	;
 
 Sends
