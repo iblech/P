@@ -95,6 +95,18 @@
             private set;
         }
 
+        public List<P_Root.ModulePrivateEvents> ModulePrivateEventsDecl
+        {
+            get;
+            private set;
+        }
+
+        public List<P_Root.ModuleAllEventsPrivate> ModuleAllEventsPrivate
+        {
+            get;
+            private set;
+        }
+
         public List<P_Root.MachineSendsDecl> MachineSendsDecl
         {
             get;
@@ -260,6 +272,11 @@
                     yield return mRec;
                 }
 
+                foreach (var mpri in ModuleAllEventsPrivate)
+                {
+                    yield return mpri;
+                }
+
                 foreach (var send in MachineSendsDecl)
                 {
                     yield return send;
@@ -268,6 +285,11 @@
                 foreach (var send in MachineSendsAllEvents)
                 {
                     yield return send;
+                }
+
+                foreach (var pri in ModulePrivateEventsDecl)
+                {
+                    yield return pri;
                 }
 
                 foreach (var ex in MachineExportsDecl)
@@ -314,6 +336,8 @@
             ModuleDecl = new List<P_Root.ModuleDecl>();
             ModuleDef = new List<P_Root.ModuleDef>();
             MachineSendsAllEvents = new List<P_Root.MachineSendsAllEvents>();
+            ModulePrivateEventsDecl = new List<P_Root.ModulePrivateEvents>();
+            ModuleAllEventsPrivate = new List<P_Root.ModuleAllEventsPrivate>();
             ImplementationDecl = new List<P_Root.ImplementationDecl>();
             TestDecl = new List<P_Root.TestDecl>();
             RefinementDecl = new List<P_Root.RefinementDecl>();

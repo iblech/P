@@ -126,7 +126,7 @@
 			 keywords.Add("implementation", (int)Tokens.IMPLEMENTATION);
 			 keywords.Add("test", (int)Tokens.TEST);
 			 keywords.Add("refines", (int)Tokens.REFINES);
-
+			 keywords.Add("private", (int)Tokens.PRIVATE);
 		 }
 
          int GetIdToken(string txt)

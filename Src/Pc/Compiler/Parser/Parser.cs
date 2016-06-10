@@ -45,7 +45,9 @@
         private List<P_Root.EventLabel> crntObservesList = new List<P_Root.EventLabel>();
         private List<P_Root.EventLabel> crntReceivesList = new List<P_Root.EventLabel>();
         private bool isSendsListAllEvents = false;
+        private bool isPrivateListAllEvents = false;
         private List<P_Root.EventLabel> crntSendsList = new List<P_Root.EventLabel>();
+        private List<P_Root.EventLabel> crntPrivateList = new List<P_Root.EventLabel>();
 
         private HashSet<string> crntStateNames = new HashSet<string>();
         private HashSet<string> crntLocalFunNames = new HashSet<string>();
@@ -2043,9 +2045,25 @@
                 topDeclNames.moduleNames.Add(name);
             }
             parseProgram.ModuleDecl.Add(moduleDecl);
+
+            foreach (var e in crntPrivateList)
+            {
+                //add privates
+                var pri = P_Root.MkModulePrivateEvents(moduleDecl, (P_Root.IArgType_ModulePrivateEvents__1)e);
+                pri.Span = e.Span;
+                parseProgram.ModulePrivateEventsDecl.Add(pri);
+            }
+
+            if(isPrivateListAllEvents)
+            {
+                var pri = P_Root.MkModuleAllEventsPrivate(moduleDecl);
+                parseProgram.ModuleAllEventsPrivate.Add(pri);
+            }
             //clear the machine names and static function names
             topDeclNames.machineNames.Clear();
             crntStaticFunNames.Clear();
+            crntPrivateList.Clear();
+            isPrivateListAllEvents = false;
         }
 
         private void AddMachine(P_Root.UserCnstKind kind, string name, Span nameSpan, Span span)

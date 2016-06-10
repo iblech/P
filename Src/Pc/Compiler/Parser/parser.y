@@ -23,7 +23,7 @@
 %token MODULE HIDE EXPORT SAFE ASSUME ASSERT RENAME TO CREATES
 %token IMPLEMENTATION TEST REFINES
 %token EVENTSET 
-%token RECEIVES SENDS
+%token RECEIVES SENDS PRIVATE
 
 %token SWAP, REF, XFER
 
@@ -145,9 +145,14 @@ NamedModuleDecl
 	;
 /* Module */
 ModuleDecl
-	: MODULE ID LCBRACE ModuleBody RCBRACE			{ AddModuleDecl($2.str, ToSpan(@2), ToSpan(@1)); }
+	: MODULE ID ModulePrivateEvents LCBRACE ModuleBody RCBRACE			{ AddModuleDecl($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
+ModulePrivateEvents
+	: PRIVATE NonDefaultEventList SEMICOLON		{ crntPrivateList.AddRange(crntEventList); crntEventList.Clear(); }
+	| PRIVATE SEMICOLON
+	|											{ isPrivateListAllEvents = true; }
+	;
 ModuleBody
 	: ModuleBodyItem
 	| ModuleBodyItem ModuleBody 
@@ -173,7 +178,7 @@ ModuleExpr
 
 /* Composition */
 ComposeExpr
-	:  ModuleExpr COMMA ModuleExpr		{ PushComposeExpr(ToSpan(@1)); }
+	:  ModuleExpr LOR ModuleExpr		{ PushComposeExpr(ToSpan(@1)); }
 	;
 
 /* Hide */
@@ -322,13 +327,13 @@ PayloadNone
 	;
 
 /******************* Function Declarations *******************/
-IsPublic 
-	: EXPORT { isStaticFun = true; isPublic = true;}
-	|		 { isStaticFun = true; }
+StatFunAnnotation 
+	: EXPORT IsModel { isStaticFun = true; isPublic = true;}
+	| IsModel		 { isStaticFun = true; isPublic = false;}
 	;
 
 StaticFunDecl
-	: IsPublic IsModel FUN ID ParamsOrNone RetTypeOrNone FunAnnotOrNone LCBRACE StmtBlock RCBRACE { AddFunction($4.str, ToSpan(@4), ToSpan(@1), ToSpan(@8), ToSpan(@10), true); }
+	: StatFunAnnotation FUN ID ParamsOrNone RetTypeOrNone FunAnnotOrNone LCBRACE StmtBlock RCBRACE { AddFunction($3.str, ToSpan(@3), ToSpan(@1), ToSpan(@7), ToSpan(@9), true); }
 	;
 
 FunDecl
