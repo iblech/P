@@ -652,7 +652,8 @@
             AddErrors(task.Result, "OneDeclError(_)", errors, 0);
             AddErrors(task.Result, "TwoDeclError(_, _)", errors, 1);
             AddErrors(task.Result, "DeclFunError(_, _)", errors, 1);
-
+            AddErrors(task.Result, "ModuleExprDeclError(_)", errors, 0);
+            
             if (Options.printTypeInference)
             {
                 AddTerms(task.Result, "TypeOf(_, _, _)", errors, SeverityKind.Info, 0, "inferred type: ", 1, 2);

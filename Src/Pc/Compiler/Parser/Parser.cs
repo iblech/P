@@ -37,7 +37,6 @@
         private P_Root.StateDecl crntState = null;
         private List<P_Root.VarDecl> crntVarList = new List<P_Root.VarDecl>();
         private List<P_Root.EventLabel> crntEventList = new List<P_Root.EventLabel>();
-        private List<P_Root.String> crntInterfaceList = new List<P_Root.String>();
         private List<P_Root.EventLabel> onEventList = new List<P_Root.EventLabel>();
         private List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>> crntAnnotList = new List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>>();
         private Stack<List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>>> crntAnnotStack = new Stack<List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>>>();
@@ -1568,11 +1567,6 @@
             crntEventList.Add(MkString(name, span));
         }
 
-        private void AddToInterfaceList(string name, Span span)
-        {
-            crntInterfaceList.Add(MkString(name, span));
-        }
-
         private void AddToEventList(P_Root.UserCnstKind kind, Span span)
         {
             crntEventList.Add(MkUserCnst(kind, span));
@@ -2135,19 +2129,6 @@
             parseProgram.MachineExportsDecl.Add(export);
         }
 
-        private void AddCreates(Span span)
-        {
-            
-            foreach(var i in crntInterfaceList)
-            {
-                var creates = P_Root.MkMachineCreatesDecl();
-                creates.mach = GetCurrentMachineDecl(span);
-                creates.iname = (P_Root.IArgType_MachineCreatesDecl__1)i;
-                parseProgram.MachineCreatesDecl.Add(creates);
-            }
-            crntInterfaceList.Clear();
-        }
-
         private void AddMachineAnnots(Span span)
         {
             Contract.Assert(crntAnnotStack.Count > 0);
@@ -2443,7 +2424,6 @@
             crntVarList.Clear();
             groupStack.Clear();
             crntEventList.Clear();
-            crntInterfaceList.Clear();
             crntAnnotStack.Clear();
             crntAnnotList = new List<Tuple<P_Root.StringCnst, P_Root.AnnotValue>>();
             parseFailed = false;

@@ -178,7 +178,6 @@ domain PStructuralTyping extends PData
 	conforms no OneDeclError(_).
 	conforms no TwoDeclError(_, _).
 	conforms no DeclFunError(_, _).
-	conforms no ModuleSystemDeclError(_).
     /*************************************************************/
 
 	////// Three kinds of declaration errors (and missingDecl).
@@ -268,23 +267,14 @@ domain PStructuralTyping extends PData
 	//event in sends of a machine
 	[rule_Classes = '"error, msg: event in sends is not declared"']
 	OneDeclError(s) :- s is MachineSendsDecl(_, ev), no EventDecl(ev, _, _), ev!= HALT.
-
-	//interface declared in the exports is legal
-	[rule_Classes = '"error, msg: interface in exports is not declared"']
-	OneDeclError(ex) :- ex is MachineExportsDecl(_, i), no InterfaceTypeDecl(i, _, _).
-
-	////Module system level checks
-	//check if events in hide are declared
-	[rule_Classes = '"error, msg: undefined event in hide operation"']
-	ModuleSystemDeclError(ev) :- HideExpr(evList, _), SubStrings(evList, ev), no EventDecl(ev, _, _).
-
-	//check if interface is declared in Export
-	[rule_Classes = '"error, msg: undefined interface in export operation"']
-	ModuleSystemDeclError(i) :- ExportExpr(_, i, _), no InterfaceTypeDecl(i, _, _).
 	
 	//only one implementation list declaration
 	[rule_Classes = '"error, msg: atmost one implementation module list is allowed"']
-	OneDeclError(ml1) :- ml1 is ImplementationDecl, ml2 is ImplementationDecl, ml1 != ml2.								
+	OneDeclError(ml1) :- ml1 is ImplementationDecl, ml2 is ImplementationDecl, ml1 != ml2.	
+	
+	//interface declared in the exports is legal
+	[rule_Classes = '"error, msg: interface in exports is not declared"']
+	OneDeclError(ex) :- ex is MachineExportsDecl(_, i), no InterfaceTypeDecl(i, _, _).						
 }
 
 domain PStaticTyping extends PData
@@ -305,6 +295,7 @@ domain PStaticTyping extends PData
 	conforms no PayloadError(_).
 	conforms no TypeDefError(_).
 	conforms no ModuleDefError(_).
+	conforms no ModuleExprDeclError(_).
 	conforms no FunDeclQualifierError(_, _).
 	conforms no FunCallQualifierError(_, _, _).
 	conforms no SendQualifierError(_, _).
@@ -488,22 +479,63 @@ domain PStaticTyping extends PData
 	SendsForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), toSymbol(modExpr) != #HideExpr, toSymbol(modExpr) != #ComposeExpr, toSymbol(modExpr) != #ModuleDecl, SendsForModuleExpr(modExpr.mod, ev).
 	SendsForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, SendsForModuleExpr(modExpr.left, ev);
 									   AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, SendsForModuleExpr(modExpr.right, ev).
-	SendsForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, SendsForModuleExpr(modExpr.mod, ev), count({ ev' | SubStrings(modExpr.evtNames, ev')}) = 0.
-										
+	SendsForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, MachineSendsDecl(_, ev), SendsForModuleExpr(modExpr.mod, ev), no SubStrings(modExpr.evtNames, ev).
+	
+
+
+	//// exports list
+	AllExportedInterfaces ::= (ix: String).
+	AllExportedInterfaces(ix) :- ExportExpr(_, ix, _); MachineExportsDecl(_, ix).
+	ExportsForModuleExpr(modExpr, ix) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, MachineExportsDecl(mach, ix), mach.mod = modExpr.
+	ExportsForModuleExpr(modExpr, ix) :- AllExpandedModuleExprs(modExpr), ExportsForModuleExpr(modExpr.mod, ix),
+										 toSymbol(modExpr) != #HideExpr, toSymbol(modExpr) != #ComposeExpr, toSymbol(modExpr) != #ModuleDecl, toSymbol(modExpr) != #ExportExpr.
+	ExportsForModuleExpr(modExpr, ix) :- AllExpandedModuleExprs(modExpr), modExpr : ExportExpr, ExportsForModuleExpr(modExpr.mod, ix);
+										 AllExpandedModuleExprs(modExpr), modExpr : ExportExpr, ix = modExpr.iName.
+	ExportsForModuleExpr(modExpr, ix) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ExportsForModuleExpr(modExpr.left, ix);
+									     AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ExportsForModuleExpr(modExpr.right, ix).									 
+	ExportsForModuleExpr(modExpr, ix) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, AllExportedInterfaces(ix), ExportsForModuleExpr(modExpr.mod, ix), InterfaceTypeDecl(ix, es, _), count({ev | EventSetDecl(es, ev), SubStrings(modExpr.evtNames, ev)}) = 0.
+
+	//// creates list
+	AllCreatedInterfaces ::= (ic: String).
+	AllCreatedInterfaces(ic) :- MachineCreatesDecl(_, ic).
+	CreatesForModuleExpr(modExpr, ic) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, MachineCreatesDecl(mach, ic), mach.mod = modExpr.
+	CreatesForModuleExpr(modExpr, ic) :- AllExpandedModuleExprs(modExpr), CreatesForModuleExpr(modExpr.mod, ic),
+										 toSymbol(modExpr) != #HideExpr, toSymbol(modExpr) != #ComposeExpr, toSymbol(modExpr) != #ModuleDecl.
+	CreatesForModuleExpr(modExpr, ic) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, CreatesForModuleExpr(modExpr.left, ic);
+									     AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, CreatesForModuleExpr(modExpr.right, ic).									 
+	CreatesForModuleExpr(modExpr, ic) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, AllCreatedInterfaces(ic), CreatesForModuleExpr(modExpr.mod, ic), InterfaceTypeDecl(ic, es, _), count({ev | EventSetDecl(es, ev), SubStrings(modExpr.evtNames, ev)}) = 0.
+
+	//// receives list
+	ReceivesForModuleExpr(modExpr, er) :- AllExpandedModuleExprs(modExpr), ExportsForModuleExpr(modExpr, ix), InterfaceTypeDecl(ix, es, _), EventSetDecl(es, er).
+
 	/**************************************************************************/
 	/**			Check that the module system contruction is legal			  */
 	/**************************************************************************/
-	/*
+	ModuleExprDeclError ::= (String).
+	
+	//// Export Operation
+	ModuleExprDeclError(ix) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), ModuleRenameMap(mod, m, m').
+
+	////Module system level checks
+	//check if events in hide are declared
+	[rule_Classes = '"error, msg: undefined event in hide operation"']
+	ModuleExprDeclError(ev) :- HideExpr(evList, _), SubStrings(evList, ev), no EventDecl(ev, _, _).
+
+	//check if interface is declared in Export
+	[rule_Classes = '"error, msg: undefined interface in export operation"']
+	ModuleExprDeclError(i) :- ExportExpr(_, i, _), no InterfaceTypeDecl(i, _, _).
+
+	////Rename Operation is correct
 	//check if the names in rename exists
 	[rule_Classes = '"error, msg: machine name already exists in the module expression"']
-	ModuleSystemDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(newNames, mname), ModuleRenameMap(modExpr, mname, _);
+	ModuleExprDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(newNames, mname), ModuleRenameMap(modExpr, mname, _);
 									RenameExpr(oldNames, newNames, modExpr), SubStrings(newNames, mname), ModuleRenameMap(modExpr, _, mname).
 	[rule_Classes = '"error, msg: machine name being renamed does not exists in the module expression"']
-	ModuleSystemDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
+	ModuleExprDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
 
 	[rule_Classes = '"error, msg: machine name being renamed does not exists in the module expression"']
-	ModuleSystemDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
-	*/
+	ModuleExprDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
+	
 	/**************************************************************************/
 	/*     C Code Helpers
 	/**************************************************************************/
@@ -528,14 +560,29 @@ domain PStaticTyping extends PData
 	/**************************************************************************/
 	/*		populate the sends, receives and creates list for each machine	  */
 	/**************************************************************************/
+	//populate the sends for machines without send decl
 	MachineSendsDecl(m, s) :- MachineSendsAllEvents(m), EventDecl(s, _, _);
 							  MachineSendsAllEvents(m), s = HALT.
+
+	//populate receives for machines with exports and no receives
 	MachineReceivesDecl(m, ev) :- MachineExportsDecl(m, i), InterfaceTypeDecl(i, es, _), EventSetDecl(es, ev).
 	
-	//populate the creates list.
+	//calculate creates for all FunDecls and AnonFunDecls
+	CreatesForFunctions ::= (f: TypingContext, ic: String).
+
+	//Comment reusing SubSE
+	CreatesForFunctions(f, ic) :- SubSE(f, e), e = New(ic, _), InterfaceTypeDecl(ic, _, _);
+								  SubSE(f, e), e = NewStmt(ic, _, _), InterfaceTypeDecl(ic, _, _);
+								  SubSE(f, e), e : FunStmt, f' is FunDecl, e.name = f'.name, e.mod = NIL, f.owner = f'.owner, CreatesForFunctions(f', ic);
+								  SubSE(f, e), e : FunStmt, f' is FunDecl, e.name = f'.name, f'.owner = ModuleDecl(e.mod), CreatesForFunctions(f', ic);
+								  SubSE(f, e), e : FunApp, f' is FunDecl, e.name = f'.name, e.mod = NIL, f.owner = f'.owner, CreatesForFunctions(f', ic);
+								  SubSE(f, e), e : FunApp, f' is FunDecl, e.name = f'.name, f'.owner = ModuleDecl(e.mod), CreatesForFunctions(f', ic).
+
+	//populate the creates list for machine.
+	MachineCreatesDecl(mach, ic) :- f is FunDecl, f.owner = mach, CreatesForFunctions(f, ic), mach : MachineDecl;
+									af is AnonFunDecl, af.owner = mach, CreatesForFunctions(af, ic), mach : MachineDecl.
 
 	//Checking the constructor type error for each exported interface
-	// FIX ME: Do similar check for the module export operation.
 	ConstructorTypeError ::= (ex: MachineExportsDecl).
 	[rule_Classes = '"error, msg: the constructor argument type is not a subtype of the exported interface argument type"']
 	ConstructorTypeError(ex) :- ex is MachineExportsDecl(m, i), InterfaceTypeDecl(i, _, iargt), ConstructorType(m, _, ct), TypeRel(iargt, ct, k), ct != iargt, k != SUB. 						 
