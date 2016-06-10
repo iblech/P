@@ -44,6 +44,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="FsharpExpGen.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="BoogieGen.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

@@ -137,12 +137,17 @@ namespace Microsoft.Identity
             sb.Append("]");
         }
 
+        private static void gen_NameType(P_Root.NameType t, StringBuilder sb)
+        {
+            sb.Append(getName(t.name));
+        }
+
         private static void gen_type(P_Root.TypeExpr t, StringBuilder sb)
         {
             //t: any TypeExpr. This means we can check its derived type as we wish.
             if (t is P_Root.NameType)
             {
-                sb.Append(getName(t));
+                gen_NameType(t as P_Root.NameType, sb);
             }
             else if (t is P_Root.BaseType)
             {
@@ -170,7 +175,10 @@ namespace Microsoft.Identity
         {
             sb.Append("type ");
             sb.Append(getName(typeDef.name) + " = ");
-            gen_type(typeDef.type as P_Root.TypeExpr, sb);
+            if(typeDef.type.Symbol.ToString() != "NIL")
+            {
+                gen_type(typeDef.type as P_Root.TypeExpr, sb);
+            }
             return 0;
         }
 
@@ -184,7 +192,10 @@ namespace Microsoft.Identity
             sb.Append("new ");
             sb.Append(getName(e.name));
             sb.Append("(");
-            gen_Expr(e.arg as P_Root.Expr, sb);
+            if (e.arg.Symbol.ToString() != "NIL")
+            {
+                gen_Expr(e.arg as P_Root.Expr, sb);
+            }
             sb.Append(")");
         }
 
@@ -471,16 +482,22 @@ namespace Microsoft.Identity
             sb.Append("new ");
             sb.Append(getName(s.name));
             sb.Append('(');
-            gen_Expr(s.arg as P_Root.Expr, sb);
+            if (s.arg.Symbol.ToString() != "NIL")
+            {
+                gen_Expr(s.arg as P_Root.Expr, sb);
+            }
             sb.Append(')');
-       }
+        }
 
         private static void gen_Raise(P_Root.Raise s, StringBuilder sb)
         {
             sb.Append("raise ");
             gen_Expr(s.ev as P_Root.Expr, sb);
             sb.Append(" ");
-            gen_Expr(s.arg as P_Root.Expr, sb);
+            if (s.arg.Symbol.ToString() != "NIL")
+            {
+                gen_Expr(s.arg as P_Root.Expr, sb);
+            }
         }
 
         private static void gen_Send(P_Root.Send s, StringBuilder sb)
@@ -502,7 +519,7 @@ namespace Microsoft.Identity
         {
             sb.Append("monitor ");
             gen_Expr(s.ev as P_Root.Expr, sb);
-            if(s.arg.Symbol.ToString() != "NIL")
+            if (s.arg.Symbol.ToString() != "NIL")
             {
                 sb.Append(", ");
                 gen_Expr(s.arg as P_Root.Expr, sb);
@@ -513,7 +530,10 @@ namespace Microsoft.Identity
         {
             sb.Append(getName(s.name));
             sb.Append('(');
-            gen_Exprs(s.args as P_Root.Exprs, sb);
+            if (s.args.Symbol.ToString() != "NIL")
+            {
+                gen_Exprs(s.args as P_Root.Exprs, sb);
+            }
             sb.Append(")");
             return;
         }
@@ -549,7 +569,10 @@ namespace Microsoft.Identity
         private static void gen_Return(P_Root.Return s, StringBuilder sb)
         {
             sb.Append("return ");
-            gen_Expr(s.expr as P_Root.Expr, sb);
+            if (s.expr.Symbol.ToString() != "NIL")
+            {
+                gen_Expr(s.expr as P_Root.Expr, sb);
+            }
         }
 
         private static void gen_While(P_Root.While s, StringBuilder sb)
@@ -858,7 +881,7 @@ namespace Microsoft.Identity
 
         private static void gen_DoDecl(P_Root.DoDecl d, StringBuilder sb)
         {
-            if(d.action.Symbol.ToString() == "DEFER")
+            if (d.action.Symbol.ToString() == "DEFER")
             {
                 sb.Append("defer ");
                 gen_Trig(d.trig, sb);
@@ -868,7 +891,7 @@ namespace Microsoft.Identity
                 sb.Append("ignore ");
                 gen_Trig(d.trig, sb);
             }
-            else if(d.action is P_Root.AnonFunDecl)
+            else if (d.action is P_Root.AnonFunDecl)
             {
                 sb.Append("on ");
                 gen_Trig(d.trig, sb);
