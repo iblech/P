@@ -78,7 +78,7 @@ domain PData
 	MachineExportsDecl ::= new (mach: any MachineDecl, iname: String).
 	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 	MachineSendsDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
-	MachineCreatesDecl ::= new (mach: any MachineDecl, iname: String).
+	MachineCreatesDecl ::= (mach: MachineDecl, iname: String).
 	MachineSendsAllEvents ::= new (mach: any MachineDecl).
 	
 	ModulePrivateEvents ::= new (mod: ModuleDecl, ev: String).
@@ -105,16 +105,16 @@ domain PData
 
 	////Module Signature 
 	ModulePrivate ::= (mod: ModuleExpr, ev: NonNullEventLabel).
-	ModuleSends ::= new (mod: ModuleExpr, ev: NonNullEventLabel).
-	ModuleReceives ::= new (mod: ModuleExpr, ev: NonNullEventLabel).
-	ModuleExports ::= new (mod: ModuleExpr, i: String).  
-	ModuleCreates ::= new (mod: ModuleExpr, i: String).
+	ModuleSends ::= (mod: ModuleExpr, ev: NonNullEventLabel).
+	ModuleReceives ::= (mod: ModuleExpr, ev: NonNullEventLabel).
+	ModuleExports ::= (mod: ModuleExpr, i: String).  
+	ModuleCreates ::= (mod: ModuleExpr, i: String).
 
 	////Module Code Gen and Compatibity Helpers
-	ModuleLinkMap ::= (mod: ModuleExpr, newName: String, origName : String, newName': String).
-	ModuleRenameMap ::= (mod: ModuleExpr, newName: String, origName: String).  // for both machines and monitors
+	ModuleLinkMap ::= (mod: ModuleExpr, newMachineName: String, interfaceOrMachine : String, newImpMachine: MachineDecl).
+	ModuleRenameMap ::= (mod: ModuleExpr, newName: String, impMachine: MachineDecl).  // for both machines and monitors
 	ModuleSafeMap ::= (mod: ModuleExpr, newName: String, isSafe: Boolean).
-	ModuleMonitorMap ::= (mod: ModuleExpr, newMonitorName: String, newMachineName: String).
+	ModuleMonitorMap ::= (mod: ModuleExpr, newMonitorName: String, impMachine: MachineDecl).
 
 	////Helper structs
 	StringList ::= new (str: String, tl: any StringList + { NIL }).
@@ -438,7 +438,7 @@ domain PStaticTyping extends PData
 
 	//// All modules in module expr
 	AllModuleDecls ::= (modExpr: ModuleExpr, mod: ModuleDecl).
-	AllModuleDecls(modExpr, mod) :- AllExpandedModuleExprs(modExpr), toSymbol(modExpr) != ComposeExpr, toSymbol(modExpr) != ModuleDecl, AllModuleDecls(modExpr.mod, mod).
+	AllModuleDecls(modExpr, mod) :- AllExpandedModuleExprs(modExpr), toSymbol(modExpr) != #ComposeExpr, toSymbol(modExpr) != #ModuleDecl, AllModuleDecls(modExpr.mod, mod).
 	AllModuleDecls(modExpr, mod) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, mod = modExpr.
 	AllModuleDecls(modExpr, mod) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, AllModuleDecls(modExpr.left, mod);
 									AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, AllModuleDecls(modExpr.right, mod).
@@ -446,17 +446,16 @@ domain PStaticTyping extends PData
 	/**************************************************************************/
 	/*		Check that there is only one main machine in each moduleExpr	  */
 	/**************************************************************************/
-	IllegalMainMachine ::= (me: ModuleExpr).
-	[rule_Classes = '"error, msg: no or more than one main machine in the module expression"']
-	IllegalMainMachine(me) :- TestDecl(_, me), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(me, mod)}) != 1;
-							  ImplementationDecl(me), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(me, mod)}) != 1;
-							  RefinementDecl(_, me, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(me, mod)}) != 1;
-							  RefinementDecl(_, _, me), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(me, mod)}) != 1.
+	IllegalMainMachine ::= (modExpr: ModuleExpr).
+	[rule_Classes = '"error, msg: zero or more than one main machine in the module expression"']
+	IllegalMainMachine(modExpr) :- TestDecl(_, modExpr), ModuleExprExpansion(modExpr, emodExpr), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(emodExpr, mod)}) != 1;
+								   ImplementationDecl(modExpr), ModuleExprExpansion(modExpr, emodExpr), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(emodExpr, mod)}) != 1;
+								   RefinementDecl(_, modExpr, _), ModuleExprExpansion(modExpr, emodExpr), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(emodExpr, mod)}) != 1;
+								   RefinementDecl(_, _, modExpr), ModuleExprExpansion(modExpr, emodExpr), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(emodExpr, mod)}) != 1.
 
-	/****************************************************************************/
-	/*	Generate sends, receives, exports, private and creates 
-		for Module Expressions   */
-	/****************************************************************************/
+	/************************************************************************************/
+	/*	Generate sends, receives, exports, private and creates for Module Expressions   */
+	/************************************************************************************/
 	///List representation of interfacetypedecl
 	InterfaceTypeDeclList ::= (name: String, it: InterfaceType).
 	InterfaceTypeDeclList(name, it) :- InterfaceTypeDecl(name, esname, _), it = toList(#InterfaceType, NIL, {ev | EventSetDecl(esname, ev) }), it : InterfaceType.
@@ -532,7 +531,7 @@ domain PStaticTyping extends PData
 	//check if the names in rename exists
 	[rule_Classes = '"error, msg: machine name already exists in the module expression"']
 	ModuleExprDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(newNames, mname), ModuleRenameMap(modExpr, mname, _);
-									RenameExpr(oldNames, newNames, modExpr), SubStrings(newNames, mname), ModuleRenameMap(modExpr, _, mname).
+								  RenameExpr(oldNames, newNames, modExpr), SubStrings(newNames, mname), mach.name = mname, ModuleRenameMap(modExpr, _, mach).
 	[rule_Classes = '"error, msg: machine name being renamed does not exists in the module expression"']
 	ModuleExprDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
 
