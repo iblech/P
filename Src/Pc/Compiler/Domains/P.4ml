@@ -436,19 +436,22 @@ domain PStaticTyping extends PData
 	AllExpandedModuleExprs ::= (modExpr: ModuleExpr).
 	AllExpandedModuleExprs(emodExpr) :- AllModuleExprs(modExpr), ModuleExprExpansion(modExpr, emodExpr).
 
-	//// Subterm operations
-	//get leaf modules in ModuleList
-	SubModuleDecls ::= sub (modExpr: ModuleExpr, mod: ModuleDecl).
+	//// All modules in module expr
+	AllModuleDecls ::= (modExpr: ModuleExpr, mod: ModuleDecl).
+	AllModuleDecls(modExpr, mod) :- AllExpandedModuleExprs(modExpr), toSymbol(modExpr) != ComposeExpr, toSymbol(modExpr) != ModuleDecl, AllModuleDecls(modExpr.mod, mod).
+	AllModuleDecls(modExpr, mod) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, mod = modExpr.
+	AllModuleDecls(modExpr, mod) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, AllModuleDecls(modExpr.left, mod);
+									AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, AllModuleDecls(modExpr.right, mod).
 
 	/**************************************************************************/
 	/*		Check that there is only one main machine in each moduleExpr	  */
 	/**************************************************************************/
 	IllegalMainMachine ::= (me: ModuleExpr).
 	[rule_Classes = '"error, msg: no or more than one main machine in the module expression"']
-	IllegalMainMachine(me) :- TestDecl(_, me), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModuleDecls(me, mod)}) != 1;
-							  ImplementationDecl(me), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModuleDecls(me, mod)}) != 1;
-							  RefinementDecl(_, me, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModuleDecls(me, mod)}) != 1;
-							  RefinementDecl(_, _, me), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), SubModuleDecls(me, mod)}) != 1.
+	IllegalMainMachine(me) :- TestDecl(_, me), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(me, mod)}) != 1;
+							  ImplementationDecl(me), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(me, mod)}) != 1;
+							  RefinementDecl(_, me, _), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(me, mod)}) != 1;
+							  RefinementDecl(_, _, me), count({mach | mach is MachineDecl(_, mod, _, _, _, TRUE), AllModuleDecls(me, mod)}) != 1.
 
 	/****************************************************************************/
 	/*	Generate sends, receives, exports, private and creates 
@@ -547,8 +550,6 @@ domain PStaticTyping extends PData
 					   f is AnonFunDecl, f.owner.kind = REAL, AllImplMachine(f.owner).
 
 	//all machines in implementation modules list
-
-	AllModuleDecls ::= sub (modExpr: ModuleExpr, mod: ModuleDecl).
 	AllImplMachine ::= (mach: MachineDecl).
 	AllImplMachine(m) :- AllModuleDecls(emodExpr, mod), ImplementationDecl(modExpr), ModuleExprExpansion(modExpr, emodExpr), m is MachineDecl(_, mod, _, _, _, _), m.kind != MONITOR.
 	AllImplModules ::= (mod: ModuleDecl).

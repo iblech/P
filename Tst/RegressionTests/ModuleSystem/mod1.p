@@ -1,5 +1,14 @@
 module X = M1;
-module X1 = M1, M1, X;
+module X1 = M1 || M1 || X;
 
-implementation X, X1;
+implementation X || X1;
 
+module M1 {
+	machine MyMachine
+	receives;
+	{
+	    start state S1 {
+
+	    }
+	}
+}
