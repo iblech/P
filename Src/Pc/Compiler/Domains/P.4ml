@@ -79,10 +79,10 @@ domain PData
 	MachineReceivesDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 	MachineSendsDecl ::= new (mach: any MachineDecl, ev: NonNullEventLabel).
 	MachineCreatesDecl ::= (mach: MachineDecl, iname: String).
-	MachineSendsAllEvents ::= new (mach: any MachineDecl).
+	MachineSendsEventAll ::= new (mach: any MachineDecl).
 	
-	ModulePrivateEvents ::= new (mod: ModuleDecl, ev: String).
-	ModuleAllEventsPrivate ::= new (mod: ModuleDecl).
+	ModulePrivateEvent ::= new (mod: ModuleDecl, ev: String).
+	ModulePrivateEventALl ::= new (mod: ModuleDecl).
 
 	//// Module Declarations
 	ModuleDecl ::= new (name: String).
@@ -111,7 +111,7 @@ domain PData
 	ModuleCreates ::= (mod: ModuleExpr, i: String).
 
 	////Module Code Gen and Compatibity Helpers
-	ModuleLinkMap ::= (mod: ModuleExpr, newMachineName: String, interfaceOrMachine : String, newImpMachine: MachineDecl).
+	ModuleLinkMap ::= (mod: ModuleExpr, newMachineName: String, interfaceOrMachine: String, newImpMachine: MachineDecl).
 	ModuleRenameMap ::= (mod: ModuleExpr, newName: String, impMachine: MachineDecl).  // for both machines and monitors
 	ModuleSafeMap ::= (mod: ModuleExpr, newName: String, isSafe: Boolean).
 	ModuleMonitorMap ::= (mod: ModuleExpr, newMonitorName: String, impMachine: MachineDecl).
@@ -119,7 +119,8 @@ domain PData
 	////Helper structs
 	StringList ::= new (str: String, tl: any StringList + { NIL }).
 	//create all sub strings
-	SubStrings ::= sub (StringList, String).
+	MemberOfStringsList ::= sub (StringList, String).
+
     /*************************************************************/
     /****************  State Machine Declarations    *************/
     /*************************************************************/
@@ -203,7 +204,7 @@ domain PStructuralTyping extends PData
 	
 	[rule_Classes = '"error, msg: transition function not defined"']
 	OneDeclError(trns) :- trns is TransDecl(_, _, _, act), act : String, 
-	                      no FunDecl(act, trns.src.owner, _, _, _, _, _, _), no FunDecl(act, trns.src.owner.mod, _, _, _, _, _, FALSE).
+	                      no FunDecl(act, trns.src.owner, _, _, _, _, _, _).
 	
 	[rule_Classes = '"error, msg: function cannot take arguments"']
 	OneDeclError(trns) :- trns is TransDecl(_, _, _, act), act : String, FunDecl(act, trns.src.owner, _, p, _, _, _, _), p != NIL;
@@ -223,13 +224,11 @@ domain PStructuralTyping extends PData
 	
 	//Entry Exit Functions
 	[rule_Classes = '"error, msg: undefined function for entry"']
-	DeclFunError(s, eF) :- s is StateDecl(_, _, eF, _, _), eF : String, 
-	                       no FunDecl(eF, s.owner, _, _, _, _, _, _), no FunDecl(eF, s.owner.mod, _, _, _, _, _, FALSE). 
+	DeclFunError(s, eF) :- s is StateDecl(_, _, eF, _, _), eF : String, no FunDecl(eF, s.owner, _, _, _, _, _, _). 
 
 	[rule_Classes = '"error, msg: undefined function for exit"']
-	DeclFunError(s, eF) :- s is StateDecl(_, _, _, eF, _), eF : String, 
-	                       no FunDecl(eF, s.owner, _, _, _, _, _, _), no FunDecl(eF, s.owner.mod, _, _, _, _, _, FALSE). 
-	
+	DeclFunError(s, eF) :- s is StateDecl(_, _, _, eF, _), eF : String, no FunDecl(eF, s.owner, _, _, _, _, _, _). 
+
 	[rule_Classes = '"error, msg: function cannot take arguments"']
 	DeclFunError(s, eF) :- s is StateDecl(_, _, eF, _, _), eF : String , FunDecl(eF, s.owner, _, p, _, _, _, _), p != NIL;
 	                       s is StateDecl(_, _, eF, _, _), eF : String , FunDecl(eF, s.owner.mod, _, p, _, _, _, FALSE), p != NIL.
@@ -295,7 +294,7 @@ domain PStaticTyping extends PData
 	conforms no PayloadError(_).
 	conforms no TypeDefError(_).
 	conforms no ModuleDefError(_).
-	conforms no ModuleExprDeclError(_).
+	conforms no ModuleConstructionIllegal(_).
 	conforms no FunDeclQualifierError(_, _).
 	conforms no FunCallQualifierError(_, _, _).
 	conforms no SendQualifierError(_, _).
@@ -467,21 +466,21 @@ domain PStaticTyping extends PData
 	ReceivesForModuleExpr ::= (mExpr: ModuleExpr, ev: NonNullEventLabel).
 
 	//// private events 
-	PrivateForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, ModulePrivateEvents(modExpr, ev);
-										 AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, ModuleAllEventsPrivate(modExpr), MachineReceivesDecl(mach, ev), mach.mod = modExpr.
+	PrivateForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, ModulePrivateEvent(modExpr, ev);
+										 AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, ModulePrivateEventALl(modExpr), MachineReceivesDecl(mach, ev), mach.mod = modExpr.
 	PrivateForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), toSymbol(modExpr) != #HideExpr, toSymbol(modExpr) != #ComposeExpr, toSymbol(modExpr) != #ModuleDecl, PrivateForModuleExpr(modExpr.mod, ev).
 	PrivateForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, PrivateForModuleExpr(modExpr.mod, ev);
-										 AllExpandedModuleExprs(modExpr), modExpr : HideExpr, SubStrings(modExpr.evtNames, ev).
+										 AllExpandedModuleExprs(modExpr), modExpr : HideExpr, MemberOfStringsList(modExpr.evtNames, ev).
 	PrivateForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, PrivateForModuleExpr(modExpr.left, ev);
 										 AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, PrivateForModuleExpr(modExpr.right, ev).
 									 
 
 	//// sends list 
-	SendsForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, MachineSendsDecl(mach, ev), mach.mod = modExpr, no ModulePrivateEvents(modExpr, ev). 
+	SendsForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, MachineSendsDecl(mach, ev), mach.mod = modExpr, no ModulePrivateEvent(modExpr, ev). 
 	SendsForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), toSymbol(modExpr) != #HideExpr, toSymbol(modExpr) != #ComposeExpr, toSymbol(modExpr) != #ModuleDecl, SendsForModuleExpr(modExpr.mod, ev).
 	SendsForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, SendsForModuleExpr(modExpr.left, ev);
 									   AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, SendsForModuleExpr(modExpr.right, ev).
-	SendsForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, MachineSendsDecl(_, ev), SendsForModuleExpr(modExpr.mod, ev), no SubStrings(modExpr.evtNames, ev).
+	SendsForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, MachineSendsDecl(_, ev), SendsForModuleExpr(modExpr.mod, ev), no MemberOfStringsList(modExpr.evtNames, ev).
 	
 
 
@@ -495,7 +494,7 @@ domain PStaticTyping extends PData
 										 AllExpandedModuleExprs(modExpr), modExpr : ExportExpr, ix = modExpr.iName.
 	ExportsForModuleExpr(modExpr, ix) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ExportsForModuleExpr(modExpr.left, ix);
 									     AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ExportsForModuleExpr(modExpr.right, ix).									 
-	ExportsForModuleExpr(modExpr, ix) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, AllExportedInterfaces(ix), ExportsForModuleExpr(modExpr.mod, ix), InterfaceTypeDecl(ix, es, _), count({ev | EventSetDecl(es, ev), SubStrings(modExpr.evtNames, ev)}) = 0.
+	ExportsForModuleExpr(modExpr, ix) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, AllExportedInterfaces(ix), ExportsForModuleExpr(modExpr.mod, ix), InterfaceTypeDecl(ix, es, _), count({ev | EventSetDecl(es, ev), MemberOfStringsList(modExpr.evtNames, ev)}) = 0.
 
 	//// creates list
 	AllCreatedInterfaces ::= (ic: String).
@@ -505,7 +504,7 @@ domain PStaticTyping extends PData
 										 toSymbol(modExpr) != #HideExpr, toSymbol(modExpr) != #ComposeExpr, toSymbol(modExpr) != #ModuleDecl.
 	CreatesForModuleExpr(modExpr, ic) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, CreatesForModuleExpr(modExpr.left, ic);
 									     AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, CreatesForModuleExpr(modExpr.right, ic).									 
-	CreatesForModuleExpr(modExpr, ic) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, AllCreatedInterfaces(ic), CreatesForModuleExpr(modExpr.mod, ic), InterfaceTypeDecl(ic, es, _), count({ev | EventSetDecl(es, ev), SubStrings(modExpr.evtNames, ev)}) = 0.
+	CreatesForModuleExpr(modExpr, ic) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, AllCreatedInterfaces(ic), CreatesForModuleExpr(modExpr.mod, ic), InterfaceTypeDecl(ic, es, _), count({ev | EventSetDecl(es, ev), MemberOfStringsList(modExpr.evtNames, ev)}) = 0.
 
 	//// receives list
 	ReceivesForModuleExpr(modExpr, er) :- AllExpandedModuleExprs(modExpr), ExportsForModuleExpr(modExpr, ix), InterfaceTypeDecl(ix, es, _), EventSetDecl(es, er).
@@ -513,30 +512,43 @@ domain PStaticTyping extends PData
 	/**************************************************************************/
 	/**			Check that the module system contruction is legal			  */
 	/**************************************************************************/
-	ModuleExprDeclError ::= (String).
+	ModuleConstructionIllegal ::= (String).
 	
-	//// Export Operation
-	ModuleExprDeclError(ix) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), ModuleRenameMap(mod, m, m').
+	//// Export Operation 1
+	[rule_Classes = '"error, msg: exported machine undefined in the module expression"']
+	ModuleConstructionIllegal(m) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), no ModuleRenameMap(mod, m, _).
+
+	//// Export Operation 2
+	[rule_Classes = '"error, msg: exported interface not declared"']
+	ModuleConstructionIllegal(m) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, _), no InterfaceTypeDecl(ix, _, _).
+
+	//// Export Operation 3
+	[rule_Classes = '"error, msg: interface exported is not equal to the interface implemented by machine"']
+	ModuleConstructionIllegal(m) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), ModuleRenameMap(mod, m, mach), impInterface = toList(#InterfaceType, NIL, {ev | MachineReceivesDecl(mach, ev), no PrivateForModuleExpr(mod, ev)}), InterfaceTypeDeclList(ix, exInterface), exInterface != impInterface.
+
+	//// Export Operation 4
+	[rule_Classes = '"error, msg: interface exported constructor type is not a sub-type of the implemented by machine"']
+	ModuleConstructionIllegal(m) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), ModuleRenameMap(mod, m, mach), impInterface = toList(#InterfaceType, NIL, {ev | MachineReceivesDecl(mach, ev), no PrivateForModuleExpr(mod, ev)}), InterfaceTypeDeclList(ix, exInterface), exInterface != impInterface.
 
 	////Module system level checks
 	//check if events in hide are declared
 	[rule_Classes = '"error, msg: undefined event in hide operation"']
-	ModuleExprDeclError(ev) :- HideExpr(evList, _), SubStrings(evList, ev), no EventDecl(ev, _, _).
+	ModuleConstructionIllegal(ev) :- HideExpr(evList, _), MemberOfStringsList(evList, ev), no EventDecl(ev, _, _).
 
 	//check if interface is declared in Export
 	[rule_Classes = '"error, msg: undefined interface in export operation"']
-	ModuleExprDeclError(i) :- ExportExpr(_, i, _), no InterfaceTypeDecl(i, _, _).
+	ModuleConstructionIllegal(i) :- ExportExpr(_, i, _), no InterfaceTypeDecl(i, _, _).
 
 	////Rename Operation is correct
 	//check if the names in rename exists
 	[rule_Classes = '"error, msg: machine name already exists in the module expression"']
-	ModuleExprDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(newNames, mname), ModuleRenameMap(modExpr, mname, _);
-								  RenameExpr(oldNames, newNames, modExpr), SubStrings(newNames, mname), mach.name = mname, ModuleRenameMap(modExpr, _, mach).
+	ModuleConstructionIllegal(mname) :- RenameExpr(oldNames, newNames, modExpr), MemberOfStringsList(newNames, mname), ModuleRenameMap(modExpr, mname, _);
+								  RenameExpr(oldNames, newNames, modExpr), MemberOfStringsList(newNames, mname), mach.name = mname, ModuleRenameMap(modExpr, _, mach).
 	[rule_Classes = '"error, msg: machine name being renamed does not exists in the module expression"']
-	ModuleExprDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
+	ModuleConstructionIllegal(mname) :- RenameExpr(oldNames, newNames, modExpr), MemberOfStringsList(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
 
 	[rule_Classes = '"error, msg: machine name being renamed does not exists in the module expression"']
-	ModuleExprDeclError(mname) :- RenameExpr(oldNames, newNames, modExpr), SubStrings(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
+	ModuleConstructionIllegal(mname) :- RenameExpr(oldNames, newNames, modExpr), MemberOfStringsList(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
 	
 	/**************************************************************************/
 	/*     C Code Helpers
@@ -561,8 +573,8 @@ domain PStaticTyping extends PData
 	/*		populate the sends, receives and creates list for each machine	  */
 	/**************************************************************************/
 	//populate the sends for machines without send decl
-	MachineSendsDecl(m, s) :- MachineSendsAllEvents(m), EventDecl(s, _, _);
-							  MachineSendsAllEvents(m), s = HALT.
+	MachineSendsDecl(m, s) :- MachineSendsEventAll(m), EventDecl(s, _, _);
+							  MachineSendsEventAll(m), s = HALT.
 
 	//populate receives for machines with exports and no receives
 	MachineReceivesDecl(m, ev) :- MachineExportsDecl(m, i), InterfaceTypeDecl(i, es, _), EventSetDecl(es, ev).
