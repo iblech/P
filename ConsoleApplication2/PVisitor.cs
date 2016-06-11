@@ -14,28 +14,17 @@ namespace Microsoft.P2Boogie
     abstract class PVisitor
     {
         //ToDo VisitNatural() VisitInteger()s
-        private List<PProgram> parsedPrograms { get; set; }
+        protected List<PProgram> parsedPrograms { get; set; }
 
         private static string getString(ICSharpTerm x)
         {
             return (x as P_Root.StringCnst).Value;
         }
 
-        private static string getInteger(ICSharpTerm x)
-        {
-            return "";
-        }
-
-        private static string getNatural(ICSharpTerm x)
-        {
-            return "";
-        }
-
         private static void visitSkip(StringBuilder sb)
         {
             return;
         }
-
 
         private static void visitWhile(StringBuilder sb)
         {
@@ -113,10 +102,10 @@ namespace Microsoft.P2Boogie
         {
             return;
         }
-        private static void visitSpec(StringBuilder sb)
+        /*private static void visitSpec(StringBuilder sb)
         {
             return;
-        }
+        }*/
         private static void visitMonitors(StringBuilder sb)
         {
             return;
@@ -129,31 +118,27 @@ namespace Microsoft.P2Boogie
         {
             return;
         }
-        private static void visitInt(StringBuilder sb)
+        private static void visitIntType(StringBuilder sb)
         {
             return;
         }
-        private static void visitBool(StringBuilder sb)
+        private static void visitBoolType(StringBuilder sb)
         {
             return;
         }
-        private static void visitAny(StringBuilder sb)
+        private static void visitAnyType(StringBuilder sb)
         {
             return;
         }
-        private static void visitSeq(StringBuilder sb)
+        private static void visitSeqType(StringBuilder sb)
         {
             return;
         }
-        private static void visitMap(StringBuilder sb)
+        private static void visitMapType(StringBuilder sb)
         {
             return;
         }
         private static void visitType(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitInclude(StringBuilder sb)
         {
             return;
         }
@@ -177,7 +162,7 @@ namespace Microsoft.P2Boogie
         {
             return;
         }
-        private static void visitVar(StringBuilder sb)
+        private static void visitVarDecl(StringBuilder sb)
         {
             return;
         }
@@ -197,14 +182,6 @@ namespace Microsoft.P2Boogie
         {
             return;
         }
-        private static void visitFun(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitAction(StringBuilder sb)
-        {
-            return;
-        }
         private static void visitState(StringBuilder sb)
         {
             return;
@@ -217,11 +194,11 @@ namespace Microsoft.P2Boogie
         {
             return;
         }
-        private static void visitEntry(StringBuilder sb)
+        private static void visitEntryBlock(StringBuilder sb)
         {
             return;
         }
-        private static void visitExit(StringBuilder sb)
+        private static void visitExitBlock(StringBuilder sb)
         {
             return;
         }
@@ -241,18 +218,6 @@ namespace Microsoft.P2Boogie
         {
             return;
         }
-        private static void visitOn(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitDo(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitWith(StringBuilder sb)
-        {
-            return;
-        }
         private static void visitReceive(StringBuilder sb)
         {
             return;
@@ -265,27 +230,12 @@ namespace Microsoft.P2Boogie
         {
             return;
         }
-        private static void visitAs(StringBuilder sb)
-        {
-            return;
-        }
 
-        private static void visitDot(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitColon(StringBuilder sb)
-        {
-            return;
-        }
         private static void visitComma(StringBuilder sb)
         {
             return;
         }
-        private static void visitSemicolon(StringBuilder sb)
-        {
-            return;
-        }
+        
         private static void visitEq(StringBuilder sb)
         {
             return;
@@ -387,11 +337,11 @@ namespace Microsoft.P2Boogie
         {
             if (t._0.Symbol.ToString() == "INT")
             {
-                visitInt(sb);
+                visitIntType(sb);
             }
             else if (t._0.Symbol.ToString() == "BOOL")
             {
-                visitBool(sb);
+                visitBoolType(sb);
             }
             else if (t._0.Symbol.ToString() == "REAL")
             {
@@ -399,7 +349,7 @@ namespace Microsoft.P2Boogie
             }
             else if (t._0.Symbol.ToString() == "ANY")
             {
-                visitAny(sb);
+                visitAnyType(sb);
             }
             else if (t._0.Symbol.ToString() == "EVENT")
             {
@@ -429,7 +379,6 @@ namespace Microsoft.P2Boogie
         {
             visitQualifier(f.qual as P_Root.Qualifier, sb);
             //TODO visit name
-            visitColon(sb);
             visitTypeExpr(f.type as P_Root.TypeExpr, sb);
         }
 
@@ -462,7 +411,7 @@ namespace Microsoft.P2Boogie
 
         private static void visitSeqType(P_Root.SeqType t, StringBuilder sb)
         {
-            visitSeq(sb);
+            visitSeqType(sb);
             visitLBracket(sb);
             visitTypeExpr(t.x as P_Root.TypeExpr, sb);
             visitRBracket(sb);
@@ -470,7 +419,7 @@ namespace Microsoft.P2Boogie
 
         private static void visitMapType(P_Root.MapType t, StringBuilder sb)
         {
-            visitMap(sb);
+            visitMapType(sb);
             visitLBracket(sb);
             visitTypeExpr(t.k as P_Root.TypeExpr, sb);
             visitComma(sb);
@@ -701,7 +650,6 @@ namespace Microsoft.P2Boogie
         private static void visitFieldExpr(P_Root.Field e, StringBuilder sb)
         {
             visitExpr(e.arg as P_Root.Expr, sb);
-            visitDot(sb);
             //ToDo Name.
             if (e.name is P_Root.Integer)
             {
@@ -725,7 +673,6 @@ namespace Microsoft.P2Boogie
         private static void visitCastExpr(P_Root.Cast e, StringBuilder sb)
         {
             visitExpr(e.arg as P_Root.Expr, sb);
-            visitAs(sb);
             visitTypeExpr(e.type as P_Root.TypeExpr, sb);
             return;
         }
@@ -1087,7 +1034,6 @@ namespace Microsoft.P2Boogie
             //ToDo Name
             if (d.type.Symbol.ToString() != "NIL") //Not NIL
             {
-                visitColon(sb); //Come back.
                 visitTypeExpr(d.type as P_Root.TypeExpr, sb);
             }
             return;
@@ -1101,7 +1047,7 @@ namespace Microsoft.P2Boogie
                 visitModel(sb);
             else if (d.kind.Symbol.ToString() == "MONITOR")
             {
-                visitSpec(sb);
+                visitMonitors(sb);
                 //ToDo name.
                 return;
             }
@@ -1123,9 +1069,8 @@ namespace Microsoft.P2Boogie
 
         private static void visitVarDecl(P_Root.VarDecl d, StringBuilder sb)
         {
-            visitVar(sb);
+            visitVarDecl(sb);
             //ToDo name.
-            visitColon(sb); //Return.
             visitTypeExpr(d.type as P_Root.TypeExpr, sb);
         }
 
@@ -1149,9 +1094,9 @@ namespace Microsoft.P2Boogie
             visitState(sb);
             visitQualifiedName(state.name as P_Root.QualifiedName, sb);
             visitBeginBlock(sb);
-            visitEntry(sb);
+            visitEntryBlock(sb);
             visitAnonFunDecl(state.entryAction as P_Root.AnonFunDecl, sb);
-            visitExit(sb);
+            visitExitBlock(sb);
             visitAnonFunDecl(state.exitFun as P_Root.AnonFunDecl, sb);
         }
 
@@ -1167,7 +1112,6 @@ namespace Microsoft.P2Boogie
             {
                 visitModel(sb);
             }
-            visitFun(sb);
             //ToDo name
             if (d.@params.Symbol.ToString() != "NIL")
             {
@@ -1176,13 +1120,12 @@ namespace Microsoft.P2Boogie
             //sb.Append(") 7z "); //" 7z " is for a possible annotation.
             if (d.@return.Symbol.ToString() != "NIL")
             {
-                visitColon(sb);
                 visitTypeExpr(d.@return as P_Root.TypeExpr, sb);
             }
             visitBeginBlock(sb);
             if (d.locals.Symbol.ToString() != "NIL")
             {
-                visitVar(sb);
+                visitVarDecl(sb);
                 //Need to revisit?
                 visitNmdTupType(d.locals as P_Root.NmdTupType, sb);
             }
@@ -1200,7 +1143,7 @@ namespace Microsoft.P2Boogie
             visitBeginBlock(sb);
             if (d.locals.Symbol.ToString() != "NIL")
             {
-                visitVar(sb);
+                visitVarDecl(sb);
                 visitNmdTupType(d.locals as P_Root.NmdTupType, sb);
             }
             visitStmt(d.body as P_Root.Stmt, sb);
@@ -1226,7 +1169,6 @@ namespace Microsoft.P2Boogie
 
         private static void visitTransDecl(P_Root.TransDecl t, StringBuilder sb)
         {
-            visitOn(sb);
             visitTrig(t.trig, sb);
             if (t.action.Symbol.ToString() == "PUSH")
             {
@@ -1238,14 +1180,12 @@ namespace Microsoft.P2Boogie
             {
                 visitGoto(sb);
                 visitQualifiedName(t.dst as P_Root.QualifiedName, sb);
-                visitWith(sb);
                 visitAnonFunDecl(t.action as P_Root.AnonFunDecl, sb);
             }
             else
             {
                 visitGoto(sb);
                 visitQualifiedName(t.dst as P_Root.QualifiedName, sb);
-                visitWith(sb);
                 //ToDo name.
             }
             return;
@@ -1265,16 +1205,12 @@ namespace Microsoft.P2Boogie
             }
             else if (d.action is P_Root.AnonFunDecl)
             {
-                visitOn(sb);
                 visitTrig(d.trig, sb);
-                visitDo(sb);
                 visitAnonFunDecl(d.action as P_Root.AnonFunDecl, sb);
             }
             else
             {
-                visitOn(sb);
                 visitTrig(d.trig, sb);
-                visitDo(sb);
                 //ToDo name.
             }
             return;
