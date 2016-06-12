@@ -101,7 +101,6 @@ namespace Microsoft.Identity
         {
             //Looks like singleton named tuple TYPES do not need a comma in their DECLARATION.
             var x = t;
-            sb.Append("(");
             while (x.tl.Symbol.ToString() != "NIL")
             {
                 genNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
@@ -109,7 +108,6 @@ namespace Microsoft.Identity
                 x = x.tl as P_Root.NmdTupType;
             }
             genNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
-            sb.Append(')');
         }
 
         private static void genQualifier(P_Root.Qualifier q, StringBuilder sb)
@@ -163,7 +161,9 @@ namespace Microsoft.Identity
             }
             else if (t is P_Root.NmdTupType)
             {
+                sb.Append("(");
                 genNmdTupType(t as P_Root.NmdTupType, sb);
+                sb.Append(")");
             }
             else if (t is P_Root.MapType)
             {
@@ -174,9 +174,10 @@ namespace Microsoft.Identity
         private static int genTypeDef(P_Root.TypeDef typeDef, StringBuilder sb)
         {
             sb.Append("type ");
-            sb.Append(getString(typeDef.name) + " = ");
+            sb.Append(getString(typeDef.name));
             if(typeDef.type.Symbol.ToString() != "NIL")
             {
+                sb.Append(" = ");
                 gentype(typeDef.type as P_Root.TypeExpr, sb);
             }
             return 0;
@@ -542,8 +543,6 @@ namespace Microsoft.Identity
         {
             if (s.op.Symbol.ToString() == "POP")
                 sb.Append("pop");
-            else if (s.op.Symbol.ToString() == "SKIP")
-                sb.Append("skip");
         }
 
         private static void genBinStmt(P_Root.BinStmt s, StringBuilder sb)
@@ -593,7 +592,7 @@ namespace Microsoft.Identity
             genStmt(s.@true as P_Root.Stmt, sb);
             if (s.@false != null)
             {
-                sb.Append("\n}else ");
+                sb.Append("\n}else \n{\n");
                 genStmt(s.@false as P_Root.Stmt, sb);
                 sb.Append("}\n");
             }
@@ -704,19 +703,29 @@ namespace Microsoft.Identity
             return;
         }
 
+        private static void genAssertMaxInstances(P_Root.AssertMaxInstances a, StringBuilder sb)
+        {
+            sb.Append(" assert ");
+            sb.Append(getValue(a.bound));
+        }
+
+        private static void genAssumeMaxInstances(P_Root.AssumeMaxInstances a, StringBuilder sb)
+        {
+            sb.Append(" assume ");
+            sb.Append(getValue(a.bound));
+        }
+
         private static void genEventDecl(P_Root.EventDecl d, StringBuilder sb)
         {
             sb.Append("event ");
             sb.Append(getString(d.name));
             if (d.card is P_Root.AssertMaxInstances)
             {
-                sb.Append(" assert ");
-                sb.Append((d.card as Microsoft.Pc.Domains.P_Root.RealCnst).Value.ToString());
+                genAssertMaxInstances((d.card as Microsoft.Pc.Domains.P_Root.AssertMaxInstances), sb);
             }
             else if (d.card is P_Root.AssumeMaxInstances)
             {
-                sb.Append(" assume ");
-                sb.Append((d.card as Microsoft.Pc.Domains.P_Root.RealCnst).Value.ToString());
+                genAssumeMaxInstances((d.card as P_Root.AssumeMaxInstances), sb);
             }
 
             if (d.type.Symbol.ToString() != "NIL") //Not NIL
@@ -781,10 +790,20 @@ namespace Microsoft.Identity
             sb.Append("state ");
             genQualifiedName(state.name as P_Root.QualifiedName, sb);
             sb.Append("{\n");
-            sb.Append("entry");
-            genAnonFunDecl(state.entryAction as P_Root.AnonFunDecl, sb);
-            sb.Append("exit");
-            genAnonFunDecl(state.exitFun as P_Root.AnonFunDecl, sb);
+            sb.Append("entry {\n");
+            var trial = new StringBuilder("\n\n\nentry");
+            genAnonFunDecl(state.entryAction as P_Root.AnonFunDecl, trial);
+            Console.WriteLine(trial);
+            //TODO figure out when it has args and when it does not.
+            var stmts = (state.entryAction as P_Root.AnonFunDecl).body as P_Root.Stmt;
+            genStmt(stmts, sb);
+            sb.Append("\n}\n");
+            sb.Append("exit {\n");
+            //genAnonFunDecl(state.exitFun as P_Root.AnonFunDecl, sb);
+            stmts = (state.exitFun as P_Root.AnonFunDecl).body as P_Root.Stmt;
+            genStmt(stmts, sb);
+            sb.Append("}\n");
+            Console.WriteLine(sb);
 
         }
 
@@ -795,10 +814,12 @@ namespace Microsoft.Identity
                 sb.Append("model ");
             }
             sb.Append("fun " + getString(d.name));
+            sb.Append("(");
             if (d.@params.Symbol.ToString() != "NIL")
             {
                 genNmdTupType(d.@params as P_Root.NmdTupType, sb);
             }
+            sb.Append(")");
             //sb.Append(") 7z "); //" 7z " is for a possible annotation.
             if (d.@return.Symbol.ToString() != "NIL")
             {
@@ -821,7 +842,9 @@ namespace Microsoft.Identity
         {
             if (d.envVars.Symbol.ToString() != "NIL")
             {
+                sb.Append("(");
                 genNmdTupType(d.envVars as P_Root.NmdTupType, sb);
+                sb.Append(")");
             }
             sb.Append("{\n");
             if (d.locals.Symbol.ToString() != "NIL")
@@ -885,11 +908,13 @@ namespace Microsoft.Identity
             {
                 sb.Append("defer ");
                 genTrig(d.trig, sb);
+                sb.Append(";");
             }
             else if (d.action.Symbol.ToString() == "IGNORE")
             {
                 sb.Append("ignore ");
                 genTrig(d.trig, sb);
+                sb.Append(";");
             }
             else if (d.action is P_Root.AnonFunDecl)
             {
