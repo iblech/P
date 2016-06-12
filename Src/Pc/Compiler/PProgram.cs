@@ -95,13 +95,13 @@
             private set;
         }
 
-        public List<P_Root.ModulePrivateEvents> ModulePrivateEventsDecl
+        public List<P_Root.ModulePrivateEvent> ModulePrivateEventsDecl
         {
             get;
             private set;
         }
 
-        public List<P_Root.ModuleAllEventsPrivate> ModuleAllEventsPrivate
+        public List<P_Root.ModulePrivateEventAll> ModuleAllEventsPrivate
         {
             get;
             private set;
@@ -149,7 +149,7 @@
             private set;
         }
 
-        public List<P_Root.MachineSendsAllEvents> MachineSendsAllEvents
+        public List<P_Root.MachineSendsEventAll> MachineSendsAllEvents
         {
             get;
             private set;
@@ -323,9 +323,9 @@
             MachineSendsDecl = new List<P_Root.MachineSendsDecl>();
             ModuleDecl = new List<P_Root.ModuleDecl>();
             ModuleDef = new List<P_Root.ModuleDef>();
-            MachineSendsAllEvents = new List<P_Root.MachineSendsAllEvents>();
-            ModulePrivateEventsDecl = new List<P_Root.ModulePrivateEvents>();
-            ModuleAllEventsPrivate = new List<P_Root.ModuleAllEventsPrivate>();
+            MachineSendsAllEvents = new List<P_Root.MachineSendsEventAll>();
+            ModulePrivateEventsDecl = new List<P_Root.ModulePrivateEvent>();
+            ModuleAllEventsPrivate = new List<P_Root.ModulePrivateEventAll>();
             ImplementationDecl = new List<P_Root.ImplementationDecl>();
             TestDecl = new List<P_Root.TestDecl>();
             RefinementDecl = new List<P_Root.RefinementDecl>();

@@ -82,7 +82,7 @@ domain PData
 	MachineSendsEventAll ::= new (mach: any MachineDecl).
 	
 	ModulePrivateEvent ::= new (mod: ModuleDecl, ev: String).
-	ModulePrivateEventALl ::= new (mod: ModuleDecl).
+	ModulePrivateEventAll ::= new (mod: ModuleDecl).
 
 	//// Module Declarations
 	ModuleDecl ::= new (name: String).
@@ -467,7 +467,7 @@ domain PStaticTyping extends PData
 
 	//// private events 
 	PrivateForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, ModulePrivateEvent(modExpr, ev);
-										 AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, ModulePrivateEventALl(modExpr), MachineReceivesDecl(mach, ev), mach.mod = modExpr.
+										 AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, ModulePrivateEventAll(modExpr), MachineReceivesDecl(mach, ev), mach.mod = modExpr.
 	PrivateForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), toSymbol(modExpr) != #HideExpr, toSymbol(modExpr) != #ComposeExpr, toSymbol(modExpr) != #ModuleDecl, PrivateForModuleExpr(modExpr.mod, ev).
 	PrivateForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : HideExpr, PrivateForModuleExpr(modExpr.mod, ev);
 										 AllExpandedModuleExprs(modExpr), modExpr : HideExpr, MemberOfStringsList(modExpr.evtNames, ev).
@@ -567,26 +567,71 @@ domain PStaticTyping extends PData
 	ModuleConstructionIllegal(ix) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), InterfaceTypeDecl(ix, es, _), EventSetDecl(es, ev), 
 									 EventDecl(ev, _, pt), EmbeddedPermissionsInType(pt, perm), PrivateForModuleExpr(modExpr, perm).
 
-	////Module system level checks
-	//check if events in hide are declared
-	[rule_Classes = '"error, msg: undefined event in hide operation"']
-	ModuleConstructionIllegal(ev) :- HideExpr(evList, _), MemberOfStringsList(evList, ev), no EventDecl(ev, _, _).
 
-	//check if interface is declared in Export
-	[rule_Classes = '"error, msg: undefined interface in export operation"']
-	ModuleConstructionIllegal(i) :- ExportExpr(_, i, _), no InterfaceTypeDecl(i, _, _).
-
-	////Rename Operation is correct
+	////Rename Operation
 	//check if the names in rename exists
 	[rule_Classes = '"error, msg: machine name already exists in the module expression"']
-	ModuleConstructionIllegal(mname) :- RenameExpr(oldNames, newNames, modExpr), MemberOfStringsList(newNames, mname), ModuleRenameMap(modExpr, mname, _);
-								  RenameExpr(oldNames, newNames, modExpr), MemberOfStringsList(newNames, mname), mach.name = mname, ModuleRenameMap(modExpr, _, mach).
-	[rule_Classes = '"error, msg: machine name being renamed does not exists in the module expression"']
-	ModuleConstructionIllegal(mname) :- RenameExpr(oldNames, newNames, modExpr), MemberOfStringsList(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
+	ModuleConstructionIllegal(mname) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldNames, newNames, mod), MemberOfStringsList(newNames, mname), ModuleRenameMap(mod, mname, _);
+								  		AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldNames, newNames, mod), MemberOfStringsList(newNames, mname), mach.name = mname, ModuleRenameMap(mod, _, mach).
+	[rule_Classes = '"error, msg: machine being renamed does not exists in the module expression"']
+	ModuleConstructionIllegal(mname) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldNames, newNames, mod), MemberOfStringsList(oldNames, mname), no ModuleRenameMap(mod, mname, _).
 
-	[rule_Classes = '"error, msg: machine name being renamed does not exists in the module expression"']
-	ModuleConstructionIllegal(mname) :- RenameExpr(oldNames, newNames, modExpr), MemberOfStringsList(oldNames, mname), no ModuleRenameMap(modExpr, mname, _).
+	[rule_Classes = '"error, msg: length of the old and new machine names list is not equal"']
+	ModuleConstructionIllegal(oldNames.str) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldNames, newNames, _), lstLength(#StringList, oldNames) != lstLength(#StringList, newNames).
+
+	////Assume and Assert Operation
+	//Monitor is defined
+	[rule_Classes = '"error, msg: undefined monitor"']
+	ModuleConstructionIllegal(mon) :- AllExpandedModuleExprs(modExpr), modExpr = AssumeExpr(monNames, _), MemberOfStringsList(monNames, mon), no MachineDecl(mon, NIL, MONITOR, _, _, _);
+										AllExpandedModuleExprs(modExpr), modExpr = AssertExpr(monNames, _), MemberOfStringsList(monNames, mon), no MachineDecl(mon, NIL, MONITOR, _, _, _).
 	
+	//Events observed by monitor must be in ES or EP
+	[rule_Classes = '"error, msg: monitors observes list contains an event that is not sends or private events of the module expression"']
+	ModuleConstructionIllegal(mon) :- AllExpandedModuleExprs(modExpr), modExpr = AssumeExpr(monNames, mod), MemberOfStringsList(monNames, mon), monDecl is MachineDecl(mon, NIL, MONITOR, _, _, _),
+										ObservesDecl(monDecl, ev), no SendsForModuleExpr(mod, ev), no PrivateForModuleExpr(mod, ev);
+									  AllExpandedModuleExprs(modExpr), modExpr = AssertExpr(monNames, mod), MemberOfStringsList(monNames, mon), monDecl is MachineDecl(mon, NIL, MONITOR, _, _, _),
+									  ObservesDecl(monDecl, ev), no SendsForModuleExpr(mod, ev), no PrivateForModuleExpr(mod, ev).
+
+	//Hide Operation
+	//alpha is disjoint from EP
+	[rule_Classes = '"error, msg: trying to hide private event of the module expression "']
+	ModuleConstructionIllegal(ev) :- AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), PrivateForModuleExpr(mod, ev), MemberOfStringsList(evtList, ev).
+
+	//for each interface in dom(IX) and IC it is either disjoint from alpha or included in it.
+	[rule_Classes = '"error, msg: trying to partially hide an exported interface of the module expression"']
+	ModuleConstructionIllegal(ix) :- AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), ExportsForModuleExpr(mod, ix), InterfaceTypeDecl(ix, es, _), EventSetDecl(es, ev1), 
+									 MemberOfStringsList(evtList, ev1), EventSetDecl(es, ev2), no MemberOfStringsList(evtList, ev2).
+
+	[rule_Classes = '"error, msg: trying to partially hide an interface created by the module expression"']
+	ModuleConstructionIllegal(ic) :- AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), CreatesForModuleExpr(mod, ic), InterfaceTypeDecl(ic, es, _), EventSetDecl(es, ev1), 
+									 MemberOfStringsList(evtList, ev1), EventSetDecl(es, ev2), no MemberOfStringsList(evtList, ev2).
+
+	/// (permissions in ER + ES is disjoint from EP )
+	[rule_Classes = '"error, msg: after hidding the public events in receives or sends have private permission in them"']
+	ModuleConstructionIllegal(evtList.str) :- AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), SendsForModuleExpr(modExpr, ev), 
+									 		  EventDecl(ev, _, pt), EmbeddedPermissionsInType(pt, perm), PrivateForModuleExpr(modExpr, perm);
+									 		  AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), ReceivesForModuleExpr(modExpr, ev), 
+									 		  EventDecl(ev, _, pt), EmbeddedPermissionsInType(pt, perm), PrivateForModuleExpr(modExpr, perm).
+
+	//// trying to hide an interface in IC that is not in IX
+	[rule_Classes = '"error, msg: illegal hiding of a created interface that is not exported by the module expression "']
+	ModuleConstructionIllegal(evtList.str) :- AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), CreatesForModuleExpr(mod, ic), InterfaceTypeDecl(ic, es, _), EventSetDecl(es, ev), 
+											  MemberOfStringsList(evtList, ev), no ExportsForModuleExpr(mod, ix), InterfaceTypeDeclList(ic, x),  InterfaceTypeDeclList(ix, x).
+
+	////Composition Compatibility checks
+	
+	/**************************************************************************/
+	/*			Well-formedness condition check for the lead modules		  */
+	/**************************************************************************/
+
+	/**************************************************************************/
+	/*			Refinement, Implementation and Test Decls are legal			  */
+	/**************************************************************************/
+	
+	/**************************************************************************/
+	/*			Populate all the maps used for code generation				  */
+	/**************************************************************************/
+
 	/**************************************************************************/
 	/*     C Code Helpers
 	/**************************************************************************/

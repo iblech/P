@@ -47,7 +47,7 @@
         private bool isPrivateListAllEvents = false;
         private List<P_Root.EventLabel> crntSendsList = new List<P_Root.EventLabel>();
         private List<P_Root.EventLabel> crntPrivateList = new List<P_Root.EventLabel>();
-
+        private List<P_Root.String> crntStringList = new List<P_Root.String>();
         private HashSet<string> crntStateNames = new HashSet<string>();
         private HashSet<string> crntLocalFunNames = new HashSet<string>();
         private HashSet<string> crntStaticFunNames = new HashSet<string>();
@@ -60,6 +60,7 @@
         private Stack<P_Root.TypeExpr> typeExprStack = new Stack<P_Root.TypeExpr>();
         private Stack<P_Root.Stmt> stmtStack = new Stack<P_Root.Stmt>();
         private Stack<P_Root.ModuleExpr> moduleExprStack = new Stack<P_Root.ModuleExpr>();
+
         private Stack<P_Root.StringList> stringListStack = new Stack<P_Root.StringList>();
         private Stack<P_Root.QualifiedName> groupStack = new Stack<P_Root.QualifiedName>();
         private int nextTrampolineLabel = 0;
@@ -564,11 +565,22 @@
         {
             var stringList = P_Root.MkStringList();
             stringList.Span = nameSpan;
+            if(crntStringList.Where(e => (string)e.Symbol == name).Count() >= 1)
+            {
+                var errFlag = new Flag(
+                                     SeverityKind.Error,
+                                     nameSpan,
+                                     Constants.BadSyntax.ToString(string.Format(" item {0} listed multiple times in the list", name)),
+                                     Constants.BadSyntax.Code,
+                                     parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
+            }
             if(isLast)
             {
-                
                 stringList.str = (P_Root.IArgType_StringList__0)MkString(name, nameSpan);
                 stringList.tl = MkUserCnst(P_Root.UserCnstKind.NIL, nameSpan);
+                crntStringList.Clear();
             }
             else
             {
@@ -1564,7 +1576,21 @@
 
         private void AddToEventList(string name, Span span)
         {
-            crntEventList.Add(MkString(name, span));
+            if (crntEventList.Where(e => ((string)e.Symbol == name)).Count() >= 1)
+            {
+                var errFlag = new Flag(
+                                     SeverityKind.Error,
+                                     span,
+                                     Constants.BadSyntax.ToString(string.Format("Event {0} listed multiple times in the event list", name)),
+                                     Constants.BadSyntax.Code,
+                                     parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
+            }
+            else
+            {
+                crntEventList.Add(MkString(name, span));
+            }
         }
 
         private void AddToEventList(P_Root.UserCnstKind kind, Span span)
@@ -2043,14 +2069,14 @@
             foreach (var e in crntPrivateList)
             {
                 //add privates
-                var pri = P_Root.MkModulePrivateEvents(moduleDecl, (P_Root.IArgType_ModulePrivateEvents__1)e);
+                var pri = P_Root.MkModulePrivateEvent(moduleDecl, (P_Root.IArgType_ModulePrivateEvent__1)e);
                 pri.Span = e.Span;
                 parseProgram.ModulePrivateEventsDecl.Add(pri);
             }
 
             if(isPrivateListAllEvents)
             {
-                var pri = P_Root.MkModuleAllEventsPrivate(moduleDecl);
+                var pri = P_Root.MkModulePrivateEventAll(moduleDecl);
                 parseProgram.ModuleAllEventsPrivate.Add(pri);
             }
             //clear the machine names and static function names
@@ -2065,7 +2091,11 @@
             var machDecl = GetCurrentMachineDecl(span);
             machDecl.Span = span;
             machDecl.name = MkString(name, nameSpan);
-            machDecl.mod = GetCurrentModuleDecl(span);
+            if(kind != P_Root.UserCnstKind.MONITOR)
+                machDecl.mod = GetCurrentModuleDecl(span);
+            else
+                machDecl.mod = MkUserCnst(P_Root.UserCnstKind.NIL, span);
+
             if (!Options.erase && kind == P_Root.UserCnstKind.MODEL)
             {
                 kind = P_Root.UserCnstKind.REAL;
@@ -2102,7 +2132,7 @@
 
                 if(isSendsListAllEvents)
                 {
-                    var send = P_Root.MkMachineSendsAllEvents(machDecl);
+                    var send = P_Root.MkMachineSendsEventAll(machDecl);
                     parseProgram.MachineSendsAllEvents.Add(send);
                     isSendsListAllEvents = false;
                 }
@@ -2442,6 +2472,8 @@
             crntObservesList.Clear();
             crntReceivesList.Clear();
             crntSendsList.Clear();
+            crntPrivateList.Clear();
+            crntStringList.Clear();
             topDeclNames.Reset();
         }
         #endregion
