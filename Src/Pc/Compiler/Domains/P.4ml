@@ -510,25 +510,62 @@ domain PStaticTyping extends PData
 	ReceivesForModuleExpr(modExpr, er) :- AllExpandedModuleExprs(modExpr), ExportsForModuleExpr(modExpr, ix), InterfaceTypeDecl(ix, es, _), EventSetDecl(es, er).
 
 	/**************************************************************************/
-	/**			Check that the module system contruction is legal			  */
+	/*	Compute the permission set associated with each high level type 	 */
+	/*************************************************************************/
+	//A(e)
+	EmbeddedPermissionsInType ::= (t: TypeExpr, perm: NonNullEventLabel).
+
+	EmbeddedPermissionsInType(BaseType(REAL), ev),
+	EmbeddedPermissionsInType(BaseType(ANY), ev)   :- EventDecl(ev, _, _).
+
+	EmbeddedPermissionsInType(type, ev)  :- AllTypeExprs(type), TypeExpansion(type, etype), etype : InterfaceType, InterfaceTypeDeclList(i, type), InterfaceTypeDecl(i, es, _), EventSetDecl(es, ev).	
+	EmbeddedPermissionsInType(type, ev)  :- AllTypeExprs(type), TypeExpansion(type, etype), etype = TupType(hd, NIL), EmbeddedPermissionsInType(hd, ev).
+	EmbeddedPermissionsInType(type, ev)  :- AllTypeExprs(type), TypeExpansion(type, etype), etype = TupType(hd, tl), tl != NIL, EmbeddedPermissionsInType(hd, ev);
+											AllTypeExprs(type), TypeExpansion(type, etype), etype = TupType(hd, tl), tl != NIL, EmbeddedPermissionsInType(tl, ev).
+	EmbeddedPermissionsInType(type, ev)  :- AllTypeExprs(type), TypeExpansion(type, etype), etype = NmdTupType(NmdTupTypeField(qual, name, hd), NIL), EmbeddedPermissionsInType(hd, ev).
+	EmbeddedPermissionsInType(type, ev)  :- AllTypeExprs(type), TypeExpansion(type, etype), etype = NmdTupType(NmdTupTypeField(qual, name, hd), tl), tl != NIL, EmbeddedPermissionsInType(hd, ev);
+	 										AllTypeExprs(type), TypeExpansion(type, etype), etype = NmdTupType(NmdTupTypeField(qual, name, hd), tl), tl != NIL, EmbeddedPermissionsInType(tl, ev).
+	EmbeddedPermissionsInType(type, ev)  :- AllTypeExprs(type), TypeExpansion(type, etype), etype = SeqType(x), EmbeddedPermissionsInType(x, ev).
+	EmbeddedPermissionsInType(type, ev)  :- AllTypeExprs(type), TypeExpansion(type, etype), etype = MapType(k, v), EmbeddedPermissionsInType(v, ev).
+
+	/**************************************************************************/
+	/**				Check that the module contruction is legal			  	  */
 	/**************************************************************************/
 	ModuleConstructionIllegal ::= (String).
 	
-	//// Export Operation 1
+	//// Export Operation 1 (m \in M)
 	[rule_Classes = '"error, msg: exported machine undefined in the module expression"']
 	ModuleConstructionIllegal(m) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), no ModuleRenameMap(mod, m, _).
 
-	//// Export Operation 2
+	//// Export Operation 2 (\alpha not empty and is defined)
 	[rule_Classes = '"error, msg: exported interface not declared"']
-	ModuleConstructionIllegal(m) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, _), no InterfaceTypeDecl(ix, _, _).
+	ModuleConstructionIllegal(ix) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, _), no InterfaceTypeDecl(ix, _, _).
 
-	//// Export Operation 3
+	//// Export Operation 3 (\alpha = MR(m)\EP)
 	[rule_Classes = '"error, msg: interface exported is not equal to the interface implemented by machine"']
-	ModuleConstructionIllegal(m) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), ModuleRenameMap(mod, m, mach), impInterface = toList(#InterfaceType, NIL, {ev | MachineReceivesDecl(mach, ev), no PrivateForModuleExpr(mod, ev)}), InterfaceTypeDeclList(ix, exInterface), exInterface != impInterface.
+	ModuleConstructionIllegal(ix) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), ModuleRenameMap(mod, m, mach), impInterface = toList(#InterfaceType, NIL, {ev | MachineReceivesDecl(mach, ev), no PrivateForModuleExpr(mod, ev)}), InterfaceTypeDeclList(ix, exInterface), exInterface != impInterface.
 
-	//// Export Operation 4
-	[rule_Classes = '"error, msg: interface exported constructor type is not a sub-type of the implemented by machine"']
-	ModuleConstructionIllegal(m) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), ModuleRenameMap(mod, m, mach), impInterface = toList(#InterfaceType, NIL, {ev | MachineReceivesDecl(mach, ev), no PrivateForModuleExpr(mod, ev)}), InterfaceTypeDeclList(ix, exInterface), exInterface != impInterface.
+	//// Export Operation 4 (constructor type match)
+	[rule_Classes = '"error, msg: exported interface constructor type is not a sub-type of the contructor type of implemented machine"']
+	ModuleConstructionIllegal(ix) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), ModuleRenameMap(mod, m, mach), InterfaceTypeDecl(ix, _, iargt), ConstructorType(mach, _, ct), TypeRel(iargt, ct, k), ct != iargt, k != SUB.
+
+	//// Export Operation 5 (\alpha is disjoint to all dom(IX))
+	[rule_Classes = '"error, msg: interface being exported is not disjoint from the interfaces already exported by the module expression"']
+	ModuleConstructionIllegal(ix) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), ExportsForModuleExpr(mod, ix'), 
+									InterfaceTypeDeclList(ix, eIx), InterfaceTypeDeclList(ix', eIx'), eIx = eIx';
+									AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), ExportsForModuleExpr(mod, ix'), 
+									InterfaceTypeDecl(ix, es, _), InterfaceTypeDecl(ix', es', _), EventSetDecl(es, ev), EventSetDecl(es', ev).
+
+	/// Export Operation 6 (\alpha is disjoint or equal to all IC)
+	[rule_Classes = '"error, msg: interface being exported is not disjoint or equal to the interfaces created by the module expression"']
+	ModuleConstructionIllegal(ix) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), CreatesForModuleExpr(mod, ic), 
+									InterfaceTypeDeclList(ix, eIx), InterfaceTypeDeclList(ic, eIc), eIx != eIc, 
+									InterfaceTypeDecl(ix, es, _), InterfaceTypeDecl(ic, es', _), EventSetDecl(es, ev), EventSetDecl(es', ev).
+									
+	/// Export Operation 7 (permissions in mod-expression is disjoint from \alpha )
+	[rule_Classes = '"error, msg: after hidding the public events in receives or sends have private permission in them"']
+	ModuleConstructionIllegal(ix) :- AllExpandedModuleExprs(modExpr), modExpr = ExportExpr(m, ix, mod), InterfaceTypeDecl(ix, es, _), EventSetDecl(es, ev), 
+									 EventDecl(ev, _, pt), EmbeddedPermissionsInType(pt, perm), PrivateForModuleExpr(modExpr, perm).
 
 	////Module system level checks
 	//check if events in hide are declared
