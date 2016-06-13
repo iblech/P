@@ -296,6 +296,7 @@ domain PStaticTyping extends PData
 	conforms no ModuleDefError(_).
 	conforms no ModuleConstructionIllegal(_).
 	conforms no ModuleCompositionIllegal(_, _).
+	conforms no WellFormednessError(_, _).
 	conforms no FunDeclQualifierError(_, _).
 	conforms no FunCallQualifierError(_, _, _).
 	conforms no SendQualifierError(_, _).
@@ -671,16 +672,52 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: compatibility error> after composition the created interfaces are not disjoint or equal to the exported interfaces"']
 	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), composedMod = ComposeExpr(emodL, emodR), CreatesForModuleExpr(composedMod, ic),
 											ExportsForModuleExpr(composedMod, ix), InterfaceTypeDeclList(ic, icL), InterfaceTypeDeclList(ix, ixL), icL != ixL,
-											InterfaceTypeDecl(ic, esc, _), EventSetDecl(esc, ev), InterfaceTypeDecl(ix, esx, _), EventSetDecl(esx, ev).					
+											InterfaceTypeDecl(ic, esc, _), EventSetDecl(esc, ev), InterfaceTypeDecl(ix, esx, _), EventSetDecl(esx, ev).
+
+	//// for the match IC and IX, constructor(IC) subtype of constructor(IX).
+	[rule_Classes = '"error, msg: compatibility error> after composition the constructor type of created interfaces is not a subtype of constructor type of exported interfaces"']
+	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), composedMod = ComposeExpr(emodL, emodR), CreatesForModuleExpr(composedMod, ic),
+											ExportsForModuleExpr(composedMod, ix), InterfaceTypeDeclList(ic, icL), InterfaceTypeDeclList(ix, ixL), icL = ixL,
+											InterfaceTypeDecl(ic, _, ct), InterfaceTypeDecl(ix, _, xt), TypeRel(ct, xt, k), ct != xt, k != SUB.				
 
 	/**************************************************************************/
-	/*			Well-formedness condition check for the lead modules		  */
+	/*			Well-formedness condition check for the leaf modules		  */
 	/**************************************************************************/
+	WellFormednessError ::= (mod: ModuleDecl, sig: String).
+
+	//// ix is not disjoint from EP
+	[rule_Classes = '"error, msg: wellformedness error> the exported interfaces are not disjoint from private events"']
+	WellFormednessError(mod, ix) :- mod is ModuleDecl, ExportsForModuleExpr(mod, ix), PrivateForModuleExpr(mod, ev), InterfaceTypeDecl(ix, es, _), EventSetDecl(es, ev).
+
+	//// ic is not disjoint from EP
+	[rule_Classes = '"error, msg: wellformedness error> the created interfaces are not disjoint from private events"']
+	WellFormednessError(mod, ic) :- mod is ModuleDecl, CreatesForModuleExpr(mod, ic), PrivateForModuleExpr(mod, ev), InterfaceTypeDecl(ic, es, _), EventSetDecl(es, ev).
+
+	//// IC is either disjoint or equal to the IX
+	[rule_Classes = '"error, msg: wellformedness error> the created interfaces are not disjoint or equal to the exported interface"']
+	WellFormednessError(mod, ix) :- mod is ModuleDecl, CreatesForModuleExpr(mod, ic), ExportsForModuleExpr(mod, ix), InterfaceTypeDeclList(ic, icL), InterfaceTypeDeclList(ix, ixL), 									icL != ixL, InterfaceTypeDecl(ic, esc, _), EventSetDecl(esc, ev), InterfaceTypeDecl(ix, esx, _), EventSetDecl(esx, ev).
+
+	//// for the match IC and IX, constructor(IC) subtype of constructor(IX).
+	[rule_Classes = '"error, msg: wellformedness error> type of created interfaces is not a subtype of constructor type of exported interface"']
+	WellFormednessError(mod, ix) :- mod is ModuleDecl, CreatesForModuleExpr(mod, ic), ExportsForModuleExpr(mod, ix), 
+									InterfaceTypeDeclList(ic, icL), InterfaceTypeDeclList(ix, ixL), icL = ixL,
+									InterfaceTypeDecl(ic, _, ct), InterfaceTypeDecl(ix, _, xt), TypeRel(ct, xt, k), ct != xt, k != SUB.
+
+	//// e \in ER + ES, all a in A(e) is disjoint from EP
+	[rule_Classes = '"error, msg: wellformedness error> the public events in receives or sends has private permissions in them"']
+	WellFormednessError(mod, mod.name) :- mod is ModuleDecl, ReceivesForModuleExpr(mod, ev), 
+										  EventDecl(ev, _, pt), EmbeddedPermissionsInType(pt, perm), PrivateForModuleExpr(mod, perm);
+										  mod is ModuleDecl, SendsForModuleExpr(mod, ev),
+										  EventDecl(ev, _, pt), EmbeddedPermissionsInType(pt, perm), PrivateForModuleExpr(mod, perm).
+
 
 	/**************************************************************************/
 	/*			Refinement, Implementation and Test Decls are legal			  */
 	/**************************************************************************/
-	
+	TestOrImplDeclError ::= (modExpr : ModuleExpr).
+
+	////Implementation and test module expr must be closed with respect to creates
+
 	/**************************************************************************/
 	/*			Populate all the maps used for code generation				  */
 	/**************************************************************************/
