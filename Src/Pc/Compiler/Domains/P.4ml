@@ -295,6 +295,7 @@ domain PStaticTyping extends PData
 	conforms no TypeDefError(_).
 	conforms no ModuleDefError(_).
 	conforms no ModuleConstructionIllegal(_).
+	conforms no ModuleCompositionIllegal(_, _).
 	conforms no FunDeclQualifierError(_, _).
 	conforms no FunCallQualifierError(_, _, _).
 	conforms no SendQualifierError(_, _).
@@ -619,7 +620,59 @@ domain PStaticTyping extends PData
 											  MemberOfStringsList(evtList, ev), no ExportsForModuleExpr(mod, ix), InterfaceTypeDeclList(ic, x),  InterfaceTypeDeclList(ix, x).
 
 	////Composition Compatibility checks
-	
+	ModuleCompositionIllegal ::= (modL: ModuleExpr, modR:ModuleExpr).
+
+	///// All composition expressions
+	AllCompositionExprs ::= (modL: ModuleExpr, modR: ModuleExpr, emodL: ModuleExpr, emodR: ModuleExpr).
+	AllCompositionExprs(modL, modR, emodL, emodR) :- AllModuleExprs(modExpr), modExpr = ComposeExpr(modL, modR), ModuleExprExpansion(modL, emodL), ModuleExprExpansion(modR, emodR).
+	//// Mp and Mq are disjoint
+	[rule_Classes = '"error, msg: compatibility error> machine names are not disjoint"']
+	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), ModuleRenameMap(emodL, mname, _), ModuleRenameMap(emodR, mname, _).
+
+	//// dom(IXp) and dom(IXq) are disjoint
+	[rule_Classes = '"error, msg: compatibility error> exported interfaces are not disjoint"']
+	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), ExportsForModuleExpr(emodL, ixL), ExportsForModuleExpr(emodR, ixR), 
+											InterfaceTypeDecl(ixL, esL, _), EventSetDecl(esL, ev), InterfaceTypeDecl(ixR, esR, _), EventSetDecl(esR, ev).
+
+											
+
+	//// ICp and ICq are disjoint
+	[rule_Classes = '"error, msg: compatibility error> created interfaces are not disjoint"']
+	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), CreatesForModuleExpr(emodL, icL), CreatesForModuleExpr(emodR, icR), 
+											InterfaceTypeDecl(icL, esL, _), EventSetDecl(esL, ev), InterfaceTypeDecl(icR, esR, _), EventSetDecl(esR, ev).
+
+	//// ESp and ESq are disjoint
+	[rule_Classes = '"error, msg: compatibility error> sends are not disjoint"']
+	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), SendsForModuleExpr(emodL, ev), SendsForModuleExpr(emodR, ev).
+
+	//// ES and EP are disjoint
+	[rule_Classes = '"error, msg: compatibility error> sends and privates are not disjoint"']
+	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), SendsForModuleExpr(emodL, ev), PrivateForModuleExpr(emodR, ev);	
+											AllCompositionExprs(modL, modR, emodL, emodR), SendsForModuleExpr(emodR, ev), PrivateForModuleExpr(emodL, ev).
+
+	//// e \in ER + ES, all a in A(e) is disjoint from EP
+	[rule_Classes = '"error, msg: compatibility error> after composition the public events in receives or sends has private permissions in them"']
+	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), composedMod = ComposeExpr(emodL, emodR), ReceivesForModuleExpr(composedMod, ev),
+											EventDecl(ev, _, pt), EmbeddedPermissionsInType(pt, perm), PrivateForModuleExpr(composedMod, perm);
+											AllCompositionExprs(modL, modR, emodL, emodR), composedMod = ComposeExpr(emodL, emodR), SendsForModuleExpr(composedMod, ev),
+											EventDecl(ev, _, pt), EmbeddedPermissionsInType(pt, perm), PrivateForModuleExpr(composedMod, perm).
+
+	//// IX of the composed module is disjoint from EP of the composed module
+	[rule_Classes = '"error, msg: compatibility error> after composition the exported interfaces are not disjoint from the private events"']
+	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), composedMod = ComposeExpr(emodL, emodR), ExportsForModuleExpr(composedMod, ix),
+											InterfaceTypeDecl(ix, es, _), EventSetDecl(es, ev), PrivateForModuleExpr(composedMod, ev).
+
+	//// IC of the composed module is disjoint from EP of the composed module
+	[rule_Classes = '"error, msg: compatibility error> after composition the created interfaces are not disjoint from the private events"']
+	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), composedMod = ComposeExpr(emodL, emodR), CreatesForModuleExpr(composedMod, ic),
+											InterfaceTypeDecl(ic, es, _), EventSetDecl(es, ev), PrivateForModuleExpr(composedMod, ev).	
+
+	//// IC is either disjoint or equal to the IX
+	[rule_Classes = '"error, msg: compatibility error> after composition the created interfaces are not disjoint or equal to the exported interfaces"']
+	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), composedMod = ComposeExpr(emodL, emodR), CreatesForModuleExpr(composedMod, ic),
+											ExportsForModuleExpr(composedMod, ix), InterfaceTypeDeclList(ic, icL), InterfaceTypeDeclList(ix, ixL), icL != ixL,
+											InterfaceTypeDecl(ic, esc, _), EventSetDecl(esc, ev), InterfaceTypeDecl(ix, esx, _), EventSetDecl(esx, ev).					
+
 	/**************************************************************************/
 	/*			Well-formedness condition check for the lead modules		  */
 	/**************************************************************************/
