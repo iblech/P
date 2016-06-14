@@ -305,4 +305,4 @@ private;
 
 test elevator Elevator || Door || Timer;
 
-implementation (hide iTimer in Elevator || Door || Timer);
+implementation (hide eStopDoorCloseTimer in Elevator || Door || Timer);
