@@ -593,6 +593,8 @@ domain PStaticTyping extends PData
 									  ObservesDecl(monDecl, ev), no SendsForModuleExpr(mod, ev), no PrivateForModuleExpr(mod, ev).
 
 	//Hide Operation
+	//make sure that the events are disjoint
+
 	//alpha is disjoint from EP
 	[rule_Classes = '"error, msg: trying to hide private event of the module expression "']
 	ModuleConstructionIllegal(ev) :- AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), PrivateForModuleExpr(mod, ev), MemberOfStringsList(evtList, ev).
