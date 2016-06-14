@@ -18,7 +18,6 @@ type Expr =
   | Event of string
   | This
   | Nondet
-  | FairNonDet
   | Var of string 
   | Bin of BinOp * Expr * Expr 
   | Un of UnOp * Expr
@@ -175,8 +174,6 @@ let rec is_subtype t1 t2 =
   | (Null, Machine) -> true
   | (Null, Type.Event) -> true
   | (a,b) when a = b -> true
-  | (Type.Seq(a), Type.Seq(b)) -> (is_subtype a b)
-  | (Type.Map(k1, v1), Type.Map(k2, v2)) -> ((is_subtype k1 k2) && (is_subtype v1 v2))
   | (Type.Tuple(ls1), Type.Tuple(ls2)) ->
     begin
       if List.length ls1 <> List.length ls2 then false
