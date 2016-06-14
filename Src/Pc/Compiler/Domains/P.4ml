@@ -89,19 +89,19 @@ domain PData
 	ModuleName ::= new (name: String).
 
 	ModuleDef ::= new (name: String, mod: any ModuleExpr).
-	HideExpr ::= new (evtNames: StringList, mod: any ModuleExpr). 
-	RenameExpr ::= new (mNames: StringList, mNames': StringList, mod: any ModuleExpr).
+	HideExpr ::= new (evtNames: any StringList, mod: any ModuleExpr). 
+	RenameExpr ::= new (mNames: String, mNames': String, mod: any ModuleExpr).
 	ExportExpr ::= new (mName: String, iName: String, mod: any ModuleExpr).
-	AssumeExpr ::= new (monNames: StringList, mod: any ModuleExpr).
-	AssertExpr ::= new (monNames: StringList, mod: any ModuleExpr).
+	AssumeExpr ::= new (monNames: any StringList, mod: any ModuleExpr).
+	AssertExpr ::= new (monNames: any StringList, mod: any ModuleExpr).
 	SafeExpr ::= new (mod: any ModuleExpr).
 	ComposeExpr ::= new (left: any ModuleExpr, right: any ModuleExpr).
 	ModuleExpr ::= ModuleName + HideExpr + RenameExpr + ExportExpr + AssumeExpr + AssertExpr + SafeExpr + ComposeExpr + ModuleDecl.
 
 	//// Test Declarations and Implementation
-	TestDecl ::= new (name: String, mod: ModuleExpr).
-	RefinementDecl ::= new (name: String, lhs: ModuleExpr, rhs: ModuleExpr).
-	ImplementationDecl ::= new (mod: ModuleExpr).
+	TestDecl ::= new (name: String, mod: any ModuleExpr).
+	RefinementDecl ::= new (name: String, lhs: any ModuleExpr, rhs: any ModuleExpr).
+	ImplementationDecl ::= new (mod: any ModuleExpr).
 
 	////Module Signature 
 	ModulePrivate ::= (mod: ModuleExpr, ev: NonNullEventLabel).
@@ -111,10 +111,10 @@ domain PData
 	ModuleCreates ::= (mod: ModuleExpr, i: String).
 
 	////Module Code Gen and Compatibity Helpers
-	ModuleLinkMap ::= (mod: ModuleExpr, newMachineName: String, interfaceOrMachine: String, newImpMachine: MachineDecl).
+	ModuleLinkMap ::= (mod: ModuleExpr, newMachineName: String, interfaceOrMachine: String, newImpMachine: String + {NIL}).
 	ModuleRenameMap ::= (mod: ModuleExpr, newName: String, impMachine: MachineDecl).  // for both machines and monitors
 	ModuleSafeMap ::= (mod: ModuleExpr, newName: String, isSafe: Boolean).
-	ModuleMonitorMap ::= (mod: ModuleExpr, newMonitorName: String, impMachine: MachineDecl).
+	ModuleMonitorMap ::= (mod: ModuleExpr, newMonitorName: String, impMachine: String).
 
 	////Helper structs
 	StringList ::= new (str: String, tl: any StringList + { NIL }).
@@ -432,7 +432,7 @@ domain PStaticTyping extends PData
 	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = SafeExpr(modExpr'), emodExpr = SafeExpr(emodExpr'),  ModuleExprExpansion(modExpr', emodExpr').
 	ModuleExprExpansion(modExpr, emodExpr) :- AllModuleExprs(modExpr), modExpr = ComposeExpr(modExpr', modExpr''), emodExpr = ComposeExpr(emodExpr', emodExpr''), ModuleExprExpansion(modExpr', emodExpr'), ModuleExprExpansion(modExpr'', emodExpr'').
 
-
+	
 	//// All expanded Module Exprs
 	AllExpandedModuleExprs ::= (modExpr: ModuleExpr).
 	AllExpandedModuleExprs(emodExpr) :- AllModuleExprs(modExpr), ModuleExprExpansion(modExpr, emodExpr).
@@ -466,7 +466,7 @@ domain PStaticTyping extends PData
 	CreatesForModuleExpr ::= (mExpr: ModuleExpr, i: String).
 	ExportsForModuleExpr ::= (mExpr: ModuleExpr, i: String).
 	ReceivesForModuleExpr ::= (mExpr: ModuleExpr, ev: NonNullEventLabel).
-
+	
 	//// private events 
 	PrivateForModuleExpr(modExpr, ev) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, ModulePrivateEvent(modExpr, ev);
 										 AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, ModulePrivateEventAll(modExpr), MachineReceivesDecl(mach, ev), mach.mod = modExpr.
@@ -510,7 +510,7 @@ domain PStaticTyping extends PData
 
 	//// receives list
 	ReceivesForModuleExpr(modExpr, er) :- AllExpandedModuleExprs(modExpr), ExportsForModuleExpr(modExpr, ix), InterfaceTypeDecl(ix, es, _), EventSetDecl(es, er).
-
+	
 	/**************************************************************************/
 	/*	Compute the permission set associated with each high level type 	 */
 	/*************************************************************************/
@@ -534,6 +534,7 @@ domain PStaticTyping extends PData
 	/**				Check that the module contruction is legal			  	  */
 	/**************************************************************************/
 	ModuleConstructionIllegal ::= (String).
+	ModuleCompositionIllegal ::= (modL: ModuleExpr, modR:ModuleExpr).
 	
 	//// Export Operation 1 (m \in M)
 	[rule_Classes = '"error, msg: exported machine undefined in the module expression"']
@@ -573,13 +574,10 @@ domain PStaticTyping extends PData
 	////Rename Operation
 	//check if the names in rename exists
 	[rule_Classes = '"error, msg: machine name already exists in the module expression"']
-	ModuleConstructionIllegal(mname) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldNames, newNames, mod), MemberOfStringsList(newNames, mname), ModuleRenameMap(mod, mname, _);
-								  		AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldNames, newNames, mod), MemberOfStringsList(newNames, mname), mach.name = mname, ModuleRenameMap(mod, _, mach).
+	ModuleConstructionIllegal(newName) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldName, newName, mod), ModuleRenameMap(mod, newName, _);
+								  		  AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldName, newName, mod), mach.name = newName, ModuleRenameMap(mod, _, mach).
 	[rule_Classes = '"error, msg: machine being renamed does not exists in the module expression"']
-	ModuleConstructionIllegal(mname) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldNames, newNames, mod), MemberOfStringsList(oldNames, mname), no ModuleRenameMap(mod, mname, _).
-
-	[rule_Classes = '"error, msg: length of the old and new machine names list is not equal"']
-	ModuleConstructionIllegal(oldNames.str) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldNames, newNames, _), lstLength(#StringList, oldNames) != lstLength(#StringList, newNames).
+	ModuleConstructionIllegal(oldName) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldName, _, mod), no ModuleRenameMap(mod, oldName, _).
 
 	////Assume and Assert Operation
 	//Monitor is defined
@@ -621,7 +619,7 @@ domain PStaticTyping extends PData
 											  MemberOfStringsList(evtList, ev), no ExportsForModuleExpr(mod, ix), InterfaceTypeDeclList(ic, x),  InterfaceTypeDeclList(ix, x).
 
 	////Composition Compatibility checks
-	ModuleCompositionIllegal ::= (modL: ModuleExpr, modR:ModuleExpr).
+	
 
 	///// All composition expressions
 	AllCompositionExprs ::= (modL: ModuleExpr, modR: ModuleExpr, emodL: ModuleExpr, emodR: ModuleExpr).
@@ -679,7 +677,7 @@ domain PStaticTyping extends PData
 	ModuleCompositionIllegal(modL, modR) :- AllCompositionExprs(modL, modR, emodL, emodR), composedMod = ComposeExpr(emodL, emodR), CreatesForModuleExpr(composedMod, ic),
 											ExportsForModuleExpr(composedMod, ix), InterfaceTypeDeclList(ic, icL), InterfaceTypeDeclList(ix, ixL), icL = ixL,
 											InterfaceTypeDecl(ic, _, ct), InterfaceTypeDecl(ix, _, xt), TypeRel(ct, xt, k), ct != xt, k != SUB.				
-
+	
 	/**************************************************************************/
 	/*			Well-formedness condition check for the leaf modules		  */
 	/**************************************************************************/
@@ -717,30 +715,119 @@ domain PStaticTyping extends PData
 	TestOrImplDeclError ::= (modExpr : ModuleExpr).
 
 	////Implementation and test module expr must be closed with respect to creates
+	[rule_Classes = '"error, msg: top level module expressions must be closed with respect to created interfaces (all created interfaces must be exported)"']
+	TestOrImplDeclError(modExpr) :- ImplementationDecl(modExpr), ModuleExprExpansion(modExpr, emodExpr), CreatesForModuleExpr(emodExpr, ic), no ExportsForModuleExpr(emodExpr, ix),
+									InterfaceTypeDeclList(ic, x), InterfaceTypeDeclList(ix, x);
+									TestDecl(_, modExpr), ModuleExprExpansion(modExpr, emodExpr), CreatesForModuleExpr(emodExpr, ic), no ExportsForModuleExpr(emodExpr, ix),
+									InterfaceTypeDeclList(ic, x), InterfaceTypeDeclList(ix, x);
+									RefinementDecl(_, modExpr, _), ModuleExprExpansion(modExpr, emodExpr), CreatesForModuleExpr(emodExpr, ic), no ExportsForModuleExpr(emodExpr, ix),
+									InterfaceTypeDeclList(ic, x), InterfaceTypeDeclList(ix, x);
+									RefinementDecl(_, _, modExpr), ModuleExprExpansion(modExpr, emodExpr), CreatesForModuleExpr(emodExpr, ic), no ExportsForModuleExpr(emodExpr, ix),
+									InterfaceTypeDeclList(ic, x), InterfaceTypeDeclList(ix, x).
 
+	////Refinement checks remaining !!
+	/// Fix Me !!
 	/**************************************************************************/
 	/*			Populate all the maps used for code generation				  */
 	/**************************************************************************/
+	
+	////populate the rename map
+	ModuleRenameMap(modExpr, mname, machDecl) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, machDecl is MachineDecl, machDecl.mod = modExpr, mname = machDecl.name.
+	ModuleRenameMap(modExpr, mname, machDecl) :- AllExpandedModuleExprs(modExpr), modExpr : SafeExpr, ModuleRenameMap(modExpr.mod, mname, machDecl);
+												 AllExpandedModuleExprs(modExpr), modExpr : HideExpr, ModuleRenameMap(modExpr.mod, mname, machDecl);
+												 AllExpandedModuleExprs(modExpr), modExpr : ExportExpr, ModuleRenameMap(modExpr.mod, mname, machDecl).
+	ModuleRenameMap(modExpr, mname, machDecl) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ModuleRenameMap(modExpr.left, mname, machDecl);
+												 AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ModuleRenameMap(modExpr.right, mname, machDecl).	
+	ModuleRenameMap(modExpr, mname, machDecl) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, _, modExpr'), ModuleRenameMap(modExpr', mname, machDecl), mname != oldname;
+												 AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, newname, modExpr'), ModuleRenameMap(modExpr', mname', machDecl), mname' = oldname, mname = newname.
+	ModuleRenameMap(modExpr, mname, machDecl) :- AllExpandedModuleExprs(modExpr), modExpr = AssumeExpr(monNames, modExpr'), ModuleRenameMap(modExpr', mname, machDecl);
+												 AllExpandedModuleExprs(modExpr), modExpr = AssumeExpr(monNames, modExpr'), MemberOfStringsList(monNames, mname), machDecl is MachineDecl, machDecl.name = mname, machDecl.kind = MONITOR.
+	ModuleRenameMap(modExpr, mname, machDecl) :- AllExpandedModuleExprs(modExpr), modExpr = AssertExpr(monNames, modExpr'), ModuleRenameMap(modExpr', mname, machDecl);
+												 AllExpandedModuleExprs(modExpr), modExpr = AssertExpr(monNames, modExpr'), MemberOfStringsList(monNames, mname), machDecl is MachineDecl, machDecl.name = mname, machDecl.kind = MONITOR.										 										 								 							 
+	////populate the safe map
+	ModuleSafeMap(modExpr, mname, isSafe) :- AllExpandedModuleExprs(modExpr), toSymbol(modExpr) != #SafeExpr, toSymbol(modExpr) != #ComposeExpr, 
+											  toSymbol(modExpr) != #AssumeExpr, toSymbol(modExpr) != #ModuleDecl, toSymbol(modExpr) != #RenameExpr, ModuleSafeMap(modExpr.mod, mname, isSafe).
+	ModuleSafeMap(modExpr, mname, FALSE) :-  AllExpandedModuleExprs(modExpr), modExpr : ModuleExpr, ModuleRenameMap(modExpr, mname, _).
+	ModuleSafeMap(modExpr, mname, isSafe) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ModuleSafeMap(modExpr.left, mname, isSafe);
+											 AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ModuleSafeMap(modExpr.right, mname, isSafe).
+	ModuleSafeMap(modExpr, mname, TRUE) :- 	 AllExpandedModuleExprs(modExpr), modExpr : AssumeExpr, ModuleSafeMap(modExpr.mod, mname, _).
+	ModuleSafeMap(modExpr, mname, TRUE) :-	 AllExpandedModuleExprs(modExpr), modExpr : SafeExpr, ModuleSafeMap(modExpr.mod, mname, _).
+	ModuleSafeMap(modExpr, mname, isSafe) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, _, modExpr'), ModuleSafeMap(modExpr', mname, isSafe), mname != oldname;
+											 AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, newname, modExpr'), ModuleSafeMap(modExpr', mname', isSafe), mname' = oldname, mname = newname.
 
+	////populate the monitor map
+	ModuleMonitorMap(modExpr, monName, impMachine) :- AllExpandedModuleExprs(modExpr), toSymbol(modExpr) != #ComposeExpr, toSymbol(modExpr) != #AssumeExpr, toSymbol(modExpr) != #AssertExpr, 
+													  toSymbol(modExpr) != #RenameExpr, ModuleMonitorMap(modExpr.mod, monName, impMachine).
+	ModuleMonitorMap(modExpr, monName, impMachine) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ModuleMonitorMap(modExpr.left, monName, impMachine);
+													  AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ModuleMonitorMap(modExpr.right, monName, impMachine).
+	ModuleMonitorMap(modExpr, monName, impMachine) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, _, modExpr'), ModuleMonitorMap(modExpr', monName, impMachine), monName != oldname;
+											 		  AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, newname, modExpr'), ModuleMonitorMap(modExpr', monName', impMachine), monName' = oldname, monName = newname;
+											 		  AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, newname, modExpr'), ModuleMonitorMap(modExpr', monName, impMachine'), impMachine' = oldname, impMachine = newname.	
+	ModuleMonitorMap(modExpr, monName, impMachine) :- AllExpandedModuleExprs(modExpr), modExpr : AssumeExpr, MemberOfStringsList(modExpr.monNames, monName), ModuleLinkMap(modExpr.mod, impMachine, _, _).
+	ModuleMonitorMap(modExpr, monName, impMachine) :- AllExpandedModuleExprs(modExpr), modExpr : AssertExpr, MemberOfStringsList(modExpr.monNames, monName), ModuleLinkMap(modExpr.mod, impMachine, _, _).
+
+	////populate the link map
+	ModuleLinkMap(modExpr, creatorM, IorM, ImpMachine) :- AllExpandedModuleExprs(modExpr), toSymbol(modExpr) != #ComposeExpr, toSymbol(modExpr) != #RenameExpr, toSymbol(modExpr) != #ModuleDecl,
+													  toSymbol(modExpr) != #ExportExpr, ModuleLinkMap(modExpr.mod, creatorM, IorM, ImpMachine).
+
+
+	ModuleLinkMap(modExpr, creatorM, IorM, ImpMachine) :- AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ModuleLinkMap(modExpr.left, creatorM, IorM, ImpMachine);
+													  AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ModuleLinkMap(modExpr.right, creatorM, IorM, ImpMachine);
+													  AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ModuleLinkMap(modExpr.left, creatorM, _, _), ModuleLinkMap(modExpr.right, _, IorM, ImpMachine), ExportsForModuleExpr(modExpr.right, IorM);
+													  AllExpandedModuleExprs(modExpr), modExpr : ComposeExpr, ModuleLinkMap(modExpr.right, creatorM, _, _), ModuleLinkMap(modExpr.left, _, IorM, ImpMachine), ExportsForModuleExpr(modExpr.right, IorM).
+
+
+	ModuleLinkMap(modExpr, creatorM, IorM, ImpMachine) :- AllExpandedModuleExprs(modExpr), modExpr : ExportExpr, ModuleLinkMap(modExpr.mod, creatorM, IorM, ImpMachine);
+													  	  AllExpandedModuleExprs(modExpr), modExpr : ExportExpr, ModuleLinkMap(modExpr.mod, creatorM, _, _), IorM = modExpr.iName, ImpMachine = modExpr.mName.
+	ModuleLinkMap(modExpr, creatorM, IorM, ImpMachine) :- AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, _, modExpr'), ModuleLinkMap(modExpr', creatorM, IorM, ImpMachine), 
+													  	  creatorM != oldname, ImpMachine != oldname;
+													  	AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, newname, modExpr'), ModuleLinkMap(modExpr', creatorM', IorM, ImpMachine), creatorM' = oldname, creatorM = newname, ImpMachine != oldname;
+													  	AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, newname, modExpr'), ModuleLinkMap(modExpr', creatorM, IorM, ImpMachine'), ImpMachine' = oldname, ImpMachine = newname, creatorM != oldname;
+													  	AllExpandedModuleExprs(modExpr), modExpr = RenameExpr(oldname, newname, modExpr'), ModuleLinkMap(modExpr', creatorM', IorM, ImpMachine'), ImpMachine' = oldname, creatorM' = oldname, creatorM = newname, ImpMachine = newname.
+
+	ModuleLinkMap(modExpr, creatorM, IorM, ImpMachine) :- AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, mach is MachineDecl, mach.mod = modExpr, creatorM = mach.name, 
+														  ExportsForModuleExpr(modExpr, IorM), MachineExportsDecl(imp, IorM), imp.name = ImpMachine, no IsPrivateMachine(modExpr, IorM);
+													  	  AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, mach is MachineDecl, mach.mod = modExpr, creatorM = mach.name, IsPrivateMachine(modExpr, priMach.name), priMach is MachineDecl, priMach.mod = modExpr, IorM = priMach.name, ImpMachine = priMach.name;
+													  	  AllExpandedModuleExprs(modExpr), modExpr : ModuleDecl, mach is MachineDecl, mach.mod = modExpr, creatorM = mach.name, CreatesForModuleExpr(modExpr, ic), no ExportsForModuleExpr(modExpr, ix), InterfaceTypeDeclList(ic, icL), InterfaceTypeDeclList(ix, icL), no IsPrivateMachine(modExpr, ic), IorM = ic, ImpMachine = NIL.
+	
 	/**************************************************************************/
 	/*     C Code Helpers
 	/**************************************************************************/
 	//implementation module functions
 	ImplFunction ::= (f: FunDecl + AnonFunDecl).
+	AllImplMachine ::= (mach: MachineDecl).
+	MapCreateToImplMachine ::= (creator: MachineDecl + ModuleDecl, iname: String, imp: MachineDecl).
+	AllImplModules ::= (mod: ModuleDecl).
+	
 	ImplFunction(f) :- f is FunDecl( _, mod, _, _, _, _, _, _),  AllImplModules(mod);
 					   f is FunDecl, f.owner.kind = REAL, AllImplMachine(f.owner);
 					   f is AnonFunDecl(mod, _, _, _),  AllImplModules(mod);
 					   f is AnonFunDecl, f.owner.kind = REAL, AllImplMachine(f.owner).
 
 	//all machines in implementation modules list
-	AllImplMachine ::= (mach: MachineDecl).
+	
 	AllImplMachine(m) :- AllModuleDecls(emodExpr, mod), ImplementationDecl(modExpr), ModuleExprExpansion(modExpr, emodExpr), m is MachineDecl(_, mod, _, _, _, _), m.kind != MONITOR.
-	AllImplModules ::= (mod: ModuleDecl).
+	
 	AllImplModules(mod) :- AllModuleDecls(emodExpr, mod), ImplementationDecl(modExpr), ModuleExprExpansion(modExpr, emodExpr).
 
-	//FIX ME
-	MapInterfaceToMachine ::= (mname: String, iname: String).
 
+	//Create map for all top module exprs
+	AllTopLevelModuleExprs ::= (mod: ModuleExpr).
+	AllTopLevelModuleExprs(mod) :- ImplementationDecl(mod); TestDecl(_, mod); RefinementDecl(_, mod, _); RefinementDecl(_, _, mod).
+
+	
+	MapCreateToImplMachine (creator, iname, imp) :- AllTopLevelModuleExprs(impMod), ModuleExprExpansion(impMod, exImpMod), ModuleLinkMap(exImpMod, creator', iname, imp'), 
+													ModuleRenameMap(exImpMod, creator', creator), ModuleRenameMap(exImpMod, imp', imp).
+////Fix Me
+	//MapCreateToImplMachine (creator, iname, imp) :- AllTopLevelModuleExprs(impMod), ModuleExprExpansion(impMod, exImpMod), CreatesForModuleExpr(exImpMod, iname), ExportsForModuleExpr(exImpMod, icname).
+
+	
+	////compute whether the machine is private
+	IsPrivateMachine ::= (ModuleDecl, String).
+	IsPublicMachine ::= (ModuleDecl, String).
+	IsPublicMachine(mod, mach.name) :- mod is ModuleDecl, MachineReceivesDecl(mach, ev), mach.mod = mod, no PrivateForModuleExpr(mod, ev).
+	IsPrivateMachine(mod, mach.name) :- mod is ModuleDecl, mach is MachineDecl, mach.mod = mod, no IsPublicMachine(mod, mach.name).
+	
 	/**************************************************************************/
 	/*		populate the sends, receives and creates list for each machine	  */
 	/**************************************************************************/
@@ -753,19 +840,21 @@ domain PStaticTyping extends PData
 	
 	//calculate creates for all FunDecls and AnonFunDecls
 	CreatesForFunctions ::= (f: TypingContext, ic: String).
-
+	
 	//Comment reusing SubSE
-	CreatesForFunctions(f, ic) :- SubSE(f, e), e = New(ic, _), InterfaceTypeDecl(ic, _, _);
-								  SubSE(f, e), e = NewStmt(ic, _, _), InterfaceTypeDecl(ic, _, _);
+	CreatesForFunctions(f, ic) :- SubSE(f, e), e = New(ic, _), InterfaceTypeDecl(ic, _, _), no IsPrivateMachine(f.owner.mod, ic);
+								  SubSE(f, e), e = New(ic, _), InterfaceTypeDecl(ic, _, _), no IsPrivateMachine(f.owner, ic);
+								  SubSE(f, e), e = NewStmt(ic, _, _), InterfaceTypeDecl(ic, _, _), no IsPrivateMachine(f.owner.mod, ic);
+								  SubSE(f, e), e = NewStmt(ic, _, _), InterfaceTypeDecl(ic, _, _), no IsPrivateMachine(f.owner, ic);
 								  SubSE(f, e), e : FunStmt, f' is FunDecl, e.name = f'.name, e.mod = NIL, f.owner = f'.owner, CreatesForFunctions(f', ic);
 								  SubSE(f, e), e : FunStmt, f' is FunDecl, e.name = f'.name, f'.owner = ModuleDecl(e.mod), CreatesForFunctions(f', ic);
 								  SubSE(f, e), e : FunApp, f' is FunDecl, e.name = f'.name, e.mod = NIL, f.owner = f'.owner, CreatesForFunctions(f', ic);
 								  SubSE(f, e), e : FunApp, f' is FunDecl, e.name = f'.name, f'.owner = ModuleDecl(e.mod), CreatesForFunctions(f', ic).
-
+	
 	//populate the creates list for machine.
 	MachineCreatesDecl(mach, ic) :- f is FunDecl, f.owner = mach, CreatesForFunctions(f, ic), mach : MachineDecl;
 									af is AnonFunDecl, af.owner = mach, CreatesForFunctions(af, ic), mach : MachineDecl.
-
+	
 	//Checking the constructor type error for each exported interface
 	ConstructorTypeError ::= (ex: MachineExportsDecl).
 	[rule_Classes = '"error, msg: the constructor argument type is not a subtype of the exported interface argument type"']

@@ -657,6 +657,7 @@
             AddErrors(task.Result, "ModuleConstructionIllegal(_)", errors, 0);
             AddErrors(task.Result, "ModuleCompositionIllegal(_, _)", errors, 1);
             AddErrors(task.Result, "WellFormednessError(_, _)", errors, 1);
+            AddErrors(task.Result, "TestOrImplDeclError(_)", errors, 0);
 
             if (Options.printTypeInference)
             {

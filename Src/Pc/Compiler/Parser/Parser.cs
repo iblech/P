@@ -511,15 +511,14 @@
             moduleExprStack.Push(assertExpr);
         }
 
-        private void PushRenameExpr(Span span)
+        private void PushRenameExpr(string oldName, Span oldNameSpan, string newName, Span newNameSpan, Span span)
         {
             var renameExpr = new P_Root.RenameExpr();
             renameExpr.Span = span;
             Contract.Assert(moduleExprStack.Count >= 1);
             renameExpr.mod = (P_Root.IArgType_RenameExpr__2)moduleExprStack.Pop(); ;
-            Contract.Assert(stringListStack.Count >= 2);
-            renameExpr.mNames_PRIME1 = stringListStack.Pop();
-            renameExpr.mNames = stringListStack.Pop();
+            renameExpr.mNames_PRIME1 = MkString(newName, newNameSpan);
+            renameExpr.mNames = MkString(oldName, oldNameSpan);
             moduleExprStack.Push(renameExpr);
         }
 
@@ -2058,7 +2057,7 @@
             var moduleDecl = GetCurrentModuleDecl(span);
             moduleDecl.Span = span;
             moduleDecl.name = MkString(name, nameSpan);
-
+            
             //add the module decl
             if (IsValidName(TopDecl.Module, name, nameSpan))
             {
@@ -2084,6 +2083,7 @@
             crntStaticFunNames.Clear();
             crntPrivateList.Clear();
             isPrivateListAllEvents = false;
+            crntModuleDecl = null;
         }
 
         private void AddMachine(P_Root.UserCnstKind kind, string name, Span nameSpan, Span span)

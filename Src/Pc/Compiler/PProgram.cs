@@ -206,11 +206,6 @@
                     yield return refT;
                 }
 
-                foreach (var test in RefinementDecl)
-                {
-                    yield return test;
-                }
-
                 foreach (var s in States)
                 {
                     yield return s;
@@ -299,6 +294,11 @@
                 foreach (var info in LineInfos)
                 {
                     yield return info;
+                }
+
+                foreach(var t in TestDecl)
+                {
+                    yield return t;
                 }
             }
         }

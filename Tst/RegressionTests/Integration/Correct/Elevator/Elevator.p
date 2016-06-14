@@ -21,271 +21,288 @@ event eObjectEncountered assert 1;
 eventset elevator_receives = {eCloseDoor, eOpenDoor, eDoorOpened, eTimerFired, eStopTimerReturned, eDoorClosed, eObjectDetected, eDoorStopped, eOperationSuccess, eOperationFailure};
 type iElevator() = elevator_receives;
 
-machine Elevator 
-exports iElevator;
-{
-    var TimerV : machine;
-    var DoorV: machine;
-
-    start state Init {
-        entry {
-            TimerV = new iTimer(this);
-            DoorV = new iDoor(this);
-            raise eUnit;
-        }
-
-        on eUnit goto DoorClosed;
-    }
-
-    state DoorClosed {
-        ignore eCloseDoor;
-
-        entry { 
-            send DoorV, eSendCommandToResetDoor;
-        }
-
-        on eOpenDoor goto DoorOpening;
-    }
-
-    state DoorOpening {
-        ignore eOpenDoor;
-        defer eCloseDoor;
-
-        entry {
-            send DoorV, eSendCommandToOpenDoor;
-        }
-
-        on eDoorOpened goto DoorOpened;
-    }
-
-    state DoorOpened {
-        defer eCloseDoor;
-
-        entry {
-            send DoorV,eSendCommandToResetDoor;
-            send TimerV,eStartDoorCloseTimer;
-        }
-
-        on eTimerFired goto DoorOpenedOkToClose;
-        on eStopTimerReturned goto DoorOpened;
-        on eOpenDoor push StoppingTimer;
-    }
-
-    state DoorOpenedOkToClose {
-        defer eOpenDoor;
-
-        entry {
-            send TimerV,eStartDoorCloseTimer;
-        }
-
-        on eStopTimerReturned, eTimerFired goto DoorClosing;
-        on eCloseDoor push StoppingTimer;
-    }
-
-    state DoorClosing {
-        defer eCloseDoor;
-
-        entry {
-            send DoorV,eSendCommandToCloseDoor;
-        }
-
-        on eOpenDoor goto StoppingDoor;
-        on eDoorClosed goto DoorClosed;
-        on eObjectDetected goto DoorOpening;
-    }
-
-    state StoppingDoor {
-        defer eCloseDoor; 
-        ignore eOpenDoor, eObjectDetected;
-
-        entry {
-             send DoorV,eSendCommandToStopDoor;
-        }
-
-        on eDoorOpened goto DoorOpened;
-        on eDoorClosed goto DoorClosed;
-        on eDoorStopped goto DoorOpening;
-    }
-
-    state StoppingTimer {
-        defer eOpenDoor, eCloseDoor, eObjectDetected;
-
-        entry {
-             send TimerV,eStopDoorCloseTimer;
-        } 
-
-        on eOperationSuccess goto ReturnState;
-        on eOperationFailure goto WaitingForTimer;
-    }
-
-    state WaitingForTimer {
-        defer eOpenDoor, eCloseDoor, eObjectDetected;
-        entry { }
-
-        on eTimerFired goto ReturnState;
-    }
-
-    state ReturnState {
-        entry {
-            raise eStopTimerReturned;
-        }
-    }
-}
-
-main model User
-receives;
-{
-    var ElevatorV : machine;
-
-    start state Init {
-        entry {
-            ElevatorV = new iElevator();
-            raise eUnit; 
-        }
-
-        on eUnit goto Loop;
-    }
-
-    state Loop {
-        entry {
-            if ($) {
-				send ElevatorV, eOpenDoor;
-            } else if ($) {
-               send ElevatorV,eCloseDoor;
-            }
-            raise eUnit;
-        }
-
-        on eUnit goto Loop;
-    }
-}
-
 eventset Door_Receives = {eSendCommandToOpenDoor, eSendCommandToCloseDoor, eObjectEncountered, eSendCommandToStopDoor, eSendCommandToResetDoor};
 type iDoor(machine) = Door_Receives;
 
-model Door 
-exports iDoor; 
-{
-    var ElevatorV : machine;
-
-    start state _Init {
-	entry (payload: machine) { ElevatorV = payload; raise eUnit; }
-        on eUnit goto Init;
-    }
-
-    state Init {
-        ignore eSendCommandToStopDoor, eSendCommandToResetDoor, eResetDoor;
-        entry {}
-
-        on eSendCommandToOpenDoor goto OpenDoor;
-        on eSendCommandToCloseDoor goto ConsiderClosingDoor;
-    }
-
-    state OpenDoor {
-        entry {
-            send ElevatorV,eDoorOpened;
-            raise eUnit;
-        }
-
-        on eUnit goto ResetDoor;
-    }
-
-    state ConsiderClosingDoor {
-        entry {
-            if ($) {
-                raise eUnit;
-            } else if ($) {
-                raise eObjectEncountered;
-            }
-        }
-
-        on eUnit goto CloseDoor;
-        on eObjectEncountered goto ObjectEncountered;
-        on eSendCommandToStopDoor goto StopDoor;
-    }
-
-    state ObjectEncountered {
-        entry {
-            send ElevatorV,eObjectDetected;
-            raise eUnit;
-        }
-
-        on eUnit goto Init;
-    }
-
-    state CloseDoor {
-        entry {
-             send ElevatorV,eDoorClosed; raise eUnit;
-        }
-
-        on eUnit goto ResetDoor;
-    }
-
-    state StopDoor {
-        entry {
-            send ElevatorV,eDoorStopped; raise eUnit;
-        }
-
-        on eUnit goto OpenDoor;
-    }
-
-    state ResetDoor {
-        ignore eSendCommandToOpenDoor, eSendCommandToCloseDoor,
-            eSendCommandToStopDoor;
-        entry { }
-
-        on eSendCommandToResetDoor goto Init;
-    }
-}
 
 eventset Timer_Receives = { eStartDoorCloseTimer, eStopDoorCloseTimer };
 type iTimer(machine) = Timer_Receives;
 
-model Timer
-exports iTimer;
+module Elevator
+private;
 {
-    var ElevatorV : machine;
+	machine ElevatorMachine : iElevator
+	sends eSendCommandToResetDoor, eSendCommandToOpenDoor, eSendCommandToStopDoor, eSendCommandToCloseDoor, eStartDoorCloseTimer, eStopDoorCloseTimer;
+	{
+	    var TimerV : machine;
+	    var DoorV: machine;
 
-    start state _Init {
-	entry (payload: machine) { ElevatorV = payload; raise eUnit; }
-        on eUnit goto Init;
-    }
+	    start state Init {
+	        entry {
+	            TimerV = new iTimer(this);
+	            DoorV = new iDoor(this);
+	            raise eUnit;
+	        }
 
-    state Init {
-        ignore eStopDoorCloseTimer;
-        entry {}
-        on eStartDoorCloseTimer goto TimerStarted;
-    }
+	        on eUnit goto DoorClosed;
+	    }
 
-    state TimerStarted {
-        defer eStartDoorCloseTimer;
-        entry {
-             if ($) { raise eUnit; }
-        }
-        on eUnit goto SendTimerFired;
-        on eStopDoorCloseTimer goto ConsiderStopping;
-    }
+	    state DoorClosed {
+	        ignore eCloseDoor;
 
-    state SendTimerFired {
-        defer eStartDoorCloseTimer;
-        entry {
-            send ElevatorV,eTimerFired; raise eUnit; 
-        }
-        on eUnit goto Init;
-    }
+	        entry { 
+	            send DoorV, eSendCommandToResetDoor;
+	        }
 
-    state ConsiderStopping {
-        defer eStartDoorCloseTimer;
-        entry {
-            if ($) {
-                send ElevatorV,eOperationFailure;
-                send ElevatorV,eTimerFired;
-            } else {
-                send ElevatorV,eOperationSuccess;
-            }
-            raise eUnit;
-        }
-        on eUnit goto Init;
-    }
+	        on eOpenDoor goto DoorOpening;
+	    }
+
+	    state DoorOpening {
+	        ignore eOpenDoor;
+	        defer eCloseDoor;
+
+	        entry {
+	            send DoorV, eSendCommandToOpenDoor;
+	        }
+
+	        on eDoorOpened goto DoorOpened;
+	    }
+
+	    state DoorOpened {
+	        defer eCloseDoor;
+
+	        entry {
+	            send DoorV,eSendCommandToResetDoor;
+	            send TimerV,eStartDoorCloseTimer;
+	        }
+
+	        on eTimerFired goto DoorOpenedOkToClose;
+	        on eStopTimerReturned goto DoorOpened;
+	        on eOpenDoor push StoppingTimer;
+	    }
+
+	    state DoorOpenedOkToClose {
+	        defer eOpenDoor;
+
+	        entry {
+	            send TimerV,eStartDoorCloseTimer;
+	        }
+
+	        on eStopTimerReturned, eTimerFired goto DoorClosing;
+	        on eCloseDoor push StoppingTimer;
+	    }
+
+	    state DoorClosing {
+	        defer eCloseDoor;
+
+	        entry {
+	            send DoorV,eSendCommandToCloseDoor;
+	        }
+
+	        on eOpenDoor goto StoppingDoor;
+	        on eDoorClosed goto DoorClosed;
+	        on eObjectDetected goto DoorOpening;
+	    }
+
+	    state StoppingDoor {
+	        defer eCloseDoor; 
+	        ignore eOpenDoor, eObjectDetected;
+
+	        entry {
+	             send DoorV,eSendCommandToStopDoor;
+	        }
+
+	        on eDoorOpened goto DoorOpened;
+	        on eDoorClosed goto DoorClosed;
+	        on eDoorStopped goto DoorOpening;
+	    }
+
+	    state StoppingTimer {
+	        defer eOpenDoor, eCloseDoor, eObjectDetected;
+
+	        entry {
+	             send TimerV,eStopDoorCloseTimer;
+	        } 
+
+	        on eOperationSuccess goto ReturnState;
+	        on eOperationFailure goto WaitingForTimer;
+	    }
+
+	    state WaitingForTimer {
+	        defer eOpenDoor, eCloseDoor, eObjectDetected;
+	        entry { }
+
+	        on eTimerFired goto ReturnState;
+	    }
+
+	    state ReturnState {
+	        entry {
+	            raise eStopTimerReturned;
+	        }
+	    }
+	}
+
+	main model User
+	receives;
+	sends eOpenDoor, eCloseDoor;
+	{
+	    var ElevatorV : machine;
+
+	    start state Init {
+	        entry {
+	            ElevatorV = new iElevator();
+	            raise eUnit; 
+	        }
+
+	        on eUnit goto Loop;
+	    }
+
+	    state Loop {
+	        entry {
+	            if ($) {
+					send ElevatorV, eOpenDoor;
+	            } else if ($) {
+	               send ElevatorV,eCloseDoor;
+	            }
+	            raise eUnit;
+	        }
+
+	        on eUnit goto Loop;
+	    }
+	}
 }
 
+module Door
+private;
+{
+	machine DoorMachine : iDoor
+	sends eDoorOpened, eObjectDetected, eDoorClosed, eDoorStopped;
+	{
+	    var ElevatorV : machine;
+
+	    start state _Init {
+		entry (payload: machine) { ElevatorV = payload; raise eUnit; }
+	        on eUnit goto Init;
+	    }
+
+	    state Init {
+	        ignore eSendCommandToStopDoor, eSendCommandToResetDoor, eResetDoor;
+	        entry {}
+
+	        on eSendCommandToOpenDoor goto OpenDoor;
+	        on eSendCommandToCloseDoor goto ConsiderClosingDoor;
+	    }
+
+	    state OpenDoor {
+	        entry {
+	            send ElevatorV,eDoorOpened;
+	            raise eUnit;
+	        }
+
+	        on eUnit goto ResetDoor;
+	    }
+
+	    state ConsiderClosingDoor {
+	        entry {
+	            if ($) {
+	                raise eUnit;
+	            } else if ($) {
+	                raise eObjectEncountered;
+	            }
+	        }
+
+	        on eUnit goto CloseDoor;
+	        on eObjectEncountered goto ObjectEncountered;
+	        on eSendCommandToStopDoor goto StopDoor;
+	    }
+
+	    state ObjectEncountered {
+	        entry {
+	            send ElevatorV,eObjectDetected;
+	            raise eUnit;
+	        }
+
+	        on eUnit goto Init;
+	    }
+
+	    state CloseDoor {
+	        entry {
+	             send ElevatorV,eDoorClosed; raise eUnit;
+	        }
+
+	        on eUnit goto ResetDoor;
+	    }
+
+	    state StopDoor {
+	        entry {
+	            send ElevatorV,eDoorStopped; raise eUnit;
+	        }
+
+	        on eUnit goto OpenDoor;
+	    }
+
+	    state ResetDoor {
+	        ignore eSendCommandToOpenDoor, eSendCommandToCloseDoor,
+	            eSendCommandToStopDoor;
+	        entry { }
+
+	        on eSendCommandToResetDoor goto Init;
+	    }
+	}
+}
+
+module Timer
+private;
+{
+	machine TimerMachine : iTimer
+	sends eTimerFired, eOperationFailure, eOperationSuccess;
+	{
+	    var ElevatorV : machine;
+
+	    start state _Init {
+		entry (payload: machine) { ElevatorV = payload; raise eUnit; }
+	        on eUnit goto Init;
+	    }
+
+	    state Init {
+	        ignore eStopDoorCloseTimer;
+	        entry {}
+	        on eStartDoorCloseTimer goto TimerStarted;
+	    }
+
+	    state TimerStarted {
+	        defer eStartDoorCloseTimer;
+	        entry {
+	             if ($) { raise eUnit; }
+	        }
+	        on eUnit goto SendTimerFired;
+	        on eStopDoorCloseTimer goto ConsiderStopping;
+	    }
+
+	    state SendTimerFired {
+	        defer eStartDoorCloseTimer;
+	        entry {
+	            send ElevatorV,eTimerFired; raise eUnit; 
+	        }
+	        on eUnit goto Init;
+	    }
+
+	    state ConsiderStopping {
+	        defer eStartDoorCloseTimer;
+	        entry {
+	            if ($) {
+	                send ElevatorV,eOperationFailure;
+	                send ElevatorV,eTimerFired;
+	            } else {
+	                send ElevatorV,eOperationSuccess;
+	            }
+	            raise eUnit;
+	        }
+	        on eUnit goto Init;
+	    }
+	}
+}
+
+test elevator Elevator || Door || Timer;
+
+implementation (hide iTimer in Elevator || Door || Timer);

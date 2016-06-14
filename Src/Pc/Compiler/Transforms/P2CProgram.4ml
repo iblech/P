@@ -1703,8 +1703,8 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 	PayloadEvalOrder(s, i, p, h) :- p: in.Expr, RhsEvalOrder(s, i, p, h).
 
 	RhsTrans(c, s, i, j', trans) :- RhsNext(c, s, i, j', e, tail), trans = out.Args(ec, tail), 
-									e = New(name, arg), MapInterfaceToMachine(name, mname), PayloadEvalOrder(s, i, arg, h),
-									ContainerInNewCall(c, mname, funName, machineName, container),
+									e = New(name, arg), MapCreateToImplMachine(c.owner, name, impdecl), PayloadEvalOrder(s, i, arg, h),
+									ContainerInNewCall(c, impdecl.name, funName, machineName, container),
 									process = out.BinApp(PFLD, Ident("context"), Ident("process")),
 									newCall = out.FunApp(Ident(funName), Args(process, Args(Ident(machineName), Args(Ident(strJoin("p_tmp_expr_", toString(h))), container)))),
 									ec = out.FunApp(Ident("PrtCloneValue"), Args(out.BinApp(PFLD, newCall, Ident("id")), NIL)).
@@ -1982,8 +1982,8 @@ transform P2CProgram (in:: P, outputFileName: String, noSourceInfo: Boolean, tes
 						   cs = out.Seq(receive, Seq(Seq(info, case), Seq(Seq(info, blocked), Seq(Seq(info, exception), Seq(Seq(info, resetRcase), Seq(info, resetReturnTo)))))).
 	
 	//// New Machine or Model
-	StmtTrans(c, s, cs) :- SubSE(c, s), s = in.NewStmt(name, NIL, x), MapInterfaceToMachine(name, mname),
-						   ContainerInNewCall(c, mname, funName, machineName, container),
+	StmtTrans(c, s, cs) :- SubSE(c, s), s = in.NewStmt(name, NIL, x), MapCreateToImplMachine(c.owner, name, impdecl),
+						   ContainerInNewCall(c, impdecl.name, funName, machineName, container),
 						   newCall = out.FunApp(Ident(funName),
 										Args(BinApp(PFLD, Ident("context"), Ident("process")),
 										Args(Ident(machineName),

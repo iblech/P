@@ -207,7 +207,7 @@ ExportExpr
 
 /* Rename */
 RenameExpr
-	: LPAREN RENAME LPAREN StringList RPAREN TO LPAREN StringList RPAREN IN ModuleExpr RPAREN		{ PushRenameExpr(ToSpan(@1)); }
+	: LPAREN RENAME ID TO ID IN ModuleExpr RPAREN		{ PushRenameExpr($3.str, ToSpan(@3), $5.str, ToSpan(@5), ToSpan(@1)); }
 	;
 
 /* StringList */
