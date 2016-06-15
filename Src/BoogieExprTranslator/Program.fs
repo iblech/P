@@ -731,6 +731,39 @@ let translate_stmt stmt G typemap =
 let printfn_comment x = 
   printf "// "
   printfn x
+
+let print_equals max_fields =
+    printfn "// Equals
+procedure PrtEquals(a: PrtRef, b: PrtRef) returns (v: bool)
+{
+  var ta, tb: PrtType;
+
+  if(a == b) { v := true; return; }
+
+  ta := PrtDynamicType(a);
+  tb := PrtDynamicType(b);
+
+  if(ta != tb) { v := false; return; }
+  if(ta == PrtTypeInt) { v := (PrtFieldInt(a) == PrtFieldInt(b)); return; }
+  if(ta == PrtTypeBool) { v := (PrtFieldBool(a) == PrtFieldBool(b)); return; }
+  if(ta == PrtTypeMachine) { v := (PrtFieldMachine(a) == PrtFieldMachine(b)); return; }
+  if(ta == PrtTypeEvent) { v := (PrtFieldEvent(a) == PrtFieldEvent(b)); return; }
+    "
+  
+    for i = 1 to max_fields do
+      printfn "  if(ta == PrtTypeTuple%d) { call v := PrtEqualsTuple%d(a,b); return; }" i i
+    
+    printfn "
+  // Map, Seq type
+  assume false;
+}        
+    "
+    for i = 1 to max_fields do
+      printfn "procedure PrtEqualsTuple%d(x: PrtRef, y: PrtRef) returns (v: bool) {" i
+      for j = 0 to (i-1) do
+        printfn "  call v := PrtEquals(PrtFieldTuple%d(x), PrtFieldTuple%d(y));" j j
+        if j <> (i-1) then printfn "  if(!v) { return; }"
+      printfn "}"
    
 [<EntryPoint>]
 let main argv = 
@@ -841,11 +874,8 @@ let main argv =
     printfn "}"
 
     (* Equals *)
-
-
-
-
-
+    print_equals(max_fields)
+    
     let s = IO.File.ReadAllLines("CommonBpl.bpl") in
     Array.iter (fun s -> printfn "%s" s) s
     0 // return an integer exit code
