@@ -603,7 +603,7 @@ let translate_type t typmap =
   | Type.Event -> "PrtTypeEvent"
   | Any -> raise Not_defined
   | Type.Tuple(ls) -> sprintf "PrtTypeTuple%d" (List.length ls)
-  | Type.Seq(t) -> sprintf "PrtTypeSeq%d" (Map.find t typmap)
+  | Type.Seq(t1) -> sprintf "PrtTypeSeq%d" (Map.find t typmap)
   | Type.Map(t1, t2) -> sprintf "PrtTypeMap%d" (Map.find t typmap)
 
 let event_to_int_map = ref Map.empty
@@ -651,14 +651,18 @@ let translate_assign lval expr G typemap =
                          | Lval.Var(v) -> v
                          | _ -> raise Not_defined
   in
-
+  let rec set_types_asserted t =
+    types_asserted := Set.add t !types_asserted
+    match t with
+    | Type.Tuple ts -> List.iter set_types_asserted ts
+    | _ -> ()
   match (lval, expr) with 
   | _, Expr.Cast(e, t) -> 
     begin
       (* evaluate rhs *)
       let rhs_var = gen_rhs_value e G in
       (* generate type assertion *)
-      types_asserted := Set.add t !types_asserted
+      set_types_asserted t
       printfn "call AssertIsType%d(%s);" (Map.find t typemap) rhs_var
       (* the assignment *)
       printfn "%s := %s;" (get_lhs_var lval) rhs_var      
@@ -764,6 +768,28 @@ procedure PrtEquals(a: PrtRef, b: PrtRef) returns (v: bool)
         printfn "  call v := PrtEquals(PrtFieldTuple%d(x), PrtFieldTuple%d(y));" j j
         if j <> (i-1) then printfn "  if(!v) { return; }"
       printfn "}"
+ 
+let print_type_check t typemap =
+  let tindex =  Map.find t typemap in
+  printfn "// Type %s" (print_type t)
+  printfn "procedure AssertIsType%d(x: PrtRef) {" tindex
+  match t with
+  | Null -> raise Not_defined
+  | Any -> raise Not_defined
+  | Bool 
+  | Seq(_)
+  | Map(_, _)
+  | Int -> printfn "  assert PrtDynamicType(x) == %s;" (translate_type t typemap)
+  | Machine
+  | Type.Event -> printfn "  assert PrtDynamicType(x) == %s || PrtIsNull(x);" (translate_type t typemap)
+  | Type.Tuple ts ->
+    begin
+      printfn "  assert PrtDynamicType(x) == PrtTypeTuple%d;" (List.length ts)
+      for i = 0 to ((List.length ts) - 1) do
+        let ti = List.nth ts i in
+        printfn "  call AssertIsType%d(PrtFieldTuple%d(x));" (Map.find ti typemap) i
+    end
+  printfn "}"
    
 [<EntryPoint>]
 let main argv = 
@@ -876,6 +902,9 @@ let main argv =
     (* Equals *)
     print_equals(max_fields)
     
+    (* AssertIsType *)
+    Set.iter (fun t -> print_type_check t typemap) !types_asserted
+
     let s = IO.File.ReadAllLines("CommonBpl.bpl") in
     Array.iter (fun s -> printfn "%s" s) s
     0 // return an integer exit code
