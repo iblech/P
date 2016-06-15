@@ -221,7 +221,7 @@ let rec typeof expr G =
   | This -> Machine
   | Nondet -> Bool
   | Event _ -> Type.Event
-  | Expr.Var(v) -> G v
+  | Expr.Var(v) -> Map.find v G
   | Expr.Bin(Idx, e1, e2) ->
     begin
       match typeof e1 G with
@@ -279,7 +279,7 @@ let rec typeof expr G =
 
 let rec typeof_lval lval G =
   match lval with
-  | Lval.Var(v) -> G v
+  | Lval.Var(v) -> Map.find v G
   | Lval.Dot(l, i) -> 
     begin
       match (typeof_lval l G) with
@@ -372,7 +372,7 @@ let get_fresh_var () =
 
 let get_local ty G =
   let name = get_fresh_var() in
-  (name, fun s -> if s = name then ty else G s)
+  (name, Map.add name ty G)
 
 (* Takes an expr as input, returns the re-written expr, a set of statements and updated environemt *)
 let rec remove_side_effects_expr expr G =
@@ -798,7 +798,7 @@ let main argv =
     printfn_comment "Input type environment";
     Map.iter (fun v t -> printfn_comment "%s -> %s" v (print_type t)) env;
 
-    let G = fun v -> if Map.containsKey v env then Map.find v env else raise Not_defined in
+    let G = env in
 
     (* Remove side effects *)
     let (stmtlist, G) = normalize_lval_stlist stmtlist G in
@@ -891,6 +891,10 @@ let main argv =
     printfn ""
 
     printfn "procedure main() {"
+    Map.iter (fun k v -> printfn "  var %s: PrtRef; // %s" k (print_type v)) G
+    printfn "  var tmp_rhs_value: PrtRef;"
+    for i = 0 to max_fields-1 do
+      printfn "  var tmp_rhs_value_%d: PrtRef;" i
     List.iter (fun s -> 
       begin
         printfn_comment "%s" (print_stmt s)
