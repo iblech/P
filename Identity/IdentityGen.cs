@@ -1051,22 +1051,35 @@ namespace Microsoft.Identity
                     builder.Clear();
                 }
                 //Start generating code for machines.
-                foreach (var machine in program.Machines)
-                {
-                    StringBuilder sb = new StringBuilder();
-                    //Indent(sb);
-                    level++;
-                    genMachineDecl(machine, sb);
-                    machineDeclToSB[machine] = sb;
-                }
 
                 foreach (var observer in program.Observes)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    level++;
-                    genObservesDecl(observer as P_Root.ObservesDecl, sb);
-                    machineDeclToSB[observer.monitor as P_Root.MachineDecl] = sb;
+                    if (!machineDeclToSB.ContainsKey(observer.monitor as P_Root.MachineDecl))
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        genObservesDecl(observer as P_Root.ObservesDecl, sb);
+                        machineDeclToSB[observer.monitor as P_Root.MachineDecl] = sb;
+                        Console.WriteLine(sb);
+                    }
+                    else
+                    {
+                        StringBuilder sb = machineDeclToSB[observer.monitor as P_Root.MachineDecl];
+                        Console.WriteLine(sb);
+                        sb.Length -= 2;
+                        sb.Append(", " + getString(observer.ev) + "{\n");
+                    }
                 }
+                foreach (var machine in program.Machines)
+                {
+                    if (!machineDeclToSB.ContainsKey(machine as P_Root.MachineDecl))
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        genMachineDecl(machine, sb);
+                        machineDeclToSB[machine] = sb;
+                    }
+                }
+
+               
                 //Bind the variable, function and state declarations to the relevant machine, 
                 //and the transitions to the relevant state.
                 foreach (var variable in program.Variables)
