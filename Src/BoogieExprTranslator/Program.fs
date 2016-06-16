@@ -24,6 +24,8 @@ type Expr =
   | Dot of Expr * int 
   | Cast of Expr * Type 
   | Tuple of Expr list
+  | New of string * Expr list
+  | Default of Type
 
 type Lval = Var of string | Dot of Lval * int | Index of Lval * Expr
 
@@ -37,6 +39,8 @@ let stmtlist = [
                  Assign(Lval.Var("d"), Expr.Var("c"));  // d = c
                  Assign(Lval.Var("c"), Expr.Cast(Expr.Var("d"), Type.Tuple [Int; Int]));  // d = c
                  Insert(Lval.Index(Lval.Var("f"), Expr.ConstInt(0)), Expr.Bin(Idx, Expr.Var("e"), Expr.ConstInt(1)), Expr.ConstInt(2)); // f[0] += (e[1], 2)
+                 Assign(Lval.Var("g"), New("M", [Expr.ConstInt 1])); // g = new M(1)
+                 Assign(Lval.Var("f"), Default(Type.Seq (Type.Seq Int))); // f = default(seq[seq[int]])
                ]
 
 let env = Map.ofList [ 
@@ -46,6 +50,7 @@ let env = Map.ofList [
             ("d", Type.Tuple [Any; Any]); 
             ("e", Type.Seq Int);
             ("f", Type.Seq (Type.Seq Int));
+            ("g", Type.Machine);
             ("x", Int); 
             ("y", Int) 
           ]
@@ -173,6 +178,8 @@ let rec print_expr (e: Expr) =
   | Expr.Dot(e, i) -> (print_expr e) + "." + i.ToString()
   | Cast(e, t) -> sprintf "(%s as %s)" (print_expr e) (print_type t)
   | Tuple(ls) -> sprintf "(%s)" (print_list print_expr ls)
+  | Default(t) -> sprintf "default(%s)" (print_type t)
+  | New(s, args) -> sprintf "new %s(%s)" s (print_list print_expr args)
  
 let rec print_lval (l: Lval) =
   match l with
@@ -275,6 +282,8 @@ let rec typeof expr G =
     end
   | Cast(e, t) -> t
   | Expr.Tuple(es) -> Type.Tuple(List.map (fun e -> typeof e G) es)
+  | Default(t) -> t
+  | New(_, _) -> Machine
   | _ -> raise Not_defined
 
 let rec typeof_lval lval G =
@@ -320,12 +329,14 @@ let rec find_all_types stmt G =
         | Event _
         | This
         | Nondet
+        | Default _ 
         | Expr.Var _ -> Set.empty
         | Bin(_, e1, e2) -> Set.union (all_exprs e1) (all_exprs e2)
         | Un(_, e') -> all_exprs e'
         | Expr.Dot(e', _) -> all_exprs e'
         | Cast(e, t) -> all_exprs e
-        | Expr.Tuple(es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
+        | Expr.Tuple(es)
+        | New(_, es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
     in 
     ret.Add(e)
   in
@@ -453,6 +464,19 @@ let rec remove_side_effects_expr expr G =
         in
         let (l, Gfinal) = get_local (typeof expr G) c in
         (Expr.Var(l), b @ [Assign(Lval.Var(l), Expr.Tuple(List.rev a))], Gfinal)
+      end
+    | New(s, es) -> 
+      begin
+        let (a, b, c) = 
+          List.fold (fun (partial_es, partial_stlist, partial_G) e -> 
+            begin
+              let (e', s, G') = remove_side_effects_expr e partial_G in
+              (e' :: partial_es, partial_stlist @ s, G')
+            end
+            ) ([], [], G) es
+        in
+        let (l, Gfinal) = get_local (typeof expr G) c in
+        (Expr.Var(l), b @ [Assign(Lval.Var(l), New(s, List.rev a))], Gfinal)
       end
     in (nexpr, stlist, nG) 
 
