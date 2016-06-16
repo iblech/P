@@ -29,7 +29,6 @@ eventset Timer_Receives = { eStartDoorCloseTimer, eStopDoorCloseTimer };
 type iTimer(machine) = Timer_Receives;
 
 module Elevator
-private;
 {
 	machine ElevatorMachine : iElevator
 	sends eSendCommandToResetDoor, eSendCommandToOpenDoor, eSendCommandToStopDoor, eSendCommandToCloseDoor, eStartDoorCloseTimer, eStopDoorCloseTimer;

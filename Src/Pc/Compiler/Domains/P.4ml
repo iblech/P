@@ -941,7 +941,8 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Cast can never succeed"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k = EMPTY.
 
-    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), MachineDecl(n, _, mt, _, _, _), mt != MONITOR, no MachineReceivesDecl(c.owner, _), t = BaseType(REAL);
+    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), MachineDecl(n, _, mt, _, _, _), mt != MONITOR, IsPrivateMachine(c.owner.mod, n), no MachineReceivesDecl(m, _), t = BaseType(REAL);
+    					 SubSE(c, e), e = New(n, _), MachineDecl(n, _, mt, _, _, _), mt != MONITOR, IsPrivateMachine(c.owner.mod, n), MachineReceivesDecl(m, _), t = toList(#InterfaceType, NIL, {ev | MachineReceivesDecl(m, ev) }), t : InterfaceType;
 						 SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _, _), MachineExportsDecl(_, n), TypeExpansion(NameType(n), t);
 						 SubSE(c, e), e = New(n, _), MachineDecl(n, _, _, _, _, _), MachineReceivesDecl(m, _), MachineExportsDecl(_, n), TypeExpansion(NameType(n), t).
 
@@ -949,8 +950,8 @@ domain PStaticTyping extends PData
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), MachineDecl(n, _, MONITOR, _, _, _).
 	[ rule_Classes = '"error, msg: Undefined machine or no machine exports the created interface"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _, _), no MachineExportsDecl(_, n).
-	[ rule_Classes = '"error, msg: "new" of a machine is allowed only if the machine has empty receive set"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), m is MachineDecl(n, _, _, _, _, _), MachineReceivesDecl(m, _), no MachineExportsDecl(_, n).
+	[ rule_Classes = '"error, msg: "new" of a machine is allowed only if the machine has only private events in its receive set"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), m is MachineDecl(n, _, _, _, _, _), no IsPrivateMachine(c.owner.mod, n), no MachineExportsDecl(_, n).
 
 	
 
