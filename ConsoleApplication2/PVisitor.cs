@@ -2,10 +2,7 @@
 using Microsoft.Pc.Domains;
 using System;
 using System.Collections.Generic;
-using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 using Microsoft.Formula.API.Generators;
 
@@ -13,327 +10,148 @@ namespace Microsoft.P2Boogie
 {
     abstract class PVisitor
     {
-        //ToDo VisitNatural() VisitInteger()s
         protected List<PProgram> parsedPrograms { get; set; }
 
-        private static string getString(ICSharpTerm x)
+        protected static string getString(ICSharpTerm x)
         {
-            return (x as P_Root.StringCnst).Value;
+            try
+            {
+                return (x as P_Root.StringCnst).Value;
+            }
+            catch (NullReferenceException e)
+            {
+                Console.WriteLine("The value passed cannot be converted to a String.");
+                Console.WriteLine(e.StackTrace);
+                return "";
+            }
         }
 
-        private static void visitSkip(StringBuilder sb)
+        protected static string getValue(ICSharpTerm x)
         {
-            return;
+            try
+            { 
+                Formula.Common.Rational a = (x as P_Root.RealCnst).Value;
+                //Can be improved!
+                if (a.IsInteger)
+                {
+                    return a.ToString(0);
+                }
+                else
+                {
+                    return a.ToString(100);
+                }
+            }
+            catch (NullReferenceException e)
+            {
+                Console.WriteLine("The value passed cannot be converted to an Integer/Natural.");
+                Console.WriteLine(e.StackTrace);
+                return "";
+            }
         }
 
-        private static void visitWhile(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitIf(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitElse(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitReturn(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitNew(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitThis(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitNull(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitPop(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitTrue(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitFalse(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitSwap(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitXfer(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitSizeof(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitKeys(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitValues(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitAssert(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitPrint(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitSend(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitMonitor(StringBuilder sb)
-        {
-            return;
-        }
-        /*private static void visitSpec(StringBuilder sb)
-        {
-            return;
-        }*/
-        private static void visitMonitors(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitRaise(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitHalt(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitIntType(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitBoolType(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitAnyType(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitSeqType(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitMapType(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitType(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitMain(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitEvent(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitMachine(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitAssume(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitDefault(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitVarDecl(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitStart(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitHot(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitCold(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitModel(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitState(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitGroup(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitStatic(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitEntryBlock(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitExitBlock(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitDefer(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitIgnore(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitGoto(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitPush(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitReceive(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitCase(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitIn(StringBuilder sb)
-        {
-            return;
-        }
+        protected abstract void visitSkip(StringBuilder sb);
+        protected abstract void visitWhile(StringBuilder sb);
+        protected abstract void visitIf(StringBuilder sb);
+        protected abstract void visitElse(StringBuilder sb);
+        protected abstract void visitReturn(StringBuilder sb);
+        protected abstract void visitNew(StringBuilder sb);
+        protected abstract void visitThis(StringBuilder sb);
+        protected abstract void visitNull(StringBuilder sb);
+        protected abstract void visitPop(StringBuilder sb);
+        protected abstract void visitTrue(StringBuilder sb);
+        protected abstract void visitFalse(StringBuilder sb);
+        protected abstract void visitSwap(StringBuilder sb);
+        protected abstract void visitXfer(StringBuilder sb);
+        protected abstract void visitSizeof(StringBuilder sb);
+        protected abstract void visitKeys(StringBuilder sb);
+        protected abstract void visitValues(StringBuilder sb);
+        protected abstract void visitAssert(StringBuilder sb);
+        protected abstract void visitPrint(StringBuilder sb);
+        protected abstract void visitSend(StringBuilder sb);
+        protected abstract void visitMonitor(StringBuilder sb);
+        protected abstract void visitMonitors(StringBuilder sb);
+        protected abstract void visitRaise(StringBuilder sb);
+        protected abstract void visitHalt(StringBuilder sb);
+        protected abstract void visitIntType(StringBuilder sb);
+        protected abstract void visitBoolType(StringBuilder sb);
+        protected abstract void visitAnyType(StringBuilder sb);
+        protected abstract void visitSeqType(StringBuilder sb);
+        protected abstract void visitMapType(StringBuilder sb);
+        protected abstract void visitType(StringBuilder sb);
+        protected abstract void visitMain(StringBuilder sb);
+        protected abstract void visitEvent(StringBuilder sb);
+        protected abstract void visitMachine(StringBuilder sb);
+        protected abstract void visitAssume(StringBuilder sb);
+        protected abstract void visitDefault(StringBuilder sb);
+        protected abstract void visitVarDecl(StringBuilder sb);
+        protected abstract void visitStart(StringBuilder sb);
+        protected abstract void visitHot(StringBuilder sb);
+        protected abstract void visitCold(StringBuilder sb);
+        protected abstract void visitModel(StringBuilder sb);
+        protected abstract void visitState(StringBuilder sb);
+        protected abstract void visitGroup(StringBuilder sb);
+        protected abstract void visitStatic(StringBuilder sb);
+        protected abstract void visitEntryBlock(StringBuilder sb);
+        protected abstract void visitExitBlock(StringBuilder sb);
+        protected abstract void visitDefer(StringBuilder sb);
+        protected abstract void visitIgnore(StringBuilder sb);
+        protected abstract void visitGoto(StringBuilder sb);
+        protected abstract void visitPush(StringBuilder sb);
+        protected abstract void visitReceive(StringBuilder sb);
+        protected abstract void visitCase(StringBuilder sb);
+        protected abstract void visitIn(StringBuilder sb);
+        protected abstract void visitComma(StringBuilder sb);
+        protected abstract void visitEq(StringBuilder sb);
+        protected abstract void visitAssign(StringBuilder sb);
+        protected abstract void visitInsert(StringBuilder sb);
+        protected abstract void visitRemove(StringBuilder sb);
+        protected abstract void visitNe(StringBuilder sb);
+        protected abstract void visitLe(StringBuilder sb);
+        protected abstract void visitGe(StringBuilder sb);
+        protected abstract void visitLt(StringBuilder sb);
+        protected abstract void visitGt(StringBuilder sb);
+        protected abstract void visitAdd(StringBuilder sb);
+        protected abstract void visitSub(StringBuilder sb);
+        protected abstract void visitMul(StringBuilder sb);
+        protected abstract void visitIntDiv(StringBuilder sb);
+        protected abstract void visitNot(StringBuilder sb);
+        protected abstract void visitAnd(StringBuilder sb);
+        protected abstract void visitOr(StringBuilder sb);
+        protected abstract void visitNonDet(StringBuilder sb);
+        protected abstract void visitFairNonDet(StringBuilder sb);
+        protected abstract void visitBeginBlock(StringBuilder sb);
+        protected abstract void visitEndBlock(StringBuilder sb);
+        protected abstract void visitLBracket(StringBuilder sb);
+        protected abstract void visitRBracket(StringBuilder sb);
+        protected abstract void visitLParen(StringBuilder sb);
+        protected abstract void visitRParen(StringBuilder sb);
+        protected abstract void visitNmdTupSep(StringBuilder sb);
+        protected abstract void visitBeginNmdTup(StringBuilder sb);
+        protected abstract void visitEndNmdTup(StringBuilder sb);
+        protected abstract void visitEndTup(StringBuilder sb);
+        protected abstract void visitBeginTup(StringBuilder sb);
+        protected abstract void visitFieldOp(StringBuilder sb);
+        protected abstract void visitEndSeq(StringBuilder sb);
+        protected abstract void visitBeginSeq(StringBuilder sb);
+        protected abstract void visitEndMap(StringBuilder sb);
+        protected abstract void visitMapSepTypes(StringBuilder sb);
+        protected abstract void visitbeginMap(StringBuilder sb);
+        protected abstract void visitIndexing(StringBuilder sb);
+        protected abstract void visitCastOp(StringBuilder sb);
+        protected abstract void visitExprSep(StringBuilder sb);
+        protected abstract void visitNmdExprSep(StringBuilder sb);
+        protected abstract void visitFunAppClose(StringBuilder sb);
+        protected abstract void visitFunAppOpen(StringBuilder sb);
+        protected abstract void visitSepStmt(StringBuilder sb);
+        protected abstract void visitNil(StringBuilder sb);
+        protected abstract void visitTupSep(StringBuilder sb);
+        protected abstract void visitConstInt(StringBuilder sb);
 
-        private static void visitComma(StringBuilder sb)
-        {
-            return;
-        }
-        
-        private static void visitEq(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitAssign(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitInsert(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitRemove(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitNe(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitLe(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitGe(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitLt(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitGt(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitAdd(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitSub(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitMul(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitIntDiv(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitNot(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitAnd(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitOr(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitNonDet(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitFairNonDet(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitBeginBlock(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitEndBlock(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitLBracket(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitRBracket(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitLParen(StringBuilder sb)
-        {
-            return;
-        }
-        private static void visitRParen(StringBuilder sb)
-        {
-            return;
-        }
+        protected abstract void visitID(P_Root.String @string, StringBuilder sb);
+        protected abstract void visitUnApp(P_Root.UnApp e, StringBuilder sb);
+        protected abstract void visitBinApp(P_Root.BinApp e, StringBuilder sb);
 
-        private static void visitBaseType(P_Root.BaseType t, StringBuilder sb)
+        protected virtual void visitBaseType(P_Root.BaseType t, StringBuilder sb)
         {
             if (t._0.Symbol.ToString() == "INT")
             {
@@ -361,42 +179,42 @@ namespace Microsoft.P2Boogie
             }
         }
 
-        private static void visitTupType(P_Root.TupType t, StringBuilder sb)
+        protected virtual void visitTupType(P_Root.TupType t, StringBuilder sb)
         {
             var x = t;
-            visitLParen(sb);
+            visitBeginTup(sb);
             while (x.tl.Symbol.ToString() != "NIL")
             {
                 visitTypeExpr(x.hd as P_Root.TypeExpr, sb);
-                visitComma(sb);
+                visitTupSep(sb);
                 x = x.tl as P_Root.TupType;
             }
             visitTypeExpr(x.hd as P_Root.TypeExpr, sb);
-            visitRParen(sb);
+            visitEndTup(sb);
         }
 
-        private static void visitNmdTupTypeField(P_Root.NmdTupTypeField f, StringBuilder sb)
+        protected virtual void visitNmdTupTypeField(P_Root.NmdTupTypeField f, StringBuilder sb)
         {
             visitQualifier(f.qual as P_Root.Qualifier, sb);
-            //TODO visit name
+            visitID(f.name as P_Root.String, sb);
             visitTypeExpr(f.type as P_Root.TypeExpr, sb);
         }
 
-        private static void visitNmdTupType(P_Root.NmdTupType t, StringBuilder sb)
+        protected virtual void visitNmdTupType(P_Root.NmdTupType t, StringBuilder sb)
         {
             var x = t;
-            visitLParen(sb);
+            visitBeginNmdTup(sb);
             while (x.tl.Symbol.ToString() != "NIL")
             {
                 visitNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
-                visitComma(sb);
+                visitNmdTupSep(sb);
                 x = x.tl as P_Root.NmdTupType;
             }
             visitNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
-            visitRParen(sb);
+            visitEndNmdTup(sb);
         }
 
-        private static void visitQualifier(P_Root.Qualifier q, StringBuilder sb)
+        protected virtual void visitQualifier(P_Root.Qualifier q, StringBuilder sb)
         {
             if (q.Symbol.ToString() == "SWAP")
             {
@@ -409,30 +227,31 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitSeqType(P_Root.SeqType t, StringBuilder sb)
+        protected virtual void visitSeqType(P_Root.SeqType t, StringBuilder sb)
         {
             visitSeqType(sb);
-            visitLBracket(sb);
+            visitBeginSeq(sb);
             visitTypeExpr(t.x as P_Root.TypeExpr, sb);
-            visitRBracket(sb);
+            visitEndSeq(sb);
         }
 
-        private static void visitMapType(P_Root.MapType t, StringBuilder sb)
+        protected virtual void visitMapType(P_Root.MapType t, StringBuilder sb)
         {
             visitMapType(sb);
-            visitLBracket(sb);
+            visitbeginMap(sb);
             visitTypeExpr(t.k as P_Root.TypeExpr, sb);
-            visitComma(sb);
+            visitMapSepTypes(sb);
             visitTypeExpr(t.v as P_Root.TypeExpr, sb);
-            visitRBracket(sb);
+            visitEndMap(sb);
         }
-
-        private static void visitNameType(P_Root.NameType t, StringBuilder sb)
+        
+        protected virtual void visitNameType(P_Root.NameType t, StringBuilder sb)
         {
+            sb.Append(getString(t.name));
             return;
         }
 
-        private static void visitTypeExpr(P_Root.TypeExpr t, StringBuilder sb)
+        protected virtual void visitTypeExpr(P_Root.TypeExpr t, StringBuilder sb)
         {
             //t: any TypeExpr. This means we can check its derived type as we wish.
             if (t is P_Root.NameType)
@@ -461,10 +280,10 @@ namespace Microsoft.P2Boogie
             }
         }
 
-        private static void visitTypeDef(P_Root.TypeDef typeDef, StringBuilder sb)
+        protected virtual void visitTypeDef(P_Root.TypeDef typeDef, StringBuilder sb)
         {
             visitType(sb);
-            //ToDo name
+            sb.Append(getString(typeDef.name));
             visitAssign(sb);
             if (typeDef.type.Symbol.ToString() != "NIL")
             {
@@ -473,16 +292,16 @@ namespace Microsoft.P2Boogie
 
         }
 
-        private static void visitName(P_Root.Name e, StringBuilder sb)
+        protected virtual void visitName(P_Root.Name e, StringBuilder sb)
         {
-            //ToDo name
+            sb.Append(getString(e.name));
             return;
         }
 
-        private static void visitNewExpr(P_Root.New e, StringBuilder sb)
+        protected virtual void visitNewExpr(P_Root.New e, StringBuilder sb)
         {
             visitNew(sb);
-            //ToDo name.
+            sb.Append(getString(e.name));
             visitLParen(sb);
             if (e.arg.Symbol.ToString() != "NIL")
             {
@@ -491,7 +310,7 @@ namespace Microsoft.P2Boogie
             visitRParen(sb);
         }
 
-        private static void visitFunApp(P_Root.FunApp e, StringBuilder sb)
+        protected virtual void visitFunApp(P_Root.FunApp e, StringBuilder sb)
         {
             //ToDo Name
             visitLParen(sb);
@@ -503,14 +322,18 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitNulApp(P_Root.NulApp e, StringBuilder sb)
+        protected virtual void visitNulApp(P_Root.NulApp e, StringBuilder sb)
         {
             if (e.op is P_Root.Integer)
             {
-                //ToDo Integer.
+                var x = e.op as P_Root.Integer;
+                visitConstInt(sb);
+                visitLParen(sb);
+                sb.Append(getValue(x));
+                visitRParen(sb);
                 return;
             }
-            switch (e.op.Symbol.ToString() as String)
+            switch (e.op.Symbol.ToString())
             {
                 case "TRUE":
                     visitTrue(sb);
@@ -540,128 +363,89 @@ namespace Microsoft.P2Boogie
         }
 
 
-        private static void visitUnApp(P_Root.UnApp e, StringBuilder sb)
+        protected virtual void visitUnOp(P_Root.IArgType_UnApp__0 op, StringBuilder sb)
         {
-            switch (e.op.Symbol.ToString() as String)
+            switch(op.Symbol.ToString())
             {
                 case "NOT":
                     visitNot(sb);
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     break;
                 case "NEG":
                     visitNot(sb);
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     break;
                 case "KEYS":
                     visitKeys(sb);
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     break;
                 case "VALUES":
                     visitValues(sb);
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     break;
                 case "SIZEOF":
                     visitSizeof(sb);
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     break;
             }
             return;
         }
 
-        private static void visitBinApp(P_Root.BinApp e, StringBuilder sb)
+        //To prevent issues with infix, prefix and postfix expressions.
+
+        protected virtual void visitBinOp(P_Root.IArgType_BinApp__0 op, StringBuilder sb)
         {
-            switch (e.op.Symbol.ToString())
+            switch (op.Symbol.ToString())
             {
                 case "ADD":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitAdd(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "SUB":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitSub(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "MUL":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitMul(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "INTDIV":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitIntDiv(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "AND":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitAnd(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "OR":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitOr(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "EQ":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitEq(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "NEQ":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitNe(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "LT":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitLt(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "LE":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitLe(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "GT":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitGt(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "GE":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitGe(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
                 case "IDX": //A non-infix operator.
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
-                    visitLBracket(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
-                    visitRBracket(sb);
+                    visitIndexing(sb);
                     break;
                 case "IN":
-                    visitExpr(e.arg1 as P_Root.Expr, sb);
                     visitIn(sb);
-                    visitExpr(e.arg2 as P_Root.Expr, sb);
                     break;
             }
             return;
         }
 
-        private static void visitFieldExpr(P_Root.Field e, StringBuilder sb)
+        protected virtual void visitFieldExpr(P_Root.Field e, StringBuilder sb)
         {
             visitExpr(e.arg as P_Root.Expr, sb);
-            //ToDo Name.
-            if (e.name is P_Root.Integer)
-            {
-
-            }
-            else if (e.name is P_Root.Natural)
-            {
-
-            }
+            visitFieldOp(sb);
+            sb.Append(getValue(e.name));
         }
 
-        private static void visitDefaultExpr(P_Root.Default e, StringBuilder sb)
+        protected virtual void visitDefaultExpr(P_Root.Default e, StringBuilder sb)
         {
             visitDefault(sb);
             visitLParen(sb);
@@ -670,14 +454,15 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitCastExpr(P_Root.Cast e, StringBuilder sb)
+        protected virtual void visitCastExpr(P_Root.Cast e, StringBuilder sb)
         {
             visitExpr(e.arg as P_Root.Expr, sb);
+            visitCastOp(sb);
             visitTypeExpr(e.type as P_Root.TypeExpr, sb);
             return;
         }
 
-        private static int visitExprs(P_Root.Exprs e, StringBuilder sb)
+        protected virtual int visitExprs(P_Root.Exprs e, StringBuilder sb)
         {
             var x = e;
             int i = 0;
@@ -685,7 +470,7 @@ namespace Microsoft.P2Boogie
             {
                 visitQualifier(x.qual as P_Root.Qualifier, sb);
                 visitExpr(x.head as P_Root.Expr, sb);
-                visitComma(sb);
+                visitExprSep(sb);
                 x = x.tail as P_Root.Exprs;
                 i++;
             }
@@ -696,41 +481,40 @@ namespace Microsoft.P2Boogie
             return i;
         }
 
-        private static void visitNamedExprs(P_Root.NamedExprs e, StringBuilder sb)
+        protected virtual void visitNamedExprs(P_Root.NamedExprs e, StringBuilder sb)
         {
             var x = e;
             while (x.tail.Symbol.ToString() != "NIL")
             {
-                //ToDo name
+                sb.Append(getString(x.field));
                 visitAssign(sb);
                 visitExpr(x.exp as P_Root.Expr, sb);
-                visitComma(sb);
+                visitNmdExprSep(sb);
                 x = x.tail as P_Root.NamedExprs;
             }
-            //ToDo field name
+            sb.Append(getString(x.field));
             visitAssign(sb);
             visitExpr(x.exp as P_Root.Expr, sb);
         }
 
-        private static void visitTupleExpr(P_Root.Tuple e, StringBuilder sb)
+        protected virtual void visitTupleExpr(P_Root.Tuple e, StringBuilder sb)
         {
             //(Ugly?) Tuple generation logic. We need to put a comma at the end iff we have a singleton tuple
             //like (1,). We thus return the # of terms from visitExprs().
-            visitLParen(sb);
+            visitBeginTup(sb);
             if (visitExprs(e.body as P_Root.Exprs, sb) == 1)
-                visitComma(sb);
-            visitRParen(sb);
-
+                visitTupSep(sb);
+            visitEndTup(sb);
         }
 
-        private static void visitNamedTupleExpr(P_Root.NamedTuple e, StringBuilder sb)
+        protected virtual void visitNamedTupleExpr(P_Root.NamedTuple e, StringBuilder sb)
         {
-            visitLParen(sb);
+            visitBeginNmdTup(sb);
             visitNamedExprs(e.body as P_Root.NamedExprs, sb);
-            visitRParen(sb);
+            visitEndNmdTup(sb);
         }
 
-        private static void visitExpr(P_Root.Expr e, StringBuilder sb)
+        protected virtual void visitExpr(P_Root.Expr e, StringBuilder sb)
         {
             if (e is P_Root.Name)
             {
@@ -779,10 +563,10 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitNewStmt(P_Root.NewStmt s, StringBuilder sb)
+        protected virtual void visitNewStmt(P_Root.NewStmt s, StringBuilder sb)
         {
             visitNew(sb);
-            //ToDo name
+            sb.Append(getString(s.name));
             visitLParen(sb);
             if (s.arg.Symbol.ToString() != "NIL")
             {
@@ -791,17 +575,18 @@ namespace Microsoft.P2Boogie
             visitRParen(sb);
         }
 
-        private static void visitRaiseStmt(P_Root.Raise s, StringBuilder sb)
+        protected virtual void visitRaiseStmt(P_Root.Raise s, StringBuilder sb)
         {
             visitRaise(sb);
+            visitExpr(s.ev as P_Root.Expr, sb);
             if (s.arg.Symbol.ToString() != "NIL")
             {
+                visitComma(sb);
                 visitExpr(s.arg as P_Root.Expr, sb);
             }
-            visitExpr(s.arg as P_Root.Expr, sb);
         }
 
-        private static void visitSendStmt(P_Root.Send s, StringBuilder sb)
+        protected virtual void visitSendStmt(P_Root.Send s, StringBuilder sb)
         {
             visitQualifier(s.qual as P_Root.Qualifier, sb);
             visitSend(sb);
@@ -816,7 +601,7 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitMonitorStmt(P_Root.Monitor s, StringBuilder sb)
+        protected virtual void visitMonitorStmt(P_Root.Monitor s, StringBuilder sb)
         {
             visitMonitor(sb);
             visitExpr(s.ev as P_Root.Expr, sb);
@@ -827,31 +612,32 @@ namespace Microsoft.P2Boogie
             }
         }
 
-        private static void visitFunStmt(P_Root.FunStmt s, StringBuilder sb)
+        protected virtual void visitFunStmt(P_Root.FunStmt s, StringBuilder sb)
         {
-            //ToDo name.
-            visitLParen(sb);
+            visitFunApp(sb);
+            sb.Append(getString(s.name));
+            visitFunAppOpen(sb);
             if (s.args.Symbol.ToString() != "NIL")
             {
                 visitExprs(s.args as P_Root.Exprs, sb);
             }
-            visitRParen(sb);
+            visitFunAppClose(sb);
             //ToDo aout.
             return;
         }
 
-        private static void visitNulStmt(P_Root.NulStmt s, StringBuilder sb)
+        protected abstract void visitFunApp(StringBuilder sb);
+
+        protected virtual void visitNulStmt(P_Root.NulStmt s, StringBuilder sb)
         {
             if (s.op.Symbol.ToString() == "POP")
                 visitPop(sb);
             else if (s.op.Symbol.ToString() == "SKIP")
                 visitSkip(sb);
         }
-
-        private static void visitBinStmt(P_Root.BinStmt s, StringBuilder sb)
-        {
-            visitExpr(s.arg1 as P_Root.Expr, sb);
-
+        
+        protected virtual void visitBinStmt(P_Root.BinStmt s, StringBuilder sb)
+        { 
             if (s.op.Symbol.ToString() == "REMOVE")
             {
                 visitRemove(sb);
@@ -864,32 +650,36 @@ namespace Microsoft.P2Boogie
             {
                 visitInsert(sb);
             }
-
+            visitExpr(s.arg1 as P_Root.Expr, sb);
             visitExpr(s.arg2 as P_Root.Expr, sb);
         }
 
-        private static void visitReturnStmt(P_Root.Return s, StringBuilder sb)
+        protected virtual void visitReturnStmt(P_Root.Return s, StringBuilder sb)
         {
             visitReturn(sb);
             if (s.expr.Symbol.ToString() != "NIL")
             {
                 visitExpr(s.expr as P_Root.Expr, sb);
             }
+            else
+            {
+                visitNil(sb);
+            }
         }
 
-        private static void visitWhileStmt(P_Root.While s, StringBuilder sb)
+        protected virtual void visitWhileStmt(P_Root.While s, StringBuilder sb)
         {
             visitWhile(sb);
             visitLParen(sb);
-            visitBeginBlock(sb);
             visitExpr(s.cond as P_Root.Expr, sb);
             visitRParen(sb);
-            visitEndBlock(sb);
+            visitBeginBlock(sb);
             visitStmt(s.body as P_Root.Stmt, sb);
+            visitEndBlock(sb);
             return;
         }
 
-        private static void visitIteStmt(P_Root.Ite s, StringBuilder sb)
+        protected virtual void visitIteStmt(P_Root.Ite s, StringBuilder sb)
         {
             visitIf(sb);
             visitLParen(sb);
@@ -907,25 +697,29 @@ namespace Microsoft.P2Boogie
             }
         }
 
-        private static void visitSeqStmt(P_Root.Seq s, StringBuilder sb)
+        protected virtual void visitSeqStmt(P_Root.Seq s, StringBuilder sb)
         {
             visitStmt(s.s1 as P_Root.Stmt, sb);
+            visitSepStmt(sb);
             visitStmt(s.s2 as P_Root.Stmt, sb);
         }
 
-        //Come back and review.
-        private static void visitCases(P_Root.Cases s, StringBuilder sb)
+        protected virtual void visitCases(P_Root.Cases s, StringBuilder sb)
         {
             visitCase(sb);
-            //ToDo name
+            sb.Append(getString(s.trig));
             visitAnonFunDecl(s.action as P_Root.AnonFunDecl, sb);
             if (s.cases.Symbol.ToString() != "NIL")
             {
                 visitCases(s.cases as P_Root.Cases, sb);
             }
+            else
+            {
+                visitNil(sb);
+            }
         }
 
-        private static void visitReceiveStmt(P_Root.Receive s, StringBuilder sb)
+        protected virtual void visitReceiveStmt(P_Root.Receive s, StringBuilder sb)
         {
             visitReceive(sb);
             visitBeginBlock(sb);
@@ -933,7 +727,7 @@ namespace Microsoft.P2Boogie
             visitEndBlock(sb);
         }
 
-        private static void visitAssertStmt(P_Root.Assert s, StringBuilder sb)
+        protected virtual void visitAssertStmt(P_Root.Assert s, StringBuilder sb)
         {
             visitAssert(sb);
             visitLParen(sb);
@@ -942,17 +736,21 @@ namespace Microsoft.P2Boogie
             if (s.msg.Symbol.ToString() != "NIL")
             {
                 visitComma(sb);
-                //ToDo name.
+                sb.Append(getString(s.msg));
+            }
+            else
+            {
+                visitNil(sb);
             }
         }
 
-        private static void visitPrintStmt(P_Root.Print s, StringBuilder sb)
+        protected virtual void visitPrintStmt(P_Root.Print s, StringBuilder sb)
         {
             visitPrint(sb);
-            //ToDo name.
+            sb.Append(getString(s.msg));
         }
 
-        private static void visitStmt(P_Root.Stmt s, StringBuilder sb)
+        protected virtual void visitStmt(P_Root.Stmt s, StringBuilder sb)
         {
             if (s is P_Root.NewStmt)
             {
@@ -1013,33 +811,42 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitQueueConstraint(P_Root.QueueConstraint c, StringBuilder sb)
+        protected virtual void visitQueueConstraint(P_Root.QueueConstraint c, StringBuilder sb)
         {
             if (c is P_Root.AssertMaxInstances)
             {
+                var x = c as P_Root.AssertMaxInstances;
                 visitAssert(sb);
-                //ToDo Natural
+                sb.Append(getValue(x.bound));
             }
             else if (c is P_Root.AssumeMaxInstances)
             {
+                var x = c as P_Root.AssumeMaxInstances;
                 visitAssume(sb);
-                //ToDo Natural
+                sb.Append(getValue(x.bound));
             }
-            //Note: Can also be NIL. Do nothing then.
+            else //Is Nil.
+            {
+                visitNil(sb);
+            }
         }
 
-        private static void visitEventDecl(P_Root.EventDecl d, StringBuilder sb)
+        protected virtual void visitEventDecl(P_Root.EventDecl d, StringBuilder sb)
         {
             visitEvent(sb);
-            //ToDo Name
+            sb.Append(getString(d.name));
             if (d.type.Symbol.ToString() != "NIL") //Not NIL
             {
                 visitTypeExpr(d.type as P_Root.TypeExpr, sb);
             }
+            else
+            {
+                visitNil(sb);
+            }
             return;
         }
 
-        private static void visitMachineDecl(P_Root.MachineDecl d, StringBuilder sb)
+        protected virtual void visitMachineDecl(P_Root.MachineDecl d, StringBuilder sb)
         {
             if (d.isMain.Symbol.ToString() == "TRUE")
                 visitMain(sb);
@@ -1048,7 +855,6 @@ namespace Microsoft.P2Boogie
             else if (d.kind.Symbol.ToString() == "MONITOR")
             {
                 visitMonitors(sb);
-                //ToDo name.
                 return;
             }
             else if (d.kind.Symbol.ToString() == "REAL")
@@ -1058,7 +864,7 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitObservesDecl(P_Root.ObservesDecl d, StringBuilder sb)
+        protected virtual void visitObservesDecl(P_Root.ObservesDecl d, StringBuilder sb)
         {
             visitMachineDecl(d.monitor as P_Root.MachineDecl, sb);
             visitMonitors(sb);
@@ -1067,21 +873,27 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitVarDecl(P_Root.VarDecl d, StringBuilder sb)
+        protected virtual void visitVarDecl(P_Root.VarDecl d, StringBuilder sb)
         {
             visitVarDecl(sb);
             //ToDo name.
             visitTypeExpr(d.type as P_Root.TypeExpr, sb);
         }
 
-        private static void visitQualifiedName(P_Root.QualifiedName n, StringBuilder sb)
+        protected virtual void visitQualifiedName(P_Root.QualifiedName n, StringBuilder sb)
         {
             //ToDO name
             if (n.qualifier.Symbol.ToString() != "NIL")
+            {
                 visitQualifiedName(n.qualifier as P_Root.QualifiedName, sb);
+            }
+            else
+            {
+                visitNil(sb);
+            }
         }
 
-        private static void visitStateDecl(P_Root.StateDecl state, StringBuilder sb)
+        protected virtual void visitStateDecl(P_Root.StateDecl state, StringBuilder sb)
         {
             if (state.temperature.Symbol.ToString() == "HOT")
             {
@@ -1100,10 +912,10 @@ namespace Microsoft.P2Boogie
             visitAnonFunDecl(state.exitFun as P_Root.AnonFunDecl, sb);
         }
 
-        private static void visitFuncDecl(P_Root.FunDecl d, StringBuilder sb)
+        protected virtual void visitFuncDecl(P_Root.FunDecl d, StringBuilder sb)
         {
             //Function is static.
-            if (d.owner.Symbol.ToString() != "NIL")
+            if (d.owner.Symbol.ToString() == "NIL")
             {
                 visitStatic(sb);
             }
@@ -1122,6 +934,10 @@ namespace Microsoft.P2Boogie
             {
                 visitTypeExpr(d.@return as P_Root.TypeExpr, sb);
             }
+            else
+            {
+                visitNil(sb);
+            }
             visitBeginBlock(sb);
             if (d.locals.Symbol.ToString() != "NIL")
             {
@@ -1134,12 +950,14 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitAnonFunDecl(P_Root.AnonFunDecl d, StringBuilder sb)
+        protected virtual void visitAnonFunDecl(P_Root.AnonFunDecl d, StringBuilder sb)
         {
-            if (d.envVars.Symbol.ToString() != "NIL")
+            /*if (d.envVars.Symbol.ToString() != "NIL")
             {
                 visitNmdTupType(d.envVars as P_Root.NmdTupType, sb);
-            }
+            }*/
+            //DEBUG
+            Console.WriteLine("\n\n");
             visitBeginBlock(sb);
             if (d.locals.Symbol.ToString() != "NIL")
             {
@@ -1151,7 +969,7 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitTrig(ICSharpTerm t, StringBuilder sb)
+        protected virtual void visitTrig(ICSharpTerm t, StringBuilder sb)
         {
             if (t.Symbol.ToString() == "NULL")
             {
@@ -1167,7 +985,7 @@ namespace Microsoft.P2Boogie
             }
         }
 
-        private static void visitTransDecl(P_Root.TransDecl t, StringBuilder sb)
+        protected virtual void visitTransDecl(P_Root.TransDecl t, StringBuilder sb)
         {
             visitTrig(t.trig, sb);
             if (t.action.Symbol.ToString() == "PUSH")
@@ -1191,7 +1009,7 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private static void visitDoDecl(P_Root.DoDecl d, StringBuilder sb)
+        protected virtual void visitDoDecl(P_Root.DoDecl d, StringBuilder sb)
         {
             if (d.action.Symbol.ToString() == "DEFER")
             {
@@ -1215,12 +1033,46 @@ namespace Microsoft.P2Boogie
             }
             return;
         }
+        protected void visitAnnotatable(P_Root.Annotatable a, StringBuilder sb)
+        {
+            if (a is P_Root.EventDecl)
+            {
+                visitEventDecl(a as P_Root.EventDecl, sb);
+            }
+            else if (a is P_Root.MachineDecl)
+            {
+                visitMachineDecl(a as P_Root.MachineDecl, sb);
+            }
+            else if (a is P_Root.VarDecl)
+            {
+                visitVarDecl(a as P_Root.VarDecl, sb);
+            }
+            else if (a is P_Root.FunDecl)
+            {
+                visitFuncDecl(a as P_Root.FunDecl, sb);
+            }
+            else if (a is P_Root.StateDecl)
+            {
+                visitStateDecl(a as P_Root.StateDecl, sb);
+            }
+            else if (a is P_Root.TransDecl)
+            {
+                visitTransDecl(a as P_Root.TransDecl, sb);
+            }
+            else if (a is P_Root.DoDecl)
+            {
+                visitDoDecl(a as P_Root.DoDecl, sb);
+            }
+            else if (a.Symbol.ToString() == "NIL")
+            {
+                visitNil(sb);
+            }
+        }
+
+        protected void visitAnnotation(P_Root.Annotation a, StringBuilder sb)
+        {
+            visitAnnotatable(a.ant as P_Root.Annotatable, sb);
+            //ToDo Assertion Generation Logic.
+        }
     }
 }
-
-/***************************************TODO*****************************************
- *                                                                                  *
- *      Fix AnonFunctions and Annotations. The former do not seem to appear freely  *
- *      in the program; the latter do not have SEMANTIC significance.               *
- *                                                                                  *
- ************************************************************************************/

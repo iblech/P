@@ -18,7 +18,7 @@
  * **********************************************************************************************************************************/
 
 
-
+ /*
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -27,7 +27,6 @@ using System.Threading.Tasks;
 
 using Microsoft.Pc;
 using Microsoft.Pc.Domains;
-using Microsoft.Pc.Domains.P_Root;
 using Microsoft.Formula.API.Generators;
 using System.IO;
 
@@ -48,7 +47,7 @@ namespace Microsoft.P2Boogie
     *  Credit to Pantazis Deligiannis - pdeligia on GitHub.                    *
     *                                                                          * 
     ****************************************************************************/
-
+/*
         private static const string declarations =
 @"var $CurrMid: int;
 var $Inbox: [int][int]Event;
@@ -206,3 +205,4 @@ implementation {:inline 1} $get_next_event(mid: int) returns (r: Event)
         }
     }
 }
+*/

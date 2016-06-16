@@ -3,9 +3,7 @@ using Microsoft.Pc.Domains;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 using Microsoft.Formula.API.Generators;
 
@@ -250,12 +248,14 @@ namespace Microsoft.Identity
             switch (e.op.Symbol.ToString() as String)
             {
                 case "NOT":
-                    sb.Append("!");
+                    sb.Append("!(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "NEG":
-                    sb.Append("-");
+                    sb.Append("-(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "KEYS":
                     sb.Append("keys(");
@@ -281,64 +281,87 @@ namespace Microsoft.Identity
             switch (e.op.Symbol.ToString())
             {
                 case "ADD":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" + ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "SUB":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" - ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
-                    break;
+                    sb.Append(")"); break;
                 case "MUL":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" * ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "INTDIV":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" / ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "AND":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" && ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "OR":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" || ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
-                    break;
+                    sb.Append(")");
+                    break;  
                 case "EQ":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" == ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "NEQ":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" != ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "LT":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" < ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "LE":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" <= ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "GT":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" > ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "GE":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" >= ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
                 case "IDX":
                     genExpr(e.arg1 as P_Root.Expr, sb);
@@ -347,9 +370,11 @@ namespace Microsoft.Identity
                     sb.Append("]");
                     break;
                 case "IN":
+                    sb.Append("(");
                     genExpr(e.arg1 as P_Root.Expr, sb);
                     sb.Append(" in ");
                     genExpr(e.arg2 as P_Root.Expr, sb);
+                    sb.Append(")");
                     break;
             }
             return;
@@ -372,9 +397,11 @@ namespace Microsoft.Identity
 
         private static void genCast(P_Root.Cast e, StringBuilder sb)
         {
+            sb.Append("(");
             genExpr(e.arg as P_Root.Expr, sb);
             sb.Append(" as ");
             gentype(e.type as P_Root.TypeExpr, sb);
+            sb.Append(")");
             return;
         }
 
@@ -397,18 +424,22 @@ namespace Microsoft.Identity
             return i;
         }
 
-        private static void genNamedExprs(P_Root.NamedExprs e, StringBuilder sb)
+        private static int genNamedExprs(P_Root.NamedExprs e, StringBuilder sb)
         {
             var x = e;
+            int i = 0;
             while (x.tail.Symbol.ToString() != "NIL")
             {
                 sb.Append(getString(x.field) + " = ");
                 genExpr(x.exp as P_Root.Expr, sb);
                 sb.Append(", ");
                 x = x.tail as P_Root.NamedExprs;
+                i++;
             }
             sb.Append(getString(x.field) + " = ");
             genExpr(x.exp as P_Root.Expr, sb);
+            i++;
+            return i;
         }
 
         private static void genTuple(P_Root.Tuple e, StringBuilder sb)
@@ -424,8 +455,11 @@ namespace Microsoft.Identity
 
         private static void genNamedTuple(P_Root.NamedTuple e, StringBuilder sb)
         {
+            //(Ugly?) Named Tuple generation logic. We need to put a comma at the end iff we have a singleton tuple
+            //like (1,). We thus return the # of terms from genNamedExprs().
             sb.Append('(');
-            genNamedExprs(e.body as P_Root.NamedExprs, sb);
+            if (genNamedExprs(e.body as P_Root.NamedExprs, sb) == 1)
+                sb.Append(',');
             sb.Append(')');
         }
 
@@ -494,9 +528,9 @@ namespace Microsoft.Identity
         {
             sb.Append("raise ");
             genExpr(s.ev as P_Root.Expr, sb);
-            sb.Append(" ");
             if (s.arg.Symbol.ToString() != "NIL")
             {
+                sb.Append(", ");
                 genExpr(s.arg as P_Root.Expr, sb);
             }
         }
@@ -529,6 +563,11 @@ namespace Microsoft.Identity
 
         private static void genFunStmt(P_Root.FunStmt s, StringBuilder sb)
         {
+            if(s.aout.Symbol.ToString() != "NIL")
+            {
+                genName(s.aout as P_Root.Name, sb);
+                sb.Append(" = ");
+            }
             sb.Append(getString(s.name));
             sb.Append('(');
             if (s.args.Symbol.ToString() != "NIL")
@@ -772,9 +811,12 @@ namespace Microsoft.Identity
 
         private static void genQualifiedName(P_Root.QualifiedName n, StringBuilder sb)
         {
-            sb.Append(getString(n.name) + " ");
             if (n.qualifier.Symbol.ToString() != "NIL")
+            {
                 genQualifiedName(n.qualifier as P_Root.QualifiedName, sb);
+                sb.Append("_");
+            }
+            sb.Append(getString(n.name));
         }
 
         private static void genStateDecl(P_Root.StateDecl state, StringBuilder sb)
@@ -790,21 +832,18 @@ namespace Microsoft.Identity
             sb.Append("state ");
             genQualifiedName(state.name as P_Root.QualifiedName, sb);
             sb.Append("{\n");
-            sb.Append("entry {\n");
-            var trial = new StringBuilder("\n\n\nentry");
-            genAnonFunDecl(state.entryAction as P_Root.AnonFunDecl, trial);
-            Console.WriteLine(trial);
-            //TODO figure out when it has args and when it does not.
-            var stmts = (state.entryAction as P_Root.AnonFunDecl).body as P_Root.Stmt;
-            genStmt(stmts, sb);
-            sb.Append("\n}\n");
-            sb.Append("exit {\n");
-            //genAnonFunDecl(state.exitFun as P_Root.AnonFunDecl, sb);
-            stmts = (state.exitFun as P_Root.AnonFunDecl).body as P_Root.Stmt;
-            genStmt(stmts, sb);
-            sb.Append("}\n");
-            Console.WriteLine(sb);
-
+            sb.Append("entry");
+            genAnonFunDecl(state.entryAction as P_Root.AnonFunDecl, sb);
+            sb.Append("exit");
+            if (state.exitFun is P_Root.AnonFunDecl)
+            {
+                var d = state.exitFun as P_Root.AnonFunDecl;
+                genAnonFunDecl(d, sb, false);
+            }
+            else //It's a String.
+            {
+                sb.Append(" " + getString(state.exitFun) + ";");
+            }
         }
 
         private static void genFuncDecl(P_Root.FunDecl d, StringBuilder sb)
@@ -829,8 +868,16 @@ namespace Microsoft.Identity
             sb.Append("{\n");
             if (d.locals.Symbol.ToString() != "NIL")
             {
+                var x = d.locals as P_Root.NmdTupType;
+                while(x.tl.Symbol.ToString() != "NIL")
+                {
+                    sb.Append("var ");
+                    genNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
+                    sb.Append(";\n");
+                    x = x.tl as P_Root.NmdTupType;
+                }
                 sb.Append("var ");
-                genNmdTupType(d.locals as P_Root.NmdTupType, sb);
+                genNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(";\n");
             }
             genStmt(d.body as P_Root.Stmt, sb);
@@ -838,19 +885,32 @@ namespace Microsoft.Identity
             return;
         }
 
-        private static void genAnonFunDecl(P_Root.AnonFunDecl d, StringBuilder sb)
+        private static void genAnonFunDecl(P_Root.AnonFunDecl d, StringBuilder sb, bool gen_args=true)
         {
-            if (d.envVars.Symbol.ToString() != "NIL")
+            if (d.envVars.Symbol.ToString() != "NIL" && gen_args)
             {
                 sb.Append("(");
-                genNmdTupType(d.envVars as P_Root.NmdTupType, sb);
+                var x = (d.envVars as P_Root.NmdTupType);
+                while (x.tl.Symbol.ToString() != "NIL")
+                {
+                    x = x.tl as P_Root.NmdTupType;
+                }
+                genNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(")");
             }
             sb.Append("{\n");
             if (d.locals.Symbol.ToString() != "NIL")
             {
+                var x = d.locals as P_Root.NmdTupType;
+                while (x.tl.Symbol.ToString() != "NIL")
+                {
+                    sb.Append("var ");
+                    genNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
+                    sb.Append(";\n");
+                    x = x.tl as P_Root.NmdTupType;
+                }
                 sb.Append("var ");
-                genNmdTupType(d.locals as P_Root.NmdTupType, sb);
+                genNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
                 sb.Append(";\n");
             }
             genStmt(d.body as P_Root.Stmt, sb);
@@ -929,6 +989,7 @@ namespace Microsoft.Identity
                 genTrig(d.trig, sb);
                 sb.Append(" do ");
                 sb.Append(getString(d.action));
+                sb.Append(";");
             }
             return;
         }
