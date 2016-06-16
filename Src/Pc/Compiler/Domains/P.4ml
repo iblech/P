@@ -593,7 +593,9 @@ domain PStaticTyping extends PData
 									  ObservesDecl(monDecl, ev), no SendsForModuleExpr(mod, ev), no PrivateForModuleExpr(mod, ev).
 
 	//Hide Operation
-	//make sure that the events are disjoint
+	//make sure that the events is declared
+	[rule_Classes = '"error, msg: undeclared event in hide operation"']
+	ModuleConstructionIllegal(ev) :- AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), MemberOfStringsList(evtList, ev), no EventDecl(ev, _, _).
 
 	//alpha is disjoint from EP
 	[rule_Classes = '"error, msg: trying to hide private event of the module expression "']
@@ -601,8 +603,7 @@ domain PStaticTyping extends PData
 
 	//for each interface in dom(IX) and IC it is either disjoint from alpha or included in it.
 	[rule_Classes = '"error, msg: trying to partially hide an exported interface of the module expression"']
-	ModuleConstructionIllegal(ix) :- AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), ExportsForModuleExpr(mod, ix), InterfaceTypeDecl(ix, es, _), EventSetDecl(es, ev1), 
-									 MemberOfStringsList(evtList, ev1), EventSetDecl(es, ev2), no MemberOfStringsList(evtList, ev2).
+	ModuleConstructionIllegal(ix1) :- AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), ExportsForModuleExpr(mod, ix1), InterfaceTypeDecl(ix, es, _), ix1 = ix, EventSetDecl(es, ev1), MemberOfStringsList(evtList, ev1), EventSetDecl(es, ev2), no MemberOfStringsList(evtList, ev2).
 
 	[rule_Classes = '"error, msg: trying to partially hide an interface created by the module expression"']
 	ModuleConstructionIllegal(ic) :- AllExpandedModuleExprs(modExpr), modExpr = HideExpr(evtList, mod), CreatesForModuleExpr(mod, ic), InterfaceTypeDecl(ic, es, _), EventSetDecl(es, ev1), 
