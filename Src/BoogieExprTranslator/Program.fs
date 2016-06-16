@@ -18,7 +18,6 @@ type Expr =
   | Event of string
   | This
   | Nondet
-  | FairNonDet
   | Var of string 
   | Bin of BinOp * Expr * Expr 
   | Un of UnOp * Expr
@@ -50,6 +49,14 @@ let env = Map.ofList [
             ("x", Int); 
             ("y", Int) 
           ]
+
+
+(* Exception for everything that we don't want to do *)
+exception Not_defined;
+
+(* Type exception for everything we don't want to type *)
+exception Type_exception of string;
+
 
 (* Helpers *)
 let rec lval_to_expr lval =
@@ -86,11 +93,26 @@ let is_comparison op =
   | Neq -> true
   | _ -> false
 
-(* Exception for everything that we don't want to do *)
-exception Not_defined;
+let is_seq t =
+  match t with
+  | Seq _ -> true
+  | _ -> false
 
-(* Type exception for everything we don't want to type *)
-exception Type_exception of string;
+let is_map t =
+  match t with
+  | Map _ -> true
+  | _ -> false
+
+let get_domain_type t =
+  match t with
+  | Map(t1,t2) -> t1
+  | _ -> raise Not_defined
+
+let get_range_type t =
+  match t with
+  | Map(t1, t2) -> t2
+  | Seq(t2) -> t2
+  | _ -> raise Not_defined
 
 (* Printing functions *)
 let rec print_list fn ls =
@@ -167,7 +189,11 @@ let print_stmt s =
 
 (* Typing *)
 let type_assert b s =
-  if (not b) then raise (Type_exception s)
+  if (not b) then 
+    begin
+      printfn "%s" s
+      raise (Type_exception s)
+    end
 
 let rec is_subtype t1 t2 =
   match (t1, t2) with
@@ -175,8 +201,6 @@ let rec is_subtype t1 t2 =
   | (Null, Machine) -> true
   | (Null, Type.Event) -> true
   | (a,b) when a = b -> true
-  | (Type.Seq(a), Type.Seq(b)) -> (is_subtype a b)
-  | (Type.Map(k1, v1), Type.Map(k2, v2)) -> ((is_subtype k1 k2) && (is_subtype v1 v2))
   | (Type.Tuple(ls1), Type.Tuple(ls2)) ->
     begin
       if List.length ls1 <> List.length ls2 then false
@@ -197,18 +221,18 @@ let rec typeof expr G =
   | This -> Machine
   | Nondet -> Bool
   | Event _ -> Type.Event
-  | Expr.Var(v) -> G v
+  | Expr.Var(v) -> Map.find v G
   | Expr.Bin(Idx, e1, e2) ->
     begin
       match typeof e1 G with
       | Seq(t1) -> 
         begin
-          type_assert (is_subtype (typeof e1 G) Int) "Type error in indexing sequence"
+          type_assert (is_subtype (typeof e2 G) Int) (sprintf "Type error in indexing sequence: %s" (print_expr expr))
           t1
         end
       | Map(t1, t2) ->
         begin
-          type_assert (is_subtype (typeof e1 G) t1) "Type error in indexing map"
+          type_assert (is_subtype (typeof e2 G) t1) "Type error in indexing map"
           t2
         end
       | _ -> raise Not_defined
@@ -255,7 +279,7 @@ let rec typeof expr G =
 
 let rec typeof_lval lval G =
   match lval with
-  | Lval.Var(v) -> G v
+  | Lval.Var(v) -> Map.find v G
   | Lval.Dot(l, i) -> 
     begin
       match (typeof_lval l G) with
@@ -348,7 +372,7 @@ let get_fresh_var () =
 
 let get_local ty G =
   let name = get_fresh_var() in
-  (name, fun s -> if s = name then ty else G s)
+  (name, Map.add name ty G)
 
 (* Takes an expr as input, returns the re-written expr, a set of statements and updated environemt *)
 let rec remove_side_effects_expr expr G =
@@ -359,13 +383,42 @@ let rec remove_side_effects_expr expr G =
     | ConstBool _
     | Event _
     | This
-    | Nondet
     | Expr.Var(_) -> (expr, [], G)
+    | Nondet -> 
+      begin
+        let (l, G') = get_local Bool G in
+        (Expr.Var(l), [Assign(Lval.Var(l), Nondet)], G')
+      end
+    | Bin(op, e1, e2) when (op = Eq || op = Neq) ->
+      begin
+        let (e1', s1, G') = remove_side_effects_expr e1 G in
+        let (e2', s2, G'') = remove_side_effects_expr e2 G' in
+        let (l, G''') = get_local Bool G'' in
+        let nexpr = if op = Eq then Expr.Var(l) else Expr.Un(Not, Expr.Var(l)) in
+        (nexpr, s1 @ s2 @ [Assign(Lval.Var(l), Bin(Eq, e1', e2'))], G''')
+      end
+    | Bin(op, e1, e2) when op = In || op = Idx ->
+      begin
+        let (l, G') = get_local (typeof expr G) G in
+        let (e1', s1, G'') = remove_side_effects_expr e1 G' in
+        let (e2', s2, G''') = remove_side_effects_expr e2 G'' in
+        (Expr.Var(l), s1 @ s2 @ [Assign(Lval.Var(l), Bin(op, e1', e2'))], G''')
+      end
     | Bin(op, e1, e2) ->
       begin
         let (e1', s1, G') = remove_side_effects_expr e1 G in
         let (e2', s2, G'') = remove_side_effects_expr e2 G' in
         (Bin(op, e1', e2'), s1 @ s2, G'')
+      end
+    | Un(Keys, e) ->
+      begin
+        let (l, G') = get_local (Seq (get_domain_type (typeof e G))) G in
+        (Expr.Var(l), [Assign(Lval.Var(l), expr)], G')
+      end
+    | Un(Values, e) ->
+      begin
+        let (l, G') = get_local (Seq (get_range_type (typeof e G))) G in
+        (Expr.Var(l), [Assign(Lval.Var(l), expr)], G')
       end
     | Un(op, e) ->
       begin
@@ -376,6 +429,11 @@ let rec remove_side_effects_expr expr G =
       begin
         let (e', s, G') = remove_side_effects_expr e G in
         (Expr.Dot(e', f), s, G')
+      end
+    | Expr.Cast(e, t) when (is_subtype (typeof e G) t) -> 
+      begin
+        (* redundant cast *)
+        remove_side_effects_expr e G
       end
     | Expr.Cast(e, t) -> 
       begin
@@ -536,16 +594,52 @@ let normalize_lval_stlist stlist G =
       
 (* Translation of normalized side-effect-free programs to Boogie *)
 
-(*
+let translate_type t typmap =
+  match t with
+  | Null -> "PrtTypeNull"
+  | Bool -> "PrtTypeBool"
+  | Int -> "PrtTypeInt"
+  | Machine -> "PrtTypeMachine"
+  | Type.Event -> "PrtTypeEvent"
+  | Any -> raise Not_defined
+  | Type.Tuple(ls) -> sprintf "PrtTypeTuple%d" (List.length ls)
+  | Type.Seq(t1) -> sprintf "PrtTypeSeq%d" (Map.find t typmap)
+  | Type.Map(t1, t2) -> sprintf "PrtTypeMap%d" (Map.find t typmap)
+
+let event_to_int_map = ref Map.empty
+let event_to_int_counter = ref 0
+
 let rec translate_expr expr G =
   match expr with
-  | Expr.Const(i) -> sprintf "PrtFromInt(%d)" i 
+  | Nil -> "null"
+  | Expr.ConstInt(i) -> sprintf "PrtConstructFromInt(%d)" i 
+  | Expr.ConstBool(b) -> if b then "PrtTrue" else "PrtFalse"
+  | Expr.This -> "null" (* TODO: Fix *)
+  | Expr.Event s ->
+    begin
+      if Map.containsKey s !event_to_int_map then sprintf "PrtConstructFromEvent(%d)" (Map.find s !event_to_int_map)
+      else begin
+        let v = !event_to_int_counter in
+        event_to_int_counter := !event_to_int_counter + 1
+        event_to_int_map := Map.add s v !event_to_int_map
+        sprintf "PrtConstructFromEvent(%d)" v
+      end
+    end
   | Expr.Var(v) -> v
-  | Expr.Op(e1, e2) -> sprintf "PrtFromInt(PrtToInt(%s) + PrtToInt(%s))" (translate_expr e1 G) (translate_expr e2 G)
-  | Expr.Dot(e, f) -> sprintf "PrtSelectFn_%d(%s)" f (translate_expr expr G)
-  | Expr.Index(e1, e2) -> sprintf "ReadSeq(%s, PrtToInt(%s))" (translate_expr e1 G) (translate_expr e2 G)
-  | Expr.Cast(_, _) -> raise Not_defined
-  | Expr.Tuple(_) -> raise Not_defined
+  | Expr.Bin(op, e1, e2) when  is_intop(op) -> sprintf "PrtConstructFromInt(PrtFieldInt(%s) %s PrtFieldInt(%s))" (translate_expr e1 G) (print_binop op) (translate_expr e2 G)
+  | Expr.Bin(op, e1, e2) when  is_relop(op) -> sprintf "PrtConstructFromBool(PrtFieldInt(%s) %s PrtFieldInt(%s))" (translate_expr e1 G) (print_binop op) (translate_expr e2 G)
+  | Expr.Bin(op, e1, e2) when  is_boolop(op) -> sprintf "PrtConstructFromBool(PrtFieldBool(%s) %s PrtFieldBool(%s))" (translate_expr e1 G) (print_binop op) (translate_expr e2 G)
+  | Expr.Bin(op, e1, e2) when  is_comparison(op) -> raise Not_defined
+  | Expr.Bin(Idx, e1, e2) -> raise Not_defined
+  | Expr.Bin(In, e1, e2) -> raise Not_defined
+  | Expr.Un(Not, e) -> sprintf "PrtConstructFromBool(!PrtFieldBool(%s))" (translate_expr e G)
+  | Expr.Un(Neg, e) -> sprintf "PrtConstructFromInt(0 - PrtFieldInt(%s))" (translate_expr e G)
+  | Expr.Un(Sizeof, e) when is_seq (typeof e G) -> sprintf "PrtConstructFromInt(PrtFieldSeqSize(%s))" (translate_expr e G)
+  | Expr.Un(Sizeof, e) -> sprintf "PrtConstructFromInt(PrtFieldMapSize(%s))" (translate_expr e G)
+  | Expr.Dot(e, f) -> sprintf "PrtFieldTuple%d(%s)" f (translate_expr e G)
+  | _ -> raise Not_defined
+
+let types_asserted = ref Set.empty
 
 let translate_assign lval expr G typemap =
   let gen_rhs_value e G =
@@ -553,27 +647,24 @@ let translate_assign lval expr G typemap =
     printfn "%s := %s;" rhs_var (translate_expr e G)
     rhs_var
   in
-  let gen_type_assertion rhs_var t1 t2 =
-    if is_subtype t1 t2 then
-      ()   (* redundant cast *)
-    else
-      (* TODO: This is more strict than what P allows *)
-      (* P will actually go inspect all keys/values inside seq and maps and assert they are of the right type *)
-      (* We avoid this enumeration of the data structure, but may reject some valid P programs *)
-      printfn "assert PrtSubType(PrtDynamicType(%s), PrtType%d);" rhs_var (Map.find t2 typemap)
-  in 
   let get_lhs_var lval = match lval with
                          | Lval.Var(v) -> v
                          | _ -> raise Not_defined
   in
-
+  let rec set_types_asserted t =
+    types_asserted := Set.add t !types_asserted
+    match t with
+    | Type.Tuple ts -> List.iter set_types_asserted ts
+    | _ -> ()
   match (lval, expr) with 
   | _, Expr.Cast(e, t) -> 
     begin
       (* evaluate rhs *)
       let rhs_var = gen_rhs_value e G in
       (* generate type assertion *)
-      gen_type_assertion rhs_var (typeof e G) t
+      set_types_asserted t
+      printfn "call AssertIsType%d(%s);" (Map.find t typemap) rhs_var
+      (* the assignment *)
       printfn "%s := %s;" (get_lhs_var lval) rhs_var      
     end
   | _, Expr.Tuple(es) ->
@@ -582,36 +673,123 @@ let translate_assign lval expr G typemap =
         let ei = (List.nth es i) in
         printfn "tmp_rhs_value_%d := %s;" i (translate_expr ei G)
       printfn "call %s := AllocatePrtRef();" (get_lhs_var lval)
-      printfn "assume PrtDynamicType(%s) == PrtType%d;" (get_lhs_var lval) (Map.find (typeof_lval lval G) typemap)
+      printfn "assume PrtDynamicType(%s) == PrtTypeTuple%d;" (get_lhs_var lval) (List.length es)
       for i = 0 to (List.length es) - 1 do
-        printfn "assume PrtSelectFn_%d(%s) == tmp_rhs_value_%d;" i (get_lhs_var lval) i
+        printfn "assume PrtFieldTuple%d(%s) == tmp_rhs_value_%d;" i (get_lhs_var lval) i
+    end
+  | _, Expr.Bin(Idx, e1, e2) ->
+    begin
+      match is_map (typeof e1 G) with
+      | true ->  printfn "call %s := ReadMap(%s, %s);" (get_lhs_var lval) (translate_expr e1 G) (translate_expr e2 G)
+      | false -> printfn "assert SeqIndexInBounds(%s, PrtFieldInt(%s)); %s := ReadSeq(%s, PrtFieldInt(%s));" (translate_expr e1 G) (translate_expr e2 G) (get_lhs_var lval) (translate_expr e1 G) (translate_expr e2 G)
+    end
+  | _, Expr.Bin(In, e1, e2) ->
+    begin
+      printfn "call %s := MapContainsKey(%s, %s);" (get_lhs_var lval) (translate_expr e1 G) (translate_expr e2 G)
+    end
+  | _, Expr.Bin(Eq, e1, e2) ->
+    begin
+      printfn "call %s := PrtEquals(%s, %s);" (get_lhs_var lval) (translate_expr e1 G) (translate_expr e2 G)
+    end
+  | _, Expr.Un(Keys, e) ->
+    begin
+      printfn "call %s := MapGetKeys(%s);" (get_lhs_var lval) (translate_expr e G)
+    end
+  | _, Expr.Un(Values, e) ->
+    begin
+      printfn "call %s := MapGetValues(%s);" (get_lhs_var lval) (translate_expr e G)
+    end
+  | _, Expr.Nondet ->
+    begin
+      printfn "havoc %s;" (get_lhs_var lval) 
+    end
+  | Lval.Index(Lval.Var(lhs_var), e), _ when is_seq (typeof_lval (Lval.Var(lhs_var)) G) ->
+    begin
+      printfn "call %s := WriteSeq(%s, PrtFieldInt(%s), %s);" lhs_var lhs_var (translate_expr e G) (translate_expr expr G)
     end
   | Lval.Index(Lval.Var(lhs_var), e), _ ->
     begin
-      printfn "call %s := WriteSeq(%s, PrtToInt(%s), %s);" lhs_var lhs_var (translate_expr e G) (translate_expr expr G)
+      printfn "call %s := WriteMap%s, %s, %s);" lhs_var lhs_var (translate_expr e G) (translate_expr expr G)
     end
   | _, _ ->
       printfn "%s := %s;" (get_lhs_var lval) (translate_expr expr G)
 
-
 let translate_insert v e1 e2 G =
-  printfn "call %s := InsertSeq(%s, %s, %s);" v v (translate_expr e1 G) (translate_expr e2 G)
+  match is_seq (typeof (Expr.Var(v)) G) with
+  | true -> printfn "call %s := InsertSeq(%s, PrtFieldInt(%s), %s);" v v (translate_expr e1 G) (translate_expr e2 G)
+  | false -> printfn "call %s := InsertMap(%s, PrtFieldInt(%s), %s);" v v (translate_expr e1 G) (translate_expr e2 G)
 
 let translate_remove v e1 G =
-  printfn "call %s := RemoveSeq(%s, %s);" v v (translate_expr e1 G)
+  match is_seq (typeof (Expr.Var(v)) G) with
+  | true -> printfn "call %s := RemoveSeq(%s, PrtFieldInt(%s));" v v (translate_expr e1 G)
+  | false -> printfn "call %s := RemoveMap(%s, PrtFieldInt(%s));" v v (translate_expr e1 G)
 
 let translate_stmt stmt G typemap =
   match stmt with
   | Assign(l, e) -> translate_assign l e G typemap
   | Insert(Lval.Var(v), e1, e2) -> translate_insert v e1 e2 G
   | Remove(Lval.Var(v), e1) -> translate_remove v e1 G
-  | Assume(e) -> printfn "assume %s;" (translate_expr e G)
-  | Send(e) -> printfn "call PrtSend(%s);" (translate_expr e G)
+  | Assume(e) -> printfn "assume PrtFieldBool(%s);" (translate_expr e G)
   | _ -> raise Not_defined
 
 let printfn_comment x = 
   printf "// "
   printfn x
+
+let print_equals max_fields =
+    printfn "// Equals
+procedure PrtEquals(a: PrtRef, b: PrtRef) returns (v: bool)
+{
+  var ta, tb: PrtType;
+
+  if(a == b) { v := true; return; }
+
+  ta := PrtDynamicType(a);
+  tb := PrtDynamicType(b);
+
+  if(ta != tb) { v := false; return; }
+  if(ta == PrtTypeInt) { v := (PrtFieldInt(a) == PrtFieldInt(b)); return; }
+  if(ta == PrtTypeBool) { v := (PrtFieldBool(a) == PrtFieldBool(b)); return; }
+  if(ta == PrtTypeMachine) { v := (PrtFieldMachine(a) == PrtFieldMachine(b)); return; }
+  if(ta == PrtTypeEvent) { v := (PrtFieldEvent(a) == PrtFieldEvent(b)); return; }
+    "
+  
+    for i = 1 to max_fields do
+      printfn "  if(ta == PrtTypeTuple%d) { call v := PrtEqualsTuple%d(a,b); return; }" i i
+    
+    printfn "
+  // Map, Seq type
+  assume false;
+}        
+    "
+    for i = 1 to max_fields do
+      printfn "procedure PrtEqualsTuple%d(x: PrtRef, y: PrtRef) returns (v: bool) {" i
+      for j = 0 to (i-1) do
+        printfn "  call v := PrtEquals(PrtFieldTuple%d(x), PrtFieldTuple%d(y));" j j
+        if j <> (i-1) then printfn "  if(!v) { return; }"
+      printfn "}"
+ 
+let print_type_check t typemap =
+  let tindex =  Map.find t typemap in
+  printfn "// Type %s" (print_type t)
+  printfn "procedure AssertIsType%d(x: PrtRef) {" tindex
+  match t with
+  | Null -> raise Not_defined
+  | Any -> raise Not_defined
+  | Bool 
+  | Seq(_)
+  | Map(_, _)
+  | Int -> printfn "  assert PrtDynamicType(x) == %s;" (translate_type t typemap)
+  | Machine
+  | Type.Event -> printfn "  assert PrtDynamicType(x) == %s || PrtIsNull(x);" (translate_type t typemap)
+  | Type.Tuple ts ->
+    begin
+      printfn "  assert PrtDynamicType(x) == PrtTypeTuple%d;" (List.length ts)
+      for i = 0 to ((List.length ts) - 1) do
+        let ti = List.nth ts i in
+        printfn "  call AssertIsType%d(PrtFieldTuple%d(x));" (Map.find ti typemap) i
+    end
+  printfn "}"
    
 [<EntryPoint>]
 let main argv = 
@@ -620,7 +798,7 @@ let main argv =
     printfn_comment "Input type environment";
     Map.iter (fun v t -> printfn_comment "%s -> %s" v (print_type t)) env;
 
-    let G = fun v -> if Map.containsKey v env then Map.find v env else raise Not_defined in
+    let G = env in
 
     (* Remove side effects *)
     let (stmtlist, G) = normalize_lval_stlist stmtlist G in
@@ -629,76 +807,108 @@ let main argv =
     printfn_comment "Side-effect-free program:"
     List.iter (fun s -> printfn_comment "%s" (print_stmt s)) stmtlist;
 
-    (* Enumerate types in the program *)
-    printfn "type PrtType;";
+    (* Top-level types *)
     let typemap = map_all_types stmtlist G in
-    Map.iter (fun t i -> printfn "const unique PrtType%d: PrtType; // %s" i (print_type t)) typemap;
-
-    (* Enumerate the subtyping relationship *)
-    printfn "function PrtSubType(PrtType,PrtType):bool;";
-    Map.iter (fun t1 i1 -> 
-      Map.iter (fun t2 i2 -> 
-      begin
-        if is_subtype t1 t2 then printfn "axiom PrtSubType(PrtType%d, PrtType%d);" i1 i2
-        else printfn "axiom !PrtSubType(PrtType%d, PrtType%d);" i1 i2
-      end
-      ) typemap) typemap;
-
     let max_fields = max_tuple_size typemap in
 
-    (* ref type *)
-    printfn "type {:datatype} PrtRef;"
-    printfn "function {:constructor} Null() : PrtRef;"
-    printfn "function {:constructor} ConstInt(value:int) : PrtRef;"
-    printfn "function {:constructor} ConstBool(value:bool) : PrtRef;"
-    printfn "function {:constructor} Machine(mid:int) : PrtRef;"
-    printfn "function {:constructor} Event(typ:int) : PrtRef;"
+    printfn "type PrtType;";
+    printfn "const unique %s: PrtType;" (translate_type Null typemap)
+    printfn "const unique %s: PrtType;" (translate_type Int typemap)
+    printfn "const unique %s: PrtType;" (translate_type Bool typemap)
+    printfn "const unique %s: PrtType;" (translate_type Machine typemap)
+    printfn "const unique %s: PrtType;" (translate_type Type.Event typemap)
     for i = 1 to max_fields do
-      printf "function {:constructor} Tuple%d(" i
-      for j = 0 to (i-1) do
-        printf "f%d:PrtRef" j
-      printfn "): PrtRef;"
-    printfn "function {:constructor} Seq(size:int, map: [int]PrtRef) : PrtRef;"
-    printfn "function {:constructor} Map(size:int, keys: [int]PrtRef, values: [int]PrtRef, lookup_index: [PrtRef]int, keyset: [PrtRef]bool) : PrtRef;"
-    printfn ""
+      printfn "const unique PrtTypeTuple%d: PrtType;" i
+    Map.iter (fun t i -> 
+      match t with
+      | Seq _ -> printfn "const unique PrtTypeSeq%d: PrtType; // %s" i (print_type t)
+      | Map _ -> printfn "const unique PrtTypeMap%d: PrtType; // %s" i (print_type t)
+      | _ -> ()
+      ) typemap
+  
+    (* ref type *)
+    printfn "type PrtRef;"
+    printfn "const unique null: PrtRef;"
+    printfn "const unique PrtTrue: PrtRef;"
+    printfn "const unique PrtFalse: PrtRef;"
 
     (* runtime type *)
     printfn "function PrtDynamicType(PrtRef):PrtType;"
     printfn ""
 
+    (* fields *)
+    printfn "function PrtIsNull(PrtRef) : bool;" 
+    printfn "function PrtFieldInt(PrtRef) : int;" 
+    printfn "function PrtFieldBool(PrtRef) : bool;" 
+    printfn "function PrtFieldMachine(PrtRef) : int;" 
+    printfn "function PrtFieldEvent(PrtRef) : int;" 
+    for i = 0 to (max_fields-1) do 
+      printfn "function PrtFieldTuple%d(PrtRef) : PrtRef;" i 
+    printfn "function PrtFieldSeqStore(PrtRef) : [int]PrtRef;" 
+    printfn "function PrtFieldSeqSize(PrtRef) : int;" 
+    printfn "function PrtFieldMapKeys(PrtRef) : [int]PrtRef;" 
+    printfn "function PrtFieldMapValues(PrtRef) : [int]PrtRef;" 
+    printfn "function PrtFieldMapSize(PrtRef) : int;" 
+    printfn "" 
+
+    (* constructors of basic types *)
+    printfn "axiom (PrtDynamicType(null) == %s);" (translate_type Null typemap)
+    printfn "axiom (PrtIsNull(null) == true);" 
+    printfn "axiom (forall x : PrtRef :: {PrtIsNull(x)} x == null || !PrtIsNull(x));"
+    printfn ""
+    printfn "function PrtConstructFromInt(int) : PrtRef;" 
+    printfn "axiom (forall x : int :: {PrtFieldInt(PrtConstructFromInt(x))} PrtFieldInt(PrtConstructFromInt(x)) == x);" 
+    printfn "axiom (forall x : int :: {PrtDynamicType(PrtConstructFromInt(x))} PrtDynamicType(PrtConstructFromInt(x)) == %s);" (translate_type Int typemap)
+    printfn ""
+    printfn "function {:inline} PrtConstructFromBool(v: bool) : PrtRef"
+    printfn "{ if v then PrtTrue else PrtFalse }"
+    printfn "axiom (PrtFieldBool(PrtTrue));"
+    printfn "axiom (!PrtFieldBool(PrtFalse));"
+    printfn "axiom (PrtDynamicType(PrtTrue) == %s);" (translate_type Bool typemap)
+    printfn "axiom (PrtDynamicType(PrtFalse) == %s);" (translate_type Bool typemap)
+    printfn ""
+    printfn "function PrtConstructFromMachineId(int) : PrtRef;" 
+    printfn "axiom (forall x : int :: {PrtFieldMachine(PrtConstructFromMachineId(x))} PrtFieldMachine(PrtConstructFromMachineId(x)) == x);" 
+    printfn "axiom (forall x : int :: {PrtDynamicType(PrtConstructFromMachineId(x))} PrtDynamicType(PrtConstructFromMachineId(x)) == %s);" (translate_type Machine typemap)
+    printfn ""
+    printfn "function PrtConstructFromEventId(int) : PrtRef;" 
+    printfn "axiom (forall x : int :: {PrtFieldEvent(PrtConstructFromEventId(x))} PrtFieldEvent(PrtConstructFromEventId(x)) == x);" 
+    printfn "axiom (forall x : int :: {PrtDynamicType(PrtConstructFromEventId(x))} PrtDynamicType(PrtConstructFromEventId(x)) == %s);" (translate_type Type.Event typemap)
+    printfn ""
+
+
     (* Allocation *)
     printfn "procedure {:allocator} AllocatePrtRef() returns (x: PrtRef);"
+    printfn "  //ensures x != null;"
     printfn ""
 
     (* Sequence *)
     printfn "function {:inline} SeqIndexInBounds(seq: PrtRef, index: int) : bool"
-    printfn "{ 0 <= index && index < size#Seq(seq) }"
-
+    printfn "{ 0 <= index && index < PrtFieldSeqSize(seq) }"
+    printfn ""
     printfn "function {:inline} ReadSeq(seq: PrtRef, index: int) : PrtRef"
-    printfn "{ map#Seq(seq)[index] }"
-
-    printfn "procedure {:inline} WriteSeq(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
-    printfn "procedure {:inline} InsertSeq(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
-    printfn "procedure {:inline} RemoveSeq(seq: PrtRef, index: int)  returns (nseq: PrtRef);"
-
-    (* Maps *)
-    printfn "function {:inline} MapContainsKey(m: PrtRef, index: PrtRef) : bool"
-    printfn "{ keyset#Map[index] }"
-
-    printfn "function {:inline} ReadMap(m: PrtRef, index: PrtRef) : PrtRef"
-    printfn "{ values#Map(m)[lookup_index#Map(m)[index]] }"
-
-    printfn "function {:inline} MapGetKeys(m: PrtRef) : PrtRef"
-    printfn "{  }"
-
-
-    printfn "procedure {:inline} WriteMap(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
-    printfn "procedure {:inline} InsertMap(seq: PrtRef, index: int, value: PrtRef)  returns (nseq: PrtRef);"
-    printfn "procedure {:inline} RemoveMap(seq: PrtRef, index: int)  returns (nseq: PrtRef);"
+    printfn "{ PrtFieldSeqStore(seq)[index] }"
+    printfn ""
 
     printfn "procedure main() {"
-    List.iter (fun s -> translate_stmt s G typemap) stmtlist
+    Map.iter (fun k v -> printfn "  var %s: PrtRef; // %s" k (print_type v)) G
+    printfn "  var tmp_rhs_value: PrtRef;"
+    for i = 0 to max_fields-1 do
+      printfn "  var tmp_rhs_value_%d: PrtRef;" i
+    List.iter (fun s -> 
+      begin
+        printfn_comment "%s" (print_stmt s)
+        translate_stmt s G typemap
+      end
+    ) stmtlist
     printfn "}"
 
+    (* Equals *)
+    print_equals(max_fields)
+    
+    (* AssertIsType *)
+    Set.iter (fun t -> print_type_check t typemap) !types_asserted
+
+    let s = IO.File.ReadAllLines("CommonBpl.bpl") in
+    Array.iter (fun s -> printfn "%s" s) s
     0 // return an integer exit code
-*)
