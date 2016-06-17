@@ -265,12 +265,4 @@ Src/PrtDist/Samples/PingPong/program.h
 /Src/PrtDist/Samples/PingPongFast/test.c
 /Src/PrtDist/Samples/PingPongFast/stubs.c
 /Tst/PrtTester/Tester.VC.db
-/Src/Pc/Compiler
-
-*.txt
-/ClassDiagram1.png
-/Tst/tejaTest.bat
-*.sh
-/Tst/RegressionTests/Feature1SMLevelDecls/Correct/bug1/#bug1.p#
-/Tst/#tejaTest.bat#
-*.exe
+/Bld/PRT_CONTAINER_LOG_1.txt
