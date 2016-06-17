@@ -137,7 +137,6 @@ namespace Microsoft.Identity
 
         private static void gentype(P_Root.TypeExpr t, StringBuilder sb)
         {
-            //t: any TypeExpr. This means we can check its derived type as we wish.
             if (t is P_Root.NameType)
             {
                 genNameType(t as P_Root.NameType, sb);
@@ -241,7 +240,6 @@ namespace Microsoft.Identity
 
         private static void genUnApp(P_Root.UnApp e, StringBuilder sb)
         {
-            Console.WriteLine(e.op.Symbol.ToString() as String);
             switch (e.op.Symbol.ToString() as String)
             {
                 case "NOT":

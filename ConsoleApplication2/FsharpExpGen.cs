@@ -144,12 +144,12 @@ namespace Microsoft.P2Boogie
         protected override void visitEntryBlock(StringBuilder sb)
         {
             //DEBUG; REMOVE
-            Console.WriteLine("--------ENTRY---------");
+           sb.Append("--------ENTRY---------");
         }
         protected override void visitExitBlock(StringBuilder sb)
         {
             //DEBUG; REMOVE
-            Console.WriteLine("--------EXIT---------");
+            sb.Append("--------EXIT---------");
         }
         protected override void visitDefer(StringBuilder sb)
         {
@@ -244,10 +244,7 @@ namespace Microsoft.P2Boogie
         {
             sb.Append("FairNonDet");
         }
-        protected override void visitBeginBlock(StringBuilder sb)
-        {
-            sb.Append(", ");
-        }
+        protected override void visitBeginBlock(StringBuilder sb) { }
         protected override void visitEndBlock(StringBuilder sb) { }
         protected override void visitLBracket(StringBuilder sb) { }
         protected override void visitRBracket(StringBuilder sb) { }
@@ -263,11 +260,11 @@ namespace Microsoft.P2Boogie
         {
             sb.Append("; ");
         }
-        protected override void visitBeginNmdTup(StringBuilder sb)
+        protected override void visitBeginNmdTupExpr(StringBuilder sb)
         {
             sb.Append("[");
         }
-        protected override void visitEndNmdTup(StringBuilder sb)
+        protected override void visitEndNmdTupExpr(StringBuilder sb)
         {
             sb.Append("]");
         }
@@ -480,6 +477,7 @@ namespace Microsoft.P2Boogie
             {
                 sb.Append(")");
             }
+            sb.Append('\n');
         }
 
         private bool ReadFile(string inputFileName)
@@ -549,15 +547,16 @@ namespace Microsoft.P2Boogie
                     StringBuilder sb = new StringBuilder();
                     visitStateDecl(state, sb);
                     Console.WriteLine(sb);
-                    //level++;
                 }
-/*
+
                 foreach (var function in program.Functions)
                 {
-
+                    StringBuilder sb = new StringBuilder();
+                    visitFuncDecl(function, sb);
+                    Console.WriteLine(sb);
                 }
 
-                foreach (var transition in program.Transitions)
+/*                foreach (var transition in program.Transitions)
                 {
 
                 }

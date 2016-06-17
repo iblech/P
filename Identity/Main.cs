@@ -10,7 +10,7 @@ namespace Microsoft.Identity
 {
     public class Program
     {
-        /*
+        //To Pass one File.
         public static int Main(string[] args)
         {
             string inputFileName = null;
@@ -98,12 +98,12 @@ namespace Microsoft.Identity
                 {
                     using (StreamWriter writer = new StreamWriter(options.outputFileName))
                     {
-                        identityGen.genIdentity(inputFileName + ".txt", writer);
+                        identityGen.genIdentity(inputFileName , writer);
                     }
                 }
                 else
                 {
-                    identityGen.genIdentity(inputFileName + ".txt", Console.Out);
+                    identityGen.genIdentity(inputFileName, Console.Out);
                 }
                 return 0;
             }
@@ -123,8 +123,8 @@ namespace Microsoft.Identity
         }
     }
 }
-
-*/
+//To pass a text file with all 
+/*
         public static void Main(string[] args)
         {
             CommandLineOptions options = new CommandLineOptions();
@@ -138,9 +138,10 @@ namespace Microsoft.Identity
                     Console.WriteLine(line);
                     Console.WriteLine("*****************************************************************************");
                     using (var sw = new StreamWriter(line))
-                        identityGen.genIdentity(line + ".txt", sw);
+                        identityGen.genIdentity(line, sw);
                 }
             }
         }
     }
 }
+*/

@@ -8,6 +8,7 @@ namespace Microsoft.P2Boogie
     class P2Boogie
     {
         public static int Main(string[] args)
+
         {
             string inputFileName = null;
             CommandLineOptions options = new CommandLineOptions();
@@ -99,7 +100,7 @@ namespace Microsoft.P2Boogie
                 }
                 else
                 {
-                    fsExpGen.genFSExp(inputFileName + ".txt", Console.Out);
+                    fsExpGen.genFSExp(inputFileName, Console.Out);
                 }
                 return 0;
             }

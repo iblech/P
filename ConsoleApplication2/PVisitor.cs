@@ -126,8 +126,8 @@ namespace Microsoft.P2Boogie
         protected abstract void visitLParen(StringBuilder sb);
         protected abstract void visitRParen(StringBuilder sb);
         protected abstract void visitNmdTupSep(StringBuilder sb);
-        protected abstract void visitBeginNmdTup(StringBuilder sb);
-        protected abstract void visitEndNmdTup(StringBuilder sb);
+        protected abstract void visitBeginNmdTupExpr(StringBuilder sb);
+        protected abstract void visitEndNmdTupExpr(StringBuilder sb);
         protected abstract void visitEndTup(StringBuilder sb);
         protected abstract void visitBeginTup(StringBuilder sb);
         protected abstract void visitFieldOp(StringBuilder sb);
@@ -203,7 +203,6 @@ namespace Microsoft.P2Boogie
         protected virtual void visitNmdTupType(P_Root.NmdTupType t, StringBuilder sb)
         {
             var x = t;
-            visitBeginNmdTup(sb);
             while (x.tl.Symbol.ToString() != "NIL")
             {
                 visitNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
@@ -211,7 +210,6 @@ namespace Microsoft.P2Boogie
                 x = x.tl as P_Root.NmdTupType;
             }
             visitNmdTupTypeField(x.hd as P_Root.NmdTupTypeField, sb);
-            visitEndNmdTup(sb);
         }
 
         protected virtual void visitQualifier(P_Root.Qualifier q, StringBuilder sb)
@@ -312,7 +310,7 @@ namespace Microsoft.P2Boogie
 
         protected virtual void visitFunApp(P_Root.FunApp e, StringBuilder sb)
         {
-            //ToDo Name
+            visitID(e.name as P_Root.String, sb);
             visitLParen(sb);
             if (e.args.Symbol.ToString() != "NIL")
             {
@@ -509,9 +507,9 @@ namespace Microsoft.P2Boogie
 
         protected virtual void visitNamedTupleExpr(P_Root.NamedTuple e, StringBuilder sb)
         {
-            visitBeginNmdTup(sb);
+            visitBeginNmdTupExpr(sb);
             visitNamedExprs(e.body as P_Root.NamedExprs, sb);
-            visitEndNmdTup(sb);
+            visitEndNmdTupExpr(sb);
         }
 
         protected virtual void visitExpr(P_Root.Expr e, StringBuilder sb)
@@ -622,7 +620,7 @@ namespace Microsoft.P2Boogie
                 visitExprs(s.args as P_Root.Exprs, sb);
             }
             visitFunAppClose(sb);
-            //ToDo aout.
+            //aout to be taken care of.
             return;
         }
 
@@ -859,7 +857,7 @@ namespace Microsoft.P2Boogie
             }
             else if (d.kind.Symbol.ToString() == "REAL")
                 visitMachine(sb);
-            //ToDo name.
+            visitID(d.name as P_Root.String, sb);
             visitBeginBlock(sb);
             return;
         }
@@ -868,7 +866,7 @@ namespace Microsoft.P2Boogie
         {
             visitMachineDecl(d.monitor as P_Root.MachineDecl, sb);
             visitMonitors(sb);
-            //ToDo name
+            visitID(d.ev as P_Root.String, sb);
             visitBeginBlock(sb);
             return;
         }
@@ -876,22 +874,21 @@ namespace Microsoft.P2Boogie
         protected virtual void visitVarDecl(P_Root.VarDecl d, StringBuilder sb)
         {
             visitVarDecl(sb);
-            //ToDo name.
+            visitID(d.name as P_Root.String, sb);
             visitTypeExpr(d.type as P_Root.TypeExpr, sb);
         }
 
         protected virtual void visitQualifiedName(P_Root.QualifiedName n, StringBuilder sb)
         {
-            //ToDO name
             if (n.qualifier.Symbol.ToString() != "NIL")
             {
                 visitQualifiedName(n.qualifier as P_Root.QualifiedName, sb);
+                visitSepQName(sb);
             }
-            else
-            {
-                visitNil(sb);
-            }
+            visitID(n.name as P_Root.String, sb);
         }
+
+        internal abstract void visitSepQName(StringBuilder sb);
 
         protected virtual void visitStateDecl(P_Root.StateDecl state, StringBuilder sb)
         {
@@ -924,12 +921,11 @@ namespace Microsoft.P2Boogie
             {
                 visitModel(sb);
             }
-            //ToDo name
+            visitID(d.name as P_Root.String, sb);
             if (d.@params.Symbol.ToString() != "NIL")
             {
                 visitNmdTupType(d.@params as P_Root.NmdTupType, sb);
             }
-            //sb.Append(") 7z "); //" 7z " is for a possible annotation.
             if (d.@return.Symbol.ToString() != "NIL")
             {
                 visitTypeExpr(d.@return as P_Root.TypeExpr, sb);
@@ -981,7 +977,7 @@ namespace Microsoft.P2Boogie
             }
             else
             {
-                //ToDo name.
+                visitID(t as P_Root.String, sb);
             }
         }
 
@@ -1004,7 +1000,7 @@ namespace Microsoft.P2Boogie
             {
                 visitGoto(sb);
                 visitQualifiedName(t.dst as P_Root.QualifiedName, sb);
-                //ToDo name.
+                visitID(t.action as P_Root.String, sb);
             }
             return;
         }
@@ -1029,7 +1025,7 @@ namespace Microsoft.P2Boogie
             else
             {
                 visitTrig(d.trig, sb);
-                //ToDo name.
+                visitID(d.action as P_Root.String, sb);
             }
             return;
         }
