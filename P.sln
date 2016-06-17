@@ -111,10 +111,9 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "BoogieExprTranslator", "Src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P2Boogie", "ConsoleApplication2\P2Boogie.csproj", "{81930522-38C2-40BA-96F6-E3EB4380DE0F}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FSExpressions", "FSExpressions\FSExpressions.fsproj", "{089C3AF2-30E2-4065-B098-167131EEFAEF}"
+EndProject
 Global
-	GlobalSection(Performance) = preSolution
-		HasPerformanceSessions = true
-	EndGlobalSection
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
 		Debug|Mixed Platforms = Debug|Mixed Platforms
@@ -444,6 +443,22 @@ Global
 		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|x64.ActiveCfg = Release|Any CPU
 		{81930522-38C2-40BA-96F6-E3EB4380DE0F}.Release|x86.ActiveCfg = Release|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Debug|x64.Build.0 = Debug|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Debug|x86.Build.0 = Debug|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Release|x64.ActiveCfg = Release|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Release|x64.Build.0 = Release|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Release|x86.ActiveCfg = Release|Any CPU
+		{089C3AF2-30E2-4065-B098-167131EEFAEF}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

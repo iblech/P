@@ -32,13 +32,11 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Compiler, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Bld\Drops\release\x64\Binaries\Compiler.dll</HintPath>
+    <Reference Include="Compiler">
+      <HintPath>..\Bld\Drops\debug\x64\Binaries\Compiler.dll</HintPath>
     </Reference>
-    <Reference Include="Core, Version=1.0.0.0, Culture=neutral, processorArchitecture=AMD64">
-      <SpecificVersion>False</SpecificVersion>
-      <HintPath>..\Bld\Drops\release\x64\Binaries\Core.dll</HintPath>
+    <Reference Include="Core">
+      <HintPath>..\Ext\Formula\x64\Core.dll</HintPath>
     </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />

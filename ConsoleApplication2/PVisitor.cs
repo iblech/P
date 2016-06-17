@@ -146,7 +146,7 @@ namespace Microsoft.P2Boogie
         protected abstract void visitNil(StringBuilder sb);
         protected abstract void visitTupSep(StringBuilder sb);
         protected abstract void visitConstInt(StringBuilder sb);
-
+        protected abstract void visitSepQName(StringBuilder sb);
         protected abstract void visitID(P_Root.String @string, StringBuilder sb);
         protected abstract void visitUnApp(P_Root.UnApp e, StringBuilder sb);
         protected abstract void visitBinApp(P_Root.BinApp e, StringBuilder sb);
@@ -887,8 +887,6 @@ namespace Microsoft.P2Boogie
             }
             visitID(n.name as P_Root.String, sb);
         }
-
-        internal abstract void visitSepQName(StringBuilder sb);
 
         protected virtual void visitStateDecl(P_Root.StateDecl state, StringBuilder sb)
         {

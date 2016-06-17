@@ -320,6 +320,9 @@ namespace Microsoft.P2Boogie
             sb.Append(", ");
         }
 
+        protected override void visitSepQName(StringBuilder sb) { }
+
+
         protected override void visitID(P_Root.String @string, StringBuilder sb)
         {
             string s = @string.Symbol.ToString();
@@ -568,5 +571,6 @@ namespace Microsoft.P2Boogie
 */
             }
         }
+
     }
 }
