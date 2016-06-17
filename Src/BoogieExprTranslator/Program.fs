@@ -41,6 +41,7 @@ let stmtlist = [
                  Insert(Lval.Index(Lval.Var("f"), Expr.ConstInt(0)), Expr.Bin(Idx, Expr.Var("e"), Expr.ConstInt(1)), Expr.ConstInt(2)); // f[0] += (e[1], 2)
                  Assign(Lval.Var("g"), New("M", [Expr.ConstInt 1])); // g = new M(1)
                  Assign(Lval.Var("f"), Default(Type.Seq (Type.Seq Int))); // f = default(seq[seq[int]])
+                 Assign(Lval.Var("h"), Default(Type.Tuple [Type.Tuple [Any; Any]; Int])); // h = default(((any,any),int)))
                ]
 
 let env = Map.ofList [ 
@@ -51,6 +52,7 @@ let env = Map.ofList [
             ("e", Type.Seq Int);
             ("f", Type.Seq (Type.Seq Int));
             ("g", Type.Machine);
+            ("h", Type.Tuple [Type.Tuple [Any; Any]; Int]);
             ("x", Int); 
             ("y", Int) 
           ]
@@ -395,6 +397,7 @@ let rec remove_side_effects_expr expr G =
     | Event _
     | This
     | Expr.Var(_) -> (expr, [], G)
+    | Expr.Default t when t = Int || t = Null || t = Bool || t = Any || t = Machine || t = Type.Event -> (expr, [], G)
     | Nondet -> 
       begin
         let (l, G') = get_local Bool G in
@@ -452,6 +455,25 @@ let rec remove_side_effects_expr expr G =
         let (l, G'') = get_local t G' in
         (Expr.Var(l), s @ [Assign(Lval.Var(l), Expr.Cast(e',t))], G'')
       end
+    | Expr.Default t ->
+      begin
+        let (l, G') = get_local t G in
+        match t with 
+        | Type.Tuple(ts) ->
+          begin
+            let (a, b, c) = 
+              List.fold (fun (partial_ls, partial_stlist, partial_G) ti -> 
+                begin
+                  let (li, G'') = get_local ti partial_G in
+                  let (e', s, G''') = remove_side_effects_expr (Expr.Default ti) G'' in
+                  (li :: partial_ls, partial_stlist @ s @ [Assign(Lval.Var(li), e')], G''')
+                end
+                ) ([], [], G') ts
+            in
+            (Expr.Var(l), b @ [Assign(Lval.Var(l), Expr.Tuple (List.map Expr.Var (List.rev a)))], c)
+          end
+        | _ -> (Expr.Var(l), [Assign(Lval.Var(l), expr)], G')
+      end      
     | Expr.Tuple(es) ->
       begin
         let (a, b, c) = 
@@ -639,6 +661,10 @@ let rec translate_expr expr G =
   | Expr.ConstInt(i) -> sprintf "PrtConstructFromInt(%d)" i 
   | Expr.ConstBool(b) -> if b then "PrtTrue" else "PrtFalse"
   | Expr.This -> "null" (* TODO: Fix *)
+  | Expr.New(_,_) -> "PrtConstructFromMachine(1)" (* TODO: Fix *)
+  | Expr.Default t when t = Null || t = Machine || t = Type.Event || t = Any -> "null"
+  | Expr.Default Int -> "PrtConstructFromInt(0)"
+  | Expr.Default Bool -> "PrtFalse"
   | Expr.Event s ->
     begin
       if Map.containsKey s !event_to_int_map then sprintf "PrtConstructFromEvent(%d)" (Map.find s !event_to_int_map)
@@ -700,6 +726,18 @@ let translate_assign lval expr G typemap =
       printfn "assume PrtDynamicType(%s) == PrtTypeTuple%d;" (get_lhs_var lval) (List.length es)
       for i = 0 to (List.length es) - 1 do
         printfn "assume PrtFieldTuple%d(%s) == tmp_rhs_value_%d;" i (get_lhs_var lval) i
+    end
+  | _, Expr.Default(Seq(t)) ->
+    begin
+      printfn "call %s := AllocatePrtRef();" (get_lhs_var lval)
+      printfn "assume PrtDynamicType(%s) == PrtTypeSeq%d;" (get_lhs_var lval) (Map.find (Seq(t)) typemap)
+      printfn "assume PrtFieldSeqSize(%s) == 0;" (get_lhs_var lval) 
+    end
+  | _, Expr.Default(Map(t1, t2)) ->
+    begin
+      printfn "call %s := AllocatePrtRef();" (get_lhs_var lval)
+      printfn "assume PrtDynamicType(%s) == PrtTypeMap%d;" (get_lhs_var lval) (Map.find (Map(t1, t2)) typemap)
+      printfn "assume PrtFieldMapSize(%s) == 0;" (get_lhs_var lval) 
     end
   | _, Expr.Bin(Idx, e1, e2) ->
     begin
