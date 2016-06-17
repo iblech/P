@@ -15,11 +15,9 @@ namespace Microsoft.Identity
         private Dictionary<P_Root.MachineDecl, StringBuilder> machineDeclToSB = new Dictionary<P_Root.MachineDecl, StringBuilder>();
         private Dictionary<P_Root.StateDecl, StringBuilder> stateDeclToSB = new Dictionary<P_Root.StateDecl, StringBuilder>();
         private Compiler compiler;
-        private int level;  //Indent. DO LAST!
 
         public IdentityGen(CommandLineOptions options)
         {
-            level = 0;
             options.analyzeOnly = true;
             options.profile = true;
             compiler = new Compiler(options);
@@ -33,7 +31,6 @@ namespace Microsoft.Identity
         private static string getValue(ICSharpTerm x)
         {
             Microsoft.Formula.Common.Rational a = (x as P_Root.RealCnst).Value;
-            //Can be improved!
             if (a.IsInteger)
             {
                 return a.ToString(0);
@@ -140,7 +137,6 @@ namespace Microsoft.Identity
 
         private static void gentype(P_Root.TypeExpr t, StringBuilder sb)
         {
-            //t: any TypeExpr. This means we can check its derived type as we wish.
             if (t is P_Root.NameType)
             {
                 genNameType(t as P_Root.NameType, sb);
@@ -244,7 +240,6 @@ namespace Microsoft.Identity
 
         private static void genUnApp(P_Root.UnApp e, StringBuilder sb)
         {
-            Console.WriteLine(e.op.Symbol.ToString() as String);
             switch (e.op.Symbol.ToString() as String)
             {
                 case "NOT":
@@ -647,7 +642,6 @@ namespace Microsoft.Identity
             genStmt(s.s2 as P_Root.Stmt, sb);
         }
 
-        //Come back and review.
         private static void genCases(P_Root.Cases s, StringBuilder sb)
         {
             sb.Append("case " + getString(s.trig) + ": ");
@@ -770,7 +764,6 @@ namespace Microsoft.Identity
             if (d.type.Symbol.ToString() != "NIL") //Not NIL
             {
                 sb.Append(" : ");
-                //sb.Append((d.type as Microsoft.Pc.Domains.P_Root.TypeExpr).ToString());
                 gentype(d.type as P_Root.TypeExpr, sb);
             }
             return;
@@ -859,7 +852,6 @@ namespace Microsoft.Identity
                 genNmdTupType(d.@params as P_Root.NmdTupType, sb);
             }
             sb.Append(")");
-            //sb.Append(") 7z "); //" 7z " is for a possible annotation.
             if (d.@return.Symbol.ToString() != "NIL")
             {
                 sb.Append(" : ");
@@ -1050,23 +1042,33 @@ namespace Microsoft.Identity
                     writer.WriteLine(builder);
                     builder.Clear();
                 }
+                
                 //Start generating code for machines.
-                foreach (var machine in program.Machines)
-                {
-                    StringBuilder sb = new StringBuilder();
-                    //Indent(sb);
-                    level++;
-                    genMachineDecl(machine, sb);
-                    machineDeclToSB[machine] = sb;
-                }
-
                 foreach (var observer in program.Observes)
                 {
-                    StringBuilder sb = new StringBuilder();
-                    level++;
-                    genObservesDecl(observer as P_Root.ObservesDecl, sb);
-                    machineDeclToSB[observer.monitor as P_Root.MachineDecl] = sb;
+                    if (!machineDeclToSB.ContainsKey(observer.monitor as P_Root.MachineDecl))
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        genObservesDecl(observer as P_Root.ObservesDecl, sb);
+                        machineDeclToSB[observer.monitor as P_Root.MachineDecl] = sb;
+                    }
+                    else
+                    {
+                        StringBuilder sb = machineDeclToSB[observer.monitor as P_Root.MachineDecl];
+                        sb.Length -= 2;
+                        sb.Append(", " + getString(observer.ev) + "{\n");
+                    }
                 }
+                foreach (var machine in program.Machines)
+                {
+                    if (!machineDeclToSB.ContainsKey(machine as P_Root.MachineDecl))
+                    {
+                        StringBuilder sb = new StringBuilder();
+                        genMachineDecl(machine, sb);
+                        machineDeclToSB[machine] = sb;
+                    }
+                }
+
                 //Bind the variable, function and state declarations to the relevant machine, 
                 //and the transitions to the relevant state.
                 foreach (var variable in program.Variables)
@@ -1075,7 +1077,6 @@ namespace Microsoft.Identity
                     StringBuilder sb = machineDeclToSB[variable.owner as P_Root.MachineDecl];
                     genVarDecl(variable, sb);
                     sb.Append(";\n");
-                    //writer.WriteLine(sb.ToString());
                 }
 
                 foreach (var state in program.States)
@@ -1083,7 +1084,6 @@ namespace Microsoft.Identity
                     StringBuilder sb = new StringBuilder();
                     stateDeclToSB[state] = sb;
                     genStateDecl(state, sb);
-                    //level++;
                 }
 
                 foreach (var function in program.Functions)
@@ -1129,8 +1129,6 @@ namespace Microsoft.Identity
                 foreach (var machine in program.Machines)
                 {
                     writer.WriteLine(machineDeclToSB[machine]);
-                    level--;
-                    //Indent(sb)
                     writer.WriteLine("\n}\n");
                 }
             }
