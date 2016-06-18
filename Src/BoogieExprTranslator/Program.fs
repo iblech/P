@@ -28,13 +28,17 @@ type Expr =
   | Cast of Expr * Type 
   | Tuple of Expr list
   | NamedTuple of (string * Expr) list
-  | New of string * Expr list
+  | New of string * Expr 
   | Default of Type
 
 type Lval = Var of string | Dot of Lval * int | NamedDot of Lval * string | Index of Lval * Expr
 
 (* Statements *)
-type Stmt = Assign of Lval * Expr | Insert of Lval * Expr * Expr | Remove of Lval * Expr | Assume of Expr 
+type Stmt = 
+  | Assign of Lval * Expr 
+  | Insert of Lval * Expr * Expr 
+  | Remove of Lval * Expr 
+  | Assume of Expr 
 
 (* Input program *)
 let stmtlist = [ 
@@ -43,7 +47,7 @@ let stmtlist = [
                  Assign(Lval.Var("d"), Expr.Var("c"));  // d = c
                  Assign(Lval.Var("c"), Expr.Cast(Expr.Var("d"), Type.Tuple [Int; Int]));  // d = c
                  Insert(Lval.Index(Lval.Var("f"), Expr.ConstInt(0)), Expr.Bin(Idx, Expr.Var("e"), Expr.ConstInt(1)), Expr.ConstInt(2)); // f[0] += (e[1], 2)
-                 Assign(Lval.Var("g"), New("M", [Expr.ConstInt 1])); // g = new M(1)
+                 Assign(Lval.Var("g"), New("M", Expr.ConstInt 1)); // g = new M(1)
                  Assign(Lval.Var("f"), Default(Type.Seq (Type.Seq Int))); // f = default(seq[seq[int]])
                  Assign(Lval.Var("h"), Default(Type.Tuple [Type.Tuple [Any; Any]; Int])); // h = default(((any,any),int)))
                  Assign(Lval.Var("i"), Expr.NamedTuple([("f1", Expr.ConstInt 1); ("f2", Expr.ConstBool true)])); // i = (f1: 1, f2: true)
@@ -198,7 +202,7 @@ let rec print_expr (e: Expr) =
   | Cast(e, t) -> sprintf "(%s as %s)" (print_expr e) (print_type t)
   | Tuple(ls) -> sprintf "(%s)" (print_list print_expr ls)
   | Default(t) -> sprintf "default(%s)" (print_type t)
-  | New(s, args) -> sprintf "new %s(%s)" s (print_list print_expr args)
+  | New(s, arg) -> sprintf "new %s(%s)" s (print_expr arg)
   | Expr.NamedDot(e,f) -> sprintf "%s.%s" (print_expr e) f
   | Expr.NamedTuple(es) -> sprintf "(%s)" (print_list (fun (f,e) -> sprintf "%s: %s" f (print_expr e)) es)
    
@@ -394,7 +398,7 @@ let rec remove_namedtuples_expr expr G =
   | Cast(e, t) -> Cast(remove_namedtuples_expr e G, remove_namedtuples_type t)
   | Tuple(es) -> Tuple(List.map (fun e -> remove_namedtuples_expr e G) es)
   | NamedTuple(es) -> Tuple(List.map (fun (f,e) -> remove_namedtuples_expr e G) es)
-  | New(s, es) -> New(s, List.map (fun e -> remove_namedtuples_expr e G) es)
+  | New(s, e) -> New(s, remove_namedtuples_expr e G)
 
 let rec remove_namedtuples_lval lval G =
   match lval with
@@ -414,6 +418,8 @@ let remove_namedtuples_stmt st G =
   | Remove (l, e) -> Remove(remove_namedtuples_lval l G, remove_namedtuples_expr e G)
   | Assume e -> Assume (remove_namedtuples_expr e G)
 
+let remove_namedtuples_env G =
+  Map.map (fun key value -> remove_namedtuples_type value) G
 
 (* Quadratic time; can optimize *)
 let rec find_all_types stmt G =
@@ -434,8 +440,8 @@ let rec find_all_types stmt G =
         | Expr.NamedDot(_, _) -> raise Not_defined
         | Expr.NamedTuple(_) -> raise Not_defined
         | Cast(e, t) -> all_exprs e
-        | Expr.Tuple(es)
-        | New(_, es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
+        | Expr.Tuple(es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
+        | New(_, e') -> all_exprs e' 
     in 
     ret.Add(e)
   in
@@ -587,18 +593,11 @@ let rec remove_side_effects_expr expr G =
         let (l, Gfinal) = get_local (typeof expr G) c in
         (Expr.Var(l), b @ [Assign(Lval.Var(l), Expr.Tuple(List.rev a))], Gfinal)
       end
-    | New(s, es) -> 
+    | New(m, e) ->
       begin
-        let (a, b, c) = 
-          List.fold (fun (partial_es, partial_stlist, partial_G) e -> 
-            begin
-              let (e', s, G') = remove_side_effects_expr e partial_G in
-              (e' :: partial_es, partial_stlist @ s, G')
-            end
-            ) ([], [], G) es
-        in
-        let (l, Gfinal) = get_local (typeof expr G) c in
-        (Expr.Var(l), b @ [Assign(Lval.Var(l), New(s, List.rev a))], Gfinal)
+        let (e', s, G') = remove_side_effects_expr e G in
+        let (l, G'') = get_local (typeof expr G') G' in
+        (Expr.Var(l), s @ [Assign(Lval.Var(l), New(m, e'))], G'')
       end
     in (nexpr, stlist, nG) 
 
@@ -969,6 +968,7 @@ let main argv =
 
     (* Remove namedtuples *)
     let stmtlist = List.map (fun st-> remove_namedtuples_stmt st G) stmtlist in
+    let G = remove_namedtuples_env G in
 
     (* Remove side effects *)
     let (stmtlist, G) = normalize_lval_stlist stmtlist G in
