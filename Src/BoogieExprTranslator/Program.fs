@@ -4,6 +4,8 @@
 type Type = Null | Bool | Int | Machine | Event | Any 
            | Seq of Type | Map of Type * Type 
            | Tuple of Type list
+           | NamedTuple of (string * Type) list
+           | ModelType of string
 
 (* operators *)
 type BinOp = Add | Sub | Mul | Intdiv | And | Or | Eq | Neq | Lt | Le | Gt | Ge | Idx | In
@@ -21,13 +23,15 @@ type Expr =
   | Var of string 
   | Bin of BinOp * Expr * Expr 
   | Un of UnOp * Expr
-  | Dot of Expr * int 
+  | Dot of Expr * int
+  | NamedDot of Expr * string 
   | Cast of Expr * Type 
   | Tuple of Expr list
+  | NamedTuple of (string * Expr) list
   | New of string * Expr list
   | Default of Type
 
-type Lval = Var of string | Dot of Lval * int | Index of Lval * Expr
+type Lval = Var of string | Dot of Lval * int | NamedDot of Lval * string | Index of Lval * Expr
 
 (* Statements *)
 type Stmt = Assign of Lval * Expr | Insert of Lval * Expr * Expr | Remove of Lval * Expr | Assume of Expr 
@@ -42,6 +46,8 @@ let stmtlist = [
                  Assign(Lval.Var("g"), New("M", [Expr.ConstInt 1])); // g = new M(1)
                  Assign(Lval.Var("f"), Default(Type.Seq (Type.Seq Int))); // f = default(seq[seq[int]])
                  Assign(Lval.Var("h"), Default(Type.Tuple [Type.Tuple [Any; Any]; Int])); // h = default(((any,any),int)))
+                 Assign(Lval.Var("i"), Expr.NamedTuple([("f1", Expr.ConstInt 1); ("f2", Expr.ConstBool true)])); // i = (f1: 1, f2: true)
+                 Assign(Lval.Var("a"), Expr.NamedDot(Expr.Var("i"), "f1")); // a = i.f1
                ]
 
 let env = Map.ofList [ 
@@ -53,6 +59,7 @@ let env = Map.ofList [
             ("f", Type.Seq (Type.Seq Int));
             ("g", Type.Machine);
             ("h", Type.Tuple [Type.Tuple [Any; Any]; Int]);
+            ("i", Type.NamedTuple [("f1", Type.Int); ("f2", Type.Bool)]);
             ("x", Int); 
             ("y", Int) 
           ]
@@ -70,6 +77,7 @@ let rec lval_to_expr lval =
   match lval with
   | Lval.Var(v) -> Expr.Var(v)
   | Lval.Dot(l, i) -> Expr.Dot(lval_to_expr l, i)
+  | Lval.NamedDot(l, f) -> Expr.NamedDot(lval_to_expr l, f)
   | Lval.Index(l, e) -> Expr.Bin(Idx, lval_to_expr l, e)
 
 let is_intop op =
@@ -121,6 +129,13 @@ let get_range_type t =
   | Seq(t2) -> t2
   | _ -> raise Not_defined
 
+let lookup_named_field_type f ts =
+  let (a,b) = List.find (fun (a,b) -> a = f) ts
+  in b
+
+let lookup_named_field_index f ts =
+  List.findIndex (fun (a,b) -> a = f) ts
+   
 (* Printing functions *)
 let rec print_list fn ls =
   match ls with
@@ -139,6 +154,8 @@ let rec print_type t =
   | Type.Tuple(ls) -> sprintf "(%s)" (print_list print_type ls)
   | Type.Seq(t) -> sprintf "seq[%s]" (print_type t)
   | Type.Map(t1, t2) -> sprintf "map[%s, %s]" (print_type t1) (print_type t2)
+  | Type.NamedTuple nls -> sprintf ("%s") (print_list (fun (f,t) -> sprintf "%s: %s" f (print_type t)) nls)
+  | Type.ModelType s -> sprintf "Model(%s)" s
 
 let print_binop op =
   match op with
@@ -182,11 +199,14 @@ let rec print_expr (e: Expr) =
   | Tuple(ls) -> sprintf "(%s)" (print_list print_expr ls)
   | Default(t) -> sprintf "default(%s)" (print_type t)
   | New(s, args) -> sprintf "new %s(%s)" s (print_list print_expr args)
- 
+  | Expr.NamedDot(e,f) -> sprintf "%s.%s" (print_expr e) f
+  | Expr.NamedTuple(es) -> sprintf "(%s)" (print_list (fun (f,e) -> sprintf "%s: %s" f (print_expr e)) es)
+   
 let rec print_lval (l: Lval) =
   match l with
   | Lval.Var(v) -> v
   | Lval.Dot(v, i) -> sprintf "%s.%d" (print_lval v) i
+  | Lval.NamedDot(v, f) -> sprintf "%s.%s" (print_lval v) f
   | Lval.Index(l, e) -> sprintf "%s[%s]" (print_lval l) (print_expr e) 
 
 let print_stmt s =
@@ -216,6 +236,15 @@ let rec is_subtype t1 t2 =
       else begin
         let z = List.zip ls1 ls2 in
         let z = List.map (fun (a,b) -> (is_subtype a b)) z in
+        List.fold (fun p b -> p && b) true z
+      end
+    end
+  | (Type.NamedTuple(ls1), Type.NamedTuple(ls2)) ->
+    begin
+      if List.length ls1 <> List.length ls2 then false
+      else begin
+        let z = List.zip ls1 ls2 in
+        let z = List.map (fun ((f1,a),(f2,b)) -> (f1 = f2) && (is_subtype a b)) z in
         List.fold (fun p b -> p && b) true z
       end
     end
@@ -282,8 +311,16 @@ let rec typeof expr G =
       | Type.Tuple(ls) -> List.nth ls i
       | _ -> raise Not_defined
     end
+  | Expr.NamedDot(e, f) -> 
+    begin
+      let ts = typeof e G in
+      match ts with
+      | Type.NamedTuple(ls) -> lookup_named_field_type f ls
+      | _ -> raise Not_defined
+    end
   | Cast(e, t) -> t
   | Expr.Tuple(es) -> Type.Tuple(List.map (fun e -> typeof e G) es)
+  | Expr.NamedTuple(es) -> Type.NamedTuple(List.map (fun (f, e) -> (f, typeof e G)) es)
   | Default(t) -> t
   | New(_, _) -> Machine
   | _ -> raise Not_defined
@@ -295,6 +332,12 @@ let rec typeof_lval lval G =
     begin
       match (typeof_lval l G) with
       | Type.Tuple(ls) -> List.nth ls i
+      | _ -> raise Not_defined
+    end
+  | Lval.NamedDot(l, f) -> 
+    begin
+      match (typeof_lval l G) with
+      | Type.NamedTuple(ls) -> lookup_named_field_type f ls
       | _ -> raise Not_defined
     end
   | Lval.Index(l, e) ->
@@ -319,6 +362,58 @@ let typecheck_stmt st G =
     | Map(t1,t2) -> type_assert (is_subtype (typeof e G) t1) (sprintf "Invalid remove: %s" (print_stmt st))
     | _ -> type_assert false (sprintf "Invalid remove: %s" (print_stmt st))
 
+(* Remove named tuples *)
+let rec remove_namedtuples_type ty =
+  match ty with
+  | Type.NamedTuple ts -> Type.Tuple (List.map (fun (a,b) -> remove_namedtuples_type b) ts)
+  | Seq t -> Seq (remove_namedtuples_type t)
+  | Map(t1,t2) -> Map(remove_namedtuples_type t1, remove_namedtuples_type t2)
+  | Type.Tuple ts -> Type.Tuple (List.map (fun a -> remove_namedtuples_type a) ts)
+  | _ -> ty
+
+
+let rec remove_namedtuples_expr expr G =
+  match expr with
+  | Nil
+  | ConstInt _
+  | ConstBool _
+  | Event _
+  | This
+  | Nondet
+  | Expr.Var _ -> expr
+  | Default t -> Default (remove_namedtuples_type t)
+  | Bin(op, e1, e2) -> Bin(op, remove_namedtuples_expr e1 G, remove_namedtuples_expr e2 G)
+  | Un(op, e) -> Un(op, remove_namedtuples_expr e G)
+  | Expr.Dot(e,i) -> Expr.Dot(remove_namedtuples_expr e G, i)
+  | Expr.NamedDot(e, f) ->
+    begin
+      let (Type.NamedTuple(ts)) = typeof e G in
+      let index = lookup_named_field_index f ts in
+      Expr.Dot(remove_namedtuples_expr e G, index)
+    end
+  | Cast(e, t) -> Cast(remove_namedtuples_expr e G, remove_namedtuples_type t)
+  | Tuple(es) -> Tuple(List.map (fun e -> remove_namedtuples_expr e G) es)
+  | NamedTuple(es) -> Tuple(List.map (fun (f,e) -> remove_namedtuples_expr e G) es)
+  | New(s, es) -> New(s, List.map (fun e -> remove_namedtuples_expr e G) es)
+
+let rec remove_namedtuples_lval lval G =
+  match lval with
+  | Var _ -> lval
+  | Dot(l, i) -> Dot(remove_namedtuples_lval l G, i)
+  | NamedDot(l, f) -> 
+    begin
+      let (Type.NamedTuple(ts)) = typeof_lval l G in
+      Dot(remove_namedtuples_lval l G, lookup_named_field_index f ts)
+    end
+  | Index(l, e) -> Index(remove_namedtuples_lval l G, remove_namedtuples_expr e G)
+
+let remove_namedtuples_stmt st G =
+  match st with
+  | Assign(l, e) -> Assign(remove_namedtuples_lval l G, remove_namedtuples_expr e G)
+  | Insert (l, e1, e2) -> Insert(remove_namedtuples_lval l G, remove_namedtuples_expr e1 G, remove_namedtuples_expr e2 G)
+  | Remove (l, e) -> Remove(remove_namedtuples_lval l G, remove_namedtuples_expr e G)
+  | Assume e -> Assume (remove_namedtuples_expr e G)
+
 
 (* Quadratic time; can optimize *)
 let rec find_all_types stmt G =
@@ -336,6 +431,8 @@ let rec find_all_types stmt G =
         | Bin(_, e1, e2) -> Set.union (all_exprs e1) (all_exprs e2)
         | Un(_, e') -> all_exprs e'
         | Expr.Dot(e', _) -> all_exprs e'
+        | Expr.NamedDot(_, _) -> raise Not_defined
+        | Expr.NamedTuple(_) -> raise Not_defined
         | Cast(e, t) -> all_exprs e
         | Expr.Tuple(es)
         | New(_, es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
@@ -348,6 +445,7 @@ let rec find_all_types stmt G =
       match lval with
       | Lval.Var(v) -> Set.empty
       | Lval.Dot(l, _) -> all_types_lval l G
+      | Lval.NamedDot(_, _) -> raise Not_defined
       | Lval.Index(l, e) -> Set.union (all_types_lval l G) (all_types_expr e G)
     in
     ret.Add(typeof_lval lval G)
@@ -444,6 +542,8 @@ let rec remove_side_effects_expr expr G =
         let (e', s, G') = remove_side_effects_expr e G in
         (Expr.Dot(e', f), s, G')
       end
+    | Expr.NamedTuple(_)
+    | Expr.NamedDot(_, _) -> raise Not_defined
     | Expr.Cast(e, t) when (is_subtype (typeof e G) t) -> 
       begin
         (* redundant cast *)
@@ -511,6 +611,7 @@ let rec remove_side_effects_lval lval G =
       let (l', stlist, G') = remove_side_effects_lval l G in
       (Lval.Dot(l', f), stlist, G')
     end
+  | Lval.NamedDot(_, _) -> raise Not_defined
   | Lval.Index(l, e) ->
     begin
       let (e', stlist1, G') = remove_side_effects_expr e G in
@@ -647,6 +748,8 @@ let translate_type t typmap =
   | Int -> "PrtTypeInt"
   | Machine -> "PrtTypeMachine"
   | Type.Event -> "PrtTypeEvent"
+  | Type.NamedTuple(_) -> raise Not_defined
+  | Type.ModelType s -> sprintf "PrtTypeModel%s" s
   | Any -> raise Not_defined
   | Type.Tuple(ls) -> sprintf "PrtTypeTuple%d" (List.length ls)
   | Type.Seq(t1) -> sprintf "PrtTypeSeq%d" (Map.find t typmap)
@@ -844,6 +947,8 @@ let print_type_check t typemap =
   | Int -> printfn "  assert PrtDynamicType(x) == %s;" (translate_type t typemap)
   | Machine
   | Type.Event -> printfn "  assert PrtDynamicType(x) == %s || PrtIsNull(x);" (translate_type t typemap)
+  | Type.NamedTuple(_) -> raise Not_defined
+  | Type.ModelType s -> printfn "  assert PrtDynamicType(x) == PrtTypeModel%s;" s
   | Type.Tuple ts ->
     begin
       printfn "  assert PrtDynamicType(x) == PrtTypeTuple%d;" (List.length ts)
@@ -861,6 +966,9 @@ let main argv =
     Map.iter (fun v t -> printfn_comment "%s -> %s" v (print_type t)) env;
 
     let G = env in
+
+    (* Remove namedtuples *)
+    let stmtlist = List.map (fun st-> remove_namedtuples_stmt st G) stmtlist in
 
     (* Remove side effects *)
     let (stmtlist, G) = normalize_lval_stlist stmtlist G in
