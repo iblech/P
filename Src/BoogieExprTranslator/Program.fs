@@ -30,6 +30,7 @@ type Expr =
   | NamedTuple of (string * Expr) list
   | New of string * Expr 
   | Default of Type
+  | Call of string * Expr list
 
 type Lval = Var of string | Dot of Lval * int | NamedDot of Lval * string | Index of Lval * Expr
 
@@ -39,6 +40,28 @@ type Stmt =
   | Insert of Lval * Expr * Expr 
   | Remove of Lval * Expr 
   | Assume of Expr 
+  | Assert of Expr
+  | NewStmt of string * Expr
+  | Raise of Expr * Expr
+  | Send of Expr * Expr * Expr
+  | Skip
+  | While of Expr * Stmt
+  | Ite of Expr * Stmt * Stmt
+  | SeqStmt of Stmt list
+  (*
+  | Cases of (string * string) list
+  | Receive of (string * string) list 
+  | Pop
+  | Return of Expr
+  | Monitor of Expr * Expr  
+  | FunStmt of string * Expr list * string option
+  *)
+
+(* Variable and type *)
+type VarDecl = (string * Type)
+
+(* name, params, return, locals, body *)
+type FunDecl = string * VarDecl list * Type option * VarDecl list * Stmt
 
 (* Input program *)
 let stmtlist = [ 
@@ -205,6 +228,7 @@ let rec print_expr (e: Expr) =
   | New(s, arg) -> sprintf "new %s(%s)" s (print_expr arg)
   | Expr.NamedDot(e,f) -> sprintf "%s.%s" (print_expr e) f
   | Expr.NamedTuple(es) -> sprintf "(%s)" (print_list (fun (f,e) -> sprintf "%s: %s" f (print_expr e)) es)
+  | Expr.Call(callee, args) -> sprintf "%s(%s)" callee (print_list print_expr args)
    
 let rec print_lval (l: Lval) =
   match l with
@@ -327,6 +351,7 @@ let rec typeof expr G =
   | Expr.NamedTuple(es) -> Type.NamedTuple(List.map (fun (f, e) -> (f, typeof e G)) es)
   | Default(t) -> t
   | New(_, _) -> Machine
+  | Call(callee, args) -> Map.find callee G
   | _ -> raise Not_defined
 
 let rec typeof_lval lval G =
@@ -399,6 +424,7 @@ let rec remove_namedtuples_expr expr G =
   | Tuple(es) -> Tuple(List.map (fun e -> remove_namedtuples_expr e G) es)
   | NamedTuple(es) -> Tuple(List.map (fun (f,e) -> remove_namedtuples_expr e G) es)
   | New(s, e) -> New(s, remove_namedtuples_expr e G)
+  | Call(callee, args) -> Call(callee, List.map (fun e -> remove_namedtuples_expr e G) args)
 
 let rec remove_namedtuples_lval lval G =
   match lval with
@@ -442,6 +468,7 @@ let rec find_all_types stmt G =
         | Cast(e, t) -> all_exprs e
         | Expr.Tuple(es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
         | New(_, e') -> all_exprs e' 
+        | Call(_, es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
     in 
     ret.Add(e)
   in
@@ -592,6 +619,19 @@ let rec remove_side_effects_expr expr G =
         in
         let (l, Gfinal) = get_local (typeof expr G) c in
         (Expr.Var(l), b @ [Assign(Lval.Var(l), Expr.Tuple(List.rev a))], Gfinal)
+      end
+    | Expr.Call(callee, es) ->
+      begin
+        let (a, b, c) = 
+          List.fold (fun (partial_es, partial_stlist, partial_G) e -> 
+            begin
+              let (e', s, G') = remove_side_effects_expr e partial_G in
+              (e' :: partial_es, partial_stlist @ s, G')
+            end
+            ) ([], [], G) es
+        in
+        let (l, Gfinal) = get_local (typeof expr G) c in
+        (Expr.Var(l), b @ [Assign(Lval.Var(l), Expr.Call(callee, List.rev a))], Gfinal)
       end
     | New(m, e) ->
       begin
@@ -828,6 +868,10 @@ let translate_assign lval expr G typemap =
       printfn "assume PrtDynamicType(%s) == PrtTypeTuple%d;" (get_lhs_var lval) (List.length es)
       for i = 0 to (List.length es) - 1 do
         printfn "assume PrtFieldTuple%d(%s) == tmp_rhs_value_%d;" i (get_lhs_var lval) i
+    end
+  | _, Expr.Call(callee, args) ->
+    begin
+      printfn "call %s := %s(%s);" (get_lhs_var lval) callee (print_list (fun e -> translate_expr e G) args)
     end
   | _, Expr.Default(Seq(t)) ->
     begin
