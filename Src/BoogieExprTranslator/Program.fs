@@ -60,9 +60,86 @@ type Stmt =
 (* Variable and type *)
 type VarDecl = (string * Type)
 
-(* name, params, return, locals, body *)
-type FunDecl = string * VarDecl list * Type option * VarDecl list * Stmt
+module FunDecl =
+  (* name, params, return, locals, body *)
+  type T = string * VarDecl list * Type option * VarDecl list * Stmt
 
+  let get_name (f: T) =
+    let (name, _, _, _, _) = f in name
+
+module TransDecl =
+
+  type T = 
+    | Push of string * string
+    | Call of string * string * string
+
+  let get_event td =
+    match td with
+    | Push(e, _) -> e
+    | Call(e, _, _)  -> e
+
+  let get_dest td =
+    match td with
+    | Push(_, s) -> s
+    | Call(_, s, _)  -> s
+
+module DoDecl =
+
+  type T =
+    | Defer of string
+    | Ignore of string
+    | Call of string * string
+
+  let get_event td =
+    match td with
+    | Defer e-> e
+    | Ignore e -> e
+    | Call(e, _)  -> e
+  
+module StateDecl =
+  (* name, entryaction, exitaction, transitions, dos  *)
+  type T = string * string * string * TransDecl.T list * DoDecl.T list
+
+  let get_name (st : T) =
+    let (name, _, _, _, _) = st in name
+
+  let get_entryaction (st : T) =
+    let (_, name, _, _, _) = st in name
+
+  let get_exitaction (st : T) =
+    let (_, _, name, _, _) = st in name
+
+  let get_transitions (st : T) =
+    let (_, _, _, tr, _) = st in tr
+
+  let get_dos (st : T) =
+    let (_, _, _, _, tr) = st in tr
+ 
+module MachineDecl =
+  (* name, is_monitor, start state, globals, functions, states *)
+  type T = string * bool * string * VarDecl list * FunDecl.T list * StateDecl.T list
+
+  let get_name (m: T) =
+    let (name, _, _, _, _, _) = m in name   
+
+  let is_monitor (m: T) =
+    let (_, b, _, _, _, _) = m in b   
+
+  let get_start_state_name (m: T) =
+    let (_, _, ss, _, _, _) = m in ss   
+
+  let get_globals (m: T) =
+    let (_, _, _, g, _, _) = m in g   
+
+  let get_funs (m: T) =
+    let (_, _, _, _, f, _) = m in f   
+
+  let get_states (m: T) =
+    let (_, _, _, _, _, states) = m in 
+    let map = ref Map.empty in
+    List.iter (fun state -> map := Map.add (StateDecl.get_name state) state !map) states
+    !map       
+    
 (* Input program *)
 let stmtlist = [ 
                  Assign(Lval.Var("c"), Expr.Tuple [Expr.ConstInt 1; Expr.ConstInt 2]);  // c = (1,2)
@@ -392,60 +469,60 @@ let typecheck_stmt st G =
     | _ -> type_assert false (sprintf "Invalid remove: %s" (print_stmt st))
 
 (* Remove named tuples *)
-let rec remove_namedtuples_type ty =
-  match ty with
-  | Type.NamedTuple ts -> Type.Tuple (List.map (fun (a,b) -> remove_namedtuples_type b) ts)
-  | Seq t -> Seq (remove_namedtuples_type t)
-  | Map(t1,t2) -> Map(remove_namedtuples_type t1, remove_namedtuples_type t2)
-  | Type.Tuple ts -> Type.Tuple (List.map (fun a -> remove_namedtuples_type a) ts)
-  | _ -> ty
+module RemoveNamedTuples =
+    let rec process_type ty =
+      match ty with
+      | Type.NamedTuple ts -> Type.Tuple (List.map (fun (a,b) -> process_type b) ts)
+      | Seq t -> Seq (process_type t)
+      | Map(t1,t2) -> Map(process_type t1, process_type t2)
+      | Type.Tuple ts -> Type.Tuple (List.map (fun a -> process_type a) ts)
+      | _ -> ty
 
+    let rec process_expr expr G =
+      match expr with
+      | Nil
+      | ConstInt _
+      | ConstBool _
+      | Event _
+      | This
+      | Nondet
+      | Expr.Var _ -> expr
+      | Default t -> Default (process_type t)
+      | Bin(op, e1, e2) -> Bin(op, process_expr e1 G, process_expr e2 G)
+      | Un(op, e) -> Un(op, process_expr e G)
+      | Expr.Dot(e,i) -> Expr.Dot(process_expr e G, i)
+      | Expr.NamedDot(e, f) ->
+        begin
+          let (Type.NamedTuple(ts)) = typeof e G in
+          let index = lookup_named_field_index f ts in
+          Expr.Dot(process_expr e G, index)
+        end
+      | Cast(e, t) -> Cast(process_expr e G, process_type t)
+      | Tuple(es) -> Tuple(List.map (fun e -> process_expr e G) es)
+      | NamedTuple(es) -> Tuple(List.map (fun (f,e) -> process_expr e G) es)
+      | New(s, e) -> New(s, process_expr e G)
+      | Call(callee, args) -> Call(callee, List.map (fun e -> process_expr e G) args)
 
-let rec remove_namedtuples_expr expr G =
-  match expr with
-  | Nil
-  | ConstInt _
-  | ConstBool _
-  | Event _
-  | This
-  | Nondet
-  | Expr.Var _ -> expr
-  | Default t -> Default (remove_namedtuples_type t)
-  | Bin(op, e1, e2) -> Bin(op, remove_namedtuples_expr e1 G, remove_namedtuples_expr e2 G)
-  | Un(op, e) -> Un(op, remove_namedtuples_expr e G)
-  | Expr.Dot(e,i) -> Expr.Dot(remove_namedtuples_expr e G, i)
-  | Expr.NamedDot(e, f) ->
-    begin
-      let (Type.NamedTuple(ts)) = typeof e G in
-      let index = lookup_named_field_index f ts in
-      Expr.Dot(remove_namedtuples_expr e G, index)
-    end
-  | Cast(e, t) -> Cast(remove_namedtuples_expr e G, remove_namedtuples_type t)
-  | Tuple(es) -> Tuple(List.map (fun e -> remove_namedtuples_expr e G) es)
-  | NamedTuple(es) -> Tuple(List.map (fun (f,e) -> remove_namedtuples_expr e G) es)
-  | New(s, e) -> New(s, remove_namedtuples_expr e G)
-  | Call(callee, args) -> Call(callee, List.map (fun e -> remove_namedtuples_expr e G) args)
+    let rec process_lval lval G =
+      match lval with
+      | Var _ -> lval
+      | Dot(l, i) -> Dot(process_lval l G, i)
+      | NamedDot(l, f) -> 
+        begin
+          let (Type.NamedTuple(ts)) = typeof_lval l G in
+          Dot(process_lval l G, lookup_named_field_index f ts)
+        end
+      | Index(l, e) -> Index(process_lval l G, process_expr e G)
 
-let rec remove_namedtuples_lval lval G =
-  match lval with
-  | Var _ -> lval
-  | Dot(l, i) -> Dot(remove_namedtuples_lval l G, i)
-  | NamedDot(l, f) -> 
-    begin
-      let (Type.NamedTuple(ts)) = typeof_lval l G in
-      Dot(remove_namedtuples_lval l G, lookup_named_field_index f ts)
-    end
-  | Index(l, e) -> Index(remove_namedtuples_lval l G, remove_namedtuples_expr e G)
+    let process_stmt st G =
+      match st with
+      | Assign(l, e) -> Assign(process_lval l G, process_expr e G)
+      | Insert (l, e1, e2) -> Insert(process_lval l G, process_expr e1 G, process_expr e2 G)
+      | Remove (l, e) -> Remove(process_lval l G, process_expr e G)
+      | Assume e -> Assume (process_expr e G)
 
-let remove_namedtuples_stmt st G =
-  match st with
-  | Assign(l, e) -> Assign(remove_namedtuples_lval l G, remove_namedtuples_expr e G)
-  | Insert (l, e1, e2) -> Insert(remove_namedtuples_lval l G, remove_namedtuples_expr e1 G, remove_namedtuples_expr e2 G)
-  | Remove (l, e) -> Remove(remove_namedtuples_lval l G, remove_namedtuples_expr e G)
-  | Assume e -> Assume (remove_namedtuples_expr e G)
-
-let remove_namedtuples_env G =
-  Map.map (fun key value -> remove_namedtuples_type value) G
+    let process_env G =
+      Map.map (fun key value -> process_type value) G
 
 (* Quadratic time; can optimize *)
 let rec find_all_types stmt G =
@@ -1011,8 +1088,8 @@ let main argv =
     let G = env in
 
     (* Remove namedtuples *)
-    let stmtlist = List.map (fun st-> remove_namedtuples_stmt st G) stmtlist in
-    let G = remove_namedtuples_env G in
+    let stmtlist = List.map (fun st-> RemoveNamedTuples.process_stmt st G) stmtlist in
+    let G = RemoveNamedTuples.process_env G in
 
     (* Remove side effects *)
     let (stmtlist, G) = normalize_lval_stlist stmtlist G in
