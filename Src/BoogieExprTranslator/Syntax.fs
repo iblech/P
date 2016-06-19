@@ -1,5 +1,5 @@
-﻿
-module Syntax
+﻿module Syntax
+
 open System
 
 (* Types *)
@@ -50,14 +50,12 @@ type Stmt =
   | While of Expr * Stmt
   | Ite of Expr * Stmt * Stmt
   | SeqStmt of Stmt list
-  (*
   | Cases of (string * string) list
   | Receive of (string * string) list 
   | Pop
   | Return of Expr
   | Monitor of Expr * Expr  
   | FunStmt of string * Expr list * string option
-  *)
 
 (* Variable and type *)
 type VarDecl = (string * Type)
@@ -141,6 +139,19 @@ module MachineDecl =
     let map = ref Map.empty in
     List.iter (fun state -> map := Map.add (StateDecl.get_name state) state !map) states
     !map       
+
+module ProgramDecl =
+  type T = string * MachineDecl.T list
+
+  let get_main_machine_name (p: T) =
+    let (main, _) = p in main
+
+  let get_machines (p: T) =
+    let (_, machines) = p in
+    let map = ref Map.empty in
+    List.iter (fun machine -> map := Map.add (MachineDecl.get_name machine) machine !map) machines
+    !map       
+
     
 (* Input program *)
 let stmtlist = [ 
