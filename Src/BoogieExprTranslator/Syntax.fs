@@ -58,14 +58,16 @@ type Stmt =
   | FunStmt of string * Expr list * string option
 
 (* Variable and type *)
-type VarDecl = (string * Type)
+type VarDecl(name: string, typ: Type) =
+  member this.Name = name
+  member this.typ = typ
 
-module FunDecl =
-  (* name, params, return, locals, body *)
-  type T = string * VarDecl list * Type option * VarDecl list * Stmt
-
-  let get_name (f: T) =
-    let (name, _, _, _, _) = f in name
+type FunDecl(name: string, formals: VarDecl list, rettype: Type option, locals: VarDecl list, body: Stmt) =
+  member this.Name = name
+  member this.Formals = formals
+  member this.RetType = rettype
+  member this.Locals = locals
+  member this.Body = body
 
 module TransDecl =
 
@@ -96,63 +98,34 @@ module DoDecl =
     | Ignore e -> e
     | Call(e, _)  -> e
   
-module StateDecl =
-  (* name, entryaction, exitaction, transitions, dos  *)
-  type T = string * string * string * TransDecl.T list * DoDecl.T list
+type StateDecl(name: string, entryaction: string option, exitaction: string option, transitions: TransDecl.T list, dos: DoDecl.T list) =
+  member this.Name = name
+  member this.EntryAction = entryaction
+  member this.ExitAction = exitaction
+  member this.Transitions = transitions
+  member this.Dos = dos
+   
+type MachineDecl(name: string, is_monitor: bool, start_state: string, globals: VarDecl list, functions: FunDecl list, states: StateDecl list) =
+  member this.Name = name
+  member this.IsMonitor = is_monitor
+  member this.StartState = start_state
+  member this.Globals = globals
+  member this.Functions = functions
+  member this.States = states
 
-  let get_name (st : T) =
-    let (name, _, _, _, _) = st in name
-
-  let get_entryaction (st : T) =
-    let (_, name, _, _, _) = st in name
-
-  let get_exitaction (st : T) =
-    let (_, _, name, _, _) = st in name
-
-  let get_transitions (st : T) =
-    let (_, _, _, tr, _) = st in tr
-
-  let get_dos (st : T) =
-    let (_, _, _, _, tr) = st in tr
- 
-module MachineDecl =
-  (* name, is_monitor, start state, globals, functions, states *)
-  type T = string * bool * string * VarDecl list * FunDecl.T list * StateDecl.T list
-
-  let get_name (m: T) =
-    let (name, _, _, _, _, _) = m in name   
-
-  let is_monitor (m: T) =
-    let (_, b, _, _, _, _) = m in b   
-
-  let get_start_state_name (m: T) =
-    let (_, _, ss, _, _, _) = m in ss   
-
-  let get_globals (m: T) =
-    let (_, _, _, g, _, _) = m in g   
-
-  let get_funs (m: T) =
-    let (_, _, _, _, f, _) = m in f   
-
-  let get_states (m: T) =
-    let (_, _, _, _, _, states) = m in 
+  member this.StateMap =
     let map = ref Map.empty in
-    List.iter (fun state -> map := Map.add (StateDecl.get_name state) state !map) states
+    List.iter (fun (state: StateDecl) -> map := Map.add state.Name state !map) this.States
     !map       
 
-module ProgramDecl =
-  type T = string * MachineDecl.T list
-
-  let get_main_machine_name (p: T) =
-    let (main, _) = p in main
-
-  let get_machines (p: T) =
-    let (_, machines) = p in
+type ProgramDecl(mainmachine: string, machines: MachineDecl list) =
+  member this.MainMachine = mainmachine
+  member this.Machines = machines
+  member this.MachineMap =
     let map = ref Map.empty in
-    List.iter (fun machine -> map := Map.add (MachineDecl.get_name machine) machine !map) machines
+    List.iter (fun (machine: MachineDecl) -> map := Map.add machine.Name machine !map) machines
     !map       
-
-    
+   
 (* Input program *)
 let stmtlist = [ 
                  Assign(Lval.Var("c"), Expr.Tuple [Expr.ConstInt 1; Expr.ConstInt 2]);  // c = (1,2)
