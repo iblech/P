@@ -1,5 +1,5 @@
 ﻿module RemoveSideEffects
-open Program
+open Syntax
 open Common
 open Helper
 open ProgramTyping

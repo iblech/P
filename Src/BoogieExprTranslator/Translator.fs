@@ -1,7 +1,7 @@
 ﻿module Translator
 
 open System
-open Program
+open Syntax
 open Helper
 open Common
 open ProgramTyping

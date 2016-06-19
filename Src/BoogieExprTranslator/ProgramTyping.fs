@@ -1,5 +1,5 @@
 ﻿module ProgramTyping
-open Program
+open Syntax
 open Common
 open Helper
 

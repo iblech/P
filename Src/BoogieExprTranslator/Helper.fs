@@ -1,7 +1,7 @@
 ﻿module Helper
 
 open System
-open Program
+open Syntax
 open Common
 
 (* Helpers *)

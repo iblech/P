@@ -1,5 +1,5 @@
 ﻿
-module Program
+module Syntax
 open System
 
 (* Types *)
