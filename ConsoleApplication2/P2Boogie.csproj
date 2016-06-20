@@ -57,6 +57,12 @@
     <None Include="App.config" />
     <None Include="ClassDiagram1.cd" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Src\BoogieExprTranslator\BoogieExprTranslator.fsproj">
+      <Project>{dd849437-50d3-498f-a0b4-2e06b8387aa9}</Project>
+      <Name>BoogieExprTranslator</Name>
+    </ProjectReference>
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.

@@ -1,4 +1,5 @@
-﻿module Syntax
+﻿namespace P2Boogie
+module Syntax
 
 open System
 
