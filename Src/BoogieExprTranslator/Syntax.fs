@@ -1,6 +1,5 @@
-﻿namespace P2Boogie
+﻿namespace Microsoft.P2Boogie
 module Syntax =
-
     open System
 
     (* Types *)
@@ -9,6 +8,17 @@ module Syntax =
                | Tuple of Type list
                | NamedTuple of (string * Type) list
                | ModelType of string
+
+    (* Events *)
+
+    type card = Assert of int
+                | Assume of int
+                | None
+
+    type EventDecl(name: string, qc: card, typ: Type)=
+        member this.name = name
+        member this.qc = qc
+        member this.typ = typ
 
     (* operators *)
     type BinOp = Add | Sub | Mul | Intdiv | And | Or | Eq | Neq | Lt | Le | Gt | Ge | Idx | In
@@ -63,12 +73,15 @@ module Syntax =
       member this.Name = name
       member this.typ = typ
 
-    type FunDecl(name: string, formals: VarDecl list, rettype: Type option, locals: VarDecl list, body: Stmt) =
+    type FunDecl(name: string, formals: VarDecl list, rettype: Type option, 
+                    locals: VarDecl list, body: Stmt, is_model: bool, is_pure: bool) =
       member this.Name = name
       member this.Formals = formals
       member this.RetType = rettype
       member this.Locals = locals
       member this.Body = body
+      member this.IsModel = is_model
+      member this.IsPure = is_pure;
 
     module TransDecl =
 
@@ -106,13 +119,19 @@ module Syntax =
       member this.Transitions = transitions
       member this.Dos = dos
    
-    type MachineDecl(name: string, is_monitor: bool, start_state: string, globals: VarDecl list, functions: FunDecl list, states: StateDecl list) =
+    type MachineDecl(name: string, start_state: string, globals: VarDecl list, 
+                        functions: FunDecl list, states: StateDecl list, 
+                        is_monitor: bool, monitors_list: string List, 
+                        qc: card, is_model: bool) =
       member this.Name = name
-      member this.IsMonitor = is_monitor
       member this.StartState = start_state
       member this.Globals = globals
       member this.Functions = functions
       member this.States = states
+      member this.IsMonitor = is_monitor
+      member this.MonitorList = monitors_list
+      member this.qc = qc;
+      member this.IsModel = is_model
 
       member this.StateMap =
         let map = ref Map.empty in
