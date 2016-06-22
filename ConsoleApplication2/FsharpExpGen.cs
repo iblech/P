@@ -2,11 +2,8 @@
 using Microsoft.Pc.Domains;
 using System;
 using System.Collections.Generic;
-using System.Text;
 
 using Microsoft.Formula.API.Generators;
-using System.IO;
-
 using Microsoft.FSharp.Collections;
 using Microsoft.P2Boogie;
 
@@ -32,9 +29,17 @@ namespace Microsoft.yo
         //Data structures dealing with the program itself.
         private List<Syntax.FunDecl> staticFunctions = new List<Syntax.FunDecl>();
         private List<Syntax.MachineDecl> machines = new List<Syntax.MachineDecl>();
-        private string mainMachine = null;
         private List<Syntax.Expr.Event> events = new List<Syntax.Expr.Event>();
         private Dictionary<string, Syntax.Type> typeDefs = new Dictionary<string, Syntax.Type>();
+        private string mainMachine = null;
+
+        public FSharpExpGen(CommandLineOptions options)
+        {
+            options.analyzeOnly = true;
+            options.profile = true;
+            compiler = new Compiler(options);
+        }
+
         private static string getString(ICSharpTerm x)
         {
             try
@@ -48,27 +53,20 @@ namespace Microsoft.yo
                 return "";
             }
         }
-        private static string getValue(ICSharpTerm x)
+        private static int getValue(ICSharpTerm x)
         {
-            try
+            int i;
+            Formula.Common.Rational a = (x as P_Root.RealCnst).Value;
+            if (a.IsInteger)
             {
-                Formula.Common.Rational a = (x as P_Root.RealCnst).Value;
-                //Can be improved!
-                if (a.IsInteger)
-                {
-                    return a.ToString(0);
-                }
-                else
-                {
-                    return a.ToString(100);
-                }
+                if (int.TryParse(a.ToString(0), out i))
+                    return i;
             }
-            catch (NullReferenceException e)
+            else
             {
-                Console.WriteLine("The value passed cannot be converted to an Integer/Natural.");
-                Console.WriteLine(e.StackTrace);
-                return "";
+                throw new InvalidOperationException("The value passed cannot be converted to an Integer/Natural.");
             }
+            return -1;
         }
 
         private string getID(P_Root.String @string)
@@ -86,13 +84,6 @@ namespace Microsoft.yo
             }
             ret += getID(n.name as P_Root.String);
             return ret;
-        }
-
-        public FSharpExpGen(CommandLineOptions options)
-        {
-            options.analyzeOnly = true;
-            options.profile = true;
-            compiler = new Compiler(options);
         }
 
         private Syntax.Type genBaseType(P_Root.BaseType t)
@@ -228,7 +219,7 @@ namespace Microsoft.yo
         private Syntax.Expr.New genNewExpr(P_Root.New e)
         {
             var s = getID(e.name as P_Root.String);
-            Syntax.Expr x = null;
+            Syntax.Expr x = Syntax.Expr.Nil;
             if (e.arg.Symbol.ToString() != "NIL")
             {
                 x = genExpr(e.arg as P_Root.Expr);
@@ -252,29 +243,28 @@ namespace Microsoft.yo
             if (e.op is P_Root.Integer)
             {
                 var x = getValue(e.op as P_Root.Integer);
-                int i;
-                if (int.TryParse(x, out i))
-                    return Syntax.Expr.NewConstInt(i);
-                else
-                    throw new InvalidOperationException("Invalid Int Value");
+                return Syntax.Expr.NewConstInt(x);
             }
-            switch (e.op.Symbol.ToString())
+            else
             {
-                case "TRUE":
-                    return Syntax.Expr.NewConstBool(true);
-                case "FALSE":
-                    return Syntax.Expr.NewConstBool(true);
-                case "THIS":
-                    return Syntax.Expr.This;
-                case "NONDET":
-                    return Syntax.Expr.Nondet;
-                case "NULL":
-                    //Syntax.Expr.NewEvent("null") ?
-                    return Syntax.Expr.Nil;
-                case "HALT":
-                    return Syntax.Expr.NewEvent("halt");
-                default:
-                    throw new InvalidOperationException("Error in NulApp Generation: got symbol " + e.op.Symbol.ToString());
+                switch (e.op.Symbol.ToString())
+                {
+                    case "TRUE":
+                        return Syntax.Expr.NewConstBool(true);
+                    case "FALSE":
+                        return Syntax.Expr.NewConstBool(true);
+                    case "THIS":
+                        return Syntax.Expr.This;
+                    case "NONDET":
+                        return Syntax.Expr.Nondet;
+                    case "NULL":
+                        //Syntax.Expr.NewEvent("null") ?
+                        return Syntax.Expr.Nil;
+                    case "HALT":
+                        return Syntax.Expr.NewEvent("halt");
+                    default:
+                        throw new InvalidOperationException("Error in NulApp Generation: got symbol " + e.op.Symbol.ToString());
+                }
             }
         }
 
@@ -341,11 +331,7 @@ namespace Microsoft.yo
             if (e.name is P_Root.Natural)
             {
                 var f = getValue(e.name as P_Root.Natural);
-                int i;
-                if (int.TryParse(f, out i))
-                    return Syntax.Expr.NewDot(arg, i);
-                else
-                    throw new InvalidOperationException("Error in Field Exp Generation: got field" + f);
+                return Syntax.Expr.NewDot(arg, f);
             }
             else if (e.name is P_Root.String)
             {
@@ -476,7 +462,7 @@ namespace Microsoft.yo
         private Syntax.Stmt.NewStmt genNewStmt(P_Root.NewStmt s)
         {
             var n = getID(s.name as P_Root.String);
-            Syntax.Expr arg = null;
+            Syntax.Expr arg = Syntax.Expr.Nil;
             if (s.arg.Symbol.ToString() != "NIL")
             {
                 arg = genExpr(s.arg as P_Root.Expr);
@@ -487,7 +473,7 @@ namespace Microsoft.yo
         private Syntax.Stmt.Raise genRaiseStmt(P_Root.Raise s)
         {   
             var ev = genExpr(s.ev as P_Root.Expr);
-            Syntax.Expr arg = null;
+            var arg = Syntax.Expr.Nil;
             if (s.arg.Symbol.ToString() != "NIL")
             {    
                 arg = genExpr(s.arg as P_Root.Expr);
@@ -499,7 +485,7 @@ namespace Microsoft.yo
         {
             var dst = genExpr(s.dest as P_Root.Expr);
             var ev = genExpr(s.ev as P_Root.Expr);
-            Syntax.Expr arg = null;
+            Syntax.Expr arg = Syntax.Expr.Nil;
             if (s.arg.Symbol.ToString() != "NIL")
             {
                 arg = genExpr(s.arg as P_Root.Expr);
@@ -586,11 +572,7 @@ namespace Microsoft.yo
                 if (x.name is P_Root.Natural)
                 {
                     var f = getValue(x.name as P_Root.Natural);
-                    int i;
-                    if (int.TryParse(f, out i))
-                        return Syntax.Lval.NewDot(arg, i);
-                    else
-                        throw new InvalidOperationException("Error in Field Exp Generation: got field" + f);
+                    return Syntax.Lval.NewDot(arg, f);
                 }
                 else if (x.name is P_Root.String)
                 {
@@ -612,7 +594,7 @@ namespace Microsoft.yo
 
         private Syntax.Stmt.Return genReturnStmt(P_Root.Return s)
         {
-            Syntax.Expr e = null;
+            Syntax.Expr e = Syntax.Expr.Nil;
             if (s.expr.Symbol.ToString() != "NIL")
             {
                 e = genExpr(s.expr as P_Root.Expr);
@@ -737,10 +719,6 @@ namespace Microsoft.yo
             {
                 return genAssertStmt(s as P_Root.Assert);
             }
-            else if (s is P_Root.Print)
-            {
-                //return genPrintStmt(s as P_Root.Print); ToDo
-            }
             return null;
         }
         private Syntax.EventDecl genEventDecl(P_Root.EventDecl d)
@@ -791,23 +769,13 @@ namespace Microsoft.yo
             {
                 var x = qc as P_Root.AssertMaxInstances;
                 var bound = getValue(x.bound);
-                int i;
-                if (int.TryParse(bound, out i))
-                {
-                    return Syntax.card.NewAssert(i);
-                }
-                return null;
+                return Syntax.card.NewAssert(bound);
             }
             else if (qc is P_Root.AssumeMaxInstances)
             {
                 var x = qc as P_Root.AssumeMaxInstances;
                 var bound = getValue(x.bound);
-                int i;
-                if (int.TryParse(bound, out i))
-                {
-                    return Syntax.card.NewAssume(i);
-                }
-                return null;
+                return Syntax.card.NewAssume(bound);
             }
             else
                 return Syntax.card.None;
@@ -878,7 +846,7 @@ namespace Microsoft.yo
             return new Syntax.FunDecl(name, @params, rettype, locals, stmt, is_model, is_pure);
         }
 
-        private Syntax.FunDecl genAnonFunDecl(P_Root.AnonFunDecl d, string n)
+        private Syntax.FunDecl genAnonFunDecl(P_Root.AnonFunDecl d, out string n)
         {
             if (d.envVars.Symbol.ToString() != "NIL")
             {
@@ -897,35 +865,36 @@ namespace Microsoft.yo
             return null;
         }
 
-        private void genTrig(ICSharpTerm t)
+        private string genTrig(ICSharpTerm t)
         {
             if (t.Symbol.ToString() == "NULL")
             {
+                return "null";
             }
             else if (t.Symbol.ToString() == "HALT")
             {
+                return "halt";
             }
             else
             {
-                getID(t as P_Root.String);
+                return getID(t as P_Root.String);
             }
         }
 
         private Syntax.TransDecl.T genTransDecl(P_Root.TransDecl t)
         {
             genTrig(t.trig);
+            var dst = getQualifiedName(t.dst as P_Root.QualifiedName);
             if (t.action.Symbol.ToString() == "PUSH")
             {
-                getQualifiedName(t.dst as P_Root.QualifiedName);
+                
             }
             else if (t.action is P_Root.AnonFunDecl)
             {
-                getQualifiedName(t.dst as P_Root.QualifiedName);
                 //genAnonFunDecl(t.action as P_Root.AnonFunDecl);
             }
             else
             {
-                getQualifiedName(t.dst as P_Root.QualifiedName);
                 getID(t.action as P_Root.String);
             }
             return null;
@@ -933,18 +902,21 @@ namespace Microsoft.yo
 
         private Syntax.DoDecl.T genDoDecl(P_Root.DoDecl d)
         {
+            var trig = genTrig(d.trig);
             if (d.action.Symbol.ToString() == "DEFER")
             {
-                genTrig(d.trig);
+                return Syntax.DoDecl.T.NewDefer(trig);
             }
             else if (d.action.Symbol.ToString() == "IGNORE")
             {
-                genTrig(d.trig);
+                return Syntax.DoDecl.T.NewIgnore(trig);
             }
             else if (d.action is P_Root.AnonFunDecl)
             {
-                genTrig(d.trig);
-                //genAnonFunDecl(d.action as P_Root.AnonFunDecl);
+                var owner = d.src as P_R
+                string name = "do";
+                var f = genAnonFunDecl(d.action as P_Root.AnonFunDecl, out name);
+
             }
             else
             {
