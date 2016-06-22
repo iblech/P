@@ -16,9 +16,9 @@ module Syntax =
                 | None
 
     type EventDecl(name: string, qc: card, typ: Type)=
-        member this.name = name
-        member this.qc = qc
-        member this.typ = typ
+        member this.Name = name
+        member this.Qc = qc
+        member this.Typ = typ
 
     (* operators *)
     type BinOp = Add | Sub | Mul | Intdiv | And | Or | Eq | Neq | Lt | Le | Gt | Ge | Idx | In
