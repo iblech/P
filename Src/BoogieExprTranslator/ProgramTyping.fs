@@ -23,19 +23,19 @@
               if List.length ls1 <> List.length ls2 then false
               else begin
                 let z = List.zip ls1 ls2 in
-                let z = List.map (fun (a,b) -> (is_subtype a b)) z in
-                List.fold (fun p b -> p && b) true z
-              end
-            end
+                    let z = List.map (fun (a,b) -> (is_subtype a b)) z in
+                        List.fold (fun p b -> p && b) true z
+                    end
+                end
           | (Type.NamedTuple(ls1), Type.NamedTuple(ls2)) ->
             begin
               if List.length ls1 <> List.length ls2 then false
               else begin
                 let z = List.zip ls1 ls2 in
-                let z = List.map (fun ((f1,a),(f2,b)) -> (f1 = f2) && (is_subtype a b)) z in
-                List.fold (fun p b -> p && b) true z
-              end
-            end
+                    let z = List.map (fun ((f1,a),(f2,b)) -> (f1 = f2) && (is_subtype a b)) z in
+                        List.fold (fun p b -> p && b) true z
+                    end
+                end
           | _ -> false
 
 

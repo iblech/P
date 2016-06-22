@@ -38,6 +38,8 @@ namespace Microsoft.P_FS_Boogie
             options.analyzeOnly = true;
             options.profile = true;
             compiler = new Compiler(options);
+            events.Add(new Syntax.EventDecl("halt", null, null));
+            events.Add(new Syntax.EventDecl("null", null, null));
         }
 
         private static string getString(ICSharpTerm x)
@@ -522,6 +524,7 @@ namespace Microsoft.P_FS_Boogie
             }
             return Syntax.Stmt.NewFunStmt(n, args, aout) as Syntax.Stmt.FunStmt;
         }
+
         private Syntax.Stmt genNulStmt(P_Root.NulStmt s)
         {
             if (s.op.Symbol.ToString() == "POP")
@@ -720,6 +723,7 @@ namespace Microsoft.P_FS_Boogie
             }
             return Syntax.Stmt.Skip;
         }
+
         private Syntax.EventDecl genEventDecl(P_Root.EventDecl d)
         {
             var name = getID(d.name as P_Root.String);
@@ -984,6 +988,7 @@ namespace Microsoft.P_FS_Boogie
             }
             return null;
         }
+
         /* ToDo
         private void genAnnotatable(P_Root.Annotatable a)
         {
@@ -1158,10 +1163,9 @@ namespace Microsoft.P_FS_Boogie
                 Environment.Exit(-1);
             }
             genFSExprs();
-            var machines = ListModule.OfSeq(this.machines);
-            var static_funs = ListModule.OfSeq(this.staticFunctions);
-            var events = ListModule.OfSeq(this.events);
-            return new Syntax.ProgramDecl(mainMachine, machines, events, static_funs);
+            return new Syntax.ProgramDecl(mainMachine, 
+                ListModule.OfSeq(machines), ListModule.OfSeq(events),
+                ListModule.OfSeq(staticFunctions));
         }
     }
 }
