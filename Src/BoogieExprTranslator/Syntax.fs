@@ -10,12 +10,10 @@ module Syntax =
                | ModelType of string
 
     (* Events *)
+    type Card = Assert of int
+                | Assume of int 
 
-    type card = Assert of int
-                | Assume of int
-                | None
-
-    type EventDecl(name: string, qc: card, typ: Type)=
+    type EventDecl(name: string, qc: Card option, typ: Type option)=
         member this.name = name
         member this.qc = qc
         member this.typ = typ
@@ -61,7 +59,6 @@ module Syntax =
       | While of Expr * Stmt
       | Ite of Expr * Stmt * Stmt
       | SeqStmt of Stmt list
-      | Cases of (string * string) list
       | Receive of (string * string) list 
       | Pop
       | Return of Expr
@@ -112,8 +109,9 @@ module Syntax =
         | Ignore e -> e
         | Call(e, _)  -> e
   
-    type StateDecl(name: string, entryaction: string option, exitaction: string option, transitions: TransDecl.T list, dos: DoDecl.T list) =
+    type StateDecl(name: string, temperature: string, entryaction: string option, exitaction: string option, transitions: TransDecl.T list, dos: DoDecl.T list) =
       member this.Name = name
+      member this.Temperature = temperature
       member this.EntryAction = entryaction
       member this.ExitAction = exitaction
       member this.Transitions = transitions
@@ -122,7 +120,7 @@ module Syntax =
     type MachineDecl(name: string, start_state: string, globals: VarDecl list, 
                         functions: FunDecl list, states: StateDecl list, 
                         is_monitor: bool, monitors_list: string List, 
-                        qc: card, is_model: bool) =
+                        qc: Card option, is_model: bool) =
       member this.Name = name
       member this.StartState = start_state
       member this.Globals = globals
@@ -138,9 +136,12 @@ module Syntax =
         List.iter (fun (state: StateDecl) -> map := Map.add state.Name state !map) this.States
         !map       
 
-    type ProgramDecl(mainmachine: string, machines: MachineDecl list) =
+    type ProgramDecl(mainmachine: string, machines: MachineDecl list, 
+                        events: EventDecl list, static_funs: FunDecl list) =
       member this.MainMachine = mainmachine
       member this.Machines = machines
+      member this.Events = events
+      member this.StaticFuns = static_funs
       member this.MachineMap =
         let map = ref Map.empty in
         List.iter (fun (machine: MachineDecl) -> map := Map.add machine.Name machine !map) machines
