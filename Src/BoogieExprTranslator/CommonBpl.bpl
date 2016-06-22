@@ -17,4 +17,163 @@ procedure {:inline} InsertMap(map: PrtRef, key: PrtRef, value: PrtRef)  returns 
 procedure {:inline} RemoveMap(map: PrtRef, key: PrtRef)  returns (nmap: PrtRef);
 
 
+// The Queues
 
+// MachineId -> index -> EventId
+var MachineInboxStoreEvent: [int][int]int;
+
+// MachineId -> index -> Payload
+var MachineInboxStorePayload: [int][int]PrtRef;
+
+// MachineId -> head index
+var MachineInboxHead: [int]int;
+
+// MachineId -> tail index
+var MachineInboxTail: [int]int;
+
+procedure {:inline} InitializeInbox(mid: int)
+{
+   assume MachineInboxHead[mid] == 1;
+   assume MachineInboxTail[mid] == 0;
+}
+
+// State stack
+type {:datatype} StateStackType;
+function {:constructor} Nil(): StateStackType;
+function {:constructor} Cons(state: int, stack: StateStackType): StateStackType;
+
+var {:thread_local} StateStack: StateStackType;
+var {:thread_local} CurrState: int;
+
+procedure StateStackPush(state: int) 
+{
+   StateStack := Cons(state, StateStack);
+}
+
+procedure StateStackPop returns (state: int)
+{
+   assert StateStack != Nil();
+   return stack#Cons(StateStack);
+}
+
+procedure RaiseEvent(mid:int, event: int, payload: PrtRef) 
+{
+   var head: int;
+
+   head := MachineInboxHead[mid] - 1;
+   MachineInboxHead[mid] := head;
+
+   MachineInboxStoreEvent[mid][head] := event;
+   MachineInboxStorePayload[mid][head] := payload;   
+}
+
+procedure Enqueue(mid:int, event: int, payload: PrtRef) 
+{
+   var tail: int;
+
+   tail := MachineInboxTail[mid] + 1;
+   MachineInboxTail[mid] := tail;
+
+   MachineInboxStoreEvent[mid][tail] := event;
+   MachineInboxStorePayload[mid][tail] := payload;   
+}
+
+
+procedure Dequeue(mid: int, deferEvents: [int]bool, ignoreEvents: [int]bool, registeredEvents: [int]bool ) returns (event: int, payload: PrtRef)
+{
+   var ptr: int;
+   var head: int;
+   var tail: int;
+
+   head := MachineInboxHead[mid];
+   tail := MachineInboxTail[mid];
+
+   ptr := head;
+   event := 0 - 1;
+
+   while(ptr <= tail) 
+   {
+      event := MachineInboxStoreEvent[mid][ptr];
+	  if(event >= 0 && ignoreEvents[event]) 
+	  {
+	  	 // dequeue
+		 if(ptr == head) 
+		 {
+		    MachineInboxHead[mid] := head + 1;
+		 } 
+		 else if(ptr == tail) 
+		 {
+		    MachineInboxTail[mid] := tail - 1;
+		 }
+		 else
+		 {
+		    MachineInboxStoreEvent[mid] := 0 - 1;		 
+		 }
+	  }
+	  else if(event >= 0 && !deferEvents[event] && registeredEvents[event])
+	  {
+	     // dequeue
+		 if(ptr == head) 
+		 {
+		    MachineInboxHead[mid] := head + 1;
+		 } 
+		 else if(ptr == tail) 
+		 {
+		    MachineInboxTail[mid] := tail - 1;
+		 }
+		 else
+		 {
+		    MachineInboxStoreEvent[mid] := 0 - 1;		 
+		 }
+		 payload := MachineInboxStorePayload[mid][ptr];
+		 break;
+	  }   
+      ptr := ptr + 1;   
+	  event := 0 - 1;
+   }
+
+   // block
+   assume event >= 0;
+}
+
+/*
+procedure MachineThread(mid: int) 
+{
+   var event: int;
+   var payload: PrtRef;
+
+   // Initialize
+   StateStack := Nil();
+   CurrState := start_state;
+   call InitializeInbox(mid);
+
+   call EntryAction(mid, CurrState);
+   
+   while(true) 
+   {
+	  call event, payload := Dequeue(mid, **, **, **);
+      if(DoAction(event)) 
+	  {
+	     call action();
+	  } 
+	  else if(GotoWith(event)) 
+	  {
+	     call ExitAction();
+		 call WithAction();
+		 CurrState := New_State;
+         call EntryAction(mid, CurrState);
+	  } 
+	  else if(Push(event)) 
+	  {
+	     StateStackPush(CurrState);
+		 CurrState := New_State;
+         call EntryAction(mid, CurrState);
+	  }
+	  else 
+	  {
+	    assume false;
+	  }
+   }
+}
+
+*/
