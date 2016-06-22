@@ -151,51 +151,5 @@ module ProgramTyping =
       | Map(t1,t2) -> type_assert (is_subtype (typeof e G) t1) (sprintf "Invalid remove: %s" (print_stmt st))
       | _ -> type_assert false (sprintf "Invalid remove: %s" (print_stmt st))
 
-  (* Quadratic time; can optimize *)
-  let rec find_all_types stmt G =
-    let rec all_exprs e =
-      let ret =
-        match e with
-        | Nil
-        | ConstInt _
-        | ConstBool _
-        | Event _
-        | This
-        | Nondet
-        | Default _ 
-        | Expr.Var _ -> Set.empty
-        | Bin(_, e1, e2) -> Set.union (all_exprs e1) (all_exprs e2)
-        | Un(_, e') -> all_exprs e'
-        | Expr.Dot(e', _) -> all_exprs e'
-        | Expr.NamedDot(_, _) -> raise Not_defined
-        | Expr.NamedTuple(_) -> raise Not_defined
-        | Cast(e, t) -> all_exprs e
-        | Expr.Tuple(es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
-        | New(_, e') -> all_exprs e' 
-        | Call(_, es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
-      in
-      ret.Add(e)
-    in
-    let all_types_expr e G = Set.map (fun e -> typeof e G) (all_exprs e) in
-    let rec all_types_lval lval G =
-      let ret =
-        match lval with
-        | Lval.Var(v) -> Set.empty
-        | Lval.Dot(l, _) -> all_types_lval l G
-        | Lval.NamedDot(_, _) -> raise Not_defined
-        | Lval.Index(l, e) -> Set.union (all_types_lval l G) (all_types_expr e G)
-      in
-      ret.Add(typeof_lval lval G)
-    in
-    match stmt with
-    | Assign(l, e) -> Set.union (all_types_expr e G) (all_types_lval l G)
-    | Insert(l, e1, e2) -> Set.unionMany [(all_types_lval l G); (all_types_expr e1 G); (all_types_expr e2 G)]
-    | Remove(l, e) -> Set.union (all_types_expr e G) (all_types_lval l G)
-    | Assume(e) -> all_types_expr e G
 
-  let map_all_types stmtlist G =
-    let types = List.fold (fun s stmt -> Set.union s (find_all_types stmt G)) Set.empty stmtlist in
-    let types = Set.add Int types  in
-    let (ret,_) = Set.fold (fun (m,i) t -> (Map.add t i m, i+1)) (Map.empty, 0) types in
-    ret
 

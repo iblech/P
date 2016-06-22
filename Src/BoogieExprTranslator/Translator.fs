@@ -11,7 +11,22 @@ module Translator =
 
     (* Translation of normalized side-effect-free programs to Boogie *)
 
-    let translate_type t typmap =
+    let _typmap = ref Map.empty
+    let _typmap_index = ref 0
+
+    let GetTypeIndex t = 
+      if Map.containsKey t !_typmap then Map.find t !_typmap
+      else begin
+        let ret = !_typmap_index
+        _typmap := Map.add t ret !_typmap
+        _typmap_index := ret + 1
+        ret
+      end
+
+    let GetAllTypes () =
+      Map.fold (fun state key _ -> Set.add key state) Set.empty !_typmap
+
+    let translate_type t =
         match t with
         | Null -> "PrtTypeNull"
         | Bool -> "PrtTypeBool"
@@ -22,8 +37,8 @@ module Translator =
         | Type.ModelType s -> sprintf "PrtTypeModel%s" s
         | Any -> raise Not_defined
         | Type.Tuple(ls) -> sprintf "PrtTypeTuple%d" (List.length ls)
-        | Type.Seq(t1) -> sprintf "PrtTypeSeq%d" (Map.find t typmap)
-        | Type.Map(t1, t2) -> sprintf "PrtTypeMap%d" (Map.find t typmap)
+        | Type.Seq(t1) -> sprintf "PrtTypeSeq%d" (GetTypeIndex t)
+        | Type.Map(t1, t2) -> sprintf "PrtTypeMap%d" (GetTypeIndex t)
 
     let event_to_int_map = ref Map.empty
     let event_to_int_counter = ref 0
@@ -64,7 +79,7 @@ module Translator =
 
     let types_asserted = ref Set.empty
 
-    let translate_assign lval expr G typemap =
+    let translate_assign lval expr G =
         let gen_rhs_value e G =
             let rhs_var = "tmp_rhs_value" in
             printfn "%s := %s;" rhs_var (translate_expr e G)
@@ -86,7 +101,7 @@ module Translator =
                 let rhs_var = gen_rhs_value e G in
                 (* generate type assertion *)
                 set_types_asserted t
-                printfn "call AssertIsType%d(%s);" (Map.find t typemap) rhs_var
+                printfn "call AssertIsType%d(%s);" (GetTypeIndex t) rhs_var
                 (* the assignment *)
                 printfn "%s := %s;" (get_lhs_var lval) rhs_var      
             end
@@ -107,13 +122,13 @@ module Translator =
         | _, Expr.Default(Seq(t)) ->
             begin
                 printfn "call %s := AllocatePrtRef();" (get_lhs_var lval)
-                printfn "assume PrtDynamicType(%s) == PrtTypeSeq%d;" (get_lhs_var lval) (Map.find (Seq(t)) typemap)
+                printfn "assume PrtDynamicType(%s) == PrtTypeSeq%d;" (get_lhs_var lval) (GetTypeIndex (Seq(t)))
                 printfn "assume PrtFieldSeqSize(%s) == 0;" (get_lhs_var lval) 
             end
         | _, Expr.Default(Map(t1, t2)) ->
             begin
                 printfn "call %s := AllocatePrtRef();" (get_lhs_var lval)
-                printfn "assume PrtDynamicType(%s) == PrtTypeMap%d;" (get_lhs_var lval) (Map.find (Map(t1, t2)) typemap)
+                printfn "assume PrtDynamicType(%s) == PrtTypeMap%d;" (get_lhs_var lval) (GetTypeIndex (Map(t1, t2)))
                 printfn "assume PrtFieldMapSize(%s) == 0;" (get_lhs_var lval) 
             end
         | _, Expr.Bin(Idx, e1, e2) ->
@@ -163,9 +178,9 @@ module Translator =
         | true -> printfn "call %s := RemoveSeq(%s, PrtFieldInt(%s));" v v (translate_expr e1 G)
         | false -> printfn "call %s := RemoveMap(%s, PrtFieldInt(%s));" v v (translate_expr e1 G)
 
-    let translate_stmt stmt G typemap =
+    let translate_stmt stmt G =
         match stmt with
-        | Assign(l, e) -> translate_assign l e G typemap
+        | Assign(l, e) -> translate_assign l e G 
         | Insert(Lval.Var(v), e1, e2) -> translate_insert v e1 e2 G
         | Remove(Lval.Var(v), e1) -> translate_remove v e1 G
         | Assume(e) -> printfn "assume PrtFieldBool(%s);" (translate_expr e G)
@@ -208,8 +223,8 @@ module Translator =
             if j <> (i-1) then printfn "  if(!v) { return; }"
             printfn "}"
  
-    let print_type_check t typemap =
-        let tindex =  Map.find t typemap in
+    let print_type_check t =
+        let tindex =  GetTypeIndex t  in
         printfn "// Type %s" (print_type t)
         printfn "procedure AssertIsType%d(x: PrtRef) {" tindex
         match t with
@@ -218,9 +233,9 @@ module Translator =
         | Bool 
         | Seq(_)
         | Map(_, _)
-        | Int -> printfn "  assert PrtDynamicType(x) == %s;" (translate_type t typemap)
+        | Int -> printfn "  assert PrtDynamicType(x) == %s;" (translate_type t)
         | Machine
-        | Type.Event -> printfn "  assert PrtDynamicType(x) == %s || PrtIsNull(x);" (translate_type t typemap)
+        | Type.Event -> printfn "  assert PrtDynamicType(x) == %s || PrtIsNull(x);" (translate_type t)
         | Type.NamedTuple(_) -> raise Not_defined
         | Type.ModelType s -> printfn "  assert PrtDynamicType(x) == PrtTypeModel%s;" s
         | Type.Tuple ts ->
@@ -228,7 +243,7 @@ module Translator =
             printfn "  assert PrtDynamicType(x) == PrtTypeTuple%d;" (List.length ts)
             for i = 0 to ((List.length ts) - 1) do
             let ti = List.nth ts i in
-            printfn "  call AssertIsType%d(PrtFieldTuple%d(x));" (Map.find ti typemap) i
+            printfn "  call AssertIsType%d(PrtFieldTuple%d(x));" (GetTypeIndex ti) i
         end
         printfn "}"
    
@@ -252,24 +267,24 @@ module Translator =
         printfn_comment "Side-effect-free program:"
         List.iter (fun s -> printfn_comment "%s" (print_stmt s)) stmtlist;
 
-        (* Top-level types *)
-        let typemap = map_all_types stmtlist G in
-        let max_fields = max_tuple_size typemap in
+        (* TODO: Fix by walking over the program *)
+        let max_fields = 10 
 
+        (* Top-level types *)
         printfn "type PrtType;";
-        printfn "const unique %s: PrtType;" (translate_type Null typemap)
-        printfn "const unique %s: PrtType;" (translate_type Int typemap)
-        printfn "const unique %s: PrtType;" (translate_type Bool typemap)
-        printfn "const unique %s: PrtType;" (translate_type Machine typemap)
-        printfn "const unique %s: PrtType;" (translate_type Type.Event typemap)
+        printfn "const unique %s: PrtType;" (translate_type Null)
+        printfn "const unique %s: PrtType;" (translate_type Int)
+        printfn "const unique %s: PrtType;" (translate_type Bool)
+        printfn "const unique %s: PrtType;" (translate_type Machine)
+        printfn "const unique %s: PrtType;" (translate_type Type.Event)
         for i = 1 to max_fields do
             printfn "const unique PrtTypeTuple%d: PrtType;" i
-        Map.iter (fun t i -> 
+        Set.iter (fun t -> 
             match t with
-            | Seq _ -> printfn "const unique PrtTypeSeq%d: PrtType; // %s" i (print_type t)
-            | Map _ -> printfn "const unique PrtTypeMap%d: PrtType; // %s" i (print_type t)
+            | Seq _ -> printfn "const unique PrtTypeSeq%d: PrtType; // %s" (GetTypeIndex t) (print_type t)
+            | Map _ -> printfn "const unique PrtTypeMap%d: PrtType; // %s" (GetTypeIndex t) (print_type t)
             | _ -> ()
-            ) typemap
+            ) (GetAllTypes())
   
         (* ref type *)
         printfn "type PrtRef;"
@@ -297,28 +312,28 @@ module Translator =
         printfn "" 
 
         (* constructors of basic types *)
-        printfn "axiom (PrtDynamicType(null) == %s);" (translate_type Null typemap)
+        printfn "axiom (PrtDynamicType(null) == %s);" (translate_type Null)
         printfn "axiom (PrtIsNull(null) == true);" 
         printfn "axiom (forall x : PrtRef :: {PrtIsNull(x)} x == null || !PrtIsNull(x));"
         printfn ""
         printfn "function PrtConstructFromInt(int) : PrtRef;" 
         printfn "axiom (forall x : int :: {PrtFieldInt(PrtConstructFromInt(x))} PrtFieldInt(PrtConstructFromInt(x)) == x);" 
-        printfn "axiom (forall x : int :: {PrtDynamicType(PrtConstructFromInt(x))} PrtDynamicType(PrtConstructFromInt(x)) == %s);" (translate_type Int typemap)
+        printfn "axiom (forall x : int :: {PrtDynamicType(PrtConstructFromInt(x))} PrtDynamicType(PrtConstructFromInt(x)) == %s);" (translate_type Int)
         printfn ""
         printfn "function {:inline} PrtConstructFromBool(v: bool) : PrtRef"
         printfn "{ if v then PrtTrue else PrtFalse }"
         printfn "axiom (PrtFieldBool(PrtTrue));"
         printfn "axiom (!PrtFieldBool(PrtFalse));"
-        printfn "axiom (PrtDynamicType(PrtTrue) == %s);" (translate_type Bool typemap)
-        printfn "axiom (PrtDynamicType(PrtFalse) == %s);" (translate_type Bool typemap)
+        printfn "axiom (PrtDynamicType(PrtTrue) == %s);" (translate_type Bool)
+        printfn "axiom (PrtDynamicType(PrtFalse) == %s);" (translate_type Bool)
         printfn ""
         printfn "function PrtConstructFromMachineId(int) : PrtRef;" 
         printfn "axiom (forall x : int :: {PrtFieldMachine(PrtConstructFromMachineId(x))} PrtFieldMachine(PrtConstructFromMachineId(x)) == x);" 
-        printfn "axiom (forall x : int :: {PrtDynamicType(PrtConstructFromMachineId(x))} PrtDynamicType(PrtConstructFromMachineId(x)) == %s);" (translate_type Machine typemap)
+        printfn "axiom (forall x : int :: {PrtDynamicType(PrtConstructFromMachineId(x))} PrtDynamicType(PrtConstructFromMachineId(x)) == %s);" (translate_type Machine)
         printfn ""
         printfn "function PrtConstructFromEventId(int) : PrtRef;" 
         printfn "axiom (forall x : int :: {PrtFieldEvent(PrtConstructFromEventId(x))} PrtFieldEvent(PrtConstructFromEventId(x)) == x);" 
-        printfn "axiom (forall x : int :: {PrtDynamicType(PrtConstructFromEventId(x))} PrtDynamicType(PrtConstructFromEventId(x)) == %s);" (translate_type Type.Event typemap)
+        printfn "axiom (forall x : int :: {PrtDynamicType(PrtConstructFromEventId(x))} PrtDynamicType(PrtConstructFromEventId(x)) == %s);" (translate_type Type.Event)
         printfn ""
 
 
@@ -343,7 +358,7 @@ module Translator =
         List.iter (fun s -> 
             begin
             printfn_comment "%s" (print_stmt s)
-            translate_stmt s G typemap
+            translate_stmt s G 
             end
         ) stmtlist
         printfn "}"
@@ -352,7 +367,7 @@ module Translator =
         print_equals(max_fields)
     
         (* AssertIsType *)
-        Set.iter (fun t -> print_type_check t typemap) !types_asserted
+        Set.iter (fun t -> print_type_check t) !types_asserted
 
         let s = IO.File.ReadAllLines("CommonBpl.bpl") in
         Array.iter (fun s -> printfn "%s" s) s
