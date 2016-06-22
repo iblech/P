@@ -1,12 +1,12 @@
 ﻿namespace Microsoft.P2Boogie
 
-    module Common=
+module Common=
 
-        (* Exception for everything that we don't want to do *)
-        exception Not_defined;
+    (* Exception for everything that we don't want to do *)
+    exception Not_defined;
 
-        (* Type exception for everything we don't want to type *)
-        exception Type_exception of string;
+    (* Type exception for everything we don't want to type *)
+    exception Type_exception of string;
 
 
 
