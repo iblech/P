@@ -6,7 +6,7 @@ using System.Text;
 
 using Microsoft.Formula.API.Generators;
 
-namespace Microsoft.P2Boogie
+namespace Microsoft.P2BoogieExp
 {
     abstract class PVisitor
     {
@@ -932,7 +932,7 @@ namespace Microsoft.P2Boogie
             visitID(n.name as P_Root.String, sb);
         }
 
-        prot abstract void visitSepQName(StringBuilder sb);
+        protected abstract void visitSepQName(StringBuilder sb);
 
         protected virtual void visitStateDecl(P_Root.StateDecl state, StringBuilder sb)
         {

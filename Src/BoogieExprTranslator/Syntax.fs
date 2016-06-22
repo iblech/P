@@ -1,14 +1,28 @@
-﻿namespace P2Boogie
+﻿namespace Microsoft.P2Boogie
 module Syntax =
-
     open System
-
+    
+    (* Qualifiers *)
+    type Qualifier = Swap
+                    | Xfer
+                    | None
     (* Types *)
     type Type = Null | Bool | Int | Machine | Event | Any 
                | Seq of Type | Map of Type * Type 
                | Tuple of Type list
-               | NamedTuple of (string * Type) list
+               | NamedTuple of (string * Type * Qualifier) list
                | ModelType of string
+
+    (* Events *)
+
+    type card = Assert of int
+                | Assume of int
+                | None
+
+    type EventDecl(name: string, qc: card, typ: Type)=
+        member this.name = name
+        member this.qc = qc
+        member this.typ = typ
 
     (* operators *)
     type BinOp = Add | Sub | Mul | Intdiv | And | Or | Eq | Neq | Lt | Le | Gt | Ge | Idx | In
@@ -106,13 +120,19 @@ module Syntax =
       member this.Transitions = transitions
       member this.Dos = dos
    
-    type MachineDecl(name: string, is_monitor: bool, start_state: string, globals: VarDecl list, functions: FunDecl list, states: StateDecl list) =
+    type MachineDecl(name: string, start_state: string, globals: VarDecl list, 
+                        functions: FunDecl list, states: StateDecl list, 
+                        is_monitor: bool, monitors_list: string List, 
+                        qc: card, is_model: bool) =
       member this.Name = name
-      member this.IsMonitor = is_monitor
       member this.StartState = start_state
       member this.Globals = globals
       member this.Functions = functions
       member this.States = states
+      member this.IsMonitor = is_monitor
+      member this.MonitorList = monitors_list
+      member this.qc = qc;
+      member this.IsModel = is_model
 
       member this.StateMap =
         let map = ref Map.empty in
@@ -150,7 +170,7 @@ module Syntax =
                 ("f", Type.Seq (Type.Seq Int));
                 ("g", Type.Machine);
                 ("h", Type.Tuple [Type.Tuple [Any; Any]; Int]);
-                ("i", Type.NamedTuple [("f1", Type.Int); ("f2", Type.Bool)]);
+                ("i", Type.NamedTuple [("f1", Type.Int, Qualifier.None); ("f2", Type.Bool, Qualifier.None)]);
                 ("x", Int); 
                 ("y", Int) 
               ]

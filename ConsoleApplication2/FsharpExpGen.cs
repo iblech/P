@@ -7,9 +7,10 @@ using System.Text;
 using Microsoft.Formula.API.Generators;
 using System.IO;
 
-using Microsoft.FSharp.Collections; 
+using Microsoft.FSharp.Collections;
+using Microsoft.P2Boogie;
 
-namespace Microsoft.P2Boogie
+namespace Microsoft.yo
 {
     sealed class FSharpExpGen
     {
@@ -22,18 +23,18 @@ namespace Microsoft.P2Boogie
         private Dictionary<string, List<Syntax.TransDecl.T>>
             statesToTransitions = new Dictionary<string, List<Syntax.TransDecl.T>>();
 
-
         //Data Structures Dealing with machines.
         private Dictionary<string, List<Syntax.StateDecl>> machineToStateList = new Dictionary<string, List<Syntax.StateDecl>>();
         private Dictionary<string, List<Syntax.FunDecl>> machineToFunList = new Dictionary<string, List<Syntax.FunDecl>>();
         private Dictionary<string, List<Syntax.VarDecl>> machineToVars = new Dictionary<string, List<Syntax.VarDecl>>();
-        private Dictionary<string, List<Syntax.Expr.Event>> monitorToEventList = new Dictionary<string, List<Syntax.Expr.Event>>();
+        private Dictionary<string, List<string>> monitorToEventList = new Dictionary<string, List<string>>();
 
         //Data structures dealing with the program itself.
         private List<Syntax.FunDecl> staticFunctions = new List<Syntax.FunDecl>();
         private List<Syntax.MachineDecl> machines = new List<Syntax.MachineDecl>();
         private string mainMachine = null;
-
+        private List<Syntax.Expr.Event> events = new List<Syntax.Expr.Event>();
+        private Dictionary<string, Syntax.Type> typeDefs = new Dictionary<string, Syntax.Type>();
         private static string getString(ICSharpTerm x)
         {
             try
@@ -129,7 +130,10 @@ namespace Microsoft.P2Boogie
             var lst = new List<Syntax.Type>();
             do
             {
-                lst.Add(genTypeExpr(x.hd as P_Root.TypeExpr));
+                var z = genTypeExpr(x.hd as P_Root.TypeExpr);
+                if(z == null)
+                    return null;
+                lst.Add(z);
                 x = x.tl as P_Root.TupType;
             } while (x.tl.Symbol.ToString() != "NIL");
             return Syntax.Type.NewTuple(ListModule.OfSeq(lst)) as Syntax.Type.Tuple;
@@ -140,6 +144,8 @@ namespace Microsoft.P2Boogie
             //ToDo getQualifier(f.qual as P_Root.Qualifier);
             var s = getID(f.name as P_Root.String);
             var t = genTypeExpr(f.type as P_Root.TypeExpr);
+            if(t == null)
+                return null;
             return new Tuple<string, Syntax.Type>(s, t);
         }
 
@@ -149,29 +155,33 @@ namespace Microsoft.P2Boogie
             var x = t;
             do
             {
-                lst.Add(genNmdTupTypeField(x.hd as P_Root.NmdTupTypeField));
+                var z = genNmdTupTypeField(x.hd as P_Root.NmdTupTypeField);
+                if(z == null)
+                    return null;
+                lst.Add(z);
                 x = x.tl as P_Root.NmdTupType;
             }
             while (x.tl.Symbol.ToString() != "NIL");
             return Syntax.Type.NewNamedTuple(ListModule.OfSeq(lst)) as Syntax.Type.NamedTuple;
         }
-        /*
-        private void getQualifier(P_Root.Qualifier q)
+        private Syntax.Qualifier getQualifier(P_Root.Qualifier q)
         {
             if (q.Symbol.ToString() == "SWAP")
             {
-                genSwap();
+                return Syntax.Qualifier.Swap;
             }
             else if (q.Symbol.ToString() == "XFER")
             {
-                genXfer();
+                return Syntax.Qualifier.Xfer;
             }
-            return;
-        }*/
+            return Syntax.Qualifier.None;
+        }
 
         private Syntax.Type.Seq genSeqType(P_Root.SeqType t)
         {
             var x = genTypeExpr(t.x as P_Root.TypeExpr);
+            if(x == null)
+                return null;
             return Syntax.Type.NewSeq(x) as Syntax.Type.Seq;   
         }
 
@@ -179,22 +189,27 @@ namespace Microsoft.P2Boogie
         {
             var k = genTypeExpr(t.k as P_Root.TypeExpr);
             var v = genTypeExpr(t.v as P_Root.TypeExpr);
+            if(k == null || v == null)
+                return null;
             return Syntax.Type.NewMap(k, v) as Syntax.Type.Map;
         }
-        /*
-        private Syntax.Type.Name genNameType(P_Root.NameType t)
+        
+        private Syntax.Type genNameType(P_Root.NameType t)
         {
             var name = getID(t.name as P_Root.String);
-            return;
+            Syntax.Type res;
+            if (typeDefs.TryGetValue(name, out res))
+                return res;
+            else
+                return null;
         }
-        */
+        
         private Syntax.Type genTypeExpr(P_Root.TypeExpr t)
         {
             //t: any TypeExpr. This means we can check its derived type as we wish.
             if (t is P_Root.NameType)
             {
-                //genNameType(t as P_Root.NameType); TODO
-                return null;
+                return genNameType(t as P_Root.NameType);
             }
             else if (t is P_Root.BaseType)
             {
@@ -202,7 +217,7 @@ namespace Microsoft.P2Boogie
             }
             else if (t is P_Root.SeqType)
             {
-               return genSeqType(t as P_Root.SeqType);
+                return genSeqType(t as P_Root.SeqType);
             }
             else if (t is P_Root.TupType)
             {
@@ -218,16 +233,6 @@ namespace Microsoft.P2Boogie
             }
             return null;
         }
-
-        /* TODO
-        private void genTypeDef(P_Root.TypeDef typeDef)
-        {
-            getID(typeDef.name as P_Root.String);
-            if (typeDef.type.Symbol.ToString() != "NIL")
-            {
-                genTypeExpr(typeDef.type as P_Root.TypeExpr);
-            }
-        }*/
 
         private Syntax.Expr.Var genName(P_Root.Name e)
         {
@@ -278,12 +283,11 @@ namespace Microsoft.P2Boogie
                     return Syntax.Expr.This;
                 case "NONDET":
                     return Syntax.Expr.Nondet;
-                //case "FAIRNONDET": ToDO
-                    //return Syntax.Expr.FairNondet;
-                //case "NULL": TODO
-                    //return Syntax.Expr.Null;
-                //case "HALT":
-                    //return Syntax.Expr.Halt;
+                case "NULL":
+                    //Syntax.Expr.NewEvent("null") ?
+                    return Syntax.Expr.Nil;
+                case "HALT":
+                    return Syntax.Expr.NewEvent("halt");
                 default:
                     throw new InvalidOperationException("Error in NulApp Generation: got symbol " + e.op.Symbol.ToString());
             }
@@ -337,7 +341,7 @@ namespace Microsoft.P2Boogie
                     return Syntax.BinOp.Gt;
                 case "GE":
                     return Syntax.BinOp.Ge;
-                case "IDX": //A non-infix operator.
+                case "IDX":
                     return Syntax.BinOp.Idx;
                 case "IN":
                     return Syntax.BinOp.In;
@@ -385,7 +389,8 @@ namespace Microsoft.P2Boogie
             List<Syntax.Expr> lst = new List<Syntax.Expr>();
             do
             {
-                //getQualifier(x.qual as P_Root.Qualifier); TODO
+                var q = getQualifier(x.qual as P_Root.Qualifier);
+                //TODO fix the qualifier.
                 lst.Add(genExpr(x.head as P_Root.Expr));
                 x = x.tail as P_Root.Exprs;
             }
@@ -531,7 +536,6 @@ namespace Microsoft.P2Boogie
             return Syntax.Stmt.NewMonitor(ev, arg) as Syntax.Stmt.Monitor;
         }
 
-        //aout to be taken care of.
         private Syntax.Stmt.FunStmt genFunStmt(P_Root.FunStmt s)
         {
             var n = getID(s.name as P_Root.String);
@@ -757,72 +761,74 @@ namespace Microsoft.P2Boogie
             }
             return null;
         }
-        /*ToDo
-        private void genQueueConstraint(P_Root.QueueConstraint c)
+        private Syntax.EventDecl genEventDecl(P_Root.EventDecl d)
         {
-            int i;
-            if (c is P_Root.AssertMaxInstances)
-            {
-                var x = c as P_Root.AssertMaxInstances;
-                var s = getValue(x.bound);
-                if(int.TryParse(s, out i))
-                    
-            }
-            else if (c is P_Root.AssumeMaxInstances)
-            {
-                var x = c as P_Root.AssumeMaxInstances;
-                getValue(x.bound);
-                if(int.TryParse(s, out i))
-                    
-            }
-        }
-        
-        //TODO 
-        private void genEventDecl(P_Root.EventDecl d)
-        {
-            getString(d.name);
+            var name = getID(d.name as P_Root.String);
+            Syntax.Type t = null;
             if (d.type.Symbol.ToString() != "NIL") //Not NIL
             {
-                genTypeExpr(d.type as P_Root.TypeExpr);
+                t = genTypeExpr(d.type as P_Root.TypeExpr);
             }
+            var c = genQueueConstraint(d.card as P_Root.QueueConstraint);
+            return new Syntax.EventDecl(name, c, t);
         }
-        */
 
         private Syntax.MachineDecl genMachineDecl(P_Root.MachineDecl d)
         {
             bool is_monitor = false;
+            bool is_model = false;
             string name = getString(d.name);
             FSharpList<Syntax.StateDecl> states = 
                 ListModule.OfSeq(machineToStateList[name]);
-            FSharpList<Syntax.Expr.Event> monitored_events = null;
-            //ToDo Monitors
+            FSharpList<Syntax.VarDecl> globals = 
+                ListModule.OfSeq(machineToVars[name]);
             FSharpList<Syntax.FunDecl> functions =
                 ListModule.OfSeq(machineToFunList[name]);
+            FSharpList<string> monitored_events = null;
+            var qc = genQueueConstraint(d.card as P_Root.QueueConstraint);
             if (d.isMain.Symbol.ToString() == "TRUE")
                 mainMachine = name;
             if (d.kind.Symbol.ToString() == "MODEL")
-                ; //TODO ADD CODE.
+                is_model = true;
             else if (d.kind.Symbol.ToString() == "MONITOR")
             {
                 is_monitor = true;
-                monitored_events = 
+                monitored_events =
                     ListModule.OfSeq(monitorToEventList[name]);
             }
-            else if (d.kind.Symbol.ToString() == "REAL")
-                ; //ToDo Add Code.
-
             string start_state = getQualifiedName(d.start as P_Root.QualifiedName);
-            return null;
+            if (d.isMain.Symbol.ToString() == "TRUE")
+                mainMachine = name;
+            return new Syntax.MachineDecl(name, start_state, globals, functions, 
+                states, is_monitor, monitored_events, qc, is_model);
         }
 
-        private void genObservesDecl(P_Root.ObservesDecl d)
+        private Syntax.card genQueueConstraint(P_Root.QueueConstraint qc)
         {
-            var ev = Syntax.Expr.NewEvent(getID(d.ev as P_Root.String)) 
-                as Syntax.Expr.Event;
-            var n = (d.monitor as P_Root.MachineDecl).name;
-            string mName = getID(n as P_Root.String);
-            monitorToEventList[mName].Add(ev);
-            return;
+            if (qc is P_Root.AssertMaxInstances)
+            {
+                var x = qc as P_Root.AssertMaxInstances;
+                var bound = getValue(x.bound);
+                int i;
+                if (int.TryParse(bound, out i))
+                {
+                    return Syntax.card.NewAssert(i);
+                }
+                return null;
+            }
+            else if (qc is P_Root.AssumeMaxInstances)
+            {
+                var x = qc as P_Root.AssumeMaxInstances;
+                var bound = getValue(x.bound);
+                int i;
+                if (int.TryParse(bound, out i))
+                {
+                    return Syntax.card.NewAssume(i);
+                }
+                return null;
+            }
+            else
+                return Syntax.card.None;
         }
 
         private Syntax.VarDecl genVarDecl(P_Root.VarDecl d)
@@ -832,8 +838,6 @@ namespace Microsoft.P2Boogie
             return new Syntax.VarDecl(n, t);
         }
 
-
-
         private void genStateDecl(P_Root.StateDecl state)
         {
             string excitation = state.temperature.Symbol.ToString();
@@ -842,7 +846,7 @@ namespace Microsoft.P2Boogie
             var exitAction  = genAnonFunDecl(state.exitFun as P_Root.AnonFunDecl);
         }
 
-        private void genFuncDecl(P_Root.FunDecl d)
+        private Syntax.FunDecl genFuncDecl(P_Root.FunDecl d)
         {
             //Function is static.
             if (d.owner.Symbol.ToString() == "NIL")
@@ -870,12 +874,17 @@ namespace Microsoft.P2Boogie
             return;
         }
 
-        private void genAnonFunDecl(P_Root.AnonFunDecl d)
+        private Syntax.FunDecl genAnonFunDecl(P_Root.AnonFunDecl d, string n)
         {
-            /*if (d.envVars.Symbol.ToString() != "NIL")
+            if (d.envVars.Symbol.ToString() != "NIL")
             {
-                genNmdTupType(d.envVars as P_Root.NmdTupType);
-            }*/
+                var x = (d.envVars as P_Root.NmdTupType);
+                while (x.tl.Symbol.ToString() != "NIL")
+                {
+                    x = x.tl as P_Root.NmdTupType;
+                }
+
+            }
             if (d.locals.Symbol.ToString() != "NIL")
             {
                 genNmdTupType(d.locals as P_Root.NmdTupType);
@@ -898,13 +907,12 @@ namespace Microsoft.P2Boogie
             }
         }
 
-        private void genTransDecl(P_Root.TransDecl t)
+        private Syntax.TransDecl.T genTransDecl(P_Root.TransDecl t)
         {
             genTrig(t.trig);
             if (t.action.Symbol.ToString() == "PUSH")
             {
                 getQualifiedName(t.dst as P_Root.QualifiedName);
-                return;
             }
             else if (t.action is P_Root.AnonFunDecl)
             {
@@ -916,10 +924,10 @@ namespace Microsoft.P2Boogie
                 getQualifiedName(t.dst as P_Root.QualifiedName);
                 getID(t.action as P_Root.String);
             }
-            return;
+            return null;
         }
 
-        private void genDoDecl(P_Root.DoDecl d)
+        private Syntax.DoDecl.T genDoDecl(P_Root.DoDecl d)
         {
             if (d.action.Symbol.ToString() == "DEFER")
             {
@@ -939,7 +947,7 @@ namespace Microsoft.P2Boogie
                 genTrig(d.trig);
                 getID(d.action as P_Root.String);
             }
-            return;
+            return null;
         }
         private void genAnnotatable(P_Root.Annotatable a)
         {
@@ -979,62 +987,113 @@ namespace Microsoft.P2Boogie
             //ToDo Assertion Generation Logic.
         }
 
-        public void genFSExprs()
+        private void genTypeDef(P_Root.TypeDef t)
         {
+            var type = genTypeExpr(t.type as P_Root.TypeExpr);
+            if(type != null)
+            {
+                var n = getID(t.name as P_Root.String);
+                typeDefs[n] = type;
+            }
+            return;
+        }
+
+        private void genTypeDefs(List<P_Root.TypeDef> tdLst)
+        {
+            var iter = true;
+            while(iter)
+            {
+                iter = false;
+                foreach(var t in tdLst)
+                {
+                    var k = getID(t.name as P_Root.String);
+                    if(!typeDefs.ContainsKey(k))
+                    {
+                        iter = true;
+                        genTypeDef(t);
+                    }
+                }
+            }
+        }
+
+        private void fixTypeDefs()
+        {
+            var tdLst = new List<P_Root.TypeDef>();
             foreach (var program in parsedPrograms)
             {
-                /*
-                //Write TypeDefs and Event Declarations first.
-                foreach (var typedef in program.TypeDefs)
-                {
+                tdLst.AddRange(program.TypeDefs);
+            }
+            genTypeDefs(tdLst);
+        }
 
+        public void genFSExprs()
+        {
+            //Get all TypeDefs first.
+            fixTypeDefs();
+            //Now, go to the programs.
+            foreach (var program in parsedPrograms)
+            { 
+                foreach (var ev in program.Events)
+                {
+                    
                 }
 
-                foreach (var event_ in program.Events)
+                foreach(var doDecl in program.Dos)
                 {
-
+                    var x = genDoDecl(doDecl);
+                    var s = doDecl.src as P_Root.StateDecl;
+                    string n = 
+                        getID((s.owner as P_Root.MachineDecl).name as P_Root.String)
+                        + '+' 
+                        + getID(s.name as P_Root.String);
+                    if (!statesToDos.ContainsKey(n))
+                        statesToDos[n] = new List<Syntax.DoDecl.T>();
+                    statesToDos[n].Add(x);
                 }
-                */
-                //Start generating code for machines.
-                foreach (var machine in program.Machines)
-                {
 
-                }
-
-                foreach (var observer in program.Observes)
+                foreach(var trans in program.Transitions)
                 {
-
-                }
-                //Bind the variable, function and state declarations to the relevant machine
-                //and the transitions to the relevant state.
-                foreach (var variable in program.Variables)
-                {
-
-                }
-                foreach (var state in program.States)
-                {
-                    genStateDecl(state);
-                    Console.WriteLine();
+                    var x = genTransDecl(trans);
+                    var s = trans.src as P_Root.StateDecl;
+                    string n =
+                        getID((s.owner as P_Root.MachineDecl).name as P_Root.String)
+                        + '+'
+                        + getID(s.name as P_Root.String);
+                    if (!statesToTransitions.ContainsKey(n))
+                        statesToTransitions[n] = new List<Syntax.TransDecl.T>();
+                    statesToTransitions[n].Add(x);
                 }
 
                 foreach (var function in program.Functions)
                 {
-                    genFuncDecl(function);
-                    Console.WriteLine();
+                    var f = genFuncDecl(function);
+                    if (function.owner.Symbol.ToString() == "NIL")
+                    {
+                        staticFunctions.Add(f);
+                    }
+                    else
+                    {
+                        var m = function.owner as P_Root.MachineDecl;
+                        string n = getID(m.name as P_Root.String);
+                        if (!machineToFunList.ContainsKey(n))
+                            machineToFunList[n] = new List<Syntax.FunDecl>();
+                        machineToFunList[n].Add(f);
+                    }
                 }
 
-    /*                foreach (var transition in program.Transitions)
+                foreach(var obs in program.Observes)
+                {
+                    var ev = getID(obs.ev as P_Root.String);
+                    var n = (obs.monitor as P_Root.MachineDecl).name;
+                    string mName = getID(n as P_Root.String);
+                    monitorToEventList[mName].Add(ev);
+                }
+
+                foreach (var machine in program.Machines)
                 {
 
                 }
-
-                foreach (var do_ in program.Dos)
-                {
-
-                }
-    */
             }
         }
-
     }
 }
