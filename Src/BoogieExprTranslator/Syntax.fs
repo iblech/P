@@ -10,7 +10,6 @@ module Syntax =
                | ModelType of string
 
     (* Events *)
-
     type card = Assert of int
                 | Assume of int
                 | None
