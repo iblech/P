@@ -141,12 +141,9 @@ namespace Microsoft.yo
 
         private Tuple<string, Syntax.Type> genNmdTupTypeField(P_Root.NmdTupTypeField f)
         {
-            //ToDo getQualifier(f.qual as P_Root.Qualifier);
-            var s = getID(f.name as P_Root.String);
-            var t = genTypeExpr(f.type as P_Root.TypeExpr);
-            if(t == null)
-                return null;
-            return new Tuple<string, Syntax.Type>(s, t);
+            var name = getID(f.name as P_Root.String);
+            var type = genTypeExpr(f.type as P_Root.TypeExpr);
+            return new Tuple<string, Syntax.Type>(name, type);
         }
 
         private Syntax.Type.NamedTuple genNmdTupType(P_Root.NmdTupType t)
@@ -163,18 +160,6 @@ namespace Microsoft.yo
             }
             while (x.tl.Symbol.ToString() != "NIL");
             return Syntax.Type.NewNamedTuple(ListModule.OfSeq(lst)) as Syntax.Type.NamedTuple;
-        }
-        private Syntax.Qualifier getQualifier(P_Root.Qualifier q)
-        {
-            if (q.Symbol.ToString() == "SWAP")
-            {
-                return Syntax.Qualifier.Swap;
-            }
-            else if (q.Symbol.ToString() == "XFER")
-            {
-                return Syntax.Qualifier.Xfer;
-            }
-            return Syntax.Qualifier.None;
         }
 
         private Syntax.Type.Seq genSeqType(P_Root.SeqType t)
@@ -389,8 +374,6 @@ namespace Microsoft.yo
             List<Syntax.Expr> lst = new List<Syntax.Expr>();
             do
             {
-                var q = getQualifier(x.qual as P_Root.Qualifier);
-                //TODO fix the qualifier.
                 lst.Add(genExpr(x.head as P_Root.Expr));
                 x = x.tail as P_Root.Exprs;
             }
@@ -514,7 +497,6 @@ namespace Microsoft.yo
 
         private Syntax.Stmt.Send genSendStmt(P_Root.Send s)
         {
-            //getQualifier(s.qual as P_Root.Qualifier); TODO
             var dst = genExpr(s.dest as P_Root.Expr);
             var ev = genExpr(s.ev as P_Root.Expr);
             Syntax.Expr arg = null;
@@ -842,36 +824,58 @@ namespace Microsoft.yo
         {
             string excitation = state.temperature.Symbol.ToString();
             var name = getQualifiedName(state.name as P_Root.QualifiedName);
-            var entryAction = genAnonFunDecl(state.entryAction as P_Root.AnonFunDecl);
-            var exitAction  = genAnonFunDecl(state.exitFun as P_Root.AnonFunDecl);
+           // var entryAction = genAnonFunDecl(state.entryAction as P_Root.AnonFunDecl);
+            //var exitAction  = genAnonFunDecl(state.exitFun as P_Root.AnonFunDecl);
         }
 
-        private Syntax.FunDecl genFuncDecl(P_Root.FunDecl d)
+        private FSharpList<Syntax.VarDecl> genVars(P_Root.NmdTupType n)
         {
-            //Function is static.
-            if (d.owner.Symbol.ToString() == "NIL")
+            var lst = new List<Syntax.VarDecl>();
+            var x = n;
+            do
             {
-            }
+                var z = (x.hd as P_Root.NmdTupTypeField);
+                var name = getID(z.name as P_Root.String);
+                var type = genTypeExpr(z.type as P_Root.TypeExpr);
+                var d = new Syntax.VarDecl(name, type);
+                lst.Add(d);
+                x = x.tl as P_Root.NmdTupType;
+            } while (x.tl.Symbol.ToString() != "NIL");
 
+            return ListModule.OfSeq(lst);
+        }
+
+        private Syntax.FunDecl genFunDecl(P_Root.FunDecl d)
+        {
+            var name = getID(d.name as P_Root.String);
+            bool is_model = false;
+            bool is_pure = false;
+            FSharp.Core.FSharpOption<Syntax.Type> rettype = null;
+            FSharpList<Syntax.VarDecl> @params = null;
+            FSharpList<Syntax.VarDecl> locals = null;
+            var stmt = genStmt(d.body as P_Root.Stmt);
             if (d.kind.Symbol.ToString() == "MODEL")
             {
+                is_model = true;
             }
-            getID(d.name as P_Root.String);
+            else if (d.kind.Symbol.ToString() == "PURE")
+            {
+                is_pure = true;
+            }
             if (d.@params.Symbol.ToString() != "NIL")
             {
-                genNmdTupType(d.@params as P_Root.NmdTupType);
+                @params = genVars(d.@params as P_Root.NmdTupType);
             }
             if (d.@return.Symbol.ToString() != "NIL")
             {
-                genTypeExpr(d.@return as P_Root.TypeExpr);
+                var x = genTypeExpr(d.@return as P_Root.TypeExpr);
+                rettype = new FSharp.Core.FSharpOption<Syntax.Type>(x);
             }
             if (d.locals.Symbol.ToString() != "NIL")
             {
-                //Need to regen?
-                genNmdTupType(d.locals as P_Root.NmdTupType);
+                locals = genVars(d.locals as P_Root.NmdTupType);
             }
-            genStmt(d.body as P_Root.Stmt);
-            return;
+            return new Syntax.FunDecl(name, @params, rettype, locals, stmt, is_model, is_pure);
         }
 
         private Syntax.FunDecl genAnonFunDecl(P_Root.AnonFunDecl d, string n)
@@ -890,7 +894,7 @@ namespace Microsoft.yo
                 genNmdTupType(d.locals as P_Root.NmdTupType);
             }
             genStmt(d.body as P_Root.Stmt);
-            return;
+            return null;
         }
 
         private void genTrig(ICSharpTerm t)
@@ -917,7 +921,7 @@ namespace Microsoft.yo
             else if (t.action is P_Root.AnonFunDecl)
             {
                 getQualifiedName(t.dst as P_Root.QualifiedName);
-                genAnonFunDecl(t.action as P_Root.AnonFunDecl);
+                //genAnonFunDecl(t.action as P_Root.AnonFunDecl);
             }
             else
             {
@@ -940,7 +944,7 @@ namespace Microsoft.yo
             else if (d.action is P_Root.AnonFunDecl)
             {
                 genTrig(d.trig);
-                genAnonFunDecl(d.action as P_Root.AnonFunDecl);
+                //genAnonFunDecl(d.action as P_Root.AnonFunDecl);
             }
             else
             {
@@ -949,11 +953,12 @@ namespace Microsoft.yo
             }
             return null;
         }
+        /* ToDo
         private void genAnnotatable(P_Root.Annotatable a)
         {
             if (a is P_Root.EventDecl)
             {
-                //genEventDecl(a as P_Root.EventDecl);
+                genEventDecl(a as P_Root.EventDecl);
             }
             else if (a is P_Root.MachineDecl)
             {
@@ -965,7 +970,7 @@ namespace Microsoft.yo
             }
             else if (a is P_Root.FunDecl)
             {
-                genFuncDecl(a as P_Root.FunDecl);
+                genFunDecl(a as P_Root.FunDecl);
             }
             else if (a is P_Root.StateDecl)
             {
@@ -985,9 +990,9 @@ namespace Microsoft.yo
         {
             genAnnotatable(a.ant as P_Root.Annotatable);
             //ToDo Assertion Generation Logic.
-        }
+        }*/
 
-        private void genTypeDef(P_Root.TypeDef t)
+        private void addTypeDef(P_Root.TypeDef t)
         {
             var type = genTypeExpr(t.type as P_Root.TypeExpr);
             if(type != null)
@@ -998,7 +1003,7 @@ namespace Microsoft.yo
             return;
         }
 
-        private void genTypeDefs(List<P_Root.TypeDef> tdLst)
+        private void addTypeDefs(List<P_Root.TypeDef> tdLst)
         {
             var iter = true;
             while(iter)
@@ -1010,7 +1015,7 @@ namespace Microsoft.yo
                     if(!typeDefs.ContainsKey(k))
                     {
                         iter = true;
-                        genTypeDef(t);
+                        addTypeDef(t);
                     }
                 }
             }
@@ -1023,7 +1028,7 @@ namespace Microsoft.yo
             {
                 tdLst.AddRange(program.TypeDefs);
             }
-            genTypeDefs(tdLst);
+            addTypeDefs(tdLst);
         }
 
         public void genFSExprs()
@@ -1066,7 +1071,7 @@ namespace Microsoft.yo
 
                 foreach (var function in program.Functions)
                 {
-                    var f = genFuncDecl(function);
+                    var f = genFunDecl(function);
                     if (function.owner.Symbol.ToString() == "NIL")
                     {
                         staticFunctions.Add(f);

@@ -3,7 +3,7 @@ using System;
 using System.IO;
 
 
-namespace Microsoft.P2Boogie
+namespace Microsoft.yo
 {
     class P2Boogie
     {
@@ -95,12 +95,12 @@ namespace Microsoft.P2Boogie
                 {
                     using (StreamWriter writer = new StreamWriter(options.outputFileName))
                     {
-                        fsExpGen.genFSExp(inputFileName, writer);
+                        //fsExpGen.genFSExp(inputFileName, writer);
                     }
                 }
                 else
                 {
-                    fsExpGen.genFSExp(inputFileName, Console.Out);
+                    //fsExpGen.genFSExp(inputFileName, Console.Out);
                 }
                 return 0;
             }

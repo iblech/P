@@ -1,6 +1,5 @@
 ﻿namespace Microsoft.P2Boogie
-
-    module ProgramTyping=
+    module ProgramTyping = 
         open Syntax
         open Common
         open Helper

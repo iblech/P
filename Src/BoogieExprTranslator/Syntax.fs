@@ -1,16 +1,12 @@
 ﻿namespace Microsoft.P2Boogie
 module Syntax =
     open System
-    
-    (* Qualifiers *)
-    type Qualifier = Swap
-                    | Xfer
-                    | None
+
     (* Types *)
     type Type = Null | Bool | Int | Machine | Event | Any 
                | Seq of Type | Map of Type * Type 
                | Tuple of Type list
-               | NamedTuple of (string * Type * Qualifier) list
+               | NamedTuple of (string * Type) list
                | ModelType of string
 
     (* Events *)
@@ -77,12 +73,15 @@ module Syntax =
       member this.Name = name
       member this.typ = typ
 
-    type FunDecl(name: string, formals: VarDecl list, rettype: Type option, locals: VarDecl list, body: Stmt) =
+    type FunDecl(name: string, formals: VarDecl list, rettype: Type option, 
+                    locals: VarDecl list, body: Stmt, is_model: bool, is_pure: bool) =
       member this.Name = name
       member this.Formals = formals
       member this.RetType = rettype
       member this.Locals = locals
       member this.Body = body
+      member this.IsModel = is_model
+      member this.IsPure = is_pure;
 
     module TransDecl =
 
@@ -170,7 +169,7 @@ module Syntax =
                 ("f", Type.Seq (Type.Seq Int));
                 ("g", Type.Machine);
                 ("h", Type.Tuple [Type.Tuple [Any; Any]; Int]);
-                ("i", Type.NamedTuple [("f1", Type.Int, Qualifier.None); ("f2", Type.Bool, Qualifier.None)]);
+                ("i", Type.NamedTuple [("f1", Type.Int); ("f2", Type.Bool)]);
                 ("x", Int); 
                 ("y", Int) 
               ]
