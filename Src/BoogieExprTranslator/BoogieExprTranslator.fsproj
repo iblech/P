@@ -55,6 +55,9 @@
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
     <Compile Include="ProgramTyping.fs" />
+    <Compile Include="RemoveNamedTuples.fs" />
+    <Compile Include="RemoveSideEffects.fs" />
+    <Compile Include="Translator.fs" />
   </ItemGroup>
   <PropertyGroup>
     <MinimumVisualStudioVersion Condition="'$(MinimumVisualStudioVersion)' == ''">11</MinimumVisualStudioVersion>
