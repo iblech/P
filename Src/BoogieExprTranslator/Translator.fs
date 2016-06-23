@@ -1,5 +1,5 @@
 ﻿namespace Microsoft.P2Boogie
-
+(* (* 
     module Translator = 
 
         open System
@@ -102,7 +102,7 @@
             end
           | _, Expr.Call(callee, args) ->
             begin
-              printfn "call %s := %s(%s);" (get_lhs_var lval) callee (print_list (fun e -> translate_expr e G) args)
+              printfn "call %s := %s(%s);" (get_lhs_var lval) callee (print_list (fun e -> translate_expr e G) args ", ")
             end
           | _, Expr.Default(Seq(t)) ->
             begin
@@ -357,3 +357,4 @@
             let s = IO.File.ReadAllLines("CommonBpl.bpl") in
             Array.iter (fun s -> printfn "%s" s) s
             0 // return an integer exit code
+*) *)

@@ -109,7 +109,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Identity", "Identity\Identi
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "BoogieExprTranslator", "Src\BoogieExprTranslator\BoogieExprTranslator.fsproj", "{DD849437-50D3-498F-A0B4-2E06B8387AA9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "P2Boogie", "ConsoleApplication2\P2Boogie.csproj", "{81930522-38C2-40BA-96F6-E3EB4380DE0F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FSExpGen", "ConsoleApplication2\FSExpGen.csproj", "{81930522-38C2-40BA-96F6-E3EB4380DE0F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

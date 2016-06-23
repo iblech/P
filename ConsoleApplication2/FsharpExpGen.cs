@@ -806,6 +806,7 @@ namespace Microsoft.P_FS_Boogie
         private Syntax.StateDecl genStateDecl(P_Root.StateDecl state)
         {
             string temperature = state.temperature.Symbol.ToString();
+            temperature = char.ToUpper(temperature[0]) + temperature.Substring(1);
             var name = getQualifiedName(state.name as P_Root.QualifiedName);
             var owner = getID((state.owner as P_Root.MachineDecl).name as P_Root.String);
             FSharp.Core.FSharpOption<string> entryAction = null;

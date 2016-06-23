@@ -1,121 +1,32 @@
 ﻿using Microsoft.Pc;
 using System;
+using System.Collections.Generic;
 using System.IO;
+using Microsoft.P2Boogie;
 
-
-namespace Microsoft.yo
+namespace Microsoft.P_FS_Boogie
 {
-    class P2Boogie
+    class Program
     {
-        public static int Main(string[] args)
-
+        public static void Main(string[] args)
         {
-            string inputFileName = null;
             CommandLineOptions options = new CommandLineOptions();
-            if (args.Length == 0)
+            FSharpExpGen fsExpGen = new FSharpExpGen(options);
+            string line = null;
+            using (var sr = new StreamReader(args[0]))
             {
-                goto error;
-            }
-
-            for (int i = 0; i < args.Length; i++)
-            {
-                string arg = args[i];
-                string colonArg = null;
-                if (arg.StartsWith("/"))
+                Syntax.ProgramDecl prog = null;
+                while ((line = sr.ReadLine()) != null)
                 {
-                    var colonIndex = arg.IndexOf(':');
-                    if (colonIndex >= 0)
+                    Console.WriteLine("*****************************************************************************");
+                    Console.WriteLine(line);
+                    Console.WriteLine("*****************************************************************************");
+                    using (var sw = new StreamWriter(line))
                     {
-                        arg = args[i].Substring(0, colonIndex);
-                        colonArg = args[i].Substring(colonIndex + 1);
-                    }
-
-                    switch (arg)
-                    {
-                        case "/profile":
-                            if (colonArg != null)
-                                goto error;
-                            options.profile = true;
-                            break;
-
-                        case "/outputDir":
-                            if (colonArg == null)
-                            {
-                                Console.WriteLine("Must supply path for output directory");
-                                goto error;
-                            }
-                            if (!Directory.Exists(colonArg))
-                            {
-                                Console.WriteLine("Output directory {0} does not exist", colonArg);
-                                goto error;
-                            }
-                            options.outputDir = colonArg;
-                            break;
-
-                        case "/outputFileName":
-                            if (colonArg == null)
-                            {
-                                Console.WriteLine("Must supply name for output files");
-                                goto error;
-                            }
-                            options.outputFileName = colonArg;
-                            break;
-
-                        case "/doNotErase":
-                            if (colonArg != null)
-                                goto error;
-                            options.erase = false;
-                            break;
-
-                        case "/noSourceInfo":
-                            if (colonArg != null)
-                                goto error;
-                            options.noSourceInfo = true;
-                            break;
-                        default:
-                            goto error;
+                        prog = fsExpGen.genFSExpression(line + ".txt");
+                        Helper.print_prog(prog, sw);
                     }
                 }
-                else
-                {
-                    if (inputFileName == null)
-                    {
-                        inputFileName = arg;
-                    }
-                    else
-                    {
-                        goto error;
-                    }
-                }
-            }
-            if (inputFileName.Length > 2 && inputFileName.EndsWith(".p"))
-            {
-                var fsExpGen = new FSharpExpGen(options);
-                if (options.outputFileName != null)
-                {
-                    using (StreamWriter writer = new StreamWriter(options.outputFileName))
-                    {
-                        //fsExpGen.genFSExp(inputFileName, writer);
-                    }
-                }
-                else
-                {
-                    //fsExpGen.genFSExp(inputFileName, Console.Out);
-                }
-                return 0;
-            }
-            else
-            {
-                Console.WriteLine("Illegal input file name");
-            }
-        error:
-            {
-                Console.WriteLine("USAGE: ConsoleApplication2.exe file.p [options]");
-                Console.WriteLine("/outputDir:path");
-                Console.WriteLine("/outputFileName:name");
-                Console.WriteLine("/profile");
-                Console.WriteLine("/noSourceInfo");
-                return 0;
             }
         }
     }
