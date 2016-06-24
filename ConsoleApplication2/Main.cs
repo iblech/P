@@ -1,8 +1,9 @@
 ﻿using Microsoft.Pc;
 using System;
-using System.Collections.Generic;
 using System.IO;
 using Microsoft.P2Boogie;
+using System.Runtime.Serialization;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace Microsoft.P_FS_Boogie
 {
@@ -12,8 +13,9 @@ namespace Microsoft.P_FS_Boogie
         {
             CommandLineOptions options = new CommandLineOptions();
             FSharpExpGen fsExpGen = new FSharpExpGen(options);
-            string line = null;
+            string line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Combined\Correct\variableType\variableType.p";
             using (var sr = new StreamReader(args[0]))
+            try
             {
                 Syntax.ProgramDecl prog = null;
                 while ((line = sr.ReadLine()) != null)
@@ -21,12 +23,37 @@ namespace Microsoft.P_FS_Boogie
                     Console.WriteLine("*****************************************************************************");
                     Console.WriteLine(line);
                     Console.WriteLine("*****************************************************************************");
-                    using (var sw = new StreamWriter(line))
+                    //using (var sw = new StreamWriter(line))
                     {
                         prog = fsExpGen.genFSExpression(line + ".txt");
-                        Helper.print_prog(prog, sw);
+                        //Helper.print_prog(prog, sw);
+                        Save(prog, line + ".dat");
                     }
                 }
+            }
+            catch(Exception e)
+            {
+                Console.WriteLine(e.StackTrace);
+            }
+        }
+
+        static void Save(Syntax.ProgramDecl prog, string fileName)
+        {
+            Stream stream = null;
+            try
+            {
+                IFormatter formatter = new BinaryFormatter();
+                stream = new FileStream(fileName, FileMode.Create, FileAccess.Write, FileShare.None);
+                formatter.Serialize(stream, prog);
+            }
+            catch
+            {
+                // do nothing, just ignore any possible errors
+            }
+            finally
+            {
+                if (null != stream)
+                    stream.Close();
             }
         }
     }

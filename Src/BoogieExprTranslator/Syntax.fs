@@ -3,6 +3,7 @@ module Syntax =
   open System
 
   (* Types *)
+  [<Serializable>]
   type Type = Null | Bool | Int | Machine | Event | Any 
               | Seq of Type | Map of Type * Type 
               | Tuple of Type list
@@ -10,20 +11,25 @@ module Syntax =
               | ModelType of string
 
   (* Events *)
+  [<Serializable>]
   type Card = Assert of int
               | Assume of int 
 
+  [<Serializable>]  
   type EventDecl(name: string, qc: Card option, typ: Type option)=
     member this.Name = name
     member this.QC = qc
     member this.Type = typ
 
   (* operators *)
+  [<Serializable>]
   type BinOp = Add | Sub | Mul | Intdiv | And | Or | Eq | Neq | Lt | Le | Gt | Ge | Idx | In
 
+  [<Serializable>]
   type UnOp = Not | Neg | Keys | Values | Sizeof
 
   (* Expressions *)
+  [<Serializable>]
   type Expr = 
     | Nil 
     | ConstInt of int 
@@ -43,9 +49,11 @@ module Syntax =
     | Default of Type
     | Call of string * Expr list
 
+  [<Serializable>]
   type Lval = Var of string | Dot of Lval * int | NamedDot of Lval * string | Index of Lval * Expr
 
   (* Statements *)
+  [<Serializable>]
   type Stmt = 
     | Assign of Lval * Expr 
     | Insert of Lval * Expr * Expr 
@@ -66,10 +74,12 @@ module Syntax =
     | FunStmt of string * Expr list * string option
 
   (* Variable and type *)
+  [<Serializable>]
   type VarDecl(name: string, typ: Type) =
     member this.Name = name
     member this.Type = typ
 
+  [<Serializable>]
   type FunDecl(name: string, formals: VarDecl list, rettype: Type option, 
                   locals: VarDecl list, body: Stmt, is_model: bool, is_pure: bool) =
     member this.Name = name
@@ -80,6 +90,7 @@ module Syntax =
     member this.IsModel = is_model
     member this.IsPure = is_pure;
 
+  [<Serializable>]
   module TransDecl =
 
     type T = 
@@ -109,6 +120,7 @@ module Syntax =
       | Ignore e -> e
       | Call(e, _)  -> e
   
+  [<Serializable>]
   type StateDecl(name: string, temperature: string, entryaction: string option, exitaction: string option, transitions: TransDecl.T list, dos: DoDecl.T list) =
     member this.Name = name
     member this.Temperature = temperature
@@ -117,6 +129,7 @@ module Syntax =
     member this.Transitions = transitions
     member this.Dos = dos
    
+  [<Serializable>]
   type MachineDecl(name: string, start_state: string, globals: VarDecl list, 
                       functions: FunDecl list, states: StateDecl list, 
                       is_monitor: bool, monitors_list: string List, 
@@ -146,6 +159,7 @@ module Syntax =
       List.iter (fun (var: VarDecl) -> map := Map.add var.Name var !map) this.Globals
       !map       
    
+  [<Serializable>]
   [<AllowNullLiteral>]
   type ProgramDecl(mainmachine: string, machines: MachineDecl list, 
                       events: EventDecl list, static_funs: FunDecl list) =

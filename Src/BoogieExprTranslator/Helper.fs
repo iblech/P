@@ -8,7 +8,6 @@ module Helper=
 
   let mutable prog: Syntax.ProgramDecl = null
  
-    
   (* Helpers *)
   let rec lval_to_expr lval =
     match lval with
@@ -236,7 +235,7 @@ module Helper=
               (print_list print_function m.Functions "\n") 
               (print_list (fun (s: Syntax.StateDecl) -> if (s.Name = m.StartState) then (sprintf "start %s" (print_state s)) else (print_state s))  m.States "\n")
 
-  let print_prog (p: Syntax.ProgramDecl) (sw: System.IO.StreamWriter) =
+  let print_prog (p: Syntax.ProgramDecl) (sw: System.IO.TextWriter) =
     begin
       prog <- p
       sw.WriteLine (print_list print_event p.Events ";\n")
