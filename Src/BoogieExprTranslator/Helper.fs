@@ -132,10 +132,12 @@ module Helper=
     | Expr.Un(op, e1) -> sprintf "%s(%s)" (print_uop op) (print_expr e1)
     | Expr.Dot(e, i) -> (print_expr e) + "." + i.ToString()
     | Cast(e, t) -> sprintf "(%s as %s)" (print_expr e) (print_type t)
+    | Tuple([h]) -> sprintf "(%s,)" (print_expr h)
     | Tuple(ls) -> sprintf "(%s)" (print_list print_expr ls ", ")
     | Default(t) -> sprintf "default(%s)" (print_type t)
     | New(s, arg) -> sprintf "new %s(%s)" s (print_expr arg)
     | Expr.NamedDot(e,f) -> sprintf "%s.%s" (print_expr e) f
+    | Expr.NamedTuple([(f, e)]) -> sprintf "(%s: %s,)"  f (print_expr e)
     | Expr.NamedTuple(es) -> sprintf "(%s)" (print_list (fun (f,e) -> sprintf "%s: %s" f (print_expr e)) es ", ")
     | Expr.Call(callee, args) -> sprintf "%s(%s)" callee (print_list print_expr args ", ")
    
@@ -196,8 +198,8 @@ module Helper=
 
   let print_card (c: Syntax.Card) =
     match c with
-    | Card.Assert(i) -> sprintf "assert %i" i
-    | Card.Assume(i) -> sprintf "assume %i" i
+    | Card.Assert(i) -> sprintf " assert %i" i
+    | Card.Assume(i) -> sprintf " assume %i" i
 
   let print_var (v: Syntax.VarDecl) = 
     sprintf "%s: %s" v.Name (print_type v.Type)
@@ -220,17 +222,17 @@ module Helper=
       | InvariantEqual "Cold" -> "cold"
       | _ -> ""
     let entry = if (s.EntryAction.IsSome) then (sprintf "entry %s;\n" s.EntryAction.Value) else ""
-    let exit = if (s.ExitAction.IsSome) then (sprintf "entry %s;\n" s.ExitAction.Value) else ""
+    let exit = if (s.ExitAction.IsSome) then (sprintf "exit %s;\n" s.ExitAction.Value) else ""
     let dos = (print_list print_do s.Dos "\n")
     let trans = (print_list print_trans s.Transitions "\n")
     sprintf "%s state\n{%s%s%s%s}" temp entry exit dos trans
 
   let print_machine (m: Syntax.MachineDecl) =
-    let main = if (m.Name = prog.MainMachine) then "main" else ""
+    let main = if (m.Name = prog.MainMachine) then "main " else ""
     let machine = if (m.IsModel) then "model" else (if (m.IsMonitor) then "spec" else "machine")
-    let monitors = if(m.IsMonitor) then (sprintf "monitors %s" (print_list (sprintf "%s") m.MonitorList ", ")) else ""
+    let monitors = if(m.IsMonitor) then (sprintf " monitors %s " (print_list (sprintf "%s") m.MonitorList ", ")) else ""
     let card = if (m.QC.IsSome) then (print_card m.QC.Value) else ""
-    sprintf "%s %s %s %s %s\n{\n%s%s%s\n}\n" main machine m.Name card monitors 
+    sprintf "%s%s %s%s%s\n{\n%s%s%s\n}\n" main machine m.Name card monitors 
               (print_list print_var m.Globals ";\n") 
               (print_list print_function m.Functions "\n") 
               (print_list (fun (s: Syntax.StateDecl) -> if (s.Name = m.StartState) then (sprintf "start %s" (print_state s)) else (print_state s))  m.States "\n")

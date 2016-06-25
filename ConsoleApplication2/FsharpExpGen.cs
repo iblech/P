@@ -231,7 +231,7 @@ namespace Microsoft.P_FS_Boogie
         private Syntax.Expr.Call genFunApp(P_Root.FunApp e)
         {
             var n = getString(e.name);
-            FSharpList<Syntax.Expr> args = null;
+            FSharpList<Syntax.Expr> args = FSharpList<Syntax.Expr>.Empty;
             if (e.args.Symbol.ToString() != "NIL")
             {
                 args = genExprs(e.args as P_Root.Exprs);
@@ -751,7 +751,7 @@ namespace Microsoft.P_FS_Boogie
                 ListModule.OfSeq(machineToFunList[name]);
             bool is_monitor = false;
             bool is_model = false;
-            FSharpList<string> monitored_events = null;
+            FSharpList<string> monitored_events = FSharpList<string>.Empty;
             FSharp.Core.FSharpOption<Syntax.Card> qc = null;
 
             if (d.isMain.Symbol.ToString() == "TRUE")
@@ -822,7 +822,7 @@ namespace Microsoft.P_FS_Boogie
 
             if (state.exitFun is P_Root.AnonFunDecl)
             {
-                var s = genAnonFunDecl(state.exitFun as P_Root.AnonFunDecl, name + "_entry");
+                var s = genAnonFunDecl(state.exitFun as P_Root.AnonFunDecl, name + "_exit");
                 exitAction = new FSharp.Core.FSharpOption<string>(s);
             }
             else if (state.exitFun is P_Root.String)
@@ -864,8 +864,8 @@ namespace Microsoft.P_FS_Boogie
             bool is_model = false;
             bool is_pure = false;
             FSharp.Core.FSharpOption<Syntax.Type> rettype = null;
-            FSharpList<Syntax.VarDecl> @params = null;
-            FSharpList<Syntax.VarDecl> locals = null;
+            FSharpList<Syntax.VarDecl> @params = FSharpList<Syntax.VarDecl>.Empty;
+            FSharpList<Syntax.VarDecl> locals = FSharpList<Syntax.VarDecl>.Empty;
             var stmt = genStmt(d.body as P_Root.Stmt);
             if (d.kind.Symbol.ToString() == "MODEL")
             {
@@ -899,7 +899,8 @@ namespace Microsoft.P_FS_Boogie
             var name =
                   ((d.ownerFun.Symbol.ToString() == "NIL") ? "" : getString(d.ownerFun) + "_")
                 + n;
-            FSharpList<Syntax.VarDecl> args = null, locals = null;
+            FSharpList<Syntax.VarDecl> args = FSharpList<Syntax.VarDecl>.Empty, 
+                locals = FSharpList<Syntax.VarDecl>.Empty;
             var stmts = genStmt(d.body as P_Root.Stmt);
             if (d.envVars.Symbol.ToString() != "NIL")
             {
@@ -908,7 +909,7 @@ namespace Microsoft.P_FS_Boogie
                 {
                     x = x.tl as P_Root.NmdTupType;
                 }
-                args = new FSharpList<Syntax.VarDecl>(genVar(x.hd as P_Root.NmdTupTypeField), null);
+                args = new FSharpList<Syntax.VarDecl>(genVar(x.hd as P_Root.NmdTupTypeField), FSharpList<Syntax.VarDecl>.Empty);
             }
             if (d.locals.Symbol.ToString() != "NIL")
             {

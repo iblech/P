@@ -13,8 +13,8 @@ namespace Microsoft.P_FS_Boogie
         {
             CommandLineOptions options = new CommandLineOptions();
             FSharpExpGen fsExpGen = new FSharpExpGen(options);
-            string line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Combined\Correct\variableType\variableType.p";
-            using (var sr = new StreamReader(args[0]))
+            string line = null;
+            using (var sr = new StreamReader(@"C:\Users\t-suchav\Desktop\Crt.txt"))
             try
             {
                 Syntax.ProgramDecl prog = null;

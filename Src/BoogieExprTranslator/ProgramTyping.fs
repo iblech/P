@@ -136,6 +136,21 @@ module ProgramTyping =
         | _ -> raise Not_defined
       end
 
+  let valid_new s e G= 
+    if (not (Map.containsKey s Helper.prog.MachineMap)) then false
+    else begin
+      let sName = (Helper.prog.MachineMap.[s]).StartState
+      let ea = (Helper.prog.MachineMap.[s].StateMap.[sName]).EntryAction
+      if ea.IsNone then (e = Expr.Nil)
+      else begin
+        let fn = (Helper.prog.MachineMap.[s]).FunMap.[ea.Value]
+        if (e = Expr.Nil) && (fn.Formals.IsEmpty) then true
+        else
+           ((List.length fn.Formals) = 1) && (is_subtype fn.Formals.Head.Type (typeof e G))
+      end
+    end
+
+
   let typecheck_stmt st G =
     match st with
     | Assign(l, e) -> type_assert (is_subtype (typeof_lval l G) (typeof e G)) (sprintf "Invalid assignment: %s" (print_stmt st))
@@ -151,9 +166,7 @@ module ProgramTyping =
       | _ -> type_assert false (sprintf "Invalid remove: %s" (print_stmt st))
     | Assume e ->  type_assert (is_subtype (typeof e G) Bool) (sprintf "Invalid assume: %s" (print_stmt st))
     | Assert e -> type_assert (is_subtype (typeof e G) Bool) (sprintf "Invalid assert: %s" (print_stmt st))
-    | NewStmt(s, e) -> type_assert ((Map.containsKey s Helper.prog.MachineMap))
-
-
+    | NewStmt(s, e) -> type_assert (valid_new s e G) (sprintf "Invalid New Statement: %s" (print_stmt st))
 
     (* Quadratic time; can optimize *)
   let rec find_all_types stmt G =
