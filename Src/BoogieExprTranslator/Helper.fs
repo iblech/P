@@ -5,8 +5,6 @@ module Helper=
   open System
   open Syntax
   open Common
-
-  let mutable prog: Syntax.ProgramDecl = null
  
   (* Helpers *)
   let rec lval_to_expr lval =
@@ -148,19 +146,19 @@ module Helper=
     | Lval.NamedDot(v, f) -> sprintf "%s.%s" (print_lval v) f
     | Lval.Index(l, e) -> sprintf "%s[%s]" (print_lval l) (print_expr e) 
 
-  let case_arg s1 s2 =
+  let case_arg s1 s2 (prog: ProgramDecl) =
         let e = (Map.find s1 prog.EventMap)
         let f = (Map.find s2 prog.FunMap) 
         match e.Type with
         | None -> sprintf "{\n%s()\n}" f.Name
         | t -> sprintf "(payload: %s){\n%s(payload)\n}" (print_type t.Value) f.Name
 
-  let print_cases (s1, s2) = 
+  let print_cases prog (s1, s2) = 
     begin
-      sprintf "case %s:%s" s1 (case_arg s1 s2) 
+      sprintf "case %s:%s" s1 (case_arg s1 s2 prog) 
     end
 
-  let rec print_stmt s =
+  let rec print_stmt prog s =
     match s with
     | Assign(l, e) -> sprintf "%s = %s;\n" (print_lval l) (print_expr e)
     | Insert(l, e1, e2) -> sprintf "%s += (%s, %s);\n" (print_lval l) (print_expr e1) (print_expr e2)
@@ -171,26 +169,26 @@ module Helper=
     | Raise(e1, e2) -> sprintf "raise %s, %s;\n" (print_expr e1) (print_expr e2)
     | Send (e1, e2, e3) -> sprintf "send %s, %s, %s;\n" (print_expr e1) (print_expr e2) (print_expr e3)
     | Skip -> ";\n"
-    | While(c, s) -> sprintf "while(%s)\n{\n%s\n}\n" (print_expr c) (print_stmt s)
-    | Ite(c, i, e) -> sprintf "if(%s)\n{\n%s\n}\nelse\n{\n%s\n}\n" (print_expr c) (print_stmt i) (print_stmt e)
-    | SeqStmt(l) -> sprintf "{\n%s\n}\n" (print_list print_stmt l ";\n")
-    | Receive(l) -> sprintf "receive\n{\n%s\n}\n" (print_list print_cases l "\n")
+    | While(c, s) -> sprintf "while(%s)\n{\n%s\n}\n" (print_expr c) (print_stmt prog s)
+    | Ite(c, i, e) -> sprintf "if(%s)\n{\n%s\n}\nelse\n{\n%s\n}\n" (print_expr c) (print_stmt prog i) (print_stmt prog e)
+    | SeqStmt(l) -> sprintf "{\n%s\n}\n" (print_list (print_stmt prog) l ";\n")
+    | Receive(l) -> sprintf "receive\n{\n%s\n}\n" (print_list (print_cases prog) l "\n")
     | Pop -> "pop;\n"
     | Return(e) -> sprintf "return (%s);\n" (print_expr e)
     | Monitor(e1, e2) -> sprintf "monitor (%s), (%s)" (print_expr e1) (print_expr e2)
     | FunStmt(s, el, None) -> sprintf "%s(%s);\n" s (print_list print_expr el ", ")
     | FunStmt(s, el, v) -> sprintf "%s = %s(%s);\n" v.Value s (print_list print_expr el ", ")
 
-  let print_do (d: Syntax.DoDecl.T) = 
+  let print_do prog (d: Syntax.DoDecl.T) = 
     match d with
     | Syntax.DoDecl.T.Defer(s) -> (sprintf "defer %s;" s)
     | Syntax.DoDecl.T.Ignore(s) -> (sprintf "ignore %s;" s)
-    | Syntax.DoDecl.T.Call(e, f) -> (sprintf "on %s do %s" e (case_arg e f))
+    | Syntax.DoDecl.T.Call(e, f) -> (sprintf "on %s do %s" e (case_arg e f prog))
 
-  let print_trans (t: Syntax.TransDecl.T) =
+  let print_trans prog (t: Syntax.TransDecl.T) =
     match t with 
     | Syntax.TransDecl.T.Push(e, d) -> (sprintf "on %s push %s;" e d)
-    | Syntax.TransDecl.T.Call(e, d, f) -> (sprintf "on %s goto %s with %s" e d (case_arg e f))
+    | Syntax.TransDecl.T.Call(e, d, f) -> (sprintf "on %s goto %s with %s" e d (case_arg e f prog))
 
   let (|InvariantEqual|_|) (str:string) arg = 
     if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0
@@ -204,18 +202,18 @@ module Helper=
   let print_var (v: Syntax.VarDecl) = 
     sprintf "%s: %s" v.Name (print_type v.Type)
 
-  let print_function (f: Syntax.FunDecl) = 
+  let print_function prog (f: Syntax.FunDecl) = 
     let model = if f.IsModel then "model" else ""
     let args = (print_list print_var f.Formals ", ")
     let ret = if (f.RetType.IsSome) then (sprintf ": %s" (print_type f.RetType.Value)) else ""
     let locals = (print_list print_var f.Locals ";\n")
-    sprintf "%s fun %s(%s)%s\n{%s%s}" model f.Name args ret locals (print_stmt f.Body)
+    sprintf "%s fun %s(%s)%s\n{%s%s}" model f.Name args ret locals (print_stmt prog f.Body)
 
   let print_event (e: Syntax.EventDecl) =
     let typ = if (e.Type.IsSome) then (sprintf ": %s" (print_type e.Type.Value)) else ""
     sprintf "event %s%s" e.Name typ
 
-  let print_state (s: Syntax.StateDecl) = 
+  let print_state prog (s: Syntax.StateDecl) = 
     let temp = 
       match s.Temperature with 
       | InvariantEqual "Hot" -> "hot"
@@ -223,26 +221,25 @@ module Helper=
       | _ -> ""
     let entry = if (s.EntryAction.IsSome) then (sprintf "entry %s;\n" s.EntryAction.Value) else ""
     let exit = if (s.ExitAction.IsSome) then (sprintf "exit %s;\n" s.ExitAction.Value) else ""
-    let dos = (print_list print_do s.Dos "\n")
-    let trans = (print_list print_trans s.Transitions "\n")
+    let dos = (print_list (print_do prog) s.Dos "\n")
+    let trans = (print_list (print_trans prog) s.Transitions "\n")
     sprintf "%s state\n{%s%s%s%s}" temp entry exit dos trans
 
-  let print_machine (m: Syntax.MachineDecl) =
+  let print_machine (prog: ProgramDecl) (m: Syntax.MachineDecl) =
     let main = if (m.Name = prog.MainMachine) then "main " else ""
     let machine = if (m.IsModel) then "model" else (if (m.IsMonitor) then "spec" else "machine")
     let monitors = if(m.IsMonitor) then (sprintf " monitors %s " (print_list (sprintf "%s") m.MonitorList ", ")) else ""
     let card = if (m.QC.IsSome) then (print_card m.QC.Value) else ""
     sprintf "%s%s %s%s%s\n{\n%s%s%s\n}\n" main machine m.Name card monitors 
               (print_list print_var m.Globals ";\n") 
-              (print_list print_function m.Functions "\n") 
-              (print_list (fun (s: Syntax.StateDecl) -> if (s.Name = m.StartState) then (sprintf "start %s" (print_state s)) else (print_state s))  m.States "\n")
+              (print_list (print_function prog) m.Functions "\n") 
+              (print_list (fun (s: Syntax.StateDecl) -> if (s.Name = m.StartState) then (sprintf "start %s" (print_state prog s)) else (print_state prog s))  m.States "\n")
 
-  let print_prog (p: Syntax.ProgramDecl) (sw: System.IO.TextWriter) =
+  let print_prog (prog: Syntax.ProgramDecl) (sw: System.IO.TextWriter) =
     begin
-      prog <- p
-      sw.WriteLine (print_list print_event p.Events ";\n")
-      sw.WriteLine (print_list (fun(f) -> sprintf "static %s" (print_function f)) p.StaticFuns "\n")
-      sw.WriteLine (print_list print_machine p.Machines "\n")           
+      sw.WriteLine (print_list print_event prog.Events ";\n")
+      sw.WriteLine (print_list (print_function prog) prog.StaticFuns "\n")
+      sw.WriteLine (print_list (print_machine prog) prog.Machines "\n")           
     end
   
   let tuple_size t =

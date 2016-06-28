@@ -53,6 +53,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SymbolTable.cs" />
     <Compile Include="Main.cs" />
     <Compile Include="FsharpExpGen.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
