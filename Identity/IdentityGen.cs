@@ -20,6 +20,7 @@ namespace Microsoft.Identity
         {
             options.analyzeOnly = true;
             options.profile = true;
+            options.test = true;
             compiler = new Compiler(options);
         }
 

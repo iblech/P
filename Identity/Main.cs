@@ -1,11 +1,6 @@
 ﻿using Microsoft.Pc;
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
 namespace Microsoft.Identity
 {
     public class Program
@@ -62,12 +57,6 @@ namespace Microsoft.Identity
                                 goto error;
                             }
                             options.outputFileName = colonArg;
-                            break;
-
-                        case "/doNotErase":
-                            if (colonArg != null)
-                                goto error;
-                            options.erase = false;
                             break;
 
                         case "/noSourceInfo":

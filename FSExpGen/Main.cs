@@ -14,8 +14,9 @@ namespace Microsoft.P_FS_Boogie
             CommandLineOptions options = new CommandLineOptions();
             FSharpExpGen fsExpGen = new FSharpExpGen(options);
             string line = null;
+            int t = 0;
+            int w = 0;
             using (var sr = new StreamReader(@"C:\Users\t-suchav\Desktop\Crt.txt"))
-            try
             {
                 //line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\PingPong\PingPong.p";
                 Syntax.ProgramDecl prog = null;
@@ -26,18 +27,24 @@ namespace Microsoft.P_FS_Boogie
                     Console.WriteLine("*****************************************************************************");
                     //using (var sw = new StreamWriter(line))
                     {
-                        prog = fsExpGen.genFSExpression(line + ".txt");
-                        //Helper.print_prog(prog, sw);
-                        Save(prog, line + ".dat");
+                        try
+                        {
+                            prog = fsExpGen.genFSExpression(line + ".txt");
+                            //Helper.print_prog(prog, sw);
+                            Save(prog, line + ".dat");
+                        }
+                        catch (Exception e)
+                        {
+                            w++;
+                            Console.WriteLine(e.Message);
+                            Console.WriteLine("\n\n");
+                            Console.WriteLine(e.StackTrace);
+                        }
+                        t++;
                     }
                 }
             }
-            catch(Exception e)
-            {
-                Console.WriteLine(e.Message);
-                Console.WriteLine("\n\n");
-                Console.WriteLine(e.StackTrace);
-            }
+            Console.WriteLine("Passed {0} tests out of {1}.", t-w, t);
         }
 
         static void Save(Syntax.ProgramDecl prog, string fileName)

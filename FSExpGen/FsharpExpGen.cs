@@ -1147,7 +1147,7 @@ namespace Microsoft.P_FS_Boogie
                     var name = getString((state.owner as P_Root.MachineDecl).name)
                         + '_'
                         + getQualifiedName(state.name as P_Root.QualifiedName);
-                    Console.WriteLine(name);
+                    // Console.WriteLine(name);
                     statesToDos[name] = new List<Syntax.DoDecl.T>();
                     statesToTransitions[name] = new List<Syntax.TransDecl.T>();
                 }
