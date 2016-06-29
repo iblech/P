@@ -17,6 +17,7 @@ namespace Microsoft.P_FS_Boogie
             using (var sr = new StreamReader(@"C:\Users\t-suchav\Desktop\Crt.txt"))
             try
             {
+                //line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\PingPong\PingPong.p";
                 Syntax.ProgramDecl prog = null;
                 while ((line = sr.ReadLine()) != null)
                 {

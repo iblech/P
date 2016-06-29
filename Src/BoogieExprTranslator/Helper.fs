@@ -71,12 +71,14 @@ module Helper=
     List.findIndex (fun (a,b) -> a = f) ts
    
   (* Printing functions *)
+  ///print_list <printing function> <list> <seperator between elements>
   let rec print_list fn ls sep=
     match ls with
     | [] -> ""
     | [h] -> (fn h)
     | h::t -> sprintf "%s%s%s" (fn h) sep (print_list fn t sep)
 
+  ///print_type <type>
   let rec print_type t =
     match t with
     | Null -> "null"
@@ -146,16 +148,18 @@ module Helper=
     | Lval.NamedDot(v, f) -> sprintf "%s.%s" (print_lval v) f
     | Lval.Index(l, e) -> sprintf "%s[%s]" (print_lval l) (print_expr e) 
 
-  let case_arg s1 s2 (prog: ProgramDecl) =
-        let e = (Map.find s1 prog.EventMap)
-        let f = (Map.find s2 prog.FunMap) 
+  ///print_event_action <program> <event name> <function name>
+  let print_event_action (prog: ProgramDecl) ev fn =
+        let e = (Map.find ev prog.EventMap)
+        let f = (Map.find fn prog.FunMap) 
         match e.Type with
         | None -> sprintf "{\n%s()\n}" f.Name
         | t -> sprintf "(payload: %s){\n%s(payload)\n}" (print_type t.Value) f.Name
 
-  let print_cases prog (s1, s2) = 
+  ///print_cases <program> <event name> <function name>
+  let print_cases prog (ev, fn) = 
     begin
-      sprintf "case %s:%s" s1 (case_arg s1 s2 prog) 
+      sprintf "case %s:%s" ev (print_event_action prog ev fn)
     end
 
   let rec print_stmt prog s =
@@ -183,12 +187,12 @@ module Helper=
     match d with
     | Syntax.DoDecl.T.Defer(s) -> (sprintf "defer %s;" s)
     | Syntax.DoDecl.T.Ignore(s) -> (sprintf "ignore %s;" s)
-    | Syntax.DoDecl.T.Call(e, f) -> (sprintf "on %s do %s" e (case_arg e f prog))
+    | Syntax.DoDecl.T.Call(e, f) -> (sprintf "on %s do %s" e (print_event_action prog e f))
 
   let print_trans prog (t: Syntax.TransDecl.T) =
     match t with 
     | Syntax.TransDecl.T.Push(e, d) -> (sprintf "on %s push %s;" e d)
-    | Syntax.TransDecl.T.Call(e, d, f) -> (sprintf "on %s goto %s with %s" e d (case_arg e f prog))
+    | Syntax.TransDecl.T.Call(e, d, f) -> (sprintf "on %s goto %s with %s" e d (print_event_action prog e f))
 
   let (|InvariantEqual|_|) (str:string) arg = 
     if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0

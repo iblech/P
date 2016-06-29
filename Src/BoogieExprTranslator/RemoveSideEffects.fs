@@ -4,7 +4,7 @@ module RemoveSideEffects =
   open Common
   open Helper
   open ProgramTyping
-
+(*
   (* Takes an expr as input, returns the re-written expr, a set of statements and updated environemt *)
   let rec remove_side_effects_expr expr G =
     let (nexpr, stlist, nG) =
@@ -265,3 +265,4 @@ module RemoveSideEffects =
       end
       ) ([], G) stlist
       
+*)

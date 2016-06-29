@@ -6,8 +6,8 @@ namespace Microsoft.P_FS_Boogie
     {
         private Dictionary<string, string> tbl = new Dictionary<string, string>();
         private Dictionary<string, HashSet<string>> machineToVarsFuns = new Dictionary<string, HashSet<string>>();
-        private string currentM { get; set; }
-        private bool in_global_scope { get; set; } = false;
+        public string currentM { get; set; }
+        public bool inside_static_fn { get; set; } = false;
 
         public bool is_static_fn(string fName)
         {
@@ -18,12 +18,20 @@ namespace Microsoft.P_FS_Boogie
             tbl.Clear();
         }
 
+        public void Clear()
+        {
+            tbl.Clear();
+            machineToVarsFuns.Clear();
+            currentM = null;
+            inside_static_fn = false;
+        }
+
         public string get_owner(string s)
         {
             string ret;
             if (tbl.TryGetValue(s, out ret))
                 return ret;
-            else if (!in_global_scope && machineToVarsFuns[currentM].Contains(s))
+            else if (!inside_static_fn && machineToVarsFuns[currentM].Contains(s))
                 return currentM;
             return null;
         }
@@ -43,13 +51,18 @@ namespace Microsoft.P_FS_Boogie
         public string get_name(string x)
         {
             string n;
-            if (!in_global_scope && tbl.TryGetValue(x, out n))
+            if (!inside_static_fn && tbl.TryGetValue(x, out n))
                 return currentM + "_" + n + "_" + x;
-            else if (!in_global_scope && machineToVarsFuns[currentM].Contains(x))
+            else if (!inside_static_fn && machineToVarsFuns[currentM].Contains(x))
                 return currentM + "_" + x;
-            else if (in_global_scope && tbl.TryGetValue(x, out n))
+            else if (inside_static_fn && tbl.TryGetValue(x, out n))
                 return n + "_" + x;
             return x;           
+        }
+
+        public bool remove_var(string x)
+        {
+            return tbl.Remove(x);
         }
     }
 }

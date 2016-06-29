@@ -5,13 +5,14 @@ module ProgramTyping =
   open Helper
 
     (* Typing *)
+  ///If not b, raise Type exception with message s.
   let type_assert b s =
     if (not b) then 
       begin
         printfn "%s" s
         raise (Type_exception s)
       end
-
+  ///Is t1 a subtype of t2?
   let rec is_subtype t1 t2 =
     match (t1, t2) with
     | (_, Any) -> true
@@ -38,7 +39,7 @@ module ProgramTyping =
           end
     | _ -> false
 
-  (* typeof <program> <Referencing Environment> <current machine> <expression> *)
+  ///typeof <program> <Referencing Environment> <current machine> <expression>
   let rec typeof (prog:ProgramDecl) G cm expr =
     match expr with
     | Nil -> Null
@@ -121,7 +122,8 @@ module ProgramTyping =
       | Some(t) -> t
     | _ -> raise Not_defined
     
-  (* Checks if call is valid; returns return type if yes. *)
+  ///valid_call <program> <Referencing Environment> <current machine> <function> <args>
+  ///Checks if function call is valid; returns return type if yes.
   and valid_call (prog:ProgramDecl) G cm f args = 
     let fn = (prog.MachineMap.[cm]).FunMap.[f]
     let arg_types = (List.map (fun x -> (typeof prog G cm x)) args)
@@ -136,6 +138,8 @@ module ProgramTyping =
                   (print_list print_type arg_types  ", ")))
         else fn.RetType
 
+  ///valid_new <program> <Referencing Environment> <current machine> <expression>
+  ///Returns Type.Machine if the new is okay.
   and valid_new (prog:ProgramDecl) G cm e = 
     if (not (Map.containsKey cm prog.MachineMap)) then raise Not_defined
     else begin
@@ -152,6 +156,7 @@ module ProgramTyping =
       end
     end
 
+  ///typeof_lval <lval> <Referencing Environment>
   let rec typeof_lval lval G  =
     match lval with
     | Lval.Var(v) -> Map.find v G
@@ -174,6 +179,8 @@ module ProgramTyping =
         | _ -> raise Not_defined
       end
 
+  ///Check if event e with argument arg is valid to raise.
+  ///valid_call <program> <Referencing Environment> <current machine> <event> <arg>
   let valid_event_with_args (prog: Syntax.ProgramDecl) G cm e arg= 
     if (prog.EventMap.ContainsKey e) then begin
       let ev = (Map.find e prog.EventMap)
@@ -182,7 +189,9 @@ module ProgramTyping =
                    (sprintf "Event requires %s type %s, but got %s" e (print_type ev.Type.Value) (print_type (typeof prog G cm arg))))
       else (type_assert (arg = Expr.Nil) (sprintf "Event %s takes no argument, but got %s" e (print_expr arg)))
    end
-  
+
+  ///Check if an expression returns a valid machine.
+  ///valid_call <program> <Referencing Environment> <current machine> <Machine expression>  
   let valid_machine_expr prog G cm M = 
     match M with
     | Expr.Var(name) -> (type_assert ((Map.containsKey name G) && (is_subtype (Map.find name G) Type.Machine)) 
@@ -197,10 +206,14 @@ module ProgramTyping =
     | This -> (ignore true) //Fancy way of saying do nothing.
     | _ -> raise Not_defined  
 
+  ///Check if a send statement is valid.
+  ///valid_send <program> <Referencing Environment> <current machine> <destination machine> <event> <arg>
   let valid_send (prog: Syntax.ProgramDecl) G cm M ev arg = 
     (valid_machine_expr prog G cm M)
     (valid_event_with_args prog G cm ev arg)
-    
+  
+  ///Check if a case is valid.
+  ///valid_case <program> <Referencing Environment> <current machine> <event> <action>  
   let valid_case (prog: ProgramDecl) G cm e f= 
     let fn = prog.MachineMap.[cm].FunMap.[f]
     let ev = prog.EventMap.[e]
@@ -213,6 +226,8 @@ module ProgramTyping =
       end
     else (ignore (valid_call prog G cm f []))
   
+  ///Type check statements.
+  ///typecheck_stmt <program> <Referencing Environment> <current machine> <current function> <statement>
   let rec typecheck_stmt prog G cm cf st =
     match st with
     | Assign(l, e) -> type_assert (is_subtype (typeof_lval l G) (typeof prog G cm e)) (sprintf "Invalid assignment: %s" (print_stmt prog st))

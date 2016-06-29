@@ -4,7 +4,7 @@ module RemoveNamedTuples =
   open Common
   open Helper
   open ProgramTyping
-
+(*
   let rec process_type ty =
     match ty with
     | Type.NamedTuple ts -> Type.Tuple (List.map (fun (a,b) -> process_type b) ts)
@@ -61,3 +61,4 @@ module RemoveNamedTuples =
 
 
 
+*)
