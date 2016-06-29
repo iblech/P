@@ -34,6 +34,8 @@ namespace Microsoft.P_FS_Boogie
             }
             catch(Exception e)
             {
+                Console.WriteLine(e.Message);
+                Console.WriteLine("\n\n");
                 Console.WriteLine(e.StackTrace);
             }
         }

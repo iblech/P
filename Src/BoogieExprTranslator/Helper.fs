@@ -5,7 +5,10 @@ module Helper=
   open System
   open Syntax
   open Common
- 
+   
+  let merge_maps map1 map2 = 
+    (Map.fold (fun acc key value -> Map.add key value acc) map1 map2)
+
   (* Helpers *)
   let rec lval_to_expr lval =
     match lval with

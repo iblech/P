@@ -12,6 +12,7 @@ module ProgramTyping =
         printfn "%s" s
         raise (Type_exception s)
       end
+
   ///Is t1 a subtype of t2?
   let rec is_subtype t1 t2 =
     match (t1, t2) with
@@ -115,17 +116,19 @@ module ProgramTyping =
     | Expr.Tuple(es) -> Type.Tuple(List.map (fun e -> (typeof prog G cm e)) es)
     | Expr.NamedTuple(es) -> Type.NamedTuple(List.map (fun (f, e) -> (f, typeof prog G cm e)) es)
     | Default(t) -> t
-    | New(m, e) -> (valid_new prog G cm e)
+    | New(m, e) -> (typecheck_new prog G cm e)
     | Call(callee, args) -> 
-      match (valid_call prog G cm callee args) with (* More checks here. *)
+      match (typecheck_call prog G cm callee args) with (* More checks here. *)
       | None -> (raise (Type_exception (sprintf "A void function %s is present in expression %s" callee (print_expr expr))))
       | Some(t) -> t
     | _ -> raise Not_defined
     
-  ///valid_call <program> <Referencing Environment> <current machine> <function> <args>
   ///Checks if function call is valid; returns return type if yes.
-  and valid_call (prog:ProgramDecl) G cm f args = 
-    let fn = (prog.MachineMap.[cm]).FunMap.[f]
+  ///typecheck_call <program> <Referencing Environment> <current machine> <function> <args>
+  and typecheck_call (prog:ProgramDecl) G cm f args = 
+    let fn = 
+      if (prog.FunMap.ContainsKey f) then prog.FunMap.[f]
+      else (prog.MachineMap.[cm]).FunMap.[f]
     let arg_types = (List.map (fun x -> (typeof prog G cm x)) args)
     let formal_types = (List.map (fun (x: Syntax.VarDecl) -> x.Type) fn.Formals)
     if (List.length args) <> (List.length fn.Formals) then raise Not_defined
@@ -137,16 +140,15 @@ module ProgramTyping =
                   (print_list print_type formal_types ", ") 
                   (print_list print_type arg_types  ", ")))
         else fn.RetType
-
-  ///valid_new <program> <Referencing Environment> <current machine> <expression>
   ///Returns Type.Machine if the new is okay.
-  and valid_new (prog:ProgramDecl) G cm e = 
+  ///typecheck_new <program> <Referencing Environment> <current machine> <expression>
+  and typecheck_new (prog:ProgramDecl) G cm e = 
     if (not (Map.containsKey cm prog.MachineMap)) then raise Not_defined
     else begin
       let sName = (prog.MachineMap.[cm]).StartState
       let ea = (prog.MachineMap.[cm].StateMap.[sName]).EntryAction
       if (ea.IsSome) then begin
-        if (valid_call prog G cm ea.Value (e::[])).IsSome then raise Not_defined 
+        if (typecheck_call prog G cm ea.Value (e::[])).IsSome then raise Not_defined 
         else Type.Machine
       end
       else begin
@@ -180,8 +182,8 @@ module ProgramTyping =
       end
 
   ///Check if event e with argument arg is valid to raise.
-  ///valid_call <program> <Referencing Environment> <current machine> <event> <arg>
-  let valid_event_with_args (prog: Syntax.ProgramDecl) G cm e arg= 
+  ///typecheck_call <program> <Referencing Environment> <current machine> <event> <arg>
+  let typecheck_event_with_args (prog: Syntax.ProgramDecl) G cm e arg= 
     if (prog.EventMap.ContainsKey e) then begin
       let ev = (Map.find e prog.EventMap)
       if ev.Type.IsSome then
@@ -191,14 +193,14 @@ module ProgramTyping =
    end
 
   ///Check if an expression returns a valid machine.
-  ///valid_call <program> <Referencing Environment> <current machine> <Machine expression>  
-  let valid_machine_expr prog G cm M = 
+  ///typecheck_call <program> <Referencing Environment> <current machine> <Machine expression>  
+  let typecheck_machine_expr prog G cm M = 
     match M with
     | Expr.Var(name) -> (type_assert ((Map.containsKey name G) && (is_subtype (Map.find name G) Type.Machine)) 
                                     (sprintf "No machine named %s!" name))
-    | New(name, arg) -> (ignore true) //valid_new)
+    | New(name, arg) -> (ignore true) //typecheck_new)
     | Call(fName, args) -> 
-        let ret = (valid_call prog G cm fName args) in
+        let ret = (typecheck_call prog G cm fName args) in
           if ret.IsSome then
             (type_assert (is_subtype ret.Value Type.Machine) 
                         (sprintf "The function %s does not return a machine!" fName))
@@ -207,14 +209,14 @@ module ProgramTyping =
     | _ -> raise Not_defined  
 
   ///Check if a send statement is valid.
-  ///valid_send <program> <Referencing Environment> <current machine> <destination machine> <event> <arg>
-  let valid_send (prog: Syntax.ProgramDecl) G cm M ev arg = 
-    (valid_machine_expr prog G cm M)
-    (valid_event_with_args prog G cm ev arg)
+  ///typecheck_send <program> <Referencing Environment> <current machine> <destination machine> <event> <arg>
+  let typecheck_send (prog: Syntax.ProgramDecl) G cm M ev arg = 
+    (typecheck_machine_expr prog G cm M)
+    (typecheck_event_with_args prog G cm ev arg)
   
   ///Check if a case is valid.
-  ///valid_case <program> <Referencing Environment> <current machine> <event> <action>  
-  let valid_case (prog: ProgramDecl) G cm e f= 
+  ///typecheck_case <program> <Referencing Environment> <current machine> <event> <action>  
+  let typecheck_case (prog: ProgramDecl) G cm e f= 
     let fn = prog.MachineMap.[cm].FunMap.[f]
     let ev = prog.EventMap.[e]
     (type_assert (fn.RetType = ev.Type) (sprintf "Non-matching return types in case declaration for %s" e))
@@ -222,9 +224,9 @@ module ProgramTyping =
     if (ev.Type.IsSome) then 
       begin
         let s = (sprintf "%s_payload" f)
-        (ignore (valid_call prog G cm f [Expr.Var(s)]))
+        (ignore (typecheck_call prog G cm f [Expr.Var(s)]))
       end
-    else (ignore (valid_call prog G cm f []))
+    else (ignore (typecheck_call prog G cm f []))
   
   ///Type check statements.
   ///typecheck_stmt <program> <Referencing Environment> <current machine> <current function> <statement>
@@ -244,16 +246,16 @@ module ProgramTyping =
     | Assume e ->  type_assert (is_subtype (typeof prog G cm e) Bool) (sprintf "Invalid assume: %s" (print_stmt prog st))
     | Assert e -> type_assert (is_subtype (typeof prog G cm e) Bool) (sprintf "Invalid assert: %s" (print_stmt prog st))
     | NewStmt(m, e) -> 
-      match (valid_new prog G cm e) with
+      match (typecheck_new prog G cm e) with
       | Type.Machine -> (type_assert true (sprintf "Invalid New Statement: %s" (print_stmt prog st)))
       | _ -> (type_assert false (sprintf "Invalid New Statement: %s" (print_stmt prog st)))
-    | FunStmt(f, el, None) -> ignore (valid_call prog G cm f el)
+    | FunStmt(f, el, None) -> ignore (typecheck_call prog G cm f el)
     | FunStmt(f, el, v) -> 
-      match (valid_call prog G cm f el) with
+      match (typecheck_call prog G cm f el) with
       | Some(t) -> (type_assert (is_subtype t (Map.find v.Value G)) (sprintf "Invalid types in Statement: %s, expected type %s, but got %s" (print_stmt prog st) (print_type t) (print_type (Map.find v.Value G))))
       | None -> raise Not_defined
-    | Raise(Event(e), arg) -> (valid_event_with_args prog G cm e arg)
-    | Send(M, Event(e), arg) -> (valid_send prog G cm M e arg)
+    | Raise(Event(e), arg) -> (typecheck_event_with_args prog G cm e arg)
+    | Send(M, Event(e), arg) -> (typecheck_send prog G cm M e arg)
    
     | While(c, s) -> 
       begin 
@@ -267,7 +269,7 @@ module ProgramTyping =
         (typecheck_stmt prog G cm cf e)
       end
     | SeqStmt(lst) -> (List.iter (fun s -> (typecheck_stmt prog G cm cf s)) lst)
-    | Receive(lst) -> (List.iter(fun(e, a) -> (valid_case prog G cm e a)) lst)
+    | Receive(lst) -> (List.iter(fun(e, a) -> (typecheck_case prog G cm e a)) lst)
     | Return(e) -> 
       begin
         let rettype = prog.MachineMap.[cm].FunMap.[cf].RetType
@@ -278,11 +280,28 @@ module ProgramTyping =
                        (print_type (typeof prog G cm e))))
         else (type_assert (e = Expr.Nil) (sprintf "Function does not return a value, but got %s" (print_expr e)))
       end
-    | Monitor(Event(ev), arg) -> (valid_event_with_args prog G cm ev arg)
-    | Monitor(Expr.Var(e), arg) -> (type_assert (is_subtype (Map.find e G) Type.Event) (sprintf "%s is not an event!" e))
+    | Monitor(Event(ev), arg) -> (typecheck_event_with_args prog G cm ev arg)
+    //ToDo add dynamic check that the event will accept the arg given.
+    | Monitor(Expr.Var(e), _) -> (type_assert (is_subtype (Map.find e G) Type.Event) (sprintf "%s is not an event!" e)) 
     | Pop -> (ignore true)
     | Skip -> (ignore true) //A fancy way of generating unit.
-    | _ -> raise Not_defined
+    | _ -> 
+      begin
+        printfn "%s" (print_stmt prog st)
+        raise Not_defined
+      end
+  let typecheck_fun (prog: ProgramDecl) G cm (f: FunDecl) =
+    let G' = (merge_maps G f.VarMap)
+    (typecheck_stmt prog G' cm f.Name f.Body)
+    
+  let typecheck_machine (prog: ProgramDecl) (md: MachineDecl) = 
+    (List.iter (typecheck_fun prog md.VarMap md.Name) md.Functions)
+    //There's no typecheck_state because entry actions, exit actions,  
+    //actions on transitions/dos are all functions.
+
+  let typecheck_program (prog: ProgramDecl) = 
+    (List.iter (typecheck_machine prog) prog.Machines) 
+    (List.iter (typecheck_fun prog Map.empty "") prog.StaticFuns) 
 
   (* Quadratic time; can optimize *)
   let rec find_all_types prog G cm stmt =

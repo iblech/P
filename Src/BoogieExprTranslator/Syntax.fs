@@ -90,6 +90,22 @@ module Syntax =
     member this.IsModel = is_model
     member this.IsPure = is_pure;
 
+//Implicitly assumes that there are no conflicts in the names of locals and formals.
+    member this.VarMap = 
+      let ls =
+        let map = ref Map.empty in
+        List.iter (fun (var: VarDecl) -> map := Map.add var.Name var.Type !map) 
+          this.Locals
+        !map 
+      in
+        let fs = 
+          let map = ref Map.empty in
+          List.iter (fun (var: VarDecl) -> map := Map.add var.Name var.Type !map) 
+            this.Formals
+          !map 
+        in
+           (Map.fold (fun acc key value -> Map.add key value acc) ls fs)
+
   [<Serializable>]
   module TransDecl =
 
@@ -156,7 +172,7 @@ module Syntax =
   
     member this.VarMap =
       let map = ref Map.empty in
-      List.iter (fun (var: VarDecl) -> map := Map.add var.Name var !map) this.Globals
+      List.iter (fun (var: VarDecl) -> map := Map.add var.Name var.Type !map) this.Globals
       !map       
    
   [<Serializable>]
