@@ -743,7 +743,7 @@ namespace Microsoft.P_FS_Boogie
         private Syntax.MachineDecl genMachineDecl(P_Root.MachineDecl d)
         {
             string name = getString(d.name);
-            string start_state = name + '_' + 
+            string start_state = name + '_' +
                 getQualifiedName(d.start as P_Root.QualifiedName);
             FSharpList<Syntax.StateDecl> states =
                 ListModule.OfSeq(machineToStateList[name]);
@@ -872,7 +872,7 @@ namespace Microsoft.P_FS_Boogie
         private Syntax.FunDecl genFunDecl(P_Root.FunDecl d)
         {
             var name = getString(d.name);
-            if(d.owner.Symbol.ToString() != "NIL")
+            if (d.owner.Symbol.ToString() != "NIL")
             {
                 var owner = getString((d.owner as P_Root.MachineDecl).name) + "_";
                 symbolTable.add_machVar(owner, name);
@@ -897,7 +897,7 @@ namespace Microsoft.P_FS_Boogie
             if (d.@params.Symbol.ToString() != "NIL")
             {
                 @params = genVars(d.@params as P_Root.NmdTupType, name);
-                foreach(var p in @params)
+                foreach (var p in @params)
                 {
                     symbolTable.add_var(p.Name, name);
                 }
@@ -926,7 +926,7 @@ namespace Microsoft.P_FS_Boogie
         //that effect, add it to the appropriate list, and return the name.
         private string genAnonFunDecl(P_Root.AnonFunDecl d, string name)
         {
-            if(d.ownerFun.Symbol.ToString() == "NIL")
+            if (d.ownerFun.Symbol.ToString() == "NIL")
             {
                 symbolTable.NewScope();
             }
@@ -1003,7 +1003,7 @@ namespace Microsoft.P_FS_Boogie
             }
             else if (t.action is P_Root.AnonFunDecl)
             {
-                var action = genAnonFunDecl(t.action as P_Root.AnonFunDecl, 
+                var action = genAnonFunDecl(t.action as P_Root.AnonFunDecl,
                     owner + "_on_" + trig + "_goto_" + dst);
                 return Syntax.TransDecl.T.NewCall(trig, dst, action);
             }
@@ -1020,7 +1020,7 @@ namespace Microsoft.P_FS_Boogie
         {
             var st = (d.src as P_Root.StateDecl);
             var machName = getString((st.owner as P_Root.MachineDecl).name);
-            var owner =  machName + '_' + getQualifiedName(st.name as P_Root.QualifiedName);
+            var owner = machName + '_' + getQualifiedName(st.name as P_Root.QualifiedName);
             var trig = genTrig(d.trig);
             symbolTable.currentM = machName;
             if (d.action.Symbol.ToString() == "DEFER")
@@ -1172,7 +1172,7 @@ namespace Microsoft.P_FS_Boogie
                     events.Add(genEventDecl(ev));
                 }
 
-                foreach(var vd in program.Variables)
+                foreach (var vd in program.Variables)
                 {
                     var v = genVarDecl(vd);
                     var owner = getString((vd.owner as P_Root.MachineDecl).name);
@@ -1286,7 +1286,7 @@ namespace Microsoft.P_FS_Boogie
                 Environment.Exit(-1);
             }
             genFSExprs();
-            return new Syntax.ProgramDecl(mainMachine, 
+            return new Syntax.ProgramDecl(mainMachine,
                 ListModule.OfSeq(machines), ListModule.OfSeq(events),
                 ListModule.OfSeq(staticFunctions));
         }

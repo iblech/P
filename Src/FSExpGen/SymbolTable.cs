@@ -57,7 +57,7 @@ namespace Microsoft.P_FS_Boogie
                 return currentM + "_" + x;
             else if (inside_static_fn && tbl.TryGetValue(x, out n))
                 return n + "_" + x;
-            return x;           
+            return x;
         }
 
         public bool remove_var(string x)
