@@ -232,27 +232,27 @@ module ProgramTyping =
   ///typecheck_stmt <program> <Referencing Environment> <current machine> <current function> <statement>
   let rec typecheck_stmt prog G cm cf st =
     match st with
-    | Assign(l, e) -> type_assert (is_subtype (typeof_lval l G) (typeof prog G cm e)) (sprintf "Invalid assignment: %s" (print_stmt prog st))
+    | Assign(l, e) -> type_assert (is_subtype (typeof_lval l G) (typeof prog G cm e)) (sprintf "Invalid assignment: %s" (print_stmt prog cm st))
     | Insert(l, e1, e2) -> 
       match typeof_lval l G with
-      | Seq(t) -> type_assert ((is_subtype (typeof prog G cm e1) Int) && (is_subtype (typeof prog G cm e2) t)) (sprintf "Invalid insert: %s" (print_stmt prog st))
-      | Map(t1,t2) -> type_assert ((is_subtype (typeof prog G cm e1) t1) && (is_subtype (typeof prog G cm e2) t2)) (sprintf "Invalid insert: %s" (print_stmt prog st))
-      | _ -> type_assert false (sprintf "Invalid insert: %s" (print_stmt prog st))
+      | Seq(t) -> type_assert ((is_subtype (typeof prog G cm e1) Int) && (is_subtype (typeof prog G cm e2) t)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))
+      | Map(t1,t2) -> type_assert ((is_subtype (typeof prog G cm e1) t1) && (is_subtype (typeof prog G cm e2) t2)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))
+      | _ -> type_assert false (sprintf "Invalid insert: %s" (print_stmt prog cm st))
     | Remove(l, e) ->
       match typeof_lval l G with
-      | Seq(t) -> type_assert (is_subtype (typeof prog G cm e) Int) (sprintf "Invalid remove: %s" (print_stmt prog st))
-      | Map(t1,t2) -> type_assert (is_subtype (typeof prog G cm e) t1) (sprintf "Invalid remove: %s" (print_stmt prog st))
-      | _ -> type_assert false (sprintf "Invalid remove: %s" (print_stmt prog st))
-    | Assume e ->  type_assert (is_subtype (typeof prog G cm e) Bool) (sprintf "Invalid assume: %s" (print_stmt prog st))
-    | Assert e -> type_assert (is_subtype (typeof prog G cm e) Bool) (sprintf "Invalid assert: %s" (print_stmt prog st))
+      | Seq(t) -> type_assert (is_subtype (typeof prog G cm e) Int) (sprintf "Invalid remove: %s" (print_stmt prog cm st))
+      | Map(t1,t2) -> type_assert (is_subtype (typeof prog G cm e) t1) (sprintf "Invalid remove: %s" (print_stmt prog cm st))
+      | _ -> type_assert false (sprintf "Invalid remove: %s" (print_stmt prog cm st))
+    | Assume e ->  type_assert (is_subtype (typeof prog G cm e) Bool) (sprintf "Invalid assume: %s" (print_stmt prog cm st))
+    | Assert e -> type_assert (is_subtype (typeof prog G cm e) Bool) (sprintf "Invalid assert: %s" (print_stmt prog cm st))
     | NewStmt(m, e) -> 
       match (typecheck_new prog G cm e) with
-      | Type.Machine -> (type_assert true (sprintf "Invalid New Statement: %s" (print_stmt prog st)))
-      | _ -> (type_assert false (sprintf "Invalid New Statement: %s" (print_stmt prog st)))
+      | Type.Machine -> (type_assert true (sprintf "Invalid New Statement: %s" (print_stmt prog cm st)))
+      | _ -> (type_assert false (sprintf "Invalid New Statement: %s" (print_stmt prog cm st)))
     | FunStmt(f, el, None) -> ignore (typecheck_call prog G cm f el)
     | FunStmt(f, el, v) -> 
       match (typecheck_call prog G cm f el) with
-      | Some(t) -> (type_assert (is_subtype t (Map.find v.Value G)) (sprintf "Invalid types in Statement: %s, expected type %s, but got %s" (print_stmt prog st) (print_type t) (print_type (Map.find v.Value G))))
+      | Some(t) -> (type_assert (is_subtype t (Map.find v.Value G)) (sprintf "Invalid types in Statement: %s, expected type %s, but got %s" (print_stmt prog cm st) (print_type t) (print_type (Map.find v.Value G))))
       | None -> raise Not_defined
     | Raise(Event(e), arg) -> (typecheck_event_with_args prog G cm e arg)
     | Send(M, Event(e), arg) -> (typecheck_send prog G cm M e arg)
@@ -287,7 +287,7 @@ module ProgramTyping =
     | Skip -> (ignore true) //A fancy way of generating unit.
     | _ -> 
       begin
-        printfn "%s" (print_stmt prog st)
+        printfn "%s" (print_stmt prog cm st)
         raise Not_defined
       end
   let typecheck_fun (prog: ProgramDecl) G cm (f: FunDecl) =

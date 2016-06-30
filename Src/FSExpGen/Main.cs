@@ -16,11 +16,11 @@ namespace Microsoft.P_FS_Boogie
             string line = null;
             int t = 0;
             int w = 0;
-            //using (var sr = new StreamReader(@"C:\Users\t-suchav\Desktop\Crt.txt"))
+            using (var sr = new StreamReader(@"C:\Users\t-suchav\Desktop\Crt.txt"))
             {
-                line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\PingPong\PingPong.p";
+            //    line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\anyTypeNullValue\anyTypeNullValue.p";
                 Syntax.ProgramDecl prog = null;
-                //  while ((line = sr.ReadLine()) != null)
+                while ((line = sr.ReadLine()) != null)
                 {
                     Console.WriteLine("*****************************************************************************");
                     Console.WriteLine(line);
@@ -29,7 +29,7 @@ namespace Microsoft.P_FS_Boogie
                     {
                         try
                         {
-                            prog = fsExpGen.genFSExpression(line);
+                            prog = fsExpGen.genFSExpression(line + ".txt");
                             //Helper.print_prog(prog, sw);
                             Save(prog, line + ".dat");
                         }

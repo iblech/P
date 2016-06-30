@@ -151,21 +151,22 @@ module Helper=
     | Lval.NamedDot(v, f) -> sprintf "%s.%s" (print_lval v) f
     | Lval.Index(l, e) -> sprintf "%s[%s]" (print_lval l) (print_expr e) 
 
-  ///print_event_action <program> <event name> <function name>
-  let print_event_action (prog: ProgramDecl) ev fn =
+  ///print_event_action <program> <event name> <machine name> <function name>
+  let print_event_action (prog: ProgramDecl) cm ev fn =
         let e = (Map.find ev prog.EventMap)
-        let f = (Map.find fn prog.FunMap) 
+        let f = if (prog.FunMap.ContainsKey fn) then prog.FunMap.[fn]
+                else  (prog.MachineMap.[cm].FunMap.[fn]) 
         match e.Type with
         | None -> sprintf "{\n%s()\n}" f.Name
         | t -> sprintf "(payload: %s){\n%s(payload)\n}" (print_type t.Value) f.Name
 
-  ///print_cases <program> <event name> <function name>
-  let print_cases prog (ev, fn) = 
+  ///print_cases <program> <event name> <machine name> <function name>
+  let print_cases prog cm (ev, fn) = 
     begin
-      sprintf "case %s:%s" ev (print_event_action prog ev fn)
+      sprintf "case %s:%s" ev (print_event_action prog cm ev fn)
     end
 
-  let rec print_stmt prog s =
+  let rec print_stmt prog cm s =
     match s with
     | Assign(l, e) -> sprintf "%s = %s;\n" (print_lval l) (print_expr e)
     | Insert(l, e1, e2) -> sprintf "%s += (%s, %s);\n" (print_lval l) (print_expr e1) (print_expr e2)
@@ -174,28 +175,29 @@ module Helper=
     | Assume(e) -> ""
     | NewStmt(s, e) -> sprintf "new %s(%s);\n" s (print_expr e)
     | Raise(e1, e2) -> sprintf "raise %s, %s;\n" (print_expr e1) (print_expr e2)
+    | Send (e1, e2, Expr.Nil) -> sprintf "send %s, %s;\n" (print_expr e1) (print_expr e2) 
     | Send (e1, e2, e3) -> sprintf "send %s, %s, %s;\n" (print_expr e1) (print_expr e2) (print_expr e3)
     | Skip -> ";\n"
-    | While(c, s) -> sprintf "while(%s)\n{\n%s\n}\n" (print_expr c) (print_stmt prog s)
-    | Ite(c, i, e) -> sprintf "if(%s)\n{\n%s\n}\nelse\n{\n%s\n}\n" (print_expr c) (print_stmt prog i) (print_stmt prog e)
-    | SeqStmt(l) -> sprintf "{\n%s\n}\n" (print_list (print_stmt prog) l ";\n")
-    | Receive(l) -> sprintf "receive\n{\n%s\n}\n" (print_list (print_cases prog) l "\n")
+    | While(c, s) -> sprintf "while(%s)\n{\n%s\n}\n" (print_expr c) (print_stmt prog cm s)
+    | Ite(c, i, e) -> sprintf "if(%s)\n{\n%s\n}\nelse\n{\n%s\n}\n" (print_expr c) (print_stmt prog cm i) (print_stmt prog cm e)
+    | SeqStmt(l) -> sprintf "{\n%s\n}\n" (print_list (print_stmt prog cm) l ";\n")
+    | Receive(l) -> sprintf "receive\n{\n%s\n}\n" (print_list (print_cases prog cm) l "\n")
     | Pop -> "pop;\n"
     | Return(e) -> sprintf "return (%s);\n" (print_expr e)
     | Monitor(e1, e2) -> sprintf "monitor (%s), (%s)" (print_expr e1) (print_expr e2)
     | FunStmt(s, el, None) -> sprintf "%s(%s);\n" s (print_list print_expr el ", ")
     | FunStmt(s, el, v) -> sprintf "%s = %s(%s);\n" v.Value s (print_list print_expr el ", ")
 
-  let print_do prog (d: Syntax.DoDecl.T) = 
+  let print_do prog cm (d: Syntax.DoDecl.T) = 
     match d with
     | Syntax.DoDecl.T.Defer(s) -> (sprintf "defer %s;" s)
     | Syntax.DoDecl.T.Ignore(s) -> (sprintf "ignore %s;" s)
-    | Syntax.DoDecl.T.Call(e, f) -> (sprintf "on %s do %s" e (print_event_action prog e f))
+    | Syntax.DoDecl.T.Call(e, f) -> (sprintf "on %s do %s" e (print_event_action prog cm e f))
 
-  let print_trans prog (t: Syntax.TransDecl.T) =
+  let print_trans prog cm (t: Syntax.TransDecl.T) =
     match t with 
     | Syntax.TransDecl.T.Push(e, d) -> (sprintf "on %s push %s;" e d)
-    | Syntax.TransDecl.T.Call(e, d, f) -> (sprintf "on %s goto %s with %s" e d (print_event_action prog e f))
+    | Syntax.TransDecl.T.Call(e, d, f) -> (sprintf "on %s goto %s with %s" e d (print_event_action prog cm e f))
 
   let (|InvariantEqual|_|) (str:string) arg = 
     if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0
@@ -209,18 +211,19 @@ module Helper=
   let print_var (v: Syntax.VarDecl) = 
     sprintf "%s: %s" v.Name (print_type v.Type)
 
-  let print_function prog (f: Syntax.FunDecl) = 
+  let print_function prog cm (f: Syntax.FunDecl) = 
     let model = if f.IsModel then "model" else ""
     let args = (print_list print_var f.Formals ", ")
     let ret = if (f.RetType.IsSome) then (sprintf ": %s" (print_type f.RetType.Value)) else ""
     let locals = (print_list print_var f.Locals ";\n")
-    sprintf "%s fun %s(%s)%s\n{%s%s}" model f.Name args ret locals (print_stmt prog f.Body)
+    sprintf "%s fun %s(%s)%s\n{%s;\n%s}" model f.Name args ret locals (print_stmt prog cm f.Body)
 
   let print_event (e: Syntax.EventDecl) =
     let typ = if (e.Type.IsSome) then (sprintf ": %s" (print_type e.Type.Value)) else ""
-    sprintf "event %s%s" e.Name typ
+    let qc = if (e.QC.IsSome) then (sprintf " %s" (print_card e.QC.Value)) else ""
+    sprintf "event %s%s%s" e.Name typ qc
 
-  let print_state prog (s: Syntax.StateDecl) = 
+  let print_state prog cm (s: Syntax.StateDecl) = 
     let temp = 
       match s.Temperature with 
       | InvariantEqual "Hot" -> "hot"
@@ -228,8 +231,8 @@ module Helper=
       | _ -> ""
     let entry = if (s.EntryAction.IsSome) then (sprintf "entry %s;\n" s.EntryAction.Value) else ""
     let exit = if (s.ExitAction.IsSome) then (sprintf "exit %s;\n" s.ExitAction.Value) else ""
-    let dos = (print_list (print_do prog) s.Dos "\n")
-    let trans = (print_list (print_trans prog) s.Transitions "\n")
+    let dos = (print_list (print_do prog cm) s.Dos "\n")
+    let trans = (print_list (print_trans prog cm) s.Transitions "\n")
     sprintf "%s state\n{%s%s%s%s}" temp entry exit dos trans
 
   let print_machine (prog: ProgramDecl) (m: Syntax.MachineDecl) =
@@ -239,13 +242,16 @@ module Helper=
     let card = if (m.QC.IsSome) then (print_card m.QC.Value) else ""
     sprintf "%s%s %s%s%s\n{\n%s%s%s\n}\n" main machine m.Name card monitors 
               (print_list print_var m.Globals ";\n") 
-              (print_list (print_function prog) m.Functions "\n") 
-              (print_list (fun (s: Syntax.StateDecl) -> if (s.Name = m.StartState) then (sprintf "start %s" (print_state prog s)) else (print_state prog s))  m.States "\n")
+              (print_list (print_function prog m.Name) m.Functions "\n") 
+              (print_list (fun (s: Syntax.StateDecl) -> 
+                            if (s.Name = m.StartState) then (sprintf "start %s" (print_state prog m.Name s)) 
+                            else (print_state prog m.Name s))  m.States "\n")
 
   let print_prog (prog: Syntax.ProgramDecl) (sw: System.IO.TextWriter) =
     begin
       sw.WriteLine (print_list print_event prog.Events ";\n")
-      sw.WriteLine (print_list (print_function prog) prog.StaticFuns "\n")
+      sw.Write(";")
+      sw.WriteLine (print_list (print_function prog "") prog.StaticFuns "\n")
       sw.WriteLine (print_list (print_machine prog) prog.Machines "\n")           
     end
   

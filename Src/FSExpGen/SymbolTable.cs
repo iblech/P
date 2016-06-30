@@ -36,10 +36,18 @@ namespace Microsoft.P_FS_Boogie
             return null;
         }
 
-        public void add_machVar(string m, string v)
+        public void add_machine(string m)
         {
             if (!machineToVarsFuns.ContainsKey(m))
                 machineToVarsFuns[m] = new HashSet<string>();
+            else
+                throw new System.Exception("Machine " + m + "already exists!");
+        }
+
+        public void add_machVar(string m, string v)
+        {
+            if (!machineToVarsFuns.ContainsKey(m))
+                throw new System.Exception("No such machine as " + m);
             machineToVarsFuns[m].Add(v);
         }
 

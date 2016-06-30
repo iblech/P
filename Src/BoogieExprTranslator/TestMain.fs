@@ -11,7 +11,6 @@ module Main =
   let file = @"C:\Users\t-suchav\Desktop\Crt.txt"
   let sr = new System.IO.StreamReader(file)
 
-(*
   [<EntryPoint>]
   let main argv = 
     let mutable valid = true
@@ -32,4 +31,3 @@ module Main =
             valid
         end)
     0
-*)
