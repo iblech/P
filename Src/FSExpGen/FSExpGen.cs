@@ -13,6 +13,7 @@ namespace Microsoft.P_FS_Boogie
     {
         private List<PProgram> parsedPrograms { get; set; }
         private Compiler compiler;
+        private static Random r = new Random();
 
         //Data Structures Dealing with States
         private Dictionary<string, List<Syntax.DoDecl.T>>
@@ -22,7 +23,7 @@ namespace Microsoft.P_FS_Boogie
 
         //Data Structures Dealing with machines.
         private Dictionary<string, List<Syntax.StateDecl>> machineToStateList = new Dictionary<string, List<Syntax.StateDecl>>();
-        private Dictionary<string, List<Syntax.FunDecl>> machineToFunList = new Dictionary<string, List<Syntax.FunDecl>>();
+        private Dictionary<string, HashSet<Syntax.FunDecl>> machineToFunList = new Dictionary<string, HashSet<Syntax.FunDecl>>();
         private Dictionary<string, List<Syntax.VarDecl>> machineToVars = new Dictionary<string, List<Syntax.VarDecl>>();
         private Dictionary<string, List<string>> monitorToEventList = new Dictionary<string, List<string>>();
 
@@ -31,6 +32,7 @@ namespace Microsoft.P_FS_Boogie
         private List<Syntax.MachineDecl> machines = new List<Syntax.MachineDecl>();
         private List<Syntax.EventDecl> events = new List<Syntax.EventDecl>();
         private Dictionary<string, Syntax.Type> typeDefs = new Dictionary<string, Syntax.Type>();
+        private Dictionary<string, Syntax.EventDecl> eventsToDecls = new Dictionary<string, Syntax.EventDecl>();
         private string mainMachine = null;
         private SymbolTable symbolTable = new SymbolTable();
 
@@ -228,7 +230,7 @@ namespace Microsoft.P_FS_Boogie
             return new Tuple<string, Syntax.Type>(name, type);
         }
 
-        private Syntax.Type.NamedTuple genNmdTupType(P_Root.NmdTupType t)
+        private List<Tuple<string, Syntax.Type>> genNmdTupTypeList(P_Root.NmdTupType t)
         {
             var lst = new List<Tuple<string, Syntax.Type>>();
             var x = t;
@@ -241,7 +243,16 @@ namespace Microsoft.P_FS_Boogie
                 x = x.tl as P_Root.NmdTupType;
             }
             while (x != null);
-            return Syntax.Type.NewNamedTuple(ListModule.OfSeq(lst)) as Syntax.Type.NamedTuple;
+            return lst;
+        }
+
+        private Syntax.Type.NamedTuple genNmdTupType(P_Root.NmdTupType t)
+        {
+            var lst = genNmdTupTypeList(t);
+            if (lst == null)
+                return null;
+            return Syntax.Type.NewNamedTuple(ListModule.OfSeq(lst)) 
+                as Syntax.Type.NamedTuple;
         }
 
         private Syntax.Type.Seq genSeqType(P_Root.SeqType t)
@@ -303,7 +314,7 @@ namespace Microsoft.P_FS_Boogie
 
         private Syntax.Expr.Var genName(P_Root.Name e)
         {
-            var n = symbolTable.get_name(getString(e.name));
+            var n = symbolTable.GetVarName(getString(e.name));
             return Syntax.Expr.NewVar(n) as Syntax.Expr.Var;
         }
 
@@ -320,7 +331,7 @@ namespace Microsoft.P_FS_Boogie
 
         private Syntax.Expr.Call genFunApp(P_Root.FunApp e)
         {
-            var n = symbolTable.get_name(getString(e.name));
+            var n = symbolTable.GetFunName(getString(e.name));
             FSharpList<Syntax.Expr> args = FSharpList<Syntax.Expr>.Empty;
             if (e.args.Symbol.ToString() != "NIL")
             {
@@ -343,9 +354,10 @@ namespace Microsoft.P_FS_Boogie
                     case "TRUE":
                         return Syntax.Expr.NewConstBool(true);
                     case "FALSE":
-                        return Syntax.Expr.NewConstBool(true);
+                        return Syntax.Expr.NewConstBool(false);
                     case "THIS":
                         return Syntax.Expr.This;
+                    case "FAIRNONDET":
                     case "NONDET":
                         return Syntax.Expr.Nondet;
                     case "NULL":
@@ -596,7 +608,7 @@ namespace Microsoft.P_FS_Boogie
 
         private Syntax.Stmt.FunStmt genFunStmt(P_Root.FunStmt s)
         {
-            var n = getString(s.name);
+            var n = symbolTable.GetFunName(getString(s.name));
             FSharpList<Syntax.Expr> args = FSharpList<Syntax.Expr>.Empty;
             FSharp.Core.FSharpOption<string> aout = null;
             if (s.args.Symbol.ToString() != "NIL")
@@ -605,7 +617,7 @@ namespace Microsoft.P_FS_Boogie
             }
             if (s.aout.Symbol.ToString() != "NIL")
             {
-                var a = symbolTable.get_name(getString((s.aout as P_Root.Name).name));
+                var a = symbolTable.GetVarName(getString((s.aout as P_Root.Name).name));
                 aout = new FSharp.Core.FSharpOption<string>(a);
             }
             return Syntax.Stmt.NewFunStmt(n, args, aout) as Syntax.Stmt.FunStmt;
@@ -642,11 +654,9 @@ namespace Microsoft.P_FS_Boogie
                     var arg2 = genExpr(args.head as P_Root.Expr);
                     args = args.tail as P_Root.Exprs;
                     var arg3 = genExpr(args.head as P_Root.Expr);
-                    if (args.tail.Symbol.ToString() != "NIL")
-                        goto bad;
-                    return Syntax.Stmt.NewInsert(arg1, arg2, arg3);
+                    if (args.tail.Symbol.ToString() == "NIL")
+                        return Syntax.Stmt.NewInsert(arg1, arg2, arg3);
                 }
-            bad:
                 throw new InvalidOperationException("Bad insert op!");
             }
             return null;
@@ -657,7 +667,7 @@ namespace Microsoft.P_FS_Boogie
             if (e is P_Root.Name)
             {
                 var x = e as P_Root.Name;
-                var n = symbolTable.get_name(getString(x.name));
+                var n = symbolTable.GetVarName(getString(x.name));
                 return Syntax.Lval.NewVar(n);
             }
             else if (e is P_Root.Field)
@@ -689,58 +699,65 @@ namespace Microsoft.P_FS_Boogie
 
         private Syntax.Stmt.Return genReturnStmt(P_Root.Return s)
         {
-            Syntax.Expr e = Syntax.Expr.Nil;
+            FSharp.Core.FSharpOption<Syntax.Expr> e = null;
             if (s.expr.Symbol.ToString() != "NIL")
             {
-                e = genExpr(s.expr as P_Root.Expr);
+                var expr = genExpr(s.expr as P_Root.Expr);
+                e = new FSharp.Core.FSharpOption<Syntax.Expr>(expr);
             }
             return Syntax.Stmt.NewReturn(e) as Syntax.Stmt.Return;
         }
 
-        private Syntax.Stmt.While genWhileStmt(P_Root.While s, string funName)
+        private Syntax.Stmt.While genWhileStmt(P_Root.While s)
         {
             var c = genExpr(s.cond as P_Root.Expr);
-            var st = genStmt(s.body as P_Root.Stmt, funName);
+            var st = genStmt(s.body as P_Root.Stmt);
             return Syntax.Stmt.NewWhile(c, st) as Syntax.Stmt.While;
         }
 
-        private Syntax.Stmt.Ite genIteStmt(P_Root.Ite s, string funName)
+        private Syntax.Stmt.Ite genIteStmt(P_Root.Ite s)
         {
             var c = genExpr(s.cond as P_Root.Expr);
-            var t = genStmt(s.@true as P_Root.Stmt, funName);
-            var f = genStmt(s.@false as P_Root.Stmt, funName);
+            var t = genStmt(s.@true as P_Root.Stmt);
+            var f = genStmt(s.@false as P_Root.Stmt);
             return Syntax.Stmt.NewIte(c, t, f) as Syntax.Stmt.Ite;
         }
 
-        private Syntax.Stmt.SeqStmt genSeqStmt(P_Root.Seq s, string funName)
+        private List<Syntax.Stmt> genStmtList(P_Root.Seq s)
         {
             var lst = new List<Syntax.Stmt>();
             var x = s;
             do
             {
-                lst.Add(genStmt(x.s1 as P_Root.Stmt, funName));
-                x = (x.s2 as P_Root.Seq);
+                lst.Add(genStmt(x.s1 as P_Root.Stmt));
+                if(x.s2 is P_Root.Seq) //Recursion - we have [s1, [s2, ... ]]
+                    x = (x.s2 as P_Root.Seq);
+                else //s2 is not a seq statement. Base case - We have [s1, s2]
+                {
+                    lst.Add(genStmt(x.s2 as P_Root.Stmt));
+                    break;
+                }
             }
-            while (x != null);
-            return Syntax.Stmt.NewSeqStmt(ListModule.OfSeq(lst))
-                as Syntax.Stmt.SeqStmt;
+            while (true);
+            return lst;
         }
 
-        private Tuple<string, string> genCase(P_Root.Cases s, string n)
+        private Tuple<string, string> genCase(P_Root.Cases s)
         {
             var trig = getString(s.trig);
-            n += "_case_" + trig;
-            var action = genAnonFunDecl(s.action as P_Root.AnonFunDecl, n);
+            string n = symbolTable.currentF + "_case_" + trig; ;
+            var genArg = FSharp.Core.FSharpOption<Syntax.Type>.get_IsSome(eventsToDecls[trig].Type);
+            var action = genAnonFunDecl(s.action as P_Root.AnonFunDecl, n, genArg);
             return new Tuple<string, string>(trig, action);
         }
 
-        private Syntax.Stmt.Receive genReceiveStmt(P_Root.Receive s, string funName)
+        private Syntax.Stmt.Receive genReceiveStmt(P_Root.Receive s)
         {
             var @case = s.cases as P_Root.Cases;
             var lst = new List<Tuple<string, string>>();
             do
             {
-                lst.Add(genCase(@case, funName));
+                lst.Add(genCase(@case));
                 @case = @case.cases as P_Root.Cases;
             } while (@case != null);
             return Syntax.Stmt.NewReceive(ListModule.OfSeq(lst))
@@ -754,7 +771,7 @@ namespace Microsoft.P_FS_Boogie
             return Syntax.Stmt.NewAssert(arg) as Syntax.Stmt.Assert;
         }
 
-        private Syntax.Stmt genStmt(P_Root.Stmt s, string funName)
+        private Syntax.Stmt genStmt(P_Root.Stmt s)
         {
             if (s is P_Root.NewStmt)
             {
@@ -790,19 +807,21 @@ namespace Microsoft.P_FS_Boogie
             }
             else if (s is P_Root.While)
             {
-                return genWhileStmt(s as P_Root.While, funName);
+                return genWhileStmt(s as P_Root.While);
             }
             else if (s is P_Root.Ite)
             {
-                return genIteStmt(s as P_Root.Ite, funName);
+                return genIteStmt(s as P_Root.Ite);
             }
             else if (s is P_Root.Seq)
             {
-                return genSeqStmt(s as P_Root.Seq, funName);
+                var lst = genStmtList(s as P_Root.Seq);
+                return Syntax.Stmt.NewSeqStmt(ListModule.OfSeq(lst))
+                as Syntax.Stmt.SeqStmt;
             }
             else if (s is P_Root.Receive)
             {
-                return genReceiveStmt(s as P_Root.Receive, funName);
+                return genReceiveStmt(s as P_Root.Receive);
             }
             else if (s is P_Root.Assert)
             {
@@ -888,9 +907,9 @@ namespace Microsoft.P_FS_Boogie
         {
             var n = getString(d.name);
             var owner = getString((d.owner as P_Root.MachineDecl).name);
-            symbolTable.add_machVar(owner, n); //For reference in future statements.
-            n = owner + '_' + n;
             var t = genTypeExpr(d.type as P_Root.TypeExpr);
+            symbolTable.AddMachVar(owner, n, t); //For reference in future statements.
+            n = owner + '_' + n;
             return new Syntax.VarDecl(n, t);
         }
 
@@ -900,7 +919,6 @@ namespace Microsoft.P_FS_Boogie
             temperature = char.ToUpper(temperature[0]) + temperature.Substring(1);
             var name = getQualifiedName(state.name as P_Root.QualifiedName);
             var owner = getString((state.owner as P_Root.MachineDecl).name);
-            symbolTable.add_machVar(owner, name); //For reference in future Do/TransDecls.
             name = owner + '_' + name;
             FSharp.Core.FSharpOption<string> entryAction = null;
             FSharp.Core.FSharpOption<string> exitAction = null;
@@ -912,22 +930,18 @@ namespace Microsoft.P_FS_Boogie
             }
             else if (state.entryAction is P_Root.String)
             {
-                var s = getString(state.entryAction);
-                if (!symbolTable.is_static_fn(s))
-                    s = owner + "_" + s;
+                var s = symbolTable.GetFunName(getString(state.entryAction));
                 entryAction = new FSharp.Core.FSharpOption<string>(s);
             }
 
             if (state.exitFun is P_Root.AnonFunDecl)
             {
-                var s = genAnonFunDecl(state.exitFun as P_Root.AnonFunDecl, name + "_exit");
+                var s = genAnonFunDecl(state.exitFun as P_Root.AnonFunDecl, name + "_exit", false);
                 exitAction = new FSharp.Core.FSharpOption<string>(s);
             }
             else if (state.exitFun is P_Root.String)
             {
-                var s = getString(state.exitFun);
-                if (!symbolTable.is_static_fn(s))
-                    s = owner + "_" + s;
+                var s = symbolTable.GetFunName(getString(state.exitFun));
                 exitAction = new FSharp.Core.FSharpOption<string>(s);
             }
             var transitions = ListModule.OfSeq(statesToTransitions[name]);
@@ -938,13 +952,13 @@ namespace Microsoft.P_FS_Boogie
         private Syntax.VarDecl genVar(P_Root.NmdTupTypeField n, string owner)
         {
             var name = getString(n.name);
-            symbolTable.add_var(name, owner);
-            name = owner + '_' + name;
             var type = genTypeExpr(n.type as P_Root.TypeExpr);
+            symbolTable.AddVar(name, type);
+            name = owner + '_' + name;
             return new Syntax.VarDecl(name, type);
         }
 
-        private FSharpList<Syntax.VarDecl> genVars(P_Root.NmdTupType n, string owner)
+        private List<Syntax.VarDecl> genVars(P_Root.NmdTupType n, string owner)
         {
             var lst = new List<Syntax.VarDecl>();
             var x = n;
@@ -955,18 +969,13 @@ namespace Microsoft.P_FS_Boogie
                 x = x.tl as P_Root.NmdTupType;
             } while (x != null);
 
-            return ListModule.OfSeq(lst);
+            return lst;
         }
 
         private Syntax.FunDecl genFunDecl(P_Root.FunDecl d)
         {
-            var name = getString(d.name);
-            if (d.owner.Symbol.ToString() != "NIL")
-            {
-                var owner = getString((d.owner as P_Root.MachineDecl).name);
-                symbolTable.add_machVar(owner, name);
-                name = owner + '_' + name;
-            }
+            var name = symbolTable.GetFunName(getString(d.name));
+            symbolTable.NewScope(name);
             bool is_model = false;
             bool is_pure = false;
             FSharp.Core.FSharpOption<Syntax.Type> rettype = null;
@@ -981,15 +990,11 @@ namespace Microsoft.P_FS_Boogie
                 is_pure = true;
             }
 
-            symbolTable.NewScope();
+            symbolTable.NewScope(name);
 
             if (d.@params.Symbol.ToString() != "NIL")
             {
-                @params = genVars(d.@params as P_Root.NmdTupType, name);
-                foreach (var p in @params)
-                {
-                    symbolTable.add_var(p.Name, name);
-                }
+                @params = ListModule.OfSeq(genVars(d.@params as P_Root.NmdTupType, name));
             }
             if (d.@return.Symbol.ToString() != "NIL")
             {
@@ -998,32 +1003,48 @@ namespace Microsoft.P_FS_Boogie
             }
             if (d.locals.Symbol.ToString() != "NIL")
             {
-                locals = genVars(d.locals as P_Root.NmdTupType, name);
-                foreach (var l in locals)
-                {
-                    symbolTable.add_var(l.Name, name);
-                }
+                locals = ListModule.OfSeq(genVars(d.locals as P_Root.NmdTupType, name));
             }
 
-            var stmt = genStmt(d.body as P_Root.Stmt, name);
+            var stmt = genStmt(d.body as P_Root.Stmt);
+            symbolTable.ExitScope();
+            return new Syntax.FunDecl(name, @params, rettype, locals, stmt, is_model, is_pure, true);
+        }
 
-            return new Syntax.FunDecl(name, @params, rettype, locals, stmt, is_model, is_pure);
+        private Tuple<List<Syntax.VarDecl>, List<Syntax.Stmt>> getAnonFunEnvDecls(Syntax.Type.NamedTuple t)
+        {
+            var vdLst = new List<Syntax.VarDecl>();
+            var vaLst = new List<Syntax.Stmt>();
+            foreach (var v in t.Item)
+            {
+                vdLst.Add(new Syntax.VarDecl(v.Item1, v.Item2));
+                vaLst.Add(Syntax.Stmt.NewAssign(Syntax.Lval.NewVar(v.Item1),
+                                                   Syntax.Expr.NewNamedDot(Syntax.Expr.NewVar("env"), v.Item1)));
+            }
+            return new Tuple<List<Syntax.VarDecl>, List<Syntax.Stmt>>(vdLst, vaLst);
         }
 
         //A(sad?) Departure from Design. 
         //We generate the name of the AnonFunction, and also a FunDecl to
         //that effect, add it to the appropriate list, and return the name.
-        private string genAnonFunDecl(P_Root.AnonFunDecl d, string name)
+        private string genAnonFunDecl(P_Root.AnonFunDecl d, string name, bool hasParams = true)
         {
-            name += getLineNumber(d.body as P_Root.Stmt);
-            if (d.ownerFun.Symbol.ToString() == "NIL")
-            {
-                symbolTable.NewScope();
-            }
-            var args = FSharpList<Syntax.VarDecl>.Empty;
-            var locals = FSharpList<Syntax.VarDecl>.Empty;
-            var argName = "";
-            if (d.envVars.Symbol.ToString() != "NIL")
+            var env = symbolTable.TuplifyAllLocals();
+            var retType = new FSharp.Core.FSharpOption<Syntax.Type>(env.Item1);
+            var retExp = env.Item2;
+            var envDecls = getAnonFunEnvDecls(retType.Value as Syntax.Type.NamedTuple);
+            var env_empty = false;
+
+            var ln = getLineNumber(d.body as P_Root.Stmt);
+            name += ln;
+            if (ln == 0)
+                name += ("_rand_" + r.Next());
+
+            symbolTable.NewScope(name);
+
+            //Get args
+            var args = new List<Syntax.VarDecl>();
+            if (hasParams && d.envVars.Symbol.ToString() != "NIL")
             {
                 var x = (d.envVars as P_Root.NmdTupType);
                 while (x.tl.Symbol.ToString() != "NIL")
@@ -1031,36 +1052,55 @@ namespace Microsoft.P_FS_Boogie
                     x = x.tl as P_Root.NmdTupType;
                 }
                 var v = genVar(x.hd as P_Root.NmdTupTypeField, name);
-                args = new FSharpList<Syntax.VarDecl>(v, args);
-                argName = getString((x.hd as P_Root.NmdTupTypeField).name);
+                args.Add(v);
             }
+
+            //Get Locals
+            var locals = envDecls.Item1;
             if (d.locals.Symbol.ToString() != "NIL")
             {
-                locals = genVars(d.locals as P_Root.NmdTupType, name);
+                locals.AddRange(genVars(d.locals as P_Root.NmdTupType, name));
             }
-            var stmts = genStmt(d.body as P_Root.Stmt, name);
-            var fd = new Syntax.FunDecl(name, args, null, locals, stmts, false, false);
+
+            //Get Statements
+            var stmts = envDecls.Item2;
+            if (d.body is P_Root.Seq)
+            {
+                stmts.AddRange(genStmtList(d.body as P_Root.Seq));
+            }
+            else
+            {
+                stmts.Add(genStmt(d.body as P_Root.Stmt));
+            }
+
+            if(!env.Item1.Item.IsEmpty)
+            {
+                args.Insert(0, new Syntax.VarDecl("env", retType.Value));
+                var re = new FSharp.Core.FSharpOption<Syntax.Expr>(retExp);
+                stmts.Add(Syntax.Stmt.NewReturn(re));
+            }
+            else
+            {
+                retType = null;
+                env_empty = true;
+            }
+
+            //Make the Function Declaration.
+            var fd = new Syntax.FunDecl(name, ListModule.OfSeq(args), retType, ListModule.OfSeq(locals), 
+                Syntax.Stmt.NewSeqStmt(ListModule.OfSeq(stmts)), false, false, env_empty);
+
+            //Add it to the relevant machine's table
             if (d.owner.Symbol.ToString() != "NIL")
             {
-                var mid = getString((d.owner as P_Root.MachineDecl).name);
-                machineToFunList[mid].Add(fd);
+                machineToFunList[symbolTable.currentM].Add(fd);
             }
             else
             {
                 staticFunctions.Add(fd);
             }
-            if (d.ownerFun.Symbol.ToString() != "NIL" &&
-                d.locals.Symbol.ToString() != "NIL")
-            {
-                var loc = (d.locals as P_Root.NmdTupType);
-                do
-                {
-                    var vName = getString((loc.hd as P_Root.NmdTupTypeField).name);
-                    symbolTable.remove_var(vName);
-                    loc = loc.tl as P_Root.NmdTupType;
-                } while (loc != null);
-                symbolTable.remove_var(argName);
-            }
+
+            symbolTable.ExitScope();
+
             return name;
         }
 
@@ -1100,9 +1140,7 @@ namespace Microsoft.P_FS_Boogie
             }
             else
             {
-                var action = getString(t.action);
-                if (!symbolTable.is_static_fn(action))
-                    action = machName + '_' + action;
+                var action = symbolTable.GetFunName(getString(t.action));
                 return Syntax.TransDecl.T.NewCall(trig, dst, action);
             }
         }
@@ -1112,8 +1150,8 @@ namespace Microsoft.P_FS_Boogie
             var st = (d.src as P_Root.StateDecl);
             var machName = getString((st.owner as P_Root.MachineDecl).name);
             var owner = machName + '_' + getQualifiedName(st.name as P_Root.QualifiedName);
-            var trig = genTrig(d.trig);
             symbolTable.currentM = machName;
+            var trig = genTrig(d.trig);
             if (d.action.Symbol.ToString() == "DEFER")
             {
                 return Syntax.DoDecl.T.NewDefer(trig);
@@ -1130,9 +1168,7 @@ namespace Microsoft.P_FS_Boogie
             }
             else
             {
-                var action = getString(d.action);
-                if (!symbolTable.is_static_fn(action))
-                    action = machName + '_' + action;
+                var action = symbolTable.GetFunName(getString(d.action));
                 return Syntax.DoDecl.T.NewCall(trig, action);
             }
         }
@@ -1214,7 +1250,7 @@ namespace Microsoft.P_FS_Boogie
             addTypeDefs(tdLst);
         }
 
-        private void Init()
+        private void ClearAll()
         {
             statesToDos.Clear();
             statesToTransitions.Clear();
@@ -1230,7 +1266,11 @@ namespace Microsoft.P_FS_Boogie
             mainMachine = null;
             typeDefs.Clear();
             symbolTable.Clear();
+        }
 
+        private void Init()
+        {
+            ClearAll();
             foreach (var program in parsedPrograms)
             {
                 foreach (var state in program.States)
@@ -1247,10 +1287,20 @@ namespace Microsoft.P_FS_Boogie
                 {
                     var name = getString(machine.name);
                     machineToStateList[name] = new List<Syntax.StateDecl>();
-                    machineToFunList[name] = new List<Syntax.FunDecl>();
+                    machineToFunList[name] = new HashSet<Syntax.FunDecl>();
                     machineToVars[name] = new List<Syntax.VarDecl>();
                     monitorToEventList[name] = new List<string>();
-                    symbolTable.add_machine(name);
+                    symbolTable.AddMachine(name);
+                }
+
+                foreach (var fun in program.Functions)
+                {
+                    var name = getString(fun.name);
+                    if(fun.owner.Symbol.ToString() != "NIL")
+                    {
+                        var owner = getString((fun.owner as P_Root.MachineDecl).name);
+                        symbolTable.AddMachFun(owner, name);
+                    }
                 }
             }
         }
@@ -1261,7 +1311,9 @@ namespace Microsoft.P_FS_Boogie
             {
                 foreach (var ev in program.Events)
                 {
-                    events.Add(genEventDecl(ev));
+                    var e = genEventDecl(ev);
+                    events.Add(e);
+                    eventsToDecls[e.Name] = e;
                 }
 
                 foreach (var vd in program.Variables)
@@ -1269,7 +1321,36 @@ namespace Microsoft.P_FS_Boogie
                     var v = genVarDecl(vd);
                     var owner = getString((vd.owner as P_Root.MachineDecl).name);
                     machineToVars[owner].Add(v);
-                    symbolTable.add_machVar(owner, v.Name);
+                }
+
+                foreach (var function in program.Functions)
+                {
+                    if (function.owner.Symbol.ToString() == "NIL")
+                    {
+                        symbolTable.InsideStaticFn = true;
+                        var f = genFunDecl(function);
+                        staticFunctions.Add(f);
+                    }
+                    else
+                    {
+                        var m = function.owner as P_Root.MachineDecl;
+                        string n = getString(m.name);
+                        symbolTable.InsideStaticFn = false;
+                        symbolTable.currentM = n;
+                        var f = genFunDecl(function);
+                        machineToFunList[n].Add(f);
+                    }
+                }
+
+                symbolTable.InsideStaticFn = false;
+
+                foreach (var state in program.States)
+                {
+                    var m = state.owner as P_Root.MachineDecl;
+                    string n = getString(m.name);
+                    symbolTable.currentM = n;
+                    var s = genStateDecl(state);
+                    machineToStateList[n].Add(s);
                 }
 
                 foreach (var doDecl in program.Dos)
@@ -1292,36 +1373,6 @@ namespace Microsoft.P_FS_Boogie
                     symbolTable.currentM = currentM;
                     var x = genTransDecl(trans);
                     statesToTransitions[n].Add(x);
-                }
-
-                foreach (var function in program.Functions)
-                {
-                    if (function.owner.Symbol.ToString() == "NIL")
-                    {
-                        symbolTable.inside_static_fn = true;
-                        var f = genFunDecl(function);
-                        staticFunctions.Add(f);
-                    }
-                    else
-                    {
-                        var m = function.owner as P_Root.MachineDecl;
-                        string n = getString(m.name);
-                        symbolTable.inside_static_fn = false;
-                        symbolTable.currentM = n;
-                        var f = genFunDecl(function);
-                        machineToFunList[n].Add(f);
-                    }
-                }
-
-                symbolTable.inside_static_fn = false;
-
-                foreach (var state in program.States)
-                {
-                    var m = state.owner as P_Root.MachineDecl;
-                    string n = getString(m.name);
-                    symbolTable.currentM = n;
-                    var s = genStateDecl(state);
-                    machineToStateList[n].Add(s);
                 }
 
                 foreach (var obs in program.Observes)

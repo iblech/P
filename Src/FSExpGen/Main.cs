@@ -18,21 +18,22 @@ namespace Microsoft.P_FS_Boogie
             int w = 0;
             using (var sr = new StreamReader(@"C:\Users\t-suchav\Desktop\Crt.txt"))
             {
-            //    line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\anyTypeNullValue\anyTypeNullValue.p";
+                line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\ReturnIssue\returnIssue.p";
                 Syntax.ProgramDecl prog = null;
                 while ((line = sr.ReadLine()) != null)
                 {
                     Console.WriteLine("*****************************************************************************");
                     Console.WriteLine(line);
                     Console.WriteLine("*****************************************************************************");
-                    //using (var sw = new StreamWriter(line))
+                    using (var sw = new StreamWriter(line))
                     {
                         try
                         {
                             prog = fsExpGen.genFSExpression(line + ".txt");
-                            //Helper.print_prog(prog, sw);
+                            Helper.print_prog(prog, sw);
                             Save(prog, line + ".dat");
                         }
+                        
                         catch (Exception e)
                         {
                             w++;
@@ -40,7 +41,11 @@ namespace Microsoft.P_FS_Boogie
                             Console.WriteLine("\n\n");
                             Console.WriteLine(e.StackTrace);
                         }
-                        t++;
+
+                        finally
+                        {
+                            t++;
+                        }
                     }
                 }
             }

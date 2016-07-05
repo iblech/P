@@ -40,37 +40,36 @@ module ProgramTyping =
           end
     | _ -> false
 
-  ///typeof <program> <Referencing Environment> <current machine> <expression>
-  let rec typeof (prog:ProgramDecl) G cm expr =
+  let rec typeof expr G =
     match expr with
     | Nil -> Null
     | ConstBool _ -> Bool
     | ConstInt _ -> Int
-    | This -> Type.Machine
+    | This -> Machine
     | Nondet -> Bool
     | Event _ -> Type.Event
     | Expr.Var(v) -> Map.find v G
     | Expr.Bin(Idx, e1, e2) ->
       begin
-        match typeof prog G cm e1 with
+        match typeof e1 G with
         | Seq(t1) -> 
           begin
-            type_assert (is_subtype (typeof prog G cm e2) Int) (sprintf "Type error in indexing sequence: %s" (print_expr expr))
+            type_assert (is_subtype (typeof e2 G) Int) (sprintf "Type error in indexing sequence: %s" (print_expr expr))
             t1
           end
         | Map(t1, t2) ->
           begin
-            type_assert (is_subtype (typeof prog G cm e2) t1) "Type error in indexing map"
+            type_assert (is_subtype (typeof e2 G) t1) "Type error in indexing map"
             t2
           end
         | _ -> raise Not_defined
       end
     | Expr.Bin(In, e1, e2) ->
       begin
-        match typeof prog G cm e2 with
+        match typeof e2 G with
         | Map(t1, _) ->
           begin
-            type_assert (is_subtype (typeof prog G cm e1) t1) "Type error in key lookup"
+            type_assert (is_subtype (typeof e1 G) t1) "Type error in key lookup"
             Bool
           end
         | _ -> raise Not_defined
@@ -83,38 +82,140 @@ module ProgramTyping =
     | Expr.Un(Neg, e1) -> Int
     | Expr.Un(Keys, e1) -> 
       begin
-        match typeof prog G cm e1 with
+        match typeof e1 G with
         | Map(t1, t2) -> Seq(t1)
         | _ -> raise Not_defined
       end
     | Expr.Un(Values, e1) ->
       begin
-        match typeof prog G cm e1 with
+        match typeof e1 G with
         | Map(t1, t2) -> Seq(t2)
         | _ -> raise Not_defined
       end
     | Expr.Un(Sizeof, e1) -> Int
     | Expr.Dot(e, i) -> 
       begin
-        let ts = typeof prog G cm e in
+        let ts = typeof e G in
         match ts with
         | Type.Tuple(ls) -> List.item i ls
         | _ -> raise Not_defined
       end
     | Expr.NamedDot(e, f) -> 
       begin
-        let ts = typeof prog G cm e in
+        let ts = typeof e G in
+        match ts with
+        | Type.NamedTuple(ls) -> lookup_named_field_type f ls
+        | _ -> raise Not_defined
+      end
+    | Cast(e, t) -> t
+    | Expr.Tuple(es) -> Type.Tuple(List.map (fun e -> typeof e G) es)
+    | Expr.NamedTuple(es) -> Type.NamedTuple(List.map (fun (f, e) -> (f, typeof e G)) es)
+    | Default(t) -> t
+    | New(_, _) -> Machine
+    | Call(callee, args) -> Map.find callee G
+    | _ -> raise Not_defined
+
+  ///typecheck_expr <program> <Referencing Environment> <current machine> <expression>
+  let rec typecheck_expr (prog:ProgramDecl) G cm expr =
+    match expr with
+    | Nil -> Null
+    | ConstBool _ -> Bool
+    | ConstInt _ -> Int
+    | This -> Type.Machine
+    | Nondet -> Bool
+    | Event _ -> Type.Event
+    | Expr.Var(v) -> Map.find v G
+    | Expr.Bin(Idx, e1, e2) ->
+      begin
+        match typecheck_expr prog G cm e1 with
+        | Seq(t1) -> 
+          begin
+            type_assert (is_subtype (typecheck_expr prog G cm e2) Int) (sprintf "Type error in indexing sequence: %s" (print_expr expr))
+            t1
+          end
+        | Map(t1, t2) ->
+          begin
+            type_assert (is_subtype (typecheck_expr prog G cm e2) t1) "Type error in indexing map"
+            t2
+          end
+        | _ -> raise Not_defined
+      end
+    | Expr.Bin(In, e1, e2) ->
+      begin
+        match typecheck_expr prog G cm e2 with
+        | Map(t1, _) ->
+          begin
+            type_assert (is_subtype (typecheck_expr prog G cm e1) t1) "Type error in key lookup"
+            Bool
+          end
+        | _ -> raise Not_defined
+      end
+    | Expr.Bin(op, e1, e2) when is_intop op -> 
+      begin
+        type_assert ((is_subtype (typecheck_expr prog G cm e1) Int) && (is_subtype (typecheck_expr prog G cm e2) Int)) (sprintf "Error: Non-integer arguments to intOp: %s" (print_expr expr))
+        Int
+      end
+    | Expr.Bin(op, e1, e2) when is_boolop op -> 
+      begin
+        type_assert ((is_subtype (typecheck_expr prog G cm e1) Bool) && (is_subtype (typecheck_expr prog G cm e2) Bool)) (sprintf "Error: Non-boolean arguments to boolOp: %s" (print_expr expr))
+        Bool
+      end
+    | Expr.Bin(op, e1, e2) when is_relop op -> 
+      begin
+        type_assert ((is_subtype (typecheck_expr prog G cm e1) Int) && (is_subtype (typecheck_expr prog G cm e2) Int)) (sprintf "Error: Non-integer arguments to intOp: %s" (print_expr expr))
+        Bool
+      end
+    | Expr.Bin(op, e1, e2) when is_comparison op ->
+      begin
+        type_assert ((is_subtype (typecheck_expr prog G cm e1) Int) && (is_subtype (typecheck_expr prog G cm e2) Int)) (sprintf "Error: Non-integer arguments to intOp: %s" (print_expr expr))
+        Bool
+      end
+    | Expr.Un(Not, e1) -> 
+      begin
+        type_assert (is_subtype (typecheck_expr prog G cm e1) Bool) 
+          (sprintf "Error: Non-boolean argument to boolOp: %s" (print_expr expr))
+        Bool
+      end
+    | Expr.Un(Neg, e1) -> 
+      begin
+        type_assert (is_subtype (typecheck_expr prog G cm e1) Int) 
+          (sprintf "Error: Non-integer argument to intOp: %s" (print_expr expr))
+        Int
+      end
+    | Expr.Un(Keys, e1) -> 
+      begin
+        match typecheck_expr prog G cm e1 with
+        | Map(t1, t2) -> Seq(t1)
+        | _ -> raise Not_defined
+      end
+    | Expr.Un(Values, e1) ->
+      begin
+        match typecheck_expr prog G cm e1 with
+        | Map(t1, t2) -> Seq(t2)
+        | _ -> raise Not_defined
+      end
+    | Expr.Un(Sizeof, e1) -> Int
+    | Expr.Dot(e, i) -> 
+      begin
+        let ts = typecheck_expr prog G cm e in
+        match ts with
+        | Type.Tuple(ls) -> List.item i ls
+        | _ -> raise Not_defined
+      end
+    | Expr.NamedDot(e, f) -> 
+      begin
+        let ts = typecheck_expr prog G cm e in
         match ts with
         | Type.NamedTuple(ls) -> lookup_named_field_type f ls
         | _ -> raise Not_defined
       end
 (* More checks here. Also, need to add dynamic check for down-casting. *) 
     | Cast(e, t) -> 
-      let et = (typeof prog G cm e) in 
+      let et = (typecheck_expr prog G cm e) in 
         if ((is_subtype t et) || (is_subtype et t)) then t 
         else raise (Type_exception (sprintf "Cannot upcast/downcast %s to %s!" (print_type et) (print_type t)))
-    | Expr.Tuple(es) -> Type.Tuple(List.map (fun e -> (typeof prog G cm e)) es)
-    | Expr.NamedTuple(es) -> Type.NamedTuple(List.map (fun (f, e) -> (f, typeof prog G cm e)) es)
+    | Expr.Tuple(es) -> Type.Tuple(List.map (fun e -> (typecheck_expr prog G cm e)) es)
+    | Expr.NamedTuple(es) -> Type.NamedTuple(List.map (fun (f, e) -> (f, typecheck_expr prog G cm e)) es)
     | Default(t) -> t
     | New(m, e) -> (typecheck_new prog G cm e)
     | Call(callee, args) -> 
@@ -129,7 +230,7 @@ module ProgramTyping =
     let fn = 
       if (prog.FunMap.ContainsKey f) then prog.FunMap.[f]
       else (prog.MachineMap.[cm]).FunMap.[f]
-    let arg_types = (List.map (fun x -> (typeof prog G cm x)) args)
+    let arg_types = (List.map (fun x -> (typecheck_expr prog G cm x)) args)
     let formal_types = (List.map (fun (x: Syntax.VarDecl) -> x.Type) fn.Formals)
     if (List.length args) <> (List.length fn.Formals) then raise Not_defined
     else
@@ -158,25 +259,25 @@ module ProgramTyping =
       end
     end
 
-  ///typeof_lval <lval> <Referencing Environment>
-  let rec typeof_lval lval G  =
+  ///typecheck_expr_lval <lval> <Referencing Environment>
+  let rec typecheck_expr_lval lval G  =
     match lval with
     | Lval.Var(v) -> Map.find v G
     | Lval.Dot(l, i) -> 
       begin
-        match (typeof_lval l G) with
+        match (typecheck_expr_lval l G) with
         | Type.Tuple(ls) -> List.item i ls
         | _ -> raise Not_defined
       end
     | Lval.NamedDot(l, f) -> 
       begin
-        match (typeof_lval l G) with
+        match (typecheck_expr_lval l G) with
         | Type.NamedTuple(ls) -> lookup_named_field_type f ls
         | _ -> raise Not_defined
       end
     | Lval.Index(l, e) ->
       begin
-        match typeof_lval l G with
+        match typecheck_expr_lval l G with
         | Type.Seq(t) -> t
         | _ -> raise Not_defined
       end
@@ -187,8 +288,8 @@ module ProgramTyping =
     if (prog.EventMap.ContainsKey e) then begin
       let ev = (Map.find e prog.EventMap)
       if ev.Type.IsSome then
-        (type_assert (is_subtype (typeof prog G cm arg) ev.Type.Value) 
-                   (sprintf "Event requires %s type %s, but got %s" e (print_type ev.Type.Value) (print_type (typeof prog G cm arg))))
+        (type_assert (is_subtype (typecheck_expr prog G cm arg) ev.Type.Value) 
+                   (sprintf "Event requires %s type %s, but got %s" e (print_type ev.Type.Value) (print_type (typecheck_expr prog G cm arg))))
       else (type_assert (arg = Expr.Nil) (sprintf "Event %s takes no argument, but got %s" e (print_expr arg)))
    end
 
@@ -232,19 +333,19 @@ module ProgramTyping =
   ///typecheck_stmt <program> <Referencing Environment> <current machine> <current function> <statement>
   let rec typecheck_stmt prog G cm cf st =
     match st with
-    | Assign(l, e) -> type_assert (is_subtype (typeof_lval l G) (typeof prog G cm e)) (sprintf "Invalid assignment: %s" (print_stmt prog cm st))
+    | Assign(l, e) -> type_assert (is_subtype (typecheck_expr_lval l G) (typecheck_expr prog G cm e)) (sprintf "Invalid assignment: %s" (print_stmt prog cm st))
     | Insert(l, e1, e2) -> 
-      match typeof_lval l G with
-      | Seq(t) -> type_assert ((is_subtype (typeof prog G cm e1) Int) && (is_subtype (typeof prog G cm e2) t)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))
-      | Map(t1,t2) -> type_assert ((is_subtype (typeof prog G cm e1) t1) && (is_subtype (typeof prog G cm e2) t2)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))
+      match typecheck_expr_lval l G with
+      | Seq(t) -> type_assert ((is_subtype (typecheck_expr prog G cm e1) Int) && (is_subtype (typecheck_expr prog G cm e2) t)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))
+      | Map(t1,t2) -> type_assert ((is_subtype (typecheck_expr prog G cm e1) t1) && (is_subtype (typecheck_expr prog G cm e2) t2)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))
       | _ -> type_assert false (sprintf "Invalid insert: %s" (print_stmt prog cm st))
     | Remove(l, e) ->
-      match typeof_lval l G with
-      | Seq(t) -> type_assert (is_subtype (typeof prog G cm e) Int) (sprintf "Invalid remove: %s" (print_stmt prog cm st))
-      | Map(t1,t2) -> type_assert (is_subtype (typeof prog G cm e) t1) (sprintf "Invalid remove: %s" (print_stmt prog cm st))
+      match typecheck_expr_lval l G with
+      | Seq(t) -> type_assert (is_subtype (typecheck_expr prog G cm e) Int) (sprintf "Invalid remove: %s" (print_stmt prog cm st))
+      | Map(t1,t2) -> type_assert (is_subtype (typecheck_expr prog G cm e) t1) (sprintf "Invalid remove: %s" (print_stmt prog cm st))
       | _ -> type_assert false (sprintf "Invalid remove: %s" (print_stmt prog cm st))
-    | Assume e ->  type_assert (is_subtype (typeof prog G cm e) Bool) (sprintf "Invalid assume: %s" (print_stmt prog cm st))
-    | Assert e -> type_assert (is_subtype (typeof prog G cm e) Bool) (sprintf "Invalid assert: %s" (print_stmt prog cm st))
+    | Assume e ->  type_assert (is_subtype (typecheck_expr prog G cm e) Bool) (sprintf "Invalid assume: %s" (print_stmt prog cm st))
+    | Assert e -> type_assert (is_subtype (typecheck_expr prog G cm e) Bool) (sprintf "Invalid assert: %s" (print_stmt prog cm st))
     | NewStmt(m, e) -> 
       match (typecheck_new prog G cm e) with
       | Type.Machine -> (type_assert true (sprintf "Invalid New Statement: %s" (print_stmt prog cm st)))
@@ -259,32 +360,33 @@ module ProgramTyping =
    
     | While(c, s) -> 
       begin 
-        (type_assert (is_subtype (typeof prog G cm c) Bool) (sprintf "%s does not have type bool!" (print_expr c)))
+        (type_assert (is_subtype (typecheck_expr prog G cm c) Bool) (sprintf "%s does not have type bool!" (print_expr c)))
         (typecheck_stmt prog G cm cf s)
       end
     | Ite(c, i, e) ->
       begin 
-        (type_assert (is_subtype (typeof prog G cm c) Bool) (sprintf "%s does not have type bool!" (print_expr c)))
+        (type_assert (is_subtype (typecheck_expr prog G cm c) Bool) (sprintf "%s does not have type bool!" (print_expr c)))
         (typecheck_stmt prog G cm cf i)
         (typecheck_stmt prog G cm cf e)
       end
     | SeqStmt(lst) -> (List.iter (fun s -> (typecheck_stmt prog G cm cf s)) lst)
     | Receive(lst) -> (List.iter(fun(e, a) -> (typecheck_case prog G cm e a)) lst)
-    | Return(e) -> 
-      begin
-        let rettype = prog.MachineMap.[cm].FunMap.[cf].RetType
-        if (rettype.IsSome) then   
-          (type_assert (is_subtype (typeof prog G cm e) rettype.Value) 
-                       (sprintf "Invalid value for return expression: expected %s, got %s" 
-                       (print_type rettype.Value)
-                       (print_type (typeof prog G cm e))))
-        else (type_assert (e = Expr.Nil) (sprintf "Function does not return a value, but got %s" (print_expr e)))
-      end
     | Monitor(Event(ev), arg) -> (typecheck_event_with_args prog G cm ev arg)
     //ToDo add dynamic check that the event will accept the arg given.
     | Monitor(Expr.Var(e), _) -> (type_assert (is_subtype (Map.find e G) Type.Event) (sprintf "%s is not an event!" e)) 
-    | Pop -> (ignore true)
-    | Skip -> (ignore true) //A fancy way of generating unit.
+    | Return(Some(e)) -> 
+      begin
+        let rettype = prog.MachineMap.[cm].FunMap.[cf].RetType
+        if (rettype.IsSome) then   
+          (type_assert (is_subtype (typecheck_expr prog G cm e) rettype.Value) 
+                       (sprintf "Invalid value for return expression: expected %s, got %s" 
+                       (print_type rettype.Value)
+                       (print_type (typecheck_expr prog G cm e))))
+        else (type_assert (e = Expr.Nil) (sprintf "Function does not return a value, but got %s" (print_expr e)))
+      end
+    | Return(None) -> ignore true
+    | Pop -> ignore true
+    | Skip -> ignore true //A fancy way of generating unit.
     | _ -> 
       begin
         printfn "%s" (print_stmt prog cm st)
@@ -294,60 +396,21 @@ module ProgramTyping =
     let G' = (merge_maps G f.VarMap)
     (typecheck_stmt prog G' cm f.Name f.Body)
     
-  let typecheck_machine (prog: ProgramDecl) (md: MachineDecl) = 
-    (List.iter (typecheck_fun prog md.VarMap md.Name) md.Functions)
+  let typecheck_machine (prog: ProgramDecl) G (md: MachineDecl) = 
+    let funs = 
+      let map = ref Map.empty in
+        List.iter (fun(f: FunDecl) -> map := Map.add f.Name (if f.RetType.IsSome then f.RetType.Value else Type.Null) !map) md.Functions
+      !map 
+    let G' = merge_maps (merge_maps G md.VarMap) funs
+    (List.iter (typecheck_fun prog G' md.Name) md.Functions)
     //There's no typecheck_state because entry actions, exit actions,  
     //actions on transitions/dos are all functions.
 
   let typecheck_program (prog: ProgramDecl) = 
-    (List.iter (typecheck_machine prog) prog.Machines) 
-    (List.iter (typecheck_fun prog Map.empty "") prog.StaticFuns) 
-
-  (* Quadratic time; can optimize *)
-  let rec find_all_types prog G cm stmt =
-    let rec all_exprs e =
-      let ret =
-        match e with
-        | Nil
-        | ConstInt _
-        | ConstBool _
-        | Event _
-        | This
-        | Nondet
-        | Default _ 
-        | Expr.Var _ -> Set.empty
-        | Bin(_, e1, e2) -> Set.union (all_exprs e1) (all_exprs e2)
-        | Un(_, e') -> all_exprs e'
-        | Expr.Dot(e', _) -> all_exprs e'
-        | Expr.NamedDot(_, _) -> raise Not_defined
-        | Expr.NamedTuple(_) -> raise Not_defined
-        | Cast(e, t) -> all_exprs e
-        | Expr.Tuple(es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
-        | New(_, e') -> all_exprs e' 
-        | Call(_, es) -> List.fold (fun s e -> Set.union s (all_exprs e)) Set.empty es
-      in 
-        ret.Add(e)
-    in
-      let all_types_expr (prog: ProgramDecl) G e = Set.map (fun e -> typeof prog G cm e) (all_exprs e) in
-      let rec all_types_lval lval G=
-        let ret =
-          match lval with
-          | Lval.Var(v) -> Set.empty
-          | Lval.Dot(l, _) -> all_types_lval l G
-          | Lval.NamedDot(_, _) -> raise Not_defined
-          | Lval.Index(l, e) -> Set.union (all_types_lval l G) (all_types_expr prog G e)
-        in
-        ret.Add(typeof_lval lval G)
-      in
-      match stmt with
-      | Assign(l, e) -> Set.union (all_types_expr prog G e) (all_types_lval l G)
-      | Insert(l, e1, e2) -> Set.unionMany [(all_types_lval l G); (all_types_expr prog G e1); (all_types_expr prog G e2)]
-      | Remove(l, e) -> Set.union (all_types_expr prog G e) (all_types_lval l G)
-      | Assume(e) -> all_types_expr prog G e
-  
-  let map_all_types prog G cm stmtlist=
-    let types = List.fold (fun s stmt -> Set.union s (find_all_types prog G cm stmt)) Set.empty stmtlist in
-    let types = Set.add Int types  in
-    let (ret,_) = Set.fold (fun (m,i) t -> (Map.add t i m, i+1)) (Map.empty, 0) types in
-    ret
+    let G =           
+      let map = ref Map.empty in
+        List.iter (fun(f: FunDecl) -> map := Map.add f.Name (if f.RetType.IsSome then f.RetType.Value else Type.Null) !map) prog.StaticFuns
+      !map 
+    (List.iter (typecheck_machine prog G) prog.Machines) 
+    (List.iter (typecheck_fun prog G "") prog.StaticFuns) 
    

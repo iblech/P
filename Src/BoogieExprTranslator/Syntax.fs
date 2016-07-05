@@ -69,7 +69,7 @@ module Syntax =
     | SeqStmt of Stmt list
     | Receive of (string * string) list 
     | Pop
-    | Return of Expr
+    | Return of Expr option
     | Monitor of Expr * Expr  
     | FunStmt of string * Expr list * string option
 
@@ -81,14 +81,15 @@ module Syntax =
 
   [<Serializable>]
   type FunDecl(name: string, formals: VarDecl list, rettype: Type option, 
-                  locals: VarDecl list, body: Stmt, is_model: bool, is_pure: bool) =
+                  locals: VarDecl list, body: Stmt, is_model: bool, is_pure: bool, env_empty: bool) =
     member this.Name = name
     member this.Formals = formals
     member this.RetType = rettype
     member this.Locals = locals
     member this.Body = body
     member this.IsModel = is_model
-    member this.IsPure = is_pure;
+    member this.IsPure = is_pure
+    member this.EnvEmpty= env_empty
 
 //Implicitly assumes that there are no conflicts in the names of locals and formals.
     member this.VarMap = 

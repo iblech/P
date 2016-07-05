@@ -418,7 +418,7 @@ namespace CheckP
                     bool zingerResult = Run(tmpWriter, zingFilePath, zingerArgs);
 
                     //debug:
-                    //Console.WriteLine("Zinger returned: {0}", zingerResult);
+                    Console.WriteLine("Zinger returned: {0}", zingerResult);
 
                     if (!zingerResult)
                     {
@@ -428,6 +428,19 @@ namespace CheckP
                     {
                         result = false;
                     }
+
+                    //Added because zing can say "yes" or "no" - not more!
+                    if (!CloseTmpStream(tmpWriter) || !DeleteTmpFile())
+                    {
+                        result = false;
+                    }
+
+                    if (result)
+                    {
+                        Console.WriteLine("SUCCESS: Output matched");
+                    }
+
+                    return result; 
                 }
                 else if (parentDir == "Prt")
                 {
@@ -522,6 +535,19 @@ namespace CheckP
                     {
                         result = false;
                     }
+
+                    //Added because Prt can say "yes" or "no" - not more!
+                    if (!CloseTmpStream(tmpWriter) || !DeleteTmpFile())
+                    {
+                        result = false;
+                    }
+
+                    if (result)
+                    {
+                        Console.WriteLine("SUCCESS: Output matched");
+                    }
+
+                    return result;
                 }
                 else
                 {

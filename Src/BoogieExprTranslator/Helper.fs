@@ -87,7 +87,7 @@ module Helper=
     | Null -> "null"
     | Bool -> "bool"
     | Int -> "int"
-    | Machine -> "real"
+    | Machine -> "machine"
     | Type.Event -> "event"
     | Any -> "any"
     | Type.Tuple(ls) -> sprintf "(%s)" (print_list print_type ls ", ")
@@ -103,7 +103,7 @@ module Helper=
     | Mul -> "*"
     | Intdiv -> "/"
     | And -> "&&"
-    | Or -> "!!"
+    | Or -> "||"
     | Eq -> "=="
     | Neq -> "!="
     | Lt -> "<"
@@ -123,11 +123,12 @@ module Helper=
 
   let rec print_expr (e: Expr) =
     match e with
-    | Nil -> "nil"
-    | ConstBool(b) -> b.ToString()
+    | Nil -> "null"
+    | ConstBool(true) -> "true"
+    | ConstBool(false) -> "false"
     | ConstInt(i) -> i.ToString()
     | This -> "this"
-    | Nondet -> "*"
+    | Nondet -> "$"
     | Event(s) -> s
     | Expr.Var(s) -> s
     | Expr.Bin(Idx, e1, e2) -> sprintf "%s[%s]" (print_expr e1) (print_expr e2) 
@@ -140,8 +141,8 @@ module Helper=
     | Default(t) -> sprintf "default(%s)" (print_type t)
     | New(s, arg) -> sprintf "new %s(%s)" s (print_expr arg)
     | Expr.NamedDot(e,f) -> sprintf "%s.%s" (print_expr e) f
-    | Expr.NamedTuple([(f, e)]) -> sprintf "(%s: %s,)"  f (print_expr e)
-    | Expr.NamedTuple(es) -> sprintf "(%s)" (print_list (fun (f,e) -> sprintf "%s: %s" f (print_expr e)) es ", ")
+    | Expr.NamedTuple([(f, e)]) -> sprintf "(%s=%s,)"  f (print_expr e)
+    | Expr.NamedTuple(es) -> sprintf "(%s)" (print_list (fun (f,e) -> sprintf "%s= %s" f (print_expr e)) es ", ")
     | Expr.Call(callee, args) -> sprintf "%s(%s)" callee (print_list print_expr args ", ")
    
   let rec print_lval (l: Lval) =
@@ -151,39 +152,79 @@ module Helper=
     | Lval.NamedDot(v, f) -> sprintf "%s.%s" (print_lval v) f
     | Lval.Index(l, e) -> sprintf "%s[%s]" (print_lval l) (print_expr e) 
 
+  let print_env_nt envType =
+    match envType with
+    | Type.NamedTuple([]) -> ""
+    | Type.NamedTuple([(n,t)]) -> sprintf "(%s=%s,)" n n
+    | Type.NamedTuple(ls) -> sprintf "(%s)" (print_list (fun(s, _)-> sprintf "%s=%s" s s) ls ", ")
+    | _ -> ""
+
+  let print_restore_env envType =
+    match envType with
+    | Type.NamedTuple([]) -> ""
+    | Type.NamedTuple(ls) -> sprintf "%s;\n" (print_list (fun(s, _)-> sprintf "%s=env.%s" s s) ls ";\n")
+    | _ -> ""
+
+  let print_anon_fun f argType envType action has_params env_non_empty=      
+    let pl_decl = if has_params then sprintf "(payload: %s)" (print_type argType) else ""
+    let env_decl = if env_non_empty then sprintf "var env: %s;\nenv = " (print_type envType) else ""
+    let param1 = if env_non_empty then (print_env_nt envType) else ""
+    let comma = if has_params && env_non_empty then ", " else ""
+    let param2 = if has_params then "payload" else ""
+    let restore = if env_non_empty then (print_restore_env envType) else ""
+    sprintf "%s %s {\n%s%s(%s%s%s);\n%s}\n" action pl_decl env_decl f param1 comma param2 restore
+
+  let print_action (prog: ProgramDecl) cm fn action = 
+    let fd = if (prog.FunMap.ContainsKey fn) then prog.FunMap.[fn]
+             else  (prog.MachineMap.[cm].FunMap.[fn]) 
+    let envType = if fd.EnvEmpty then Type.Null else (List.head fd.Formals).Type
+    let arg = 
+      match fd.EnvEmpty, fd.Formals.IsEmpty with
+      | true, true -> List.Empty
+      | true, false -> fd.Formals
+      | false, _ ->  List.tail fd.Formals
+    let argType = if (arg.IsEmpty) then Type.Null else (List.head arg).Type
+    let has_params = 
+      match action with
+      | "exit" -> false
+      | _ -> not arg.IsEmpty 
+    print_anon_fun fn argType envType action has_params (not fd.EnvEmpty)
+
   ///print_event_action <program> <event name> <machine name> <function name>
-  let print_event_action (prog: ProgramDecl) cm ev fn =
-        let e = (Map.find ev prog.EventMap)
-        let f = if (prog.FunMap.ContainsKey fn) then prog.FunMap.[fn]
-                else  (prog.MachineMap.[cm].FunMap.[fn]) 
-        match e.Type with
-        | None -> sprintf "{\n%s()\n}" f.Name
-        | t -> sprintf "(payload: %s){\n%s(payload)\n}" (print_type t.Value) f.Name
+  let print_event_action (prog: ProgramDecl) cm action ev fn =
+    let e = (Map.find ev prog.EventMap)
+    let fd = if (prog.FunMap.ContainsKey fn) then prog.FunMap.[fn]
+             else  (prog.MachineMap.[cm].FunMap.[fn]) 
+    let envType = (List.head fd.Formals).Type   
+    match e.Type with
+      | Some(t) -> print_anon_fun fd.Name t envType action true (not fd.EnvEmpty)
+      | None -> print_anon_fun fd.Name Type.Null envType action false (not fd.EnvEmpty)
 
   ///print_cases <program> <event name> <machine name> <function name>
-  let print_cases prog cm (ev, fn) = 
-    begin
-      sprintf "case %s:%s" ev (print_event_action prog cm ev fn)
-    end
-
+  let print_cases prog cm (ev, fn) =     
+    let action = sprintf "case %s: " ev 
+    print_event_action prog cm action ev fn
+    
   let rec print_stmt prog cm s =
     match s with
     | Assign(l, e) -> sprintf "%s = %s;\n" (print_lval l) (print_expr e)
     | Insert(l, e1, e2) -> sprintf "%s += (%s, %s);\n" (print_lval l) (print_expr e1) (print_expr e2)
     | Remove(l, e) -> sprintf "%s -= %s;\n" (print_lval l) (print_expr e)
     | Assert(e) -> sprintf "assert %s;\n" (print_expr e)
-    | Assume(e) -> ""
+    | Assume(e) -> sprintf "assume %s;\n" (print_expr e)
     | NewStmt(s, e) -> sprintf "new %s(%s);\n" s (print_expr e)
+    | Raise(e1, Nil) -> sprintf "raise %s;\n" (print_expr e1)
     | Raise(e1, e2) -> sprintf "raise %s, %s;\n" (print_expr e1) (print_expr e2)
     | Send (e1, e2, Expr.Nil) -> sprintf "send %s, %s;\n" (print_expr e1) (print_expr e2) 
     | Send (e1, e2, e3) -> sprintf "send %s, %s, %s;\n" (print_expr e1) (print_expr e2) (print_expr e3)
     | Skip -> ";\n"
     | While(c, s) -> sprintf "while(%s)\n{\n%s\n}\n" (print_expr c) (print_stmt prog cm s)
     | Ite(c, i, e) -> sprintf "if(%s)\n{\n%s\n}\nelse\n{\n%s\n}\n" (print_expr c) (print_stmt prog cm i) (print_stmt prog cm e)
-    | SeqStmt(l) -> sprintf "{\n%s\n}\n" (print_list (print_stmt prog cm) l ";\n")
+    | SeqStmt(l) -> sprintf "\n%s\n\n" (print_list (print_stmt prog cm) l ";\n")
     | Receive(l) -> sprintf "receive\n{\n%s\n}\n" (print_list (print_cases prog cm) l "\n")
     | Pop -> "pop;\n"
-    | Return(e) -> sprintf "return (%s);\n" (print_expr e)
+    | Return(None) -> "return;\n"
+    | Return(Some(e)) -> sprintf "return (%s);\n" (print_expr e)
     | Monitor(e1, e2) -> sprintf "monitor (%s), (%s)" (print_expr e1) (print_expr e2)
     | FunStmt(s, el, None) -> sprintf "%s(%s);\n" s (print_list print_expr el ", ")
     | FunStmt(s, el, v) -> sprintf "%s = %s(%s);\n" v.Value s (print_list print_expr el ", ")
@@ -192,12 +233,20 @@ module Helper=
     match d with
     | Syntax.DoDecl.T.Defer(s) -> (sprintf "defer %s;" s)
     | Syntax.DoDecl.T.Ignore(s) -> (sprintf "ignore %s;" s)
-    | Syntax.DoDecl.T.Call(e, f) -> (sprintf "on %s do %s" e (print_event_action prog cm e f))
+    | Syntax.DoDecl.T.Call(e, f) -> 
+      begin
+        let action = sprintf "on %s do " e
+        print_event_action prog cm action e f
+      end
 
   let print_trans prog cm (t: Syntax.TransDecl.T) =
     match t with 
     | Syntax.TransDecl.T.Push(e, d) -> (sprintf "on %s push %s;" e d)
-    | Syntax.TransDecl.T.Call(e, d, f) -> (sprintf "on %s goto %s with %s" e d (print_event_action prog cm e f))
+    | Syntax.TransDecl.T.Call(e, d, f) -> 
+      begin
+        let action = sprintf "on %s goto %s with " e d 
+        print_event_action prog cm action e f
+      end
 
   let (|InvariantEqual|_|) (str:string) arg = 
     if String.Compare(str, arg, StringComparison.OrdinalIgnoreCase) = 0
@@ -209,39 +258,55 @@ module Helper=
     | Card.Assume(i) -> sprintf " assume %i" i
 
   let print_var (v: Syntax.VarDecl) = 
-    sprintf "%s: %s" v.Name (print_type v.Type)
+    sprintf "var %s: %s" v.Name (print_type v.Type)
+  
+  let print_var_list (ls: VarDecl list) = 
+    match ls with
+    | [] -> ""
+    | [h] -> (sprintf "%s;\n" (print_var h))
+    | _ -> (sprintf "%s;\n" (print_list print_var ls ";\n"))
 
   let print_function prog cm (f: Syntax.FunDecl) = 
-    let model = if f.IsModel then "model" else ""
-    let args = (print_list print_var f.Formals ", ")
+    let print_formal (v: VarDecl) = 
+      sprintf "%s: %s" v.Name (print_type v.Type)
+    let model = if f.IsModel then "model " else ""
+    let args = (print_list print_formal f.Formals ", ")
     let ret = if (f.RetType.IsSome) then (sprintf ": %s" (print_type f.RetType.Value)) else ""
-    let locals = (print_list print_var f.Locals ";\n")
-    sprintf "%s fun %s(%s)%s\n{%s;\n%s}" model f.Name args ret locals (print_stmt prog cm f.Body)
+    let locals = (print_var_list f.Locals)
+    sprintf "%sfun %s(%s)%s\n{%s\n%s}" model f.Name args ret locals (print_stmt prog cm f.Body)
 
   let print_event (e: Syntax.EventDecl) =
     let typ = if (e.Type.IsSome) then (sprintf ": %s" (print_type e.Type.Value)) else ""
     let qc = if (e.QC.IsSome) then (sprintf " %s" (print_card e.QC.Value)) else ""
-    sprintf "event %s%s%s" e.Name typ qc
+    sprintf "event %s%s%s" e.Name qc typ
 
-  let print_state prog cm (s: Syntax.StateDecl) = 
+  let print_state (prog: ProgramDecl) cm (s: Syntax.StateDecl) = 
     let temp = 
       match s.Temperature with 
       | InvariantEqual "Hot" -> "hot"
       | InvariantEqual "Cold" -> "cold"
       | _ -> ""
-    let entry = if (s.EntryAction.IsSome) then (sprintf "entry %s;\n" s.EntryAction.Value) else ""
-    let exit = if (s.ExitAction.IsSome) then (sprintf "exit %s;\n" s.ExitAction.Value) else ""
+    
+    let print_entry_exit (ea: string option) action= 
+      if ea.IsSome then begin
+        let fn = ea.Value
+        print_action prog cm fn action
+      end
+      else ""
+    
+    let entry = (print_entry_exit s.EntryAction "entry")
+    let exit = (print_entry_exit s.ExitAction "exit")
     let dos = (print_list (print_do prog cm) s.Dos "\n")
     let trans = (print_list (print_trans prog cm) s.Transitions "\n")
-    sprintf "%s state\n{%s%s%s%s}" temp entry exit dos trans
+    sprintf "%s state %s\n{%s%s%s%s}" temp s.Name entry exit dos trans
 
   let print_machine (prog: ProgramDecl) (m: Syntax.MachineDecl) =
     let main = if (m.Name = prog.MainMachine) then "main " else ""
     let machine = if (m.IsModel) then "model" else (if (m.IsMonitor) then "spec" else "machine")
     let monitors = if(m.IsMonitor) then (sprintf " monitors %s " (print_list (sprintf "%s") m.MonitorList ", ")) else ""
     let card = if (m.QC.IsSome) then (print_card m.QC.Value) else ""
-    sprintf "%s%s %s%s%s\n{\n%s%s%s\n}\n" main machine m.Name card monitors 
-              (print_list print_var m.Globals ";\n") 
+    sprintf "%s%s %s%s%s\n{\n%s\n%s%s\n}\n" main machine m.Name card monitors 
+              (print_var_list m.Globals) 
               (print_list (print_function prog m.Name) m.Functions "\n") 
               (print_list (fun (s: Syntax.StateDecl) -> 
                             if (s.Name = m.StartState) then (sprintf "start %s" (print_state prog m.Name s)) 
@@ -249,8 +314,9 @@ module Helper=
 
   let print_prog (prog: Syntax.ProgramDecl) (sw: System.IO.TextWriter) =
     begin
-      sw.WriteLine (print_list print_event prog.Events ";\n")
-      sw.Write(";")
+      match (print_list print_event prog.Events ";\n") with
+      | "" -> sw.Write("")
+      | s -> sw.WriteLine(sprintf "%s;" s)
       sw.WriteLine (print_list (print_function prog "") prog.StaticFuns "\n")
       sw.WriteLine (print_list (print_machine prog) prog.Machines "\n")           
     end

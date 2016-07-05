@@ -267,3 +267,4 @@ Src/PrtDist/Samples/PingPong/program.h
 /Tst/PrtTester/Tester.VC.db
 /Bld/PRT_CONTAINER_LOG_1.txt
 *.dat
+*.sh
