@@ -1205,6 +1205,7 @@ PrtDequeueEvent(
 		}
 		else
 		{
+			PrtFreeTriggerPayload(context);
 			return PRT_FALSE;
 		}
 	}
@@ -1932,7 +1933,8 @@ PrtPrintfDefaultFn(
 _In_opt_z_ PRT_CSTRING message
 )
 {
-	printf_s(message);
+	// do not allow % signs in message to be interpreted as arguments.
+	printf_s("%s", message);
 }
 
 PRT_API void PRT_CALL_CONV
