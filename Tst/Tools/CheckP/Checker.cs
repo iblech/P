@@ -430,14 +430,27 @@ namespace CheckP
                     }
 
                     //Added because zing can say "yes" or "no" - not more!
-                    if (!CloseTmpStream(tmpWriter) || !DeleteTmpFile())
+                    var zingStream = new StreamWriter(activeDirectory + @"\zing_op.txt");
+
+                    if (!CloseTmpStream(tmpWriter))
+                    {
+                        result = false;
+                    }
+                    else
+                    {
+                        using(var sr = new StreamReader(TmpStreamFile))
+                            zingStream.Write(sr.ReadToEnd());
+                    }
+                    zingStream.Close();
+
+                    if(!DeleteTmpFile())
                     {
                         result = false;
                     }
 
                     if (result)
                     {
-                        Console.WriteLine("SUCCESS: Output matched");
+                        Console.WriteLine("SUCCESS!");
                     }
 
                     return result; 
@@ -537,7 +550,20 @@ namespace CheckP
                     }
 
                     //Added because Prt can say "yes" or "no" - not more!
-                    if (!CloseTmpStream(tmpWriter) || !DeleteTmpFile())
+                    var prtStream = new StreamWriter(activeDirectory + @"\prt_op.txt");
+
+                    if (!CloseTmpStream(tmpWriter))
+                    {
+                        result = false;
+                    }
+                    else
+                    {
+                        using (var sr = new StreamReader(TmpStreamFile))
+                            prtStream.Write(sr.ReadToEnd());
+                    }
+                    prtStream.Close();
+
+                    if (!DeleteTmpFile())
                     {
                         result = false;
                     }

@@ -80,30 +80,35 @@ namespace Microsoft.P_FS_Boogie
             return null;
         }
 
-        public Tuple<Syntax.Type.NamedTuple, Syntax.Expr.NamedTuple> TuplifyAllLocals()
+        public Tuple<Syntax.Type.Tuple, Syntax.Expr.Tuple, 
+            List<Syntax.VarDecl>, List<Syntax.Stmt>> IncludeSurroundingScopes()
         {
-            var typLst = new List<Tuple<string, Syntax.Type>>();
-            foreach(var tbl in tbls)
+            var typLst = new List<Syntax.Type>();
+            var expLst = new List<Syntax.Expr>();
+            var vdLst = new List<Syntax.VarDecl>();
+            var vaLst = new List<Syntax.Stmt>();
+            int i = 0;
+            foreach (var tbl in tbls)
             {
                 foreach(var v in tbl.Item2)
                 {
                     var name = tbl.Item1 + '_' + v.Key;
-                    typLst.Add(new Tuple<string, Syntax.Type>(name, v.Value));
+                    typLst.Add(v.Value);
+                    expLst.Add(Syntax.Expr.NewVar(name));
+                    vdLst.Add(new Syntax.VarDecl(name, v.Value));
+                    vaLst.Add(Syntax.Stmt.NewAssign(Syntax.Lval.NewVar(name),
+                        Syntax.Expr.NewDot(Syntax.Expr.NewVar("env"), i)));
+                    i++;
                 }
             }
 
-            var expLst = new List<Tuple<string, Syntax.Expr>>();
-            foreach(var v in typLst)
-            {
-                expLst.Add(new Tuple<string, Syntax.Expr>(v.Item1, 
-                    Syntax.Expr.NewVar(v.Item1)));
-            }
-
-            var tupType = Syntax.Type.NewNamedTuple(ListModule.OfSeq(typLst)) 
-                as Syntax.Type.NamedTuple;
-            var tupExpr = Syntax.Expr.NewNamedTuple(ListModule.OfSeq(expLst)) 
-                as Syntax.Expr.NamedTuple;
-            return new Tuple<Syntax.Type.NamedTuple, Syntax.Expr.NamedTuple>(tupType, tupExpr);
+            var tupType = Syntax.Type.NewTuple(ListModule.OfSeq(typLst)) 
+                as Syntax.Type.Tuple;
+            var tupExpr = Syntax.Expr.NewTuple(ListModule.OfSeq(expLst)) 
+                as Syntax.Expr.Tuple;
+            return new Tuple<Syntax.Type.Tuple, Syntax.Expr.Tuple, 
+                List<Syntax.VarDecl>, List<Syntax.Stmt>>
+                (tupType, tupExpr, vdLst, vaLst);
         }
 
         public void AddMachine(string m)

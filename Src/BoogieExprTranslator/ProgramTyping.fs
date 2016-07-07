@@ -259,25 +259,25 @@ module ProgramTyping =
       end
     end
 
-  ///typecheck_expr_lval <lval> <Referencing Environment>
-  let rec typecheck_expr_lval lval G  =
+  ///typeof_lval <lval> <Referencing Environment>
+  let rec typeof_lval lval G  =
     match lval with
     | Lval.Var(v) -> Map.find v G
     | Lval.Dot(l, i) -> 
       begin
-        match (typecheck_expr_lval l G) with
+        match (typeof_lval l G) with
         | Type.Tuple(ls) -> List.item i ls
         | _ -> raise Not_defined
       end
     | Lval.NamedDot(l, f) -> 
       begin
-        match (typecheck_expr_lval l G) with
+        match (typeof_lval l G) with
         | Type.NamedTuple(ls) -> lookup_named_field_type f ls
         | _ -> raise Not_defined
       end
     | Lval.Index(l, e) ->
       begin
-        match typecheck_expr_lval l G with
+        match typeof_lval l G with
         | Type.Seq(t) -> t
         | _ -> raise Not_defined
       end
@@ -333,14 +333,14 @@ module ProgramTyping =
   ///typecheck_stmt <program> <Referencing Environment> <current machine> <current function> <statement>
   let rec typecheck_stmt prog G cm cf st =
     match st with
-    | Assign(l, e) -> type_assert (is_subtype (typecheck_expr_lval l G) (typecheck_expr prog G cm e)) (sprintf "Invalid assignment: %s" (print_stmt prog cm st))
+    | Assign(l, e) -> type_assert (is_subtype (typeof_lval l G) (typecheck_expr prog G cm e)) (sprintf "Invalid assignment: %s" (print_stmt prog cm st))
     | Insert(l, e1, e2) -> 
-      match typecheck_expr_lval l G with
+      match typeof_lval l G with
       | Seq(t) -> type_assert ((is_subtype (typecheck_expr prog G cm e1) Int) && (is_subtype (typecheck_expr prog G cm e2) t)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))
       | Map(t1,t2) -> type_assert ((is_subtype (typecheck_expr prog G cm e1) t1) && (is_subtype (typecheck_expr prog G cm e2) t2)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))
       | _ -> type_assert false (sprintf "Invalid insert: %s" (print_stmt prog cm st))
     | Remove(l, e) ->
-      match typecheck_expr_lval l G with
+      match typeof_lval l G with
       | Seq(t) -> type_assert (is_subtype (typecheck_expr prog G cm e) Int) (sprintf "Invalid remove: %s" (print_stmt prog cm st))
       | Map(t1,t2) -> type_assert (is_subtype (typecheck_expr prog G cm e) t1) (sprintf "Invalid remove: %s" (print_stmt prog cm st))
       | _ -> type_assert false (sprintf "Invalid remove: %s" (print_stmt prog cm st))
@@ -379,12 +379,16 @@ module ProgramTyping =
         let rettype = prog.MachineMap.[cm].FunMap.[cf].RetType
         if (rettype.IsSome) then   
           (type_assert (is_subtype (typecheck_expr prog G cm e) rettype.Value) 
-                       (sprintf "Invalid value for return expression: expected %s, got %s" 
+                       (sprintf "%s: Invalid value for return expression: expected %s, got %s" cf 
                        (print_type rettype.Value)
                        (print_type (typecheck_expr prog G cm e))))
-        else (type_assert (e = Expr.Nil) (sprintf "Function does not return a value, but got %s" (print_expr e)))
+        else type_assert false (sprintf "%s: Function cannot return a value, got %s" cf (print_expr e))
       end
-    | Return(None) -> ignore true
+    | Return(None) ->
+      begin
+        let rettype = prog.MachineMap.[cm].FunMap.[cf].RetType
+        type_assert rettype.IsNone  (sprintf "%s: Function returns a %s, but got no return value" cf (print_type rettype.Value))
+      end
     | Pop -> ignore true
     | Skip -> ignore true //A fancy way of generating unit.
     | _ -> 
@@ -394,7 +398,8 @@ module ProgramTyping =
       end
   let typecheck_fun (prog: ProgramDecl) G cm (f: FunDecl) =
     let G' = (merge_maps G f.VarMap)
-    (typecheck_stmt prog G' cm f.Name f.Body)
+    let body = SeqStmt(f.Body)
+    (typecheck_stmt prog G' cm f.Name body)
     
   let typecheck_machine (prog: ProgramDecl) G (md: MachineDecl) = 
     let funs = 

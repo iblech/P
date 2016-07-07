@@ -4,8 +4,8 @@ module RemoveSideEffects =
   open Common
   open Helper
   open ProgramTyping
-(*
-  (* Takes an expr as input, returns the re-written expr, a set of statements and updated environemt *)
+
+  /// Takes an expr as input, returns the re-written expr, a set of statements and updated environment 
   let rec remove_side_effects_expr expr G =
     let (nexpr, stlist, nG) =
       match expr with
@@ -128,7 +128,15 @@ module RemoveSideEffects =
         end
       in (nexpr, stlist, nG) 
 
-  (* Takes an lval as input, returns the re-written lval, a set of statements and updated environemt *)
+  let remove_side_effects_exprlist exprlist G = 
+    List.fold (fun (partial_explist, partial_stlist, partial_G) expr ->
+      begin
+        let (e, d, G') = remove_side_effects_expr expr partial_G in
+        (partial_explist @ [e], partial_stlist @ d, G')
+      end
+      ) ([], [], G) exprlist
+      
+  /// Takes an lval as input, returns the re-written lval, a set of statements and updated environment 
   let rec remove_side_effects_lval lval G =
     match lval with
     | Lval.Var(_) -> (lval, [], G)
@@ -137,7 +145,7 @@ module RemoveSideEffects =
         let (l', stlist, G') = remove_side_effects_lval l G in
         (Lval.Dot(l', f), stlist, G')
       end
-    | Lval.NamedDot(_, _) -> raise Not_defined
+    | Lval.NamedDot(_) -> raise Not_defined
     | Lval.Index(l, e) ->
       begin
         let (e', stlist1, G') = remove_side_effects_expr e G in
@@ -145,7 +153,7 @@ module RemoveSideEffects =
         (Lval.Index(l', e'), stlist1 @ stlist2, G'')
       end
 
-  let remove_side_effects_stmt stmt G =
+  let rec remove_side_effects_stmt stmt G =
     match stmt with
     | Assign(l, e) -> 
       begin
@@ -171,9 +179,88 @@ module RemoveSideEffects =
         let (e', d, G') = remove_side_effects_expr e G in
         (d @ [Assume(e')], G')
       end
+    | Assert(e) -> 
+      begin
+        let (e', d, G') = remove_side_effects_expr e G in
+        (d @ [Assert(e')], G')
+      end
+    | NewStmt(_, Nil) -> [stmt], G
+    | NewStmt(s, e)-> 
+      begin
+        let (e', d, G') = remove_side_effects_expr e G in
+        (d@[NewStmt(s, e')], G')
+      end
+    | Raise(e1, Nil) ->      
+      begin
+        let (e1', d, G') = remove_side_effects_expr e1 G in
+        (d@[Raise(e1', Nil)], G')
+      end
+    | Raise(e1, e2) ->
+      begin
+        let (e1', d1, G') = remove_side_effects_expr e1 G in
+          let (e2', d2, G'') = remove_side_effects_expr e2 G' in 
+            (d1 @ d2 @ [Raise(e1', e2')], G'')
+      end
+    | Send (e1, e2, Nil) ->
+      begin
+        let (e1', d1, G') = remove_side_effects_expr e1 G in
+          let (e2', d2, G'') = remove_side_effects_expr e2 G' in 
+            (d1 @ d2 @ [Send(e1', e2', Nil)], G'')
+      end
+    | Send (e1, e2, e3) ->
+      begin
+        let (e1', d1, G') = remove_side_effects_expr e1 G in
+          let (e2', d2, G'') = remove_side_effects_expr e2 G' in 
+            let (e3', d3, G''') = remove_side_effects_expr e3 G'' in 
+            (d1 @ d2 @ d3 @ [Send(e1', e2', e3')], G''')
+      end
+    | Skip -> [stmt], G
+    | While(c, s) -> 
+      begin
+        let (c', d1, G') = remove_side_effects_expr c G in
+          let (d2, G'') = remove_side_effects_stmt s G' in 
+            match s with
+            | SeqStmt(ls) -> (d1 @ [While(c', SeqStmt(d2 @ ls))], G'')
+            | _ -> (d1 @ [While(c', SeqStmt(d2 @ [s]))], G'') 
+      end
+    | Ite(c, i, e) -> 
+       begin
+        let (c', d1, G') = remove_side_effects_expr c G in
+          let (d2, G'') = remove_side_effects_stmt i G' in 
+            let (d3, G''') = remove_side_effects_stmt e G'' in 
+              let i' = 
+                match i with
+                | SeqStmt(ls) -> SeqStmt(d2 @ ls)
+                | _ -> SeqStmt(d2 @ [i])
+              let e' = 
+                match e with
+                | SeqStmt(ls) -> SeqStmt(d3 @ ls)
+                | _ -> SeqStmt(d3 @ [e])
+              d1 @ [Ite(c', i', e')], G'''
+      end
+    | SeqStmt(l) -> remove_side_effects_stlist l G
+    | Receive(l) -> [stmt], G //Come back!
+    | Pop -> [stmt], G
+    | Return(None) -> [stmt], G
+    | Return(Some(e)) -> 
+      begin
+        let (e', d, G') = remove_side_effects_expr e G in 
+          d @ [Return(Some(e'))], G'
+      end
+    | Monitor(e1, e2) -> 
+      begin
+        let (e1', d1, G') = remove_side_effects_expr e1 G in
+          let (e2', d2, G'') = remove_side_effects_expr e2 G' in 
+            (d1 @ d2 @ [Monitor(e1', e2')], G'')
+      end
+    | FunStmt(s, el, v) -> 
+      begin  
+        let (el', d, G') = remove_side_effects_exprlist el G in
+          d @ [FunStmt(s, el', v)], G'
+      end
 
-  (* returns new list of statements and the new G *)
-  let remove_side_effects_stlist stlist G =
+  /// returns new list of statements and the new G 
+  and remove_side_effects_stlist stlist G =
     List.fold (fun (partial_stlist, partial_G) stmt ->
       begin
         let (d, G') = remove_side_effects_stmt stmt partial_G in
@@ -181,16 +268,16 @@ module RemoveSideEffects =
       end
       ) ([], G) stlist
 
-  (* returns a list of statements and a new G *)
+  /// returns a list of statements and a new G 
   let rec normalize_lval_stmt st G =
     match st with
     | Assign(lval, e) ->
       begin
         match lval with
-            (* l.f = e
+            (*l.f = e
             * ==> 
-            * l = (l.0, l.1, ..., e)
-            *)
+            * l = (l.0, l.1, ..., e) *)
+            
         | Lval.Dot(l, f) -> 
           begin
             let t = tuple_size (typeof_lval l G) in
@@ -256,7 +343,7 @@ module RemoveSideEffects =
       end
     | _ -> ([st], G)
 
-  (* returns new list of statements and the new G *)
+  /// returns new list of statements and the new G 
   let normalize_lval_stlist stlist G =
     List.fold (fun (partial_stlist, partial_G) stmt ->
       begin
@@ -264,5 +351,40 @@ module RemoveSideEffects =
         (partial_stlist @ d, G')
       end
       ) ([], G) stlist
-      
-*)
+  
+  ///Get all the vars in G2 that are not present in G1.
+  let get_new_vars G1 G2 = 
+    let g1 = G1 |> Map.toSeq |> Seq.map fst |> Set.ofSeq
+    let g2 = G2 |> Map.toSeq |> Seq.map fst |> Set.ofSeq
+    let newVars = Set.difference g2 g1
+    [for x in newVars do yield new VarDecl(x, (Map.find x G2))]
+  
+  ///Return a new FunDecl with all statements causing 
+  ///only one side effect at most.
+  let remove_side_effects_fn G (f: FunDecl) = 
+    let G' = merge_maps G f.VarMap
+    let stList, G'' = remove_side_effects_stlist f.Body G'
+    let newVars = f.Locals @ (get_new_vars G' G'')
+    new FunDecl(f.Name, f.Formals, f.RetType, newVars, stList, f.IsModel, f.IsPure, f.EnvEmpty, f.EnvVars)
+
+  ///Return a new MachineDecl with all statements 
+  ///causing only one side effect at most.
+  let remove_side_effects_machine G (m:MachineDecl) = 
+    let funs = 
+      let map = ref Map.empty in
+        List.iter (fun(f: FunDecl) -> map := Map.add f.Name (if f.RetType.IsSome then f.RetType.Value else Type.Null) !map) m.Functions
+      !map 
+    let G' = merge_maps (merge_maps G m.VarMap) funs
+    let fList = List.map (remove_side_effects_fn G') m.Functions 
+    new MachineDecl(m.Name, m.StartState, m.Globals, fList, m.States, m.IsMonitor, m.MonitorList, m.QC, m.IsModel)
+
+  ///Return a new ProgramDecl with all statements causing 
+  ///only one side effect at most.
+  let remove_side_effects_program (prog: ProgramDecl) = 
+    let G =           
+      let map = ref Map.empty in
+        List.iter (fun(f: FunDecl) -> map := Map.add f.Name (if f.RetType.IsSome then f.RetType.Value else Type.Null) !map) prog.StaticFuns
+      !map 
+    let mList = List.map (remove_side_effects_machine G) prog.Machines
+    let fList = List.map (remove_side_effects_fn G) prog.StaticFuns
+    new ProgramDecl(prog.MainMachine, mList, prog.Events, fList)

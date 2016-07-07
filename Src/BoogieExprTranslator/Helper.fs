@@ -151,24 +151,30 @@ module Helper=
     | Lval.Dot(v, i) -> sprintf "%s.%d" (print_lval v) i
     | Lval.NamedDot(v, f) -> sprintf "%s.%s" (print_lval v) f
     | Lval.Index(l, e) -> sprintf "%s[%s]" (print_lval l) (print_expr e) 
+  
+  let print_env_tup (envType: VarDecl list) = 
+    let tup = Expr.Tuple([for v in envType do yield Expr.Var(v.Name)])
+    print_expr tup  
 
-  let print_env_nt envType =
+  let print_restore_env (envType: VarDecl list) =
     match envType with
-    | Type.NamedTuple([]) -> ""
-    | Type.NamedTuple([(n,t)]) -> sprintf "(%s=%s,)" n n
-    | Type.NamedTuple(ls) -> sprintf "(%s)" (print_list (fun(s, _)-> sprintf "%s=%s" s s) ls ", ")
+    | [] -> ""
+    | ls -> 
+      begin
+        let names = [for v in ls do yield v.Name] |>
+                    Seq.mapi (fun i x -> i,x) |> List.ofSeq
+        sprintf "%s;\n" (print_list (fun(i, s)-> sprintf "%s=env.%d" s i) names ";\n")
+      end
     | _ -> ""
 
-  let print_restore_env envType =
-    match envType with
-    | Type.NamedTuple([]) -> ""
-    | Type.NamedTuple(ls) -> sprintf "%s;\n" (print_list (fun(s, _)-> sprintf "%s=env.%s" s s) ls ";\n")
-    | _ -> ""
+  let print_env_type (env: VarDecl list) = 
+    let tup = Type.Tuple([for v in env do yield v.Type])
+    print_type tup
 
   let print_anon_fun f argType envType action has_params env_non_empty=      
     let pl_decl = if has_params then sprintf "(payload: %s)" (print_type argType) else ""
-    let env_decl = if env_non_empty then sprintf "var env: %s;\nenv = " (print_type envType) else ""
-    let param1 = if env_non_empty then (print_env_nt envType) else ""
+    let env_decl = if env_non_empty then sprintf "var env: %s;\nenv = " (print_env_type envType) else ""
+    let param1 = if env_non_empty then (print_env_tup envType) else ""
     let comma = if has_params && env_non_empty then ", " else ""
     let param2 = if has_params then "payload" else ""
     let restore = if env_non_empty then (print_restore_env envType) else ""
@@ -177,7 +183,7 @@ module Helper=
   let print_action (prog: ProgramDecl) cm fn action = 
     let fd = if (prog.FunMap.ContainsKey fn) then prog.FunMap.[fn]
              else  (prog.MachineMap.[cm].FunMap.[fn]) 
-    let envType = if fd.EnvEmpty then Type.Null else (List.head fd.Formals).Type
+    let envType = if fd.EnvEmpty then List.Empty else fd.EnvVars.Value
     let arg = 
       match fd.EnvEmpty, fd.Formals.IsEmpty with
       | true, true -> List.Empty
@@ -195,7 +201,7 @@ module Helper=
     let e = (Map.find ev prog.EventMap)
     let fd = if (prog.FunMap.ContainsKey fn) then prog.FunMap.[fn]
              else  (prog.MachineMap.[cm].FunMap.[fn]) 
-    let envType = (List.head fd.Formals).Type   
+    let envType = if fd.EnvEmpty then List.Empty else fd.EnvVars.Value   
     match e.Type with
       | Some(t) -> print_anon_fun fd.Name t envType action true (not fd.EnvEmpty)
       | None -> print_anon_fun fd.Name Type.Null envType action false (not fd.EnvEmpty)
@@ -212,6 +218,7 @@ module Helper=
     | Remove(l, e) -> sprintf "%s -= %s;\n" (print_lval l) (print_expr e)
     | Assert(e) -> sprintf "assert %s;\n" (print_expr e)
     | Assume(e) -> sprintf "assume %s;\n" (print_expr e)
+    | NewStmt(s, Nil) -> sprintf "new %s();\n" s
     | NewStmt(s, e) -> sprintf "new %s(%s);\n" s (print_expr e)
     | Raise(e1, Nil) -> sprintf "raise %s;\n" (print_expr e1)
     | Raise(e1, e2) -> sprintf "raise %s, %s;\n" (print_expr e1) (print_expr e2)
@@ -273,7 +280,8 @@ module Helper=
     let args = (print_list print_formal f.Formals ", ")
     let ret = if (f.RetType.IsSome) then (sprintf ": %s" (print_type f.RetType.Value)) else ""
     let locals = (print_var_list f.Locals)
-    sprintf "%sfun %s(%s)%s\n{%s\n%s}" model f.Name args ret locals (print_stmt prog cm f.Body)
+    let body = SeqStmt(f.Body)
+    sprintf "%sfun %s(%s)%s\n{\n%s\n%s}" model f.Name args ret locals (print_stmt prog cm body)
 
   let print_event (e: Syntax.EventDecl) =
     let typ = if (e.Type.IsSome) then (sprintf ": %s" (print_type e.Type.Value)) else ""

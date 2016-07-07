@@ -81,7 +81,7 @@ module Syntax =
 
   [<Serializable>]
   type FunDecl(name: string, formals: VarDecl list, rettype: Type option, 
-                  locals: VarDecl list, body: Stmt, is_model: bool, is_pure: bool, env_empty: bool) =
+                  locals: VarDecl list, body: Stmt list, is_model: bool, is_pure: bool, env_empty: bool, env_vars: VarDecl list option) =
     member this.Name = name
     member this.Formals = formals
     member this.RetType = rettype
@@ -89,7 +89,8 @@ module Syntax =
     member this.Body = body
     member this.IsModel = is_model
     member this.IsPure = is_pure
-    member this.EnvEmpty= env_empty
+    member this.EnvEmpty = env_empty
+    member this.EnvVars = env_vars
 
 //Implicitly assumes that there are no conflicts in the names of locals and formals.
     member this.VarMap = 

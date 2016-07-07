@@ -9,7 +9,7 @@ namespace Microsoft.P_FS_Boogie
 {
     class Program
     {
-        public static void Main(string[] args)
+        public static int Main(string[] args)
         {
             CommandLineOptions options = new CommandLineOptions();
             FSharpExpGen fsExpGen = new FSharpExpGen(options);
@@ -18,7 +18,9 @@ namespace Microsoft.P_FS_Boogie
             int w = 0;
             using (var sr = new StreamReader(@"C:\Users\t-suchav\Desktop\Crt.txt"))
             {
-                line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\ReturnIssue\returnIssue.p";
+                //line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\NonDetFunctionInExpr_2\nonDetFunctionInExpr_2.p";
+                //line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\nonAtomicDataTypesAllAsserts\nonAtomicDataTypesAllAsserts.p";
+                //line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\nonAtomicDataTypesAllAsserts\nonAtomicDataTypesAllAsserts.p";
                 Syntax.ProgramDecl prog = null;
                 while ((line = sr.ReadLine()) != null)
                 {
@@ -30,6 +32,9 @@ namespace Microsoft.P_FS_Boogie
                         try
                         {
                             prog = fsExpGen.genFSExpression(line + ".txt");
+                            prog = RemoveNamedTuples.remove_named_tuples_program(prog);
+                            prog = RemoveSideEffects.remove_side_effects_program(prog);
+                            //ProgramTyping.typecheck_program(prog);
                             Helper.print_prog(prog, sw);
                             Save(prog, line + ".dat");
                         }
@@ -50,6 +55,7 @@ namespace Microsoft.P_FS_Boogie
                 }
             }
             Console.WriteLine("Passed {0} tests out of {1}.", t - w, t);
+            return w;
         }
 
         static void Save(Syntax.ProgramDecl prog, string fileName)
