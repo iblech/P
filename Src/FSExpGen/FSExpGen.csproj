@@ -33,9 +33,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Compiler">
-      <HintPath>..\..\Bld\Drops\debug\x64\Binaries\Compiler.dll</HintPath>
-    </Reference>
     <Reference Include="Core">
       <HintPath>..\..\Ext\Formula\x64\Core.dll</HintPath>
     </Reference>
@@ -62,6 +59,10 @@
     <ProjectReference Include="..\BoogieExprTranslator\BoogieExprTranslator.fsproj">
       <Project>{dd849437-50d3-498f-a0b4-2e06b8387aa9}</Project>
       <Name>BoogieExprTranslator</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\Pc\Compiler\Compiler.csproj">
+      <Project>{ed76217f-2452-4a35-90f6-6eb6ccf2d882}</Project>
+      <Name>Compiler</Name>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

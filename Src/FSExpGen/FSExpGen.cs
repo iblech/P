@@ -1398,8 +1398,7 @@ namespace Microsoft.P_FS_Boogie
 
         private bool ReadFile(string inputFileName)
         {
-            List<Formula.API.Flag> flags;
-            var result = compiler.Compile(inputFileName, out flags);
+            var result = compiler.Compile(inputFileName);
 
             if (result)
             {

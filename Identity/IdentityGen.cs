@@ -1002,8 +1002,7 @@ namespace Microsoft.Identity
 
         private bool ReadFile(string inputFileName)
         {
-            List<Microsoft.Formula.API.Flag> flags;
-            var result = compiler.Compile(inputFileName, out flags);
+            var result = compiler.Compile(inputFileName);
 
             if (result)
             {
