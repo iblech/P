@@ -1399,6 +1399,7 @@ namespace Microsoft.P_FS_Boogie
         private bool ReadFile(string inputFileName)
         {
             var result = compiler.Compile(inputFileName);
+
             if (result)
             {
                 parsedPrograms = new List<PProgram>(compiler.ParsedPrograms.Values);
