@@ -42,8 +42,6 @@ namespace Microsoft.P_FS_Boogie
             options.analyzeOnly = true;
             options.profile = true;
             compiler = new Compiler(options);
-            events.Add(new Syntax.EventDecl("halt", null, null));
-            events.Add(new Syntax.EventDecl("null", null, null));
         }
 
         private static string getString(ICSharpTerm x)
@@ -1056,7 +1054,7 @@ namespace Microsoft.P_FS_Boogie
                 {
                     x = x.tl as P_Root.NmdTupType;
                 }
-                var v = genVar(x.hd as P_Root.NmdTupTypeField, name);
+                var v = genVar(x.hd as P_Root.NmdTupTypeField, name + "_payload");
                 args.Add(v);
             }
 
@@ -1270,6 +1268,9 @@ namespace Microsoft.P_FS_Boogie
             mainMachine = null;
             typeDefs.Clear();
             symbolTable.Clear();
+
+            events.Add(new Syntax.EventDecl("halt", null, null));
+            events.Add(new Syntax.EventDecl("null", null, null));
         }
 
         private void Init()

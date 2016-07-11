@@ -7,26 +7,34 @@ module Main =
 
   open Syntax
   open Helper
+  open ProgramTyping
 
   let file = @"C:\Users\t-suchav\Desktop\Correct.txt"
   //let sr = new System.IO.StreamReader(file)
   
-  let printProgram pFile = 
+  let getProgram pFile = 
     begin
       let formatter = new BinaryFormatter()
       let fileName = (sprintf "%s.dat" pFile)
       let stream = new FileStream(fileName, FileMode.Open, FileAccess.Read, FileShare.None)
-      let prog = formatter.Deserialize(stream) :?> Syntax.ProgramDecl
+      formatter.Deserialize(stream) :?> Syntax.ProgramDecl
+    end
+  let printProgram (pFile: string) = 
+    begin
+      
       System.Console.WriteLine("*****************************************************************************");
       System.Console.WriteLine(pFile);
+      let prog = getProgram pFile
       let OpFile = new System.IO.StreamWriter(pFile)
-      Helper.print_prog prog OpFile
+      print_prog prog OpFile
       OpFile.Close()
     end
 
 
   [<EntryPoint>]
   let main argv = 
-    File.ReadLines(file) |> Seq.iter (printProgram)
+    //File.ReadLines(file) |> Seq.iter (printProgram)
+    let prog = getProgram @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\receive1\receive1.p"
+    typecheck_program prog
     0
 

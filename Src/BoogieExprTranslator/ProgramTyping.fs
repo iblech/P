@@ -115,6 +115,31 @@ module ProgramTyping =
     | Call(callee, args) -> Map.find callee G
     | _ -> raise Not_defined
 
+  ///typeof_lval <lval> <Referencing Environment>
+  let rec typeof_lval lval G  =
+    match lval with
+    | Lval.Var(v) -> Map.find v G
+    | Lval.Dot(l, i) -> 
+      begin
+        match (typeof_lval l G) with
+        | Type.Tuple(ls) -> List.item i ls
+        | _ -> raise Not_defined
+      end
+    | Lval.NamedDot(l, f) -> 
+      begin
+        match (typeof_lval l G) with
+        | Type.NamedTuple(ls) -> lookup_named_field_type f ls
+        | _ -> raise Not_defined
+      end
+    | Lval.Index(l, e) ->
+      begin
+        match typeof_lval l G with
+        | Type.Seq(t) -> t
+        | Type.Map(t1, t2) -> t2
+        | _ -> raise Not_defined
+      end
+
+
   ///typecheck_expr <program> <Referencing Environment> <current machine> <expression>
   let rec typecheck_expr (prog:ProgramDecl) G cm expr =
     match expr with
@@ -265,26 +290,36 @@ module ProgramTyping =
       end
     end
 
-  ///typeof_lval <lval> <Referencing Environment>
-  let rec typeof_lval lval G  =
+  ///typecheck_lval <prog> <Referencing Environment> <Current Machine> <lval>
+  let rec typecheck_lval prog G cm lval = 
     match lval with
     | Lval.Var(v) -> Map.find v G
     | Lval.Dot(l, i) -> 
       begin
-        match (typeof_lval l G) with
+        match (typecheck_lval prog G cm lval) with
         | Type.Tuple(ls) -> List.item i ls
         | _ -> raise Not_defined
       end
     | Lval.NamedDot(l, f) -> 
       begin
-        match (typeof_lval l G) with
+        match (typecheck_lval prog G cm lval) with
         | Type.NamedTuple(ls) -> lookup_named_field_type f ls
         | _ -> raise Not_defined
       end
     | Lval.Index(l, e) ->
       begin
-        match typeof_lval l G with
-        | Type.Seq(t) -> t
+        let eType = typecheck_expr prog G cm e
+        match typecheck_lval prog G cm lval with
+        | Type.Seq(t) -> 
+          begin
+            type_assert (is_subtype eType Int) (sprintf "Error in indexing: %s is not an integer" (print_expr e))
+            t
+          end
+        | Type.Map(t1, t2) ->
+          begin
+            type_assert (is_subtype eType t1) (sprintf "Error in indexing: %s is not of type %s" (print_expr e) (print_type t1))
+            t2
+          end
         | _ -> raise Not_defined
       end
 
@@ -334,14 +369,34 @@ module ProgramTyping =
   
   ///Check if a case is valid.
   ///typecheck_case <program> <Referencing Environment> <current machine> <event> <action>  
+  //This is a special case. We have to exclude the environment arg of the anon function.
   let typecheck_case (prog: ProgramDecl) G cm e f= 
     let ev = prog.EventMap.[e]
-    if (ev.Type.IsSome) then 
+    let fd = if (prog.FunMap.ContainsKey f) then prog.FunMap.[f]
+             else  (prog.MachineMap.[cm].FunMap.[f]) 
+    let len = fd.Formals.Length
+    match ev.Type, fd.EnvEmpty with
+    | None, true -> 
       begin
-        let s = (sprintf "%s_payload" f)
-        (ignore (typecheck_call prog G cm f [Expr.Var(s)]))
+        if len <> 0 then raise (Type_exception (sprintf "Error in case statement: The event %s must take provide an argument"  e))
       end
-    else (ignore (typecheck_call prog G cm f []))
+    | None, false -> 
+      begin
+        if len <> 1 then raise (Type_exception (sprintf "Error in case statement: The event %s must take provide an argument"  e))
+      end
+
+    | Some(t), false -> 
+      begin
+        if len <> 2 then raise (Type_exception (sprintf "Error in case statement: The event %s must provide an argument"  e))
+        let arg = List.item 1 fd.Formals
+        type_assert (is_subtype t arg.Type) (sprintf "Invalid argument to %s: expects %s, not %s" f (print_type arg.Type) (print_type t))
+      end
+    | Some(t), true -> 
+      begin
+        if len <> 1 then raise (Type_exception (sprintf "Error in case statement: The event %s must not provide an argument"  e))
+        let arg = List.item 0 fd.Formals
+        type_assert (is_subtype t arg.Type) (sprintf "Invalid argument to %s: expects %s, not %s" f (print_type arg.Type) (print_type t))
+      end
   
   ///Type check statements.
   ///typecheck_stmt <program> <Referencing Environment> <current machine> <current function> <statement>
@@ -349,17 +404,17 @@ module ProgramTyping =
     match st with
     | Assign(l, e) -> 
       begin
-        let ltype = (typeof_lval l G)
+        let ltype = (typecheck_lval prog G cm l)
         let rtype = (typecheck_expr prog G cm e)
         type_assert (is_subtype rtype ltype) (sprintf "Invalid assignment: %s; lhs has type %s, but rhs has type %s " (print_stmt prog cm st) (print_type ltype) (print_type rtype))
       end
     | Insert(l, e1, e2) -> 
-      match typeof_lval l G with
+      match typecheck_lval prog G cm l with
       | Seq(t) -> type_assert ((is_subtype (typecheck_expr prog G cm e1) Int) && (is_subtype (typecheck_expr prog G cm e2) t)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))
       | Map(t1,t2) -> type_assert ((is_subtype (typecheck_expr prog G cm e1) t1) && (is_subtype (typecheck_expr prog G cm e2) t2)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))
       | _ -> type_assert false (sprintf "Invalid insert: %s" (print_stmt prog cm st))
     | Remove(l, e) ->
-      match typeof_lval l G with
+      match typecheck_lval prog G cm l with
       | Seq(t) -> type_assert (is_subtype (typecheck_expr prog G cm e) Int) (sprintf "Invalid remove: %s" (print_stmt prog cm st))
       | Map(t1,t2) -> type_assert (is_subtype (typecheck_expr prog G cm e) t1) (sprintf "Invalid remove: %s" (print_stmt prog cm st))
       | _ -> type_assert false (sprintf "Invalid remove: %s" (print_stmt prog cm st))

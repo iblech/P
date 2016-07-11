@@ -31,9 +31,9 @@ namespace Microsoft.P_FS_Boogie
                             prog = fsExpGen.genFSExpression(line + ".txt");
                             prog = RemoveNamedTuples.remove_named_tuples_program(prog);
                             prog = RemoveSideEffects.remove_side_effects_program(prog);
+                            Save(prog, line + ".dat"); //Debug
                             ProgramTyping.typecheck_program(prog);
                             Helper.print_prog(prog, sw);
-                            Save(prog, line + ".dat");
                         }
                         
                         catch (Exception e)

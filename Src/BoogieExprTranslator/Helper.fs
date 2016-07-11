@@ -165,7 +165,6 @@ module Helper=
                     Seq.mapi (fun i x -> i,x) |> List.ofSeq
         sprintf "%s;\n" (print_list (fun(i, s)-> sprintf "%s=env.%d" s i) names ";\n")
       end
-    | _ -> ""
 
   let print_env_type (env: VarDecl list) = 
     let tup = Type.Tuple([for v in env do yield v.Type])
