@@ -3,7 +3,7 @@ event MyEvent: (seq[(int)]);
 main machine MainMachine
 {
 
-fun MainMachine_Init_entry0_rand_853764899(MainMachine_Init_entry0_rand_853764899__payload_skip: any)
+fun MainMachine_Init_entry0_rand_923061545(MainMachine_Init_entry0_rand_923061545__payload_skip: any)
 {
 
 
@@ -11,7 +11,7 @@ fun MainMachine_Init_entry0_rand_853764899(MainMachine_Init_entry0_rand_85376489
 
 
 }
-fun MainMachine_Init_exit0_rand_438874718()
+fun MainMachine_Init_exit0_rand_539994675()
 {
 
 
@@ -20,10 +20,10 @@ fun MainMachine_Init_exit0_rand_438874718()
 
 }start  state MainMachine_Init
 {entry (payload: any) {
-MainMachine_Init_entry0_rand_853764899(payload);
+MainMachine_Init_entry0_rand_923061545(payload);
 }
 exit  {
-MainMachine_Init_exit0_rand_438874718();
+MainMachine_Init_exit0_rand_539994675();
 }
 }
 }

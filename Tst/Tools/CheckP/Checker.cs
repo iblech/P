@@ -403,23 +403,26 @@ namespace CheckP
                     Tuple<OptValueKind, object> zingerDefaultArg = 
                             new Tuple <OptValueKind, object> (OptValueKind.String, "..\\program.dll");
                     var lst = new List<Tuple<OptValueKind, object>>();
-                    //Changed
-                    lst.Add(new Tuple<OptValueKind, object>(OptValueKind.String, "-entireZingTrace"));
                     if (zingerArgs != null)
                     {
-                        lst.AddRange(zingerArgs.ToList());
+                        lst = zingerArgs.ToList();
+                        lst.Add(zingerDefaultArg);
+                        zingerArgs = lst.ToArray();
                     }
-                    lst.Add(zingerDefaultArg);
-                    zingerArgs = lst.ToArray();
-
-                    Console.WriteLine(zingerArgs);
+                    else
+                    {
+                        zingerArgs = new Tuple<OptValueKind, object>[1];
+                        zingerArgs[0] = zingerDefaultArg;
+                    }
                     
-                    int zingerResult = Run(tmpWriter, zingFilePath, zingerArgs);
+                    bool zingerResult = Run(tmpWriter, zingFilePath, zingerArgs);
 
-                    if (zingerResult != 0)
+                    //debug:
+                    //Console.WriteLine("Zinger returned: {0}", zingerResult);
+
+                    if (!zingerResult)
                     {
                         result = false;
-                        Console.WriteLine("ERROR: Zinger exited with {0}", zingerResult);
                     }
                     else if (isInclZinger && !AppendIncludes(tmpWriter, includesZinger))
                     {
@@ -510,30 +513,15 @@ namespace CheckP
                     }
 
                     //Run tester.exe:
-                    int prtResult = Run(tmpWriter, testerExePath, prtArgs);
-                    if (prtResult != 0)
+                    bool prtResult = Run(tmpWriter, testerExePath, prtArgs);
+                    if (!prtResult)
                     {
                         result = false;
-                        Console.WriteLine("ERROR: Prt exited with {0}", prtResult);
                     }
                     else if (isInclPrt && !AppendIncludes(tmpWriter, includesPrt))
                     {
                         result = false;
                     }
-
-                    //Added because Prt can say "yes" or "no" - not more!
-
-                    if (!CloseTmpStream(tmpWriter))
-                    {
-                        result = false;
-                    }
-
-                    if (result)
-                    {
-                        Console.WriteLine("SUCCESS: Output matched");
-                    }
-
-                    return result;
                 }
                 else
                 {
@@ -561,6 +549,11 @@ namespace CheckP
                 Console.WriteLine("LOGGED: Saved bad output to {0}",
                     Path.Combine(activeDirectory, LogFile));
 
+                result = false;
+            }
+
+            if (!DeleteTmpFile())
+            {
                 result = false;
             }
 
@@ -761,7 +754,7 @@ namespace CheckP
             }
         }
 
-        private int Run(
+        private bool Run(
             StreamWriter outStream,
             string exe,
             Tuple<OptValueKind, object>[] values)
@@ -813,13 +806,14 @@ namespace CheckP
                 outStream.Write(outString);
                 outStream.Write(errorString);
                 outStream.WriteLine("EXIT: {0}", process.ExitCode);
-                return process.ExitCode;
             }
             catch (Exception e)
             {
                 Console.WriteLine("ERROR: Failed to run command: {0}", e.Message);
-                return -5832;
+                return false;
             }
+
+            return true;
         }
 
 

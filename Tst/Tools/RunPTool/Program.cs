@@ -76,7 +76,7 @@ namespace RunPTool
             return true;
         }
 
-        static void PrintUsage()
+       static void PrintUsage()
         {
             Console.WriteLine("USAGE: RunPTool.exe  [options] [file with test dirs]");
             Console.WriteLine("Options:");
@@ -438,6 +438,7 @@ namespace RunPTool
                                     di.FullName);
                             }
                         }
+
                     }
 
                     //Since order of directory processing is significant (Pc should be processed before

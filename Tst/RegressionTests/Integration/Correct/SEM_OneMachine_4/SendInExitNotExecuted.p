@@ -11,7 +11,7 @@ assert false;
 
 
 }
-fun Real1_Real1_Init_entry0_rand_161004051(Real1_Real1_Init_entry0_rand_161004051__payload_0: any)
+fun Real1_Real1_Init_entry0_rand_2146536311(Real1_Real1_Init_entry0_rand_2146536311__payload_0: any)
 {
 
 
@@ -28,7 +28,7 @@ send this, E2;
 
 }start  state Real1_Real1_Init
 {entry (payload: any) {
-Real1_Real1_Init_entry0_rand_161004051(payload);
+Real1_Real1_Init_entry0_rand_2146536311(payload);
 }
 exit  {
 Real1_Real1_Init_exit10();

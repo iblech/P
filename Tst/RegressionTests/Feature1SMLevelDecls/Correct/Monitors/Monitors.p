@@ -9,14 +9,14 @@ fun MAIN_Init_entry16(MAIN_Init_entry16__payload_2: any)
 
 
 send this, local;
+
 ;
-;
-;
+
 ;
 
 
 }
-fun MAIN_Init_exit0_rand_719089966()
+fun MAIN_Init_exit0_rand_1399819507()
 {
 
 
@@ -28,7 +28,7 @@ fun MAIN_Init_exit0_rand_719089966()
 MAIN_Init_entry16(payload);
 }
 exit  {
-MAIN_Init_exit0_rand_719089966();
+MAIN_Init_exit0_rand_1399819507();
 }
 }
 }

@@ -10,18 +10,18 @@ var PING_count1: int;
 
 fun PING_Ping_Init_entry15(PING_Ping_Init_entry15__payload_0: any)
 {
-var _tmp1175: machine;
+var _tmp1182: machine;
 
 
-_tmp1175 = new PONG(null);
-;
-PING_pongId = _tmp1175;
-;
+_tmp1182 = new PONG(null);
+
+PING_pongId = _tmp1182;
+
 raise Success;
 
 
 }
-fun PING_Ping_Init_exit0_rand_1954898281()
+fun PING_Ping_Init_exit0_rand_1961906660()
 {
 
 
@@ -34,12 +34,12 @@ fun PING_Ping_SendPing_entry23(PING_Ping_SendPing_entry23__payload_1: any)
 
 
 send PING_pongId, Ping, this;
-;
+
 raise Success;
 
 
 }
-fun PING_Ping_SendPing_exit0_rand_268756523()
+fun PING_Ping_SendPing_exit0_rand_2135586266()
 {
 
 
@@ -47,7 +47,7 @@ fun PING_Ping_SendPing_exit0_rand_268756523()
 
 
 }
-fun PING_Ping_WaitPong_entry0_rand_260950940(PING_Ping_WaitPong_entry0_rand_260950940__payload_skip: any)
+fun PING_Ping_WaitPong_entry0_rand_1938712566(PING_Ping_WaitPong_entry0_rand_1938712566__payload_skip: any)
 {
 
 
@@ -55,7 +55,7 @@ fun PING_Ping_WaitPong_entry0_rand_260950940(PING_Ping_WaitPong_entry0_rand_2609
 
 
 }
-fun PING_Ping_WaitPong_exit0_rand_933771438()
+fun PING_Ping_WaitPong_exit0_rand_1160988339()
 {
 
 
@@ -63,7 +63,7 @@ fun PING_Ping_WaitPong_exit0_rand_933771438()
 
 
 }
-fun PING_Done_entry0_rand_361886379(PING_Done_entry0_rand_361886379__payload_skip: any)
+fun PING_Done_entry0_rand_1972722181(PING_Done_entry0_rand_1972722181__payload_skip: any)
 {
 
 
@@ -71,7 +71,7 @@ fun PING_Done_entry0_rand_361886379(PING_Done_entry0_rand_361886379__payload_ski
 
 
 }
-fun PING_Done_exit0_rand_843718319()
+fun PING_Done_exit0_rand_1726785837()
 {
 
 
@@ -79,7 +79,7 @@ fun PING_Done_exit0_rand_843718319()
 
 
 }
-fun PING_Ping_Init_on_Success_goto_PING_Ping_SendPing0_rand_1685766381(PING_Ping_Init_on_Success_goto_PING_Ping_SendPing0_rand_1685766381__payload_skip: any)
+fun PING_Ping_Init_on_Success_goto_PING_Ping_SendPing0_rand_15688187(PING_Ping_Init_on_Success_goto_PING_Ping_SendPing0_rand_15688187__payload_skip: any)
 {
 
 
@@ -87,7 +87,7 @@ fun PING_Ping_Init_on_Success_goto_PING_Ping_SendPing0_rand_1685766381(PING_Ping
 
 
 }
-fun PING_Ping_SendPing_on_Success_goto_PING_Ping_WaitPong0_rand_720936349(PING_Ping_SendPing_on_Success_goto_PING_Ping_WaitPong0_rand_720936349__payload_skip: any)
+fun PING_Ping_SendPing_on_Success_goto_PING_Ping_WaitPong0_rand_575577816(PING_Ping_SendPing_on_Success_goto_PING_Ping_WaitPong0_rand_575577816__payload_skip: any)
 {
 
 
@@ -95,7 +95,7 @@ fun PING_Ping_SendPing_on_Success_goto_PING_Ping_WaitPong0_rand_720936349(PING_P
 
 
 }
-fun PING_Ping_WaitPong_on_Pong_goto_PING_Ping_SendPing0_rand_2104970394(PING_Ping_WaitPong_on_Pong_goto_PING_Ping_SendPing0_rand_2104970394__payload_skip: any)
+fun PING_Ping_WaitPong_on_Pong_goto_PING_Ping_SendPing0_rand_289464830(PING_Ping_WaitPong_on_Pong_goto_PING_Ping_SendPing0_rand_289464830__payload_skip: any)
 {
 
 
@@ -107,7 +107,7 @@ fun PING_Ping_WaitPong_on_Pong_goto_PING_Ping_SendPing0_rand_2104970394(PING_Pin
 PING_Ping_Init_entry15(payload);
 }
 exit  {
-PING_Ping_Init_exit0_rand_1954898281();
+PING_Ping_Init_exit0_rand_1961906660();
 }
 }
  state PING_Ping_SendPing
@@ -115,23 +115,23 @@ PING_Ping_Init_exit0_rand_1954898281();
 PING_Ping_SendPing_entry23(payload);
 }
 exit  {
-PING_Ping_SendPing_exit0_rand_268756523();
+PING_Ping_SendPing_exit0_rand_2135586266();
 }
 }
  state PING_Ping_WaitPong
 {entry (payload: any) {
-PING_Ping_WaitPong_entry0_rand_260950940(payload);
+PING_Ping_WaitPong_entry0_rand_1938712566(payload);
 }
 exit  {
-PING_Ping_WaitPong_exit0_rand_933771438();
+PING_Ping_WaitPong_exit0_rand_1160988339();
 }
 }
  state PING_Done
 {entry (payload: any) {
-PING_Done_entry0_rand_361886379(payload);
+PING_Done_entry0_rand_1972722181(payload);
 }
 exit  {
-PING_Done_exit0_rand_843718319();
+PING_Done_exit0_rand_1726785837();
 }
 }
 }
@@ -140,7 +140,7 @@ machine PONG
 {
 var PONG_count2: int;
 
-fun PONG_Pong_WaitPing_entry0_rand_1643510073(PONG_Pong_WaitPing_entry0_rand_1643510073__payload_2: any)
+fun PONG_Pong_WaitPing_entry0_rand_1075746542(PONG_Pong_WaitPing_entry0_rand_1075746542__payload_2: any)
 {
 
 
@@ -148,7 +148,7 @@ fun PONG_Pong_WaitPing_entry0_rand_1643510073(PONG_Pong_WaitPing_entry0_rand_164
 
 
 }
-fun PONG_Pong_WaitPing_exit0_rand_1276349698()
+fun PONG_Pong_WaitPing_exit0_rand_209060209()
 {
 
 
@@ -158,19 +158,19 @@ fun PONG_Pong_WaitPing_exit0_rand_1276349698()
 }
 fun PONG_Pong_SendPong_entry45(PONG_Pong_SendPong_entry45_payload: machine)
 {
-var _tmp1176: bool;
-var _tmp1177: bool;
+var _tmp1183: bool;
+var _tmp1184: bool;
 
 
 PONG_count2 = (PONG_count2 + 1);
-;
-_tmp1176 = (PONG_count2 == 1);
-;
-if(_tmp1176)
+
+_tmp1183 = (PONG_count2 == 1);
+
+if(_tmp1183)
 {
 
 send PONG_Pong_SendPong_entry45_payload, Pong;
-;
+
 send PONG_Pong_SendPong_entry45_payload, Pong;
 
 
@@ -180,24 +180,24 @@ else
 {
 
 ;
-;
+
 ;
 
 
 
 }
-;
-_tmp1177 = (PONG_count2 == 2);
-;
-if(_tmp1177)
+
+_tmp1184 = (PONG_count2 == 2);
+
+if(_tmp1184)
 {
 
 send PONG_Pong_SendPong_entry45_payload, Pong;
-;
+
 raise halt;
-;
+
 send PONG_Pong_SendPong_entry45_payload, Pong;
-;
+
 raise halt;
 
 
@@ -207,18 +207,18 @@ else
 {
 
 ;
-;
+
 ;
 
 
 
 }
-;
+
 raise Success;
 
 
 }
-fun PONG_Pong_SendPong_exit0_rand_1258448417()
+fun PONG_Pong_SendPong_exit0_rand_1316427332()
 {
 
 
@@ -226,7 +226,7 @@ fun PONG_Pong_SendPong_exit0_rand_1258448417()
 
 
 }
-fun PONG_Pong_WaitPing_on_Ping_goto_PONG_Pong_SendPong0_rand_217189062(PONG_Pong_WaitPing_on_Ping_goto_PONG_Pong_SendPong0_rand_217189062__payload_skip: any)
+fun PONG_Pong_WaitPing_on_Ping_goto_PONG_Pong_SendPong0_rand_2098193857(PONG_Pong_WaitPing_on_Ping_goto_PONG_Pong_SendPong0_rand_2098193857__payload_skip: any)
 {
 
 
@@ -234,7 +234,7 @@ fun PONG_Pong_WaitPing_on_Ping_goto_PONG_Pong_SendPong0_rand_217189062(PONG_Pong
 
 
 }
-fun PONG_Pong_SendPong_on_Success_goto_PONG_Pong_WaitPing0_rand_1612410504(PONG_Pong_SendPong_on_Success_goto_PONG_Pong_WaitPing0_rand_1612410504__payload_skip: any)
+fun PONG_Pong_SendPong_on_Success_goto_PONG_Pong_WaitPing0_rand_1688831226(PONG_Pong_SendPong_on_Success_goto_PONG_Pong_WaitPing0_rand_1688831226__payload_skip: any)
 {
 
 
@@ -243,10 +243,10 @@ fun PONG_Pong_SendPong_on_Success_goto_PONG_Pong_WaitPing0_rand_1612410504(PONG_
 
 }start  state PONG_Pong_WaitPing
 {entry (payload: any) {
-PONG_Pong_WaitPing_entry0_rand_1643510073(payload);
+PONG_Pong_WaitPing_entry0_rand_1075746542(payload);
 }
 exit  {
-PONG_Pong_WaitPing_exit0_rand_1276349698();
+PONG_Pong_WaitPing_exit0_rand_209060209();
 }
 }
  state PONG_Pong_SendPong
@@ -254,7 +254,7 @@ PONG_Pong_WaitPing_exit0_rand_1276349698();
 PONG_Pong_SendPong_entry45(payload);
 }
 exit  {
-PONG_Pong_SendPong_exit0_rand_1258448417();
+PONG_Pong_SendPong_exit0_rand_1316427332();
 }
 }
 }

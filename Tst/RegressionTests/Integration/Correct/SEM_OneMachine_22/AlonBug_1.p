@@ -9,7 +9,7 @@ fun Program_Init_entry10(Program_Init_entry10__payload_0: any)
 
 
 Program_i = 0;
-;
+
 raise E;
 
 
@@ -24,16 +24,16 @@ assert false;
 }
 fun Program_Call_entry18(Program_Call_entry18__payload_2: any)
 {
-var _tmp1167: bool;
+var _tmp1174: bool;
 
 
-_tmp1167 = (Program_i == 0);
-;
-if(_tmp1167)
+_tmp1174 = (Program_i == 0);
+
+if(_tmp1174)
 {
 
 raise E;
-;
+
 raise E;
 
 
@@ -43,7 +43,7 @@ else
 {
 
 Program_i = (Program_i + 1);
-;
+
 Program_i = (Program_i + 1);
 
 
@@ -57,7 +57,7 @@ fun Program_Call_exit28()
 
 
 assert false;
-;
+
 ;
 
 

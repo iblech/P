@@ -16,20 +16,20 @@ assert false;
 }
 fun Real_Real_Init_entry11(Real_Real_Init_entry11__payload_0: any)
 {
-var _tmp24: machine;
+var _tmp23: machine;
 
 
 Real_x = 0;
-;
-_tmp24 = new Ghost(this);
-;
-Real_ghost_machine = _tmp24;
-;
+
+_tmp23 = new Ghost(this);
+
+Real_ghost_machine = _tmp23;
+
 send Real_ghost_machine, E0;
 
 
 }
-fun Real_Real_Init_exit0_rand_426918033()
+fun Real_Real_Init_exit0_rand_868988117()
 {
 
 
@@ -41,7 +41,7 @@ fun Real_Real_Init_exit0_rand_426918033()
 Real_Real_Init_entry11(payload);
 }
 exit  {
-Real_Real_Init_exit0_rand_426918033();
+Real_Real_Init_exit0_rand_868988117();
 }
 }
 }
@@ -55,12 +55,12 @@ fun Ghost__Init_entry26(Ghost__Init_entry26_payload: machine)
 
 
 Ghost_real_machine = Ghost__Init_entry26_payload;
-;
+
 send Ghost_real_machine, E1;
 
 
 }
-fun Ghost__Init_exit0_rand_1806337055()
+fun Ghost__Init_exit0_rand_685339336()
 {
 
 
@@ -72,7 +72,7 @@ fun Ghost__Init_exit0_rand_1806337055()
 Ghost__Init_entry26(payload);
 }
 exit  {
-Ghost__Init_exit0_rand_1806337055();
+Ghost__Init_exit0_rand_685339336();
 }
 }
 }

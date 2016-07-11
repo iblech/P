@@ -20,7 +20,7 @@ TestMachine_foo(1, 3, x);
 
 
 }
-fun TestMachine_Init_exit0_rand_2123099314()
+fun TestMachine_Init_exit0_rand_434918559()
 {
 
 
@@ -32,7 +32,7 @@ fun TestMachine_Init_exit0_rand_2123099314()
 TestMachine_Init_entry6(payload);
 }
 exit  {
-TestMachine_Init_exit0_rand_2123099314();
+TestMachine_Init_exit0_rand_434918559();
 }
 }
 }

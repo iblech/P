@@ -15,12 +15,12 @@ Real1_test = true;
 }
 fun Real1_Action2()
 {
-var _tmp1166: bool;
+var _tmp1173: bool;
 
 
-_tmp1166 = (Real1_test == false);
-;
-assert _tmp1166;
+_tmp1173 = (Real1_test == false);
+
+assert _tmp1173;
 
 
 }
@@ -29,12 +29,12 @@ fun Real1_Real1_Init_entry10(Real1_Real1_Init_entry10__payload_0: any)
 
 
 raise E1;
-;
+
 send this, E2;
 
 
 }
-fun Real1_Real1_Init_exit0_rand_1569536076()
+fun Real1_Real1_Init_exit0_rand_573792702()
 {
 
 
@@ -46,7 +46,7 @@ fun Real1_Real1_Init_exit0_rand_1569536076()
 Real1_Real1_Init_entry10(payload);
 }
 exit  {
-Real1_Real1_Init_exit0_rand_1569536076();
+Real1_Real1_Init_exit0_rand_573792702();
 }
 }
 }

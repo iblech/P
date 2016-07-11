@@ -11,12 +11,12 @@ var Real_test: bool;
 
 fun Real_Action1(Real_Action1_payload: int)
 {
-var _tmp249: bool;
+var _tmp995: bool;
 
 
-_tmp249 = (Real_Action1_payload == 100);
+_tmp995 = (Real_Action1_payload == 100);
 
-assert _tmp249;
+assert _tmp995;
 
 send Real_ghost_machine, E3;
 
@@ -26,12 +26,12 @@ send Real_ghost_machine, E3;
 }
 fun Real_Real_Init_entry13(Real_Real_Init_entry13__payload_0: any)
 {
-var _tmp250: machine;
+var _tmp996: machine;
 
 
-_tmp250 = new Ghost(this);
+_tmp996 = new Ghost(this);
 
-Real_ghost_machine = _tmp250;
+Real_ghost_machine = _tmp996;
 
 raise unit;
 
@@ -53,7 +53,7 @@ send Real_ghost_machine, E1;
 
 
 }
-fun Real_Real_S1_exit0_rand_1408302631()
+fun Real_Real_S1_exit0_rand_1372297064()
 {
 
 
@@ -69,7 +69,7 @@ raise unit;
 
 
 }
-fun Real_Real_S2_exit0_rand_1614931501()
+fun Real_Real_S2_exit0_rand_943744481()
 {
 
 
@@ -77,7 +77,7 @@ fun Real_Real_S2_exit0_rand_1614931501()
 
 
 }
-fun Real_Real_S3_entry0_rand_1622993974(Real_Real_S3_entry0_rand_1622993974__payload_4: any)
+fun Real_Real_S3_entry0_rand_1264017372(Real_Real_S3_entry0_rand_1264017372__payload_4: any)
 {
 
 
@@ -85,7 +85,7 @@ fun Real_Real_S3_entry0_rand_1622993974(Real_Real_S3_entry0_rand_1622993974__pay
 
 
 }
-fun Real_Real_S3_exit0_rand_1664556153()
+fun Real_Real_S3_exit0_rand_1045620563()
 {
 
 
@@ -101,7 +101,7 @@ Real_Action1(Real_Real_Init_do_E211_payload);
 
 
 }
-fun Real_Real_Init_on_E4_goto_Real_Real_S20_rand_1447774370(Real_Real_Init_on_E4_goto_Real_Real_S20_rand_1447774370__payload_skip: any)
+fun Real_Real_Init_on_E4_goto_Real_Real_S20_rand_1305442044(Real_Real_Init_on_E4_goto_Real_Real_S20_rand_1305442044__payload_skip: any)
 {
 
 
@@ -109,7 +109,7 @@ fun Real_Real_Init_on_E4_goto_Real_Real_S20_rand_1447774370(Real_Real_Init_on_E4
 
 
 }
-fun Real_Real_S2_on_unit_goto_Real_Real_S30_rand_538575514(Real_Real_S2_on_unit_goto_Real_Real_S30_rand_538575514__payload_skip: any)
+fun Real_Real_S2_on_unit_goto_Real_Real_S30_rand_1804877116(Real_Real_S2_on_unit_goto_Real_Real_S30_rand_1804877116__payload_skip: any)
 {
 
 
@@ -117,7 +117,7 @@ fun Real_Real_S2_on_unit_goto_Real_Real_S30_rand_538575514(Real_Real_S2_on_unit_
 
 
 }
-fun Real_Real_S3_on_E4_goto_Real_Real_S30_rand_1962849181(Real_Real_S3_on_E4_goto_Real_Real_S30_rand_1962849181__payload_skip: any)
+fun Real_Real_S3_on_E4_goto_Real_Real_S30_rand_999411189(Real_Real_S3_on_E4_goto_Real_Real_S30_rand_999411189__payload_skip: any)
 {
 
 
@@ -137,7 +137,7 @@ Real_Real_Init_exit18();
 Real_Real_S1_entry26(payload);
 }
 exit  {
-Real_Real_S1_exit0_rand_1408302631();
+Real_Real_S1_exit0_rand_1372297064();
 }
 }
  state Real_Real_S2
@@ -145,15 +145,15 @@ Real_Real_S1_exit0_rand_1408302631();
 Real_Real_S2_entry32(payload);
 }
 exit  {
-Real_Real_S2_exit0_rand_1614931501();
+Real_Real_S2_exit0_rand_943744481();
 }
 }
  state Real_Real_S3
 {entry (payload: any) {
-Real_Real_S3_entry0_rand_1622993974(payload);
+Real_Real_S3_entry0_rand_1264017372(payload);
 }
 exit  {
-Real_Real_S3_exit0_rand_1664556153();
+Real_Real_S3_exit0_rand_1045620563();
 }
 }
 }
@@ -172,7 +172,7 @@ raise unit;
 
 
 }
-fun Ghost__Init_exit0_rand_720634711()
+fun Ghost__Init_exit0_rand_1318594446()
 {
 
 
@@ -180,7 +180,7 @@ fun Ghost__Init_exit0_rand_720634711()
 
 
 }
-fun Ghost_Ghost_Init_entry0_rand_1744383533(Ghost_Ghost_Init_entry0_rand_1744383533__payload_5: any)
+fun Ghost_Ghost_Init_entry0_rand_2038576685(Ghost_Ghost_Init_entry0_rand_2038576685__payload_5: any)
 {
 
 
@@ -188,7 +188,7 @@ fun Ghost_Ghost_Init_entry0_rand_1744383533(Ghost_Ghost_Init_entry0_rand_1744383
 
 
 }
-fun Ghost_Ghost_Init_exit0_rand_1938733362()
+fun Ghost_Ghost_Init_exit0_rand_950420155()
 {
 
 
@@ -204,7 +204,7 @@ send Ghost_real_machine, E2, 100;
 
 
 }
-fun Ghost_Ghost_S1_exit0_rand_1905551928()
+fun Ghost_Ghost_S1_exit0_rand_1240099731()
 {
 
 
@@ -224,7 +224,7 @@ send Ghost_real_machine, E4;
 
 
 }
-fun Ghost_Ghost_S2_exit0_rand_827160129()
+fun Ghost_Ghost_S2_exit0_rand_1805734837()
 {
 
 
@@ -232,7 +232,7 @@ fun Ghost_Ghost_S2_exit0_rand_827160129()
 
 
 }
-fun Ghost__Init_on_unit_goto_Ghost_Ghost_Init0_rand_1587378472(Ghost__Init_on_unit_goto_Ghost_Ghost_Init0_rand_1587378472__payload_skip: any)
+fun Ghost__Init_on_unit_goto_Ghost_Ghost_Init0_rand_1131445177(Ghost__Init_on_unit_goto_Ghost_Ghost_Init0_rand_1131445177__payload_skip: any)
 {
 
 
@@ -240,7 +240,7 @@ fun Ghost__Init_on_unit_goto_Ghost_Ghost_Init0_rand_1587378472(Ghost__Init_on_un
 
 
 }
-fun Ghost_Ghost_Init_on_E1_goto_Ghost_Ghost_S10_rand_202616744(Ghost_Ghost_Init_on_E1_goto_Ghost_Ghost_S10_rand_202616744__payload_skip: any)
+fun Ghost_Ghost_Init_on_E1_goto_Ghost_Ghost_S10_rand_1451825963(Ghost_Ghost_Init_on_E1_goto_Ghost_Ghost_S10_rand_1451825963__payload_skip: any)
 {
 
 
@@ -248,7 +248,7 @@ fun Ghost_Ghost_Init_on_E1_goto_Ghost_Ghost_S10_rand_202616744(Ghost_Ghost_Init_
 
 
 }
-fun Ghost_Ghost_S1_on_E3_goto_Ghost_Ghost_S20_rand_44551900(Ghost_Ghost_S1_on_E3_goto_Ghost_Ghost_S20_rand_44551900__payload_skip: any)
+fun Ghost_Ghost_S1_on_E3_goto_Ghost_Ghost_S20_rand_1374794257(Ghost_Ghost_S1_on_E3_goto_Ghost_Ghost_S20_rand_1374794257__payload_skip: any)
 {
 
 
@@ -256,7 +256,7 @@ fun Ghost_Ghost_S1_on_E3_goto_Ghost_Ghost_S20_rand_44551900(Ghost_Ghost_S1_on_E3
 
 
 }
-fun Ghost_Ghost_S2_on_E3_goto_Ghost_Ghost_Init0_rand_1613440733(Ghost_Ghost_S2_on_E3_goto_Ghost_Ghost_Init0_rand_1613440733__payload_skip: any)
+fun Ghost_Ghost_S2_on_E3_goto_Ghost_Ghost_Init0_rand_770223348(Ghost_Ghost_S2_on_E3_goto_Ghost_Ghost_Init0_rand_770223348__payload_skip: any)
 {
 
 
@@ -268,15 +268,15 @@ fun Ghost_Ghost_S2_on_E3_goto_Ghost_Ghost_Init0_rand_1613440733(Ghost_Ghost_S2_o
 Ghost__Init_entry52(payload);
 }
 exit  {
-Ghost__Init_exit0_rand_720634711();
+Ghost__Init_exit0_rand_1318594446();
 }
 }
  state Ghost_Ghost_Init
 {entry (payload: any) {
-Ghost_Ghost_Init_entry0_rand_1744383533(payload);
+Ghost_Ghost_Init_entry0_rand_2038576685(payload);
 }
 exit  {
-Ghost_Ghost_Init_exit0_rand_1938733362();
+Ghost_Ghost_Init_exit0_rand_950420155();
 }
 }
  state Ghost_Ghost_S1
@@ -284,7 +284,7 @@ Ghost_Ghost_Init_exit0_rand_1938733362();
 Ghost_Ghost_S1_entry65(payload);
 }
 exit  {
-Ghost_Ghost_S1_exit0_rand_1905551928();
+Ghost_Ghost_S1_exit0_rand_1240099731();
 }
 }
  state Ghost_Ghost_S2
@@ -292,7 +292,7 @@ Ghost_Ghost_S1_exit0_rand_1905551928();
 Ghost_Ghost_S2_entry72(payload);
 }
 exit  {
-Ghost_Ghost_S2_exit0_rand_827160129();
+Ghost_Ghost_S2_exit0_rand_1805734837();
 }
 }
 }

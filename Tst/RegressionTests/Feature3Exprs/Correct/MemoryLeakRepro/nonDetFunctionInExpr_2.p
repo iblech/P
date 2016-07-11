@@ -6,16 +6,16 @@ var M_i: int;
 
 fun M_F(): int
 {
-var _tmp186: bool;
+var _tmp193: bool;
 
 
-_tmp186 = $;
-;
-if(_tmp186)
+_tmp193 = $;
+
+if(_tmp193)
 {
 
 return (0);
-;
+
 return (0);
 
 
@@ -25,7 +25,7 @@ else
 {
 
 return (1);
-;
+
 return (1);
 
 
@@ -47,16 +47,16 @@ fun M_S_entry20(M_S_entry20__payload_0: any)
 
 
 M_t.0 += (0, 2);
-;
+
 M_t.0 += (1, 2);
-;
+
 M_i = M_F();
-;
+
 M_t.0 -= M_i;
 
 
 }
-fun M_S_exit0_rand_1748160418()
+fun M_S_exit0_rand_41198906()
 {
 
 
@@ -68,7 +68,7 @@ fun M_S_exit0_rand_1748160418()
 M_S_entry20(payload);
 }
 exit  {
-M_S_exit0_rand_1748160418();
+M_S_exit0_rand_41198906();
 }
 }
 }
