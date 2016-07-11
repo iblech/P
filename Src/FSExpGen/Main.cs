@@ -16,11 +16,8 @@ namespace Microsoft.P_FS_Boogie
             string line = null;
             int t = 0;
             int w = 0;
-            using (var sr = new StreamReader(@"C:\Users\t-suchav\Desktop\Crt.txt"))
+            using (var sr = new StreamReader(@"C:\Users\t-suchav\Desktop\Correct.txt"))
             {
-                //line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\NonDetFunctionInExpr_2\nonDetFunctionInExpr_2.p";
-                //line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\nonAtomicDataTypesAllAsserts\nonAtomicDataTypesAllAsserts.p";
-                //line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\nonAtomicDataTypesAllAsserts\nonAtomicDataTypesAllAsserts.p";
                 Syntax.ProgramDecl prog = null;
                 while ((line = sr.ReadLine()) != null)
                 {
@@ -34,7 +31,7 @@ namespace Microsoft.P_FS_Boogie
                             prog = fsExpGen.genFSExpression(line + ".txt");
                             prog = RemoveNamedTuples.remove_named_tuples_program(prog);
                             prog = RemoveSideEffects.remove_side_effects_program(prog);
-                            //ProgramTyping.typecheck_program(prog);
+                            ProgramTyping.typecheck_program(prog);
                             Helper.print_prog(prog, sw);
                             Save(prog, line + ".dat");
                         }

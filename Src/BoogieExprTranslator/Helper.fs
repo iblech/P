@@ -222,12 +222,12 @@ module Helper=
     | NewStmt(s, e) -> sprintf "new %s(%s);\n" s (print_expr e)
     | Raise(e1, Nil) -> sprintf "raise %s;\n" (print_expr e1)
     | Raise(e1, e2) -> sprintf "raise %s, %s;\n" (print_expr e1) (print_expr e2)
-    | Send (e1, e2, Expr.Nil) -> sprintf "send %s, %s;\n" (print_expr e1) (print_expr e2) 
+    | Send (e1, e2, Nil) -> sprintf "send %s, %s;\n" (print_expr e1) (print_expr e2) 
     | Send (e1, e2, e3) -> sprintf "send %s, %s, %s;\n" (print_expr e1) (print_expr e2) (print_expr e3)
     | Skip -> ";\n"
     | While(c, s) -> sprintf "while(%s)\n{\n%s\n}\n" (print_expr c) (print_stmt prog cm s)
     | Ite(c, i, e) -> sprintf "if(%s)\n{\n%s\n}\nelse\n{\n%s\n}\n" (print_expr c) (print_stmt prog cm i) (print_stmt prog cm e)
-    | SeqStmt(l) -> sprintf "\n%s\n\n" (print_list (print_stmt prog cm) l ";\n")
+    | SeqStmt(l) -> sprintf "\n%s\n\n" (print_list (print_stmt prog cm) l "\n")
     | Receive(l) -> sprintf "receive\n{\n%s\n}\n" (print_list (print_cases prog cm) l "\n")
     | Pop -> "pop;\n"
     | Return(None) -> "return;\n"

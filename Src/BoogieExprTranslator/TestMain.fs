@@ -8,7 +8,7 @@ module Main =
   open Syntax
   open Helper
 
-  let file = @"C:\Users\t-suchav\Desktop\Crt.txt"
+  let file = @"C:\Users\t-suchav\Desktop\Correct.txt"
   //let sr = new System.IO.StreamReader(file)
   
   let printProgram pFile = 

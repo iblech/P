@@ -1,0 +1,1 @@
+C:\Users\t-suchav\P\Bld\Drops\Release\x86\Binaries\zinger.exe -entireZingTrace FunctionParMutated.p

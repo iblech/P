@@ -1,15 +1,38 @@
-// P semantics test: one machine, "send" to itself in exit function
-// exit function is never executed, since control never leaves the Real1_Init state
-event E2 assert 1;
+event E2  assert 1;
 
-main machine Real1 {
-    start state Real1_Init {
-        entry {   
-        }
-        on E2 do Action2; 
-        exit {  send this, E2; }
-	}
-	fun Action2() {
-		assert(false);  //unreachable
-    }
+main machine Real1
+{
+
+fun Real1_Action2()
+{
+
+
+assert false;
+
+
 }
+fun Real1_Real1_Init_entry0_rand_161004051(Real1_Real1_Init_entry0_rand_161004051__payload_0: any)
+{
+
+
+;
+
+
+}
+fun Real1_Real1_Init_exit10()
+{
+
+
+send this, E2;
+
+
+}start  state Real1_Real1_Init
+{entry (payload: any) {
+Real1_Real1_Init_entry0_rand_161004051(payload);
+}
+exit  {
+Real1_Real1_Init_exit10();
+}
+}
+}
+

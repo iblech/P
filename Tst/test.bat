@@ -17,8 +17,8 @@ if %ERRORLEVEL% neq 0 (
   exit /B 1
 )
 
-echo %SCRIPTDIR%..\Bld\Drops\%Configuration%\x86\Binaries\RunPTool.exe /runPc "C:\Users\t-suchav\Desktop\Dirs.txt"
-"%SCRIPTDIR%..\Bld\Drops\%Configuration%\x86\Binaries\RunPTool.exe" /runPc  "C:\Users\t-suchav\Desktop\Dirs.txt"
+echo %SCRIPTDIR%..\Bld\Drops\%Configuration%\x86\Binaries\RunPTool.exe "C:\Users\t-suchav\Desktop\Dirs.txt"
+"%SCRIPTDIR%..\Bld\Drops\%Configuration%\x86\Binaries\RunPTool.exe"  "C:\Users\t-suchav\Desktop\Dirs.txt"
 
 mshta "javascript:var sh=new ActiveXObject( 'WScript.Shell' ); sh.Popup( 'Done with Tests!', 10, 'Check Back!', 64 );close()"
 

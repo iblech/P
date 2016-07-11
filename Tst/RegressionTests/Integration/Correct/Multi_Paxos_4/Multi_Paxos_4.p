@@ -1,579 +1,1653 @@
-// RTC compiles way better than random
-
-/*
-The basic paxos algorithm. 
-*/
-event prepare assume 3: (proposer: machine, slot : int, proposal : (round: int, servermachine : int)) ;
-event accept  assume 3: (proposer: machine, slot: int, proposal : (round: int, servermachine : int), value : int);
-event agree assume 6: (slot:int, proposal : (round: int, servermachine : int), value : int) ;
-event reject  assume 6: (slot: int, proposal : (round: int, servermachine : int));
-event accepted  assume 6: (slot:int, proposal : (round: int, servermachine : int), value : int);
+event prepare  assume 3: (machine, int, (int, int));
+event accept  assume 3: (machine, int, (int, int), int);
+event agree  assume 6: (int, (int, int), int);
+event reject  assume 6: (int, (int, int));
+event accepted  assume 6: (int, (int, int), int);
 event local;
 event success;
-event allNodes: (nodes: seq[machine]);
+event allNodes: (seq[machine]);
 event goPropose;
-event chosen : (slot:int, proposal : (round: int, servermachine : int), value : int);
-/**** client events ********/
-event update : (seqmachine: int, command : int);
-
-machine PaxosNode {
-
-	var currentLeader : (rank:int, server : machine);
-	var leaderElectionService : machine;
-/********************** Proposer **************************************************/
-	var acceptors : seq[machine];
-	var commitValue : int;
-	var proposeVal : int;
-	var majority : int;
-	var roundNum : int;
-	var myRank : int;
-	var nextProposal: (round: int, servermachine : int);
-	var receivedAgree : (proposal : (round: int, servermachine : int), value : int);
-	var iter : int ;
-	var maxRound : int;
-	var countAccept : int;
-	var countAgree : int;
-	var tempVal : int;
-	var returnVal : bool;
-	var timer: machine;
-	var receivedMess_1 : (slot:int, proposal : (round: int, servermachine : int), value : int);
-	var nextSlotForProposer : int;
-	var currCommitOperation : bool;
-/*************************** Acceptor **********************************************/
-	var acceptorSlots : map[int, (proposal : (round: int, servermachine : int), value : int)];
-	var receivedMess_2 : (proposer: machine, slot : int, proposal : (round: int, servermachine : int), value : int);
-/**************************** Learner **************************************/
-	var learnerSlots : map[int, (proposal : (round: int, servermachine : int), value : int)];
-	var lastExecutedSlot:int;
-	
-	start state Init {
-		defer Ping;
-		entry (payload : (rank:int)){
-			myRank = payload.rank;
-			currentLeader = (rank = myRank, server = this);
-			roundNum = 0;
-			maxRound = 0;
-			timer = new Timer((this, 10));
-			lastExecutedSlot = -1;
-			nextSlotForProposer = 0;
-		}
-		on allNodes do (payload : (nodes: seq[machine])) { UpdateAcceptors(payload); }
-		on local goto PerformOperation;
-	}
-	
-	fun UpdateAcceptors(payload : (nodes: seq[machine])) {
-		acceptors = payload.nodes;
-		majority = (sizeof(acceptors))/2 + 1;
-		assert(majority == 2);
-		//Also start the leader election service;
-		leaderElectionService = new LeaderElection((servers = acceptors, parentServer = this, rank = myRank));
-		
-		raise(local);
-	}
-	
-	fun CheckIfLeader(payload :(seqmachine: int, command : int)) {
-		if(currentLeader.rank == myRank) {
-			// I am the leader 
-			commitValue = payload.command;
-			proposeVal = commitValue;
-			raise(goPropose);
-		}
-		else
-		{
-			//forward it to the leader
-			send currentLeader.server, update, payload;
-		}
-	}
-	state PerformOperation {
-		ignore agree, accepted, timeout;
-		
-		/***** proposer ******/
-		on update do (payload :(seqmachine: int, command : int)) { CheckIfLeader(payload); }
-		on goPropose push ProposeValuePhase1;
-		
-		/***** acceptor ****/
-		on prepare do (payload : (proposer: machine, slot : int, proposal : (round: int, servermachine : int))) { preparefun(payload); }
-		on accept do (payload : (proposer: machine, slot:int, proposal : (round: int, servermachine : int), value : int)) { acceptfun(payload); } 
-		
-		/**** leaner ****/
-		on chosen push RunLearner;
-		
-		/*****leader election ****/
-		on Ping do (payload: (rank:int, server : machine)) { send leaderElectionService, Ping, payload; }
-		on newLeader do (payload : (rank:int, server : machine)) { currentLeader = payload; }
-	}
-	
-	
-	fun preparefun(receivedMess_2 : (proposer: machine, slot : int, proposal : (round: int, servermachine : int))) {
-		
-		if(!(receivedMess_2.slot in acceptorSlots))
-		{
-			send receivedMess_2.proposer, agree, (slot = receivedMess_2.slot, proposal = (round = -1, servermachine = -1), value = -1);
-			acceptorSlots[receivedMess_2.slot] = (proposal = receivedMess_2.proposal, value = -1);
-			return;
-		}
-		returnVal = lessThan(receivedMess_2.proposal, acceptorSlots[receivedMess_2.slot].proposal);
-		if(returnVal)
-		{
-			send receivedMess_2.proposer, reject, (slot = receivedMess_2.slot, proposal = acceptorSlots[receivedMess_2.slot].proposal);
-		}
-		else 
-		{
-			send receivedMess_2.proposer, agree, (slot = receivedMess_2.slot, proposal = acceptorSlots[receivedMess_2.slot].proposal, value = acceptorSlots[receivedMess_2.slot].value);
-			acceptorSlots[receivedMess_2.slot] = (proposal = receivedMess_2.proposal, value = -1);
-		}
-	}
-	
-	fun acceptfun(receivedMess_2 : (proposer: machine, slot:int, proposal : (round: int, servermachine : int), value : int)) {
-		if(receivedMess_2.slot in acceptorSlots)
-		{
-			returnVal = equal(receivedMess_2.proposal, acceptorSlots[receivedMess_2.slot].proposal);
-			if(!returnVal)
-			{
-				send receivedMess_2.proposer, reject, (slot = receivedMess_2.slot, proposal = acceptorSlots[receivedMess_2.slot].proposal);
-			}
-			else
-			{
-				acceptorSlots[receivedMess_2.slot] = (proposal = receivedMess_2.proposal, value = receivedMess_2.value);
-				send receivedMess_2.proposer, accepted, (slot = receivedMess_2.slot, proposal = receivedMess_2.proposal, value = receivedMess_2.value);
-			}
-		}
-	}
-	
-	
-	
-	
-	fun GetNextProposal(maxRound : int) : (round: int, servermachine : int) {
-		return (round = maxRound + 1, servermachine = myRank);
-	}
-	
-	fun equal (p1 : (round: int, servermachine : int), p2 : (round: int, servermachine : int)) : bool {
-		if(p1.round == p2.round && p1.servermachine == p2.servermachine)
-			return true;
-		else
-			return false;
-	}
-	
-	fun lessThan (p1 : (round: int, servermachine : int), p2 : (round: int, servermachine : int)) : bool {
-		if(p1.round < p2.round)
-		{
-			return true;
-		}
-		else if(p1.round == p2.round)
-		{
-			if(p1.servermachine < p2.servermachine)
-				return true;
-			else
-				return false;
-		}
-		else
-		{
-			return false;
-		}
-	
-	}
-	
-	/**************************** Proposer **********************************************************/
-	
-	fun BroadCastAcceptors(mess: event, pay : any) {
-		iter = 0;
-		while(iter < sizeof(acceptors))
-		{
-			send acceptors[iter], mess, pay;
-			iter = iter + 1;
-		}
-	}
-	
-	state ProposeValuePhase1 {
-		ignore accepted;
-		entry {
-			countAgree = 0;
-			nextProposal = GetNextProposal(maxRound);
-			receivedAgree = (proposal = (round = -1, servermachine = -1), value = -1);
-			BroadCastAcceptors(prepare, (proposer = this, slot = nextSlotForProposer, proposal = (round = nextProposal.round, servermachine = myRank)));
-			monitor monitor_proposer_sent, proposeVal;
-			send timer, startTimer;
-		}
-		
-		on agree do (receivedMess :(slot : int, proposal : (round: int, servermachine : int), value : int)) { 
-			if(receivedMess.slot == nextSlotForProposer)
-			{
-				countAgree = countAgree + 1;
-				returnVal = lessThan(receivedAgree.proposal, receivedMess.proposal);
-				if(returnVal)
-				{
-					receivedAgree.proposal = receivedMess.proposal;
-					receivedAgree.value = receivedMess.value;
-				}
-				if(countAgree == majority)
-					raise(success);
-			}
-		}
-		
-		on reject goto ProposeValuePhase1 with (payload : (slot: int, proposal : (round: int, servermachine : int))) {
-			if(nextProposal.round <= payload.proposal.round)
-				maxRound = payload.proposal.round;
-				
-			send timer, cancelTimer;
-		}
-		on success goto ProposeValuePhase2 with
-		{
-			send timer, cancelTimer;
-		}
-		on timeout goto ProposeValuePhase1;
-	}
-	
-	fun CountAccepted(receivedMess_1 : (slot:int, proposal : (round: int, servermachine : int), value : int)){
-		if(receivedMess_1.slot == nextSlotForProposer)
-		{
-			returnVal = equal(receivedMess_1.proposal, nextProposal);
-			if(returnVal)
-			{
-				countAccept = countAccept + 1;
-			}
-			if(countAccept == majority)
-			{
-				//the value is chosen, hence invoke the monitor on chosen event
-				monitor monitor_valueChosen, (proposer = this, slot = nextSlotForProposer, proposal = nextProposal, value = proposeVal);
-				send timer, cancelTimer;
-				monitor monitor_proposer_chosen, proposeVal;
-				//increment the nextSlotForProposer
-				nextSlotForProposer = nextSlotForProposer + 1;
-				raise chosen, receivedMess_1;
-			}
-		}
-	
-	}
-	
-	fun getHighestProposedValue() : int {
-		if(receivedAgree.value != -1)
-		{
-			currCommitOperation = false;
-			return receivedAgree.value;
-		}
-		else
-		{
-			currCommitOperation = true;
-			return commitValue;
-		}
-	}
-	
-	state ProposeValuePhase2 {
-		ignore agree;
-		entry {
-		
-			countAccept = 0;
-			proposeVal = getHighestProposedValue();
-			//monitor the monitor on proposal event
-			monitor monitor_valueProposed, (proposer = this, slot = nextSlotForProposer, proposal = nextProposal, value = proposeVal);
-			monitor monitor_proposer_sent, proposeVal;
-			
-			BroadCastAcceptors(accept, (proposer = this, slot = nextSlotForProposer, proposal = nextProposal, value = proposeVal));
-			send timer, startTimer;
-		}
-		
-		on accepted do (payload : (slot:int, proposal : (round: int, servermachine : int), value : int)) {
-			CountAccepted(payload);
-		}
-		on reject goto ProposeValuePhase1 with (payload : (slot: int, proposal : (round: int, servermachine : int))){
-			if(nextProposal.round <= payload.proposal.round)
-				maxRound = payload.proposal.round;
-				
-			send timer, cancelTimer;
-		}
-		on timeout goto ProposeValuePhase1;
-		
-	}
-	
-	/**************************** Learner *******************************************/
-	fun RunReplicatedMachine() {
-		while(true)
-		{
-			if((lastExecutedSlot + 1) in learnerSlots)
-			{
-				//run the machine
-				lastExecutedSlot = lastExecutedSlot + 1;
-			}
-			else
-			{
-				return;
-			}
-		}
-	
-	}
-	
-
-	state RunLearner {
-		ignore agree, accepted, timeout, prepare, reject, accept;
-		defer newLeader;
-		entry (receivedMess_1 : (slot:int, proposal : (round: int, servermachine : int), value : int)) {
-			learnerSlots[receivedMess_1.slot] = (proposal = receivedMess_1.proposal, value = receivedMess_1.value);
-			RunReplicatedMachine();
-			if(currCommitOperation && commitValue == receivedMess_1.value)
-			{
-				pop;
-			}
-			else
-			{
-				proposeVal = commitValue;
-				raise(goPropose);
-			}
-		}
-	
-	}
-}
-
-
-/*
-Properties :
-The property we check is that 
-P2b : If a proposal is chosen with value v , then every higher numbered proposal issued by any proposer has value v.
-
-*/
-
-event monitor_valueChosen : (proposer: machine, slot: int, proposal : (round: int, servermachine : int), value : int);
-event monitor_valueProposed : (proposer: machine, slot:int, proposal : (round: int, servermachine : int), value : int);
-
-spec BasicPaxosInvariant_P2b monitors monitor_valueChosen, monitor_valueProposed {
-	var lastValueChosen : map[int, (proposal : (round: int, servermachine : int), value : int)];
-	var returnVal : bool;
-	var receivedValue : (proposer: machine, slot: int, proposal : (round: int, servermachine : int), value : int);
-	start state Init {
-		entry {
-			raise(local);
-		
-		}
-		on local goto WaitForValueChosen;
-	}
-	
-	state WaitForValueChosen {
-		ignore monitor_valueProposed;
-		entry {
-			
-		}
-		on monitor_valueChosen goto CheckValueProposed with (receivedValue : (proposer: machine, slot:int, proposal : (round: int, servermachine : int), value : int))
-		{
-			lastValueChosen[receivedValue.slot] = (proposal = receivedValue.proposal, value = receivedValue.value);
-		}
-	}
-	
-	fun lessThan (p1 : (round: int, servermachine : int), p2 : (round: int, servermachine : int)) : bool {
-		if(p1.round < p2.round)
-		{
-			return true;
-		}
-		else if(p1.round == p2.round)
-		{
-			if(p1.servermachine < p2.servermachine)
-				return true;
-			else
-				return false;
-		}
-		else
-		{
-			return false;
-		}
-	
-	}
-	
-	state CheckValueProposed {
-		on monitor_valueChosen goto CheckValueProposed with (receivedValue : (proposer: machine, slot: int, proposal : (round: int, servermachine : int), value : int)){
-			assert(lastValueChosen[receivedValue.slot].value == receivedValue.value);
-		}
-		
-		on monitor_valueProposed goto CheckValueProposed with (receivedValue : (proposer: machine, slot : int, proposal : (round: int, servermachine : int), value : int)){
-			returnVal = lessThan(lastValueChosen[receivedValue.slot].proposal, receivedValue.proposal);
-			if(returnVal)
-				assert(lastValueChosen[receivedValue.slot].value == receivedValue.value);
-		}
-	}
-
-}
-
-
-/*
-Monitor to check if 
-the proposed value is from the set send by the client (accept)
-chosen value is the one proposed by atleast one proposer (chosen).
-*/
-event monitor_client_sent : int;
-event monitor_proposer_sent : int;
-event monitor_proposer_chosen : int;
-
-spec ValmachineityCheck monitors monitor_client_sent, monitor_proposer_sent, monitor_proposer_chosen {
-	var clientSet : map[int, int];
-	var ProposedSet : map[int, int];
-	
-	start state Init {
-		entry {
-			raise(local);
-		}
-		on local goto Wait;
-	}
-	
-	state Wait {
-		on monitor_client_sent do (payload : int) { clientSet[payload] = 0; }
-		on monitor_proposer_sent do (payload : int) { assert(payload in clientSet);
-		ProposedSet[payload as int] = 0; }
-		on monitor_proposer_chosen do (payload : int) {	assert(payload in ProposedSet); }
-	}
-	
-}
-
-
-/*
-The leader election protocol for multi-paxos, the protocol is based on broadcast based approach. 
-
-*/
-event Ping assume 4 : (rank:int, server : machine) ;
-event newLeader : (rank:int, server : machine);
-event timeout : (mymachine : machine);
+event chosen: (int, (int, int), int);
+event update: (int, int);
+event monitor_valueChosen: (machine, int, (int, int), int);
+event monitor_valueProposed: (machine, int, (int, int), int);
+event monitor_client_sent: int;
+event monitor_proposer_sent: int;
+event monitor_proposer_chosen: int;
+event Ping  assume 4: (int, machine);
+event newLeader: (int, machine);
+event timeout: (machine);
 event startTimer;
 event cancelTimer;
 event cancelTimerSuccess;
-
-machine LeaderElection {
-	var servers : seq[machine];
-	var parentServer : machine;
-	var currentLeader : (rank:int, server : machine);
-	var myRank : int;
-	var iter : int;
-	
-	start state Init {
-		entry (payload : (servers: seq[machine], parentServer:machine, rank : int)){
-			servers = payload.servers;
-			parentServer = payload.parentServer;
-			myRank = payload.rank;
-			currentLeader = (rank = myRank, server = this);
-			raise(local);
-		}
-		on local goto SendLeader;
-		
-	}
-	
-	state SendLeader {
-		entry {
-			currentLeader = GetNewLeader();
-			assert(currentLeader.rank <= myRank);
-			send parentServer, newLeader, currentLeader;
-		}
-	}
-	model fun GetNewLeader() : (rank:int, server : machine) {
-			/*iter = 0;
-			while(iter < sizeof(servers))
-			{
-				if((iter + 1) < myRank) {
-					if(*)
-					{
-						return (rank = iter + 1, server = servers[iter]);
-					}
-				}
-				
-				iter = iter + 1;	
-			}
-			return (rank = myRank, server = parentServer);*/
-			
-			return (rank = 1, server = servers[0]);
-		}
-
-}
-
-model Timer {
-	var target: machine;
-	var timeoutvalue : int;
-	start state Init {
-		entry (payload :(machine, int)){
-			target = payload.0;
-			timeoutvalue = payload.1;
-			raise(local);
-		}
-		on local goto Loop;
-	}
-
-	state Loop {
-		ignore cancelTimer;
-		on startTimer goto TimerStarted;
-	}
-
-	state TimerStarted {
-		ignore startTimer;
-		entry {
-			if ($) {
-				//send target, timeout, (mymachine = this));
-				raise(local);
-			}
-		}
-		on local goto Loop;
-		on cancelTimer goto Loop;
-	}
-}
-
 event response;
 
-main machine GodMachine {
-	var paxosnodes : seq[machine];
-	var temp : machine;
-	var iter : int;
-	start state Init {
-		entry {
-			temp = new PaxosNode((rank = 3,));
-			paxosnodes += (0, temp);
-			temp = new PaxosNode((rank = 2,));
-			paxosnodes += (0, temp);
-			temp = new PaxosNode((rank = 1,));
-			paxosnodes += (0, temp);
-			//send all nodes the other machines
-			iter = 0;
-			while(iter < sizeof(paxosnodes))
-			{
-				send paxosnodes[iter], allNodes, (nodes = paxosnodes,);
-				iter = iter + 1;
-			}
-			//create the client nodes
-			new Client(paxosnodes);
-		}
-	}
+machine PaxosNode
+{
+var PaxosNode_currentLeader: (int, machine);
+var PaxosNode_leaderElectionService: machine;
+var PaxosNode_acceptors: seq[machine];
+var PaxosNode_commitValue: int;
+var PaxosNode_proposeVal: int;
+var PaxosNode_majority: int;
+var PaxosNode_roundNum: int;
+var PaxosNode_myRank: int;
+var PaxosNode_nextProposal: (int, int);
+var PaxosNode_receivedAgree: ((int, int), int);
+var PaxosNode_iter: int;
+var PaxosNode_maxRound: int;
+var PaxosNode_countAccept: int;
+var PaxosNode_countAgree: int;
+var PaxosNode_tempVal: int;
+var PaxosNode_returnVal: bool;
+var PaxosNode_timer: machine;
+var PaxosNode_receivedMess_1: (int, (int, int), int);
+var PaxosNode_nextSlotForProposer: int;
+var PaxosNode_currCommitOperation: bool;
+var PaxosNode_acceptorSlots: map[int, ((int, int), int)];
+var PaxosNode_receivedMess_2: (machine, int, (int, int), int);
+var PaxosNode_learnerSlots: map[int, ((int, int), int)];
+var PaxosNode_lastExecutedSlot: int;
+
+fun PaxosNode_UpdateAcceptors(PaxosNode_UpdateAcceptors_payload: (seq[machine]))
+{
+var _tmp1054: bool;
+var _tmp1055: (seq[machine], machine, int);
+var _tmp1056: machine;
+
+
+PaxosNode_acceptors = PaxosNode_UpdateAcceptors_payload.0;
+;
+PaxosNode_majority = ((sizeof(PaxosNode_acceptors) / 2) + 1);
+;
+_tmp1054 = (PaxosNode_majority == 2);
+;
+assert _tmp1054;
+;
+_tmp1055 = (PaxosNode_acceptors, this, PaxosNode_myRank);
+;
+_tmp1056 = new LeaderElection(_tmp1055);
+;
+PaxosNode_leaderElectionService = _tmp1056;
+;
+raise local;
+
+
+}
+fun PaxosNode_CheckIfLeader(PaxosNode_CheckIfLeader_payload: (int, int))
+{
+var _tmp1057: bool;
+
+
+_tmp1057 = (PaxosNode_currentLeader.0 == PaxosNode_myRank);
+;
+if(_tmp1057)
+{
+
+PaxosNode_commitValue = PaxosNode_CheckIfLeader_payload.1;
+;
+PaxosNode_proposeVal = PaxosNode_commitValue;
+;
+raise goPropose;
+;
+PaxosNode_commitValue = PaxosNode_CheckIfLeader_payload.1;
+;
+PaxosNode_proposeVal = PaxosNode_commitValue;
+;
+raise goPropose;
+
+
+
+}
+else
+{
+
+send PaxosNode_currentLeader.1, update, PaxosNode_CheckIfLeader_payload;
+;
+send PaxosNode_currentLeader.1, update, PaxosNode_CheckIfLeader_payload;
+
+
+
 }
 
-model Client {
-	var servers :seq[machine];
-	start state Init {
-		entry (payload : seq[machine]){
-			servers = payload;
-			raise(local);
-		}
-		on local goto PumpRequestOne;
-	}
-	
-	state PumpRequestOne {
-		entry {
-			
-			monitor monitor_client_sent, 1;
-			if($)
-				send servers[0], update, (seqmachine  = 0, command = 1);
-			else
-				send servers[sizeof(servers) - 1], update, (seqmachine  = 0, command = 1);
-				
-			raise(response);
-		}
-		on response goto PumpRequestTwo;
-	}
-	
-	state PumpRequestTwo {
-		entry {
-			
-			monitor monitor_client_sent, 2;
-			if($)
-				send servers[0], update, (seqmachine  = 0, command = 2);
-			else
-				send servers[sizeof(servers) - 1], update, (seqmachine  = 0, command = 2);
-				
-			raise(response);
-		}
-		on response goto Done;
-	}
 
-	state Done {
-	
-	}
 }
+fun PaxosNode_preparefun(PaxosNode_preparefun_receivedMess_2: (machine, int, (int, int)))
+{
+var _tmp1058: bool;
+var _tmp1059: (int, int);
+var _tmp1060: (int, (int, int), int);
+var _tmp1061: ((int, int), int);
+var _tmp1062: ((int, int), int);
+var _tmp1063: ((int, int), int);
+var _tmp1064: (int, (int, int));
+var _tmp1065: ((int, int), int);
+var _tmp1066: ((int, int), int);
+var _tmp1067: (int, (int, int), int);
+var _tmp1068: ((int, int), int);
+
+
+_tmp1058 = (PaxosNode_preparefun_receivedMess_2.1 in PaxosNode_acceptorSlots);
+;
+if(!(_tmp1058))
+{
+
+_tmp1059 = (~(1), ~(1));
+;
+_tmp1060 = (PaxosNode_preparefun_receivedMess_2.1, _tmp1059, ~(1));
+;
+send PaxosNode_preparefun_receivedMess_2.0, agree, _tmp1060;
+;
+_tmp1061 = (PaxosNode_preparefun_receivedMess_2.2, ~(1));
+;
+PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1] = _tmp1061;
+;
+return;
+;
+send PaxosNode_preparefun_receivedMess_2.0, agree, (PaxosNode_preparefun_receivedMess_2.1, (~(1), ~(1)), ~(1));
+;
+PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1] = (PaxosNode_preparefun_receivedMess_2.2, ~(1));
+;
+return;
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+;
+_tmp1062 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
+;
+PaxosNode_returnVal = PaxosNode_lessThan(PaxosNode_preparefun_receivedMess_2.2, _tmp1062.0);
+;
+if(PaxosNode_returnVal)
+{
+
+_tmp1063 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
+;
+_tmp1064 = (PaxosNode_preparefun_receivedMess_2.1, _tmp1063.0);
+;
+send PaxosNode_preparefun_receivedMess_2.0, reject, _tmp1064;
+;
+send PaxosNode_preparefun_receivedMess_2.0, reject, (PaxosNode_preparefun_receivedMess_2.1, PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1].0);
+
+
+
+}
+else
+{
+
+_tmp1065 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
+;
+_tmp1066 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
+;
+_tmp1067 = (PaxosNode_preparefun_receivedMess_2.1, _tmp1065.0, _tmp1066.1);
+;
+send PaxosNode_preparefun_receivedMess_2.0, agree, _tmp1067;
+;
+_tmp1068 = (PaxosNode_preparefun_receivedMess_2.2, ~(1));
+;
+PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1] = _tmp1068;
+;
+send PaxosNode_preparefun_receivedMess_2.0, agree, (PaxosNode_preparefun_receivedMess_2.1, PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1].0, PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1].1);
+;
+PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1] = (PaxosNode_preparefun_receivedMess_2.2, ~(1));
+
+
+
+}
+
+
+}
+fun PaxosNode_acceptfun(PaxosNode_acceptfun_receivedMess_2: (machine, int, (int, int), int))
+{
+var _tmp1069: bool;
+var _tmp1070: ((int, int), int);
+var _tmp1071: ((int, int), int);
+var _tmp1072: (int, (int, int));
+var _tmp1073: ((int, int), int);
+var _tmp1074: (int, (int, int), int);
+
+
+_tmp1069 = (PaxosNode_acceptfun_receivedMess_2.1 in PaxosNode_acceptorSlots);
+;
+if(_tmp1069)
+{
+
+_tmp1070 = PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1];
+;
+PaxosNode_returnVal = PaxosNode_equal(PaxosNode_acceptfun_receivedMess_2.2, _tmp1070.0);
+;
+if(!(PaxosNode_returnVal))
+{
+
+_tmp1071 = PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1];
+;
+_tmp1072 = (PaxosNode_acceptfun_receivedMess_2.1, _tmp1071.0);
+;
+send PaxosNode_acceptfun_receivedMess_2.0, reject, _tmp1072;
+;
+send PaxosNode_acceptfun_receivedMess_2.0, reject, (PaxosNode_acceptfun_receivedMess_2.1, PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1].0);
+
+
+
+}
+else
+{
+
+_tmp1073 = (PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptfun_receivedMess_2.3);
+;
+PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1] = _tmp1073;
+;
+_tmp1074 = (PaxosNode_acceptfun_receivedMess_2.1, PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptfun_receivedMess_2.3);
+;
+send PaxosNode_acceptfun_receivedMess_2.0, accepted, _tmp1074;
+;
+PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1] = (PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptfun_receivedMess_2.3);
+;
+send PaxosNode_acceptfun_receivedMess_2.0, accepted, (PaxosNode_acceptfun_receivedMess_2.1, PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptfun_receivedMess_2.3);
+
+
+
+}
+;
+PaxosNode_returnVal = PaxosNode_equal(PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1].0);
+;
+if(!(PaxosNode_returnVal))
+{
+send PaxosNode_acceptfun_receivedMess_2.0, reject, (PaxosNode_acceptfun_receivedMess_2.1, PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1].0);
+
+}
+else
+{
+
+PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1] = (PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptfun_receivedMess_2.3);
+;
+send PaxosNode_acceptfun_receivedMess_2.0, accepted, (PaxosNode_acceptfun_receivedMess_2.1, PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptfun_receivedMess_2.3);
+
+
+
+}
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+
+
+}
+fun PaxosNode_GetNextProposal(PaxosNode_GetNextProposal_maxRound: int): (int, int)
+{
+var _tmp1075: (int, int);
+
+
+_tmp1075 = ((PaxosNode_GetNextProposal_maxRound + 1), PaxosNode_myRank);
+;
+return (_tmp1075);
+
+
+}
+fun PaxosNode_equal(PaxosNode_equal_p1: (int, int), PaxosNode_equal_p2: (int, int)): bool
+{
+var _tmp1076: bool;
+var _tmp1077: bool;
+
+
+_tmp1076 = (PaxosNode_equal_p1.0 == PaxosNode_equal_p2.0);
+;
+_tmp1077 = (PaxosNode_equal_p1.1 == PaxosNode_equal_p2.1);
+;
+if((_tmp1076 && _tmp1077))
+{
+
+return (true);
+;
+return (true);
+
+
+
+}
+else
+{
+
+return (false);
+;
+return (false);
+
+
+
+}
+
+
+}
+fun PaxosNode_lessThan(PaxosNode_lessThan_p1: (int, int), PaxosNode_lessThan_p2: (int, int)): bool
+{
+var _tmp1078: bool;
+
+
+if((PaxosNode_lessThan_p1.0 < PaxosNode_lessThan_p2.0))
+{
+
+return (true);
+;
+return (true);
+
+
+
+}
+else
+{
+
+_tmp1078 = (PaxosNode_lessThan_p1.0 == PaxosNode_lessThan_p2.0);
+;
+if(_tmp1078)
+{
+
+if((PaxosNode_lessThan_p1.1 < PaxosNode_lessThan_p2.1))
+{
+
+return (true);
+;
+return (true);
+
+
+
+}
+else
+{
+
+return (false);
+;
+return (false);
+
+
+
+}
+;
+if((PaxosNode_lessThan_p1.1 < PaxosNode_lessThan_p2.1))
+{
+return (true);
+
+}
+else
+{
+return (false);
+
+}
+
+
+
+}
+else
+{
+
+return (false);
+;
+return (false);
+
+
+
+}
+;
+if((PaxosNode_lessThan_p1.0 == PaxosNode_lessThan_p2.0))
+{
+if((PaxosNode_lessThan_p1.1 < PaxosNode_lessThan_p2.1))
+{
+return (true);
+
+}
+else
+{
+return (false);
+
+}
+
+}
+else
+{
+return (false);
+
+}
+
+
+
+}
+
+
+}
+fun PaxosNode_BroadCastAcceptors(PaxosNode_BroadCastAcceptors_mess: event, PaxosNode_BroadCastAcceptors_pay: any)
+{
+var _tmp1079: machine;
+
+
+PaxosNode_iter = 0;
+;
+while((PaxosNode_iter < sizeof(PaxosNode_acceptors)))
+{
+
+_tmp1079 = PaxosNode_acceptors[PaxosNode_iter];
+;
+send _tmp1079, PaxosNode_BroadCastAcceptors_mess, PaxosNode_BroadCastAcceptors_pay;
+;
+PaxosNode_iter = (PaxosNode_iter + 1);
+;
+send PaxosNode_acceptors[PaxosNode_iter], PaxosNode_BroadCastAcceptors_mess, PaxosNode_BroadCastAcceptors_pay;
+;
+PaxosNode_iter = (PaxosNode_iter + 1);
+
+
+
+}
+
+
+}
+fun PaxosNode_CountAccepted(PaxosNode_CountAccepted_receivedMess_1: (int, (int, int), int))
+{
+var _tmp1080: bool;
+var _tmp1081: bool;
+
+
+_tmp1080 = (PaxosNode_CountAccepted_receivedMess_1.0 == PaxosNode_nextSlotForProposer);
+;
+if(_tmp1080)
+{
+
+PaxosNode_returnVal = PaxosNode_equal(PaxosNode_CountAccepted_receivedMess_1.1, PaxosNode_nextProposal);
+;
+if(PaxosNode_returnVal)
+{
+
+PaxosNode_countAccept = (PaxosNode_countAccept + 1);
+;
+PaxosNode_countAccept = (PaxosNode_countAccept + 1);
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+;
+_tmp1081 = (PaxosNode_countAccept == PaxosNode_majority);
+;
+if(_tmp1081)
+{
+
+;
+;
+send PaxosNode_timer, cancelTimer;
+;
+;
+;
+PaxosNode_nextSlotForProposer = (PaxosNode_nextSlotForProposer + 1);
+;
+raise chosen, PaxosNode_CountAccepted_receivedMess_1;
+;
+;
+;
+send PaxosNode_timer, cancelTimer;
+;
+;
+;
+PaxosNode_nextSlotForProposer = (PaxosNode_nextSlotForProposer + 1);
+;
+raise chosen, PaxosNode_CountAccepted_receivedMess_1;
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+;
+PaxosNode_returnVal = PaxosNode_equal(PaxosNode_CountAccepted_receivedMess_1.1, PaxosNode_nextProposal);
+;
+if(PaxosNode_returnVal)
+{
+PaxosNode_countAccept = (PaxosNode_countAccept + 1);
+
+}
+else
+{
+;
+
+}
+;
+if((PaxosNode_countAccept == PaxosNode_majority))
+{
+
+;
+;
+send PaxosNode_timer, cancelTimer;
+;
+;
+;
+PaxosNode_nextSlotForProposer = (PaxosNode_nextSlotForProposer + 1);
+;
+raise chosen, PaxosNode_CountAccepted_receivedMess_1;
+
+
+
+}
+else
+{
+;
+
+}
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+
+
+}
+fun PaxosNode_getHighestProposedValue(): int
+{
+var _tmp1082: bool;
+
+
+_tmp1082 = (PaxosNode_receivedAgree.1 == ~(1));
+;
+if(!(_tmp1082))
+{
+
+PaxosNode_currCommitOperation = false;
+;
+return (PaxosNode_receivedAgree.1);
+;
+PaxosNode_currCommitOperation = false;
+;
+return (PaxosNode_receivedAgree.1);
+
+
+
+}
+else
+{
+
+PaxosNode_currCommitOperation = true;
+;
+return (PaxosNode_commitValue);
+;
+PaxosNode_currCommitOperation = true;
+;
+return (PaxosNode_commitValue);
+
+
+
+}
+
+
+}
+fun PaxosNode_RunReplicatedMachine()
+{
+var _tmp1083: bool;
+
+
+while(true)
+{
+
+_tmp1083 = ((PaxosNode_lastExecutedSlot + 1) in PaxosNode_learnerSlots);
+;
+if(_tmp1083)
+{
+
+PaxosNode_lastExecutedSlot = (PaxosNode_lastExecutedSlot + 1);
+;
+PaxosNode_lastExecutedSlot = (PaxosNode_lastExecutedSlot + 1);
+
+
+
+}
+else
+{
+
+return;
+;
+return;
+
+
+
+}
+;
+if(((PaxosNode_lastExecutedSlot + 1) in PaxosNode_learnerSlots))
+{
+PaxosNode_lastExecutedSlot = (PaxosNode_lastExecutedSlot + 1);
+
+}
+else
+{
+return;
+
+}
+
+
+
+}
+
+
+}
+fun PaxosNode_Init_entry52(PaxosNode_Init_entry52_payload: (int))
+{
+var _tmp1084: (int, machine);
+var _tmp1085: (machine, int);
+var _tmp1086: machine;
+
+
+PaxosNode_myRank = PaxosNode_Init_entry52_payload.0;
+;
+_tmp1084 = (PaxosNode_myRank, this);
+;
+PaxosNode_currentLeader = _tmp1084;
+;
+PaxosNode_roundNum = 0;
+;
+PaxosNode_maxRound = 0;
+;
+_tmp1085 = (this, 10);
+;
+_tmp1086 = new Timer(_tmp1085);
+;
+PaxosNode_timer = _tmp1086;
+;
+PaxosNode_lastExecutedSlot = ~(1);
+;
+PaxosNode_nextSlotForProposer = 0;
+
+
+}
+fun PaxosNode_Init_exit0_rand_1888543761()
+{
+
+
+;
+
+
+}
+fun PaxosNode_PerformOperation_entry0_rand_860409788(PaxosNode_PerformOperation_entry0_rand_860409788__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun PaxosNode_PerformOperation_exit0_rand_1282072544()
+{
+
+
+;
+
+
+}
+fun PaxosNode_ProposeValuePhase1_entry190(PaxosNode_ProposeValuePhase1_entry190__payload_0: any)
+{
+var _tmp1087: (int, int);
+var _tmp1088: ((int, int), int);
+var _tmp1089: (int, int);
+var _tmp1090: (machine, int, (int, int));
+
+
+PaxosNode_countAgree = 0;
+;
+PaxosNode_nextProposal = PaxosNode_GetNextProposal(PaxosNode_maxRound);
+;
+_tmp1087 = (~(1), ~(1));
+;
+_tmp1088 = (_tmp1087, ~(1));
+;
+PaxosNode_receivedAgree = _tmp1088;
+;
+_tmp1089 = (PaxosNode_nextProposal.0, PaxosNode_myRank);
+;
+_tmp1090 = (this, PaxosNode_nextSlotForProposer, _tmp1089);
+;
+PaxosNode_BroadCastAcceptors(prepare, _tmp1090);
+;
+;
+;
+send PaxosNode_timer, startTimer;
+
+
+}
+fun PaxosNode_ProposeValuePhase1_exit0_rand_943536683()
+{
+
+
+;
+
+
+}
+fun PaxosNode_ProposeValuePhase2_entry265(PaxosNode_ProposeValuePhase2_entry265__payload_2: any)
+{
+var _tmp1091: (machine, int, (int, int), int);
+
+
+PaxosNode_countAccept = 0;
+;
+PaxosNode_proposeVal = PaxosNode_getHighestProposedValue();
+;
+;
+;
+;
+;
+_tmp1091 = (this, PaxosNode_nextSlotForProposer, PaxosNode_nextProposal, PaxosNode_proposeVal);
+;
+PaxosNode_BroadCastAcceptors(accept, _tmp1091);
+;
+send PaxosNode_timer, startTimer;
+
+
+}
+fun PaxosNode_ProposeValuePhase2_exit0_rand_1581195646()
+{
+
+
+;
+
+
+}
+fun PaxosNode_RunLearner_entry310(PaxosNode_RunLearner_entry310_receivedMess_1: (int, (int, int), int))
+{
+var _tmp1092: ((int, int), int);
+var _tmp1093: bool;
+
+
+_tmp1092 = (PaxosNode_RunLearner_entry310_receivedMess_1.1, PaxosNode_RunLearner_entry310_receivedMess_1.2);
+;
+PaxosNode_learnerSlots[PaxosNode_RunLearner_entry310_receivedMess_1.0] = _tmp1092;
+;
+PaxosNode_RunReplicatedMachine();
+;
+_tmp1093 = (PaxosNode_commitValue == PaxosNode_RunLearner_entry310_receivedMess_1.2);
+;
+if((PaxosNode_currCommitOperation && _tmp1093))
+{
+
+pop;
+;
+pop;
+
+
+
+}
+else
+{
+
+PaxosNode_proposeVal = PaxosNode_commitValue;
+;
+raise goPropose;
+;
+PaxosNode_proposeVal = PaxosNode_commitValue;
+;
+raise goPropose;
+
+
+
+}
+
+
+}
+fun PaxosNode_RunLearner_exit0_rand_1831538395()
+{
+
+
+;
+
+
+}
+fun PaxosNode_Init_do_allNodes60(PaxosNode_Init_do_allNodes60_payload: (seq[machine]))
+{
+
+
+PaxosNode_UpdateAcceptors(PaxosNode_Init_do_allNodes60_payload);
+
+
+}
+fun PaxosNode_PerformOperation_do_update91(PaxosNode_PerformOperation_do_update91_payload: (int, int))
+{
+
+
+PaxosNode_CheckIfLeader(PaxosNode_PerformOperation_do_update91_payload);
+
+
+}
+fun PaxosNode_PerformOperation_do_prepare95(PaxosNode_PerformOperation_do_prepare95_payload: (machine, int, (int, int)))
+{
+
+
+PaxosNode_preparefun(PaxosNode_PerformOperation_do_prepare95_payload);
+
+
+}
+fun PaxosNode_PerformOperation_do_accept96(PaxosNode_PerformOperation_do_accept96_payload: (machine, int, (int, int), int))
+{
+
+
+PaxosNode_acceptfun(PaxosNode_PerformOperation_do_accept96_payload);
+
+
+}
+fun PaxosNode_PerformOperation_do_Ping102(PaxosNode_PerformOperation_do_Ping102_payload: (int, machine))
+{
+
+
+send PaxosNode_leaderElectionService, Ping, PaxosNode_PerformOperation_do_Ping102_payload;
+
+
+}
+fun PaxosNode_PerformOperation_do_newLeader103(PaxosNode_PerformOperation_do_newLeader103_payload: (int, machine))
+{
+
+
+PaxosNode_currentLeader = PaxosNode_PerformOperation_do_newLeader103_payload;
+
+
+}
+fun PaxosNode_ProposeValuePhase1_do_agree199(PaxosNode_ProposeValuePhase1_do_agree199_receivedMess: (int, (int, int), int))
+{
+var _tmp1094: bool;
+var _tmp1095: bool;
+
+
+_tmp1094 = (PaxosNode_ProposeValuePhase1_do_agree199_receivedMess.0 == PaxosNode_nextSlotForProposer);
+;
+if(_tmp1094)
+{
+
+PaxosNode_countAgree = (PaxosNode_countAgree + 1);
+;
+PaxosNode_returnVal = PaxosNode_lessThan(PaxosNode_receivedAgree.0, PaxosNode_ProposeValuePhase1_do_agree199_receivedMess.1);
+;
+if(PaxosNode_returnVal)
+{
+
+PaxosNode_receivedAgree.0 = PaxosNode_ProposeValuePhase1_do_agree199_receivedMess.1;
+;
+PaxosNode_receivedAgree.1 = PaxosNode_ProposeValuePhase1_do_agree199_receivedMess.2;
+;
+PaxosNode_receivedAgree.0 = PaxosNode_ProposeValuePhase1_do_agree199_receivedMess.1;
+;
+PaxosNode_receivedAgree.1 = PaxosNode_ProposeValuePhase1_do_agree199_receivedMess.2;
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+;
+_tmp1095 = (PaxosNode_countAgree == PaxosNode_majority);
+;
+if(_tmp1095)
+{
+
+raise success;
+;
+raise success;
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+;
+PaxosNode_countAgree = (PaxosNode_countAgree + 1);
+;
+PaxosNode_returnVal = PaxosNode_lessThan(PaxosNode_receivedAgree.0, PaxosNode_ProposeValuePhase1_do_agree199_receivedMess.1);
+;
+if(PaxosNode_returnVal)
+{
+
+PaxosNode_receivedAgree.0 = PaxosNode_ProposeValuePhase1_do_agree199_receivedMess.1;
+;
+PaxosNode_receivedAgree.1 = PaxosNode_ProposeValuePhase1_do_agree199_receivedMess.2;
+
+
+
+}
+else
+{
+;
+
+}
+;
+if((PaxosNode_countAgree == PaxosNode_majority))
+{
+raise success;
+
+}
+else
+{
+;
+
+}
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+
+
+}
+fun PaxosNode_ProposeValuePhase2_do_accepted276(PaxosNode_ProposeValuePhase2_do_accepted276_payload: (int, (int, int), int))
+{
+
+
+PaxosNode_CountAccepted(PaxosNode_ProposeValuePhase2_do_accepted276_payload);
+
+
+}
+fun PaxosNode_Init_on_local_goto_PaxosNode_PerformOperation0_rand_154322087(PaxosNode_Init_on_local_goto_PaxosNode_PerformOperation0_rand_154322087__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun PaxosNode_ProposeValuePhase1_on_reject_goto_PaxosNode_ProposeValuePhase1214(PaxosNode_ProposeValuePhase1_on_reject_goto_PaxosNode_ProposeValuePhase1214_payload: (int, (int, int)))
+{
+
+
+if((PaxosNode_nextProposal.0 <= PaxosNode_ProposeValuePhase1_on_reject_goto_PaxosNode_ProposeValuePhase1214_payload.1.0))
+{
+
+PaxosNode_maxRound = PaxosNode_ProposeValuePhase1_on_reject_goto_PaxosNode_ProposeValuePhase1214_payload.1.0;
+;
+PaxosNode_maxRound = PaxosNode_ProposeValuePhase1_on_reject_goto_PaxosNode_ProposeValuePhase1214_payload.1.0;
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+;
+send PaxosNode_timer, cancelTimer;
+
+
+}
+fun PaxosNode_ProposeValuePhase1_on_success_goto_PaxosNode_ProposeValuePhase2221(PaxosNode_ProposeValuePhase1_on_success_goto_PaxosNode_ProposeValuePhase2221__payload_1: any)
+{
+
+
+send PaxosNode_timer, cancelTimer;
+
+
+}
+fun PaxosNode_ProposeValuePhase1_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_1512885312(PaxosNode_ProposeValuePhase1_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_1512885312__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun PaxosNode_ProposeValuePhase2_on_reject_goto_PaxosNode_ProposeValuePhase1279(PaxosNode_ProposeValuePhase2_on_reject_goto_PaxosNode_ProposeValuePhase1279_payload: (int, (int, int)))
+{
+
+
+if((PaxosNode_nextProposal.0 <= PaxosNode_ProposeValuePhase2_on_reject_goto_PaxosNode_ProposeValuePhase1279_payload.1.0))
+{
+
+PaxosNode_maxRound = PaxosNode_ProposeValuePhase2_on_reject_goto_PaxosNode_ProposeValuePhase1279_payload.1.0;
+;
+PaxosNode_maxRound = PaxosNode_ProposeValuePhase2_on_reject_goto_PaxosNode_ProposeValuePhase1279_payload.1.0;
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+;
+send PaxosNode_timer, cancelTimer;
+
+
+}
+fun PaxosNode_ProposeValuePhase2_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_987215339(PaxosNode_ProposeValuePhase2_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_987215339__payload_skip: any)
+{
+
+
+;
+
+
+}start  state PaxosNode_Init
+{entry (payload: (int)) {
+PaxosNode_Init_entry52(payload);
+}
+exit  {
+PaxosNode_Init_exit0_rand_1888543761();
+}
+}
+ state PaxosNode_PerformOperation
+{entry (payload: any) {
+PaxosNode_PerformOperation_entry0_rand_860409788(payload);
+}
+exit  {
+PaxosNode_PerformOperation_exit0_rand_1282072544();
+}
+}
+ state PaxosNode_ProposeValuePhase1
+{entry (payload: any) {
+PaxosNode_ProposeValuePhase1_entry190(payload);
+}
+exit  {
+PaxosNode_ProposeValuePhase1_exit0_rand_943536683();
+}
+}
+ state PaxosNode_ProposeValuePhase2
+{entry (payload: any) {
+PaxosNode_ProposeValuePhase2_entry265(payload);
+}
+exit  {
+PaxosNode_ProposeValuePhase2_exit0_rand_1581195646();
+}
+}
+ state PaxosNode_RunLearner
+{entry (payload: (int, (int, int), int)) {
+PaxosNode_RunLearner_entry310(payload);
+}
+exit  {
+PaxosNode_RunLearner_exit0_rand_1831538395();
+}
+}
+}
+
+machine LeaderElection
+{
+var LeaderElection_servers: seq[machine];
+var LeaderElection_parentServer: machine;
+var LeaderElection_currentLeader: (int, machine);
+var LeaderElection_myRank: int;
+var LeaderElection_iter: int;
+
+model fun LeaderElection_GetNewLeader(): (int, machine)
+{
+var _tmp1096: machine;
+var _tmp1097: (int, machine);
+
+
+_tmp1096 = LeaderElection_servers[0];
+;
+_tmp1097 = (1, _tmp1096);
+;
+return (_tmp1097);
+
+
+}
+fun LeaderElection_Init_entry444(LeaderElection_Init_entry444_payload: (seq[machine], machine, int))
+{
+var _tmp1098: (int, machine);
+
+
+LeaderElection_servers = LeaderElection_Init_entry444_payload.0;
+;
+LeaderElection_parentServer = LeaderElection_Init_entry444_payload.1;
+;
+LeaderElection_myRank = LeaderElection_Init_entry444_payload.2;
+;
+_tmp1098 = (LeaderElection_myRank, this);
+;
+LeaderElection_currentLeader = _tmp1098;
+;
+raise local;
+
+
+}
+fun LeaderElection_Init_exit0_rand_2074067504()
+{
+
+
+;
+
+
+}
+fun LeaderElection_SendLeader_entry456(LeaderElection_SendLeader_entry456__payload_6: any)
+{
+
+
+LeaderElection_currentLeader = LeaderElection_GetNewLeader();
+;
+assert (LeaderElection_currentLeader.0 <= LeaderElection_myRank);
+;
+send LeaderElection_parentServer, newLeader, LeaderElection_currentLeader;
+
+
+}
+fun LeaderElection_SendLeader_exit0_rand_1798389970()
+{
+
+
+;
+
+
+}
+fun LeaderElection_Init_on_local_goto_LeaderElection_SendLeader0_rand_1288191266(LeaderElection_Init_on_local_goto_LeaderElection_SendLeader0_rand_1288191266__payload_skip: any)
+{
+
+
+;
+
+
+}start  state LeaderElection_Init
+{entry (payload: (seq[machine], machine, int)) {
+LeaderElection_Init_entry444(payload);
+}
+exit  {
+LeaderElection_Init_exit0_rand_2074067504();
+}
+}
+ state LeaderElection_SendLeader
+{entry (payload: any) {
+LeaderElection_SendLeader_entry456(payload);
+}
+exit  {
+LeaderElection_SendLeader_exit0_rand_1798389970();
+}
+}
+}
+
+model Timer
+{
+var Timer_target: machine;
+var Timer_timeoutvalue: int;
+
+fun Timer_Init_entry486(Timer_Init_entry486_payload: (machine, int))
+{
+
+
+Timer_target = Timer_Init_entry486_payload.0;
+;
+Timer_timeoutvalue = Timer_Init_entry486_payload.1;
+;
+raise local;
+
+
+}
+fun Timer_Init_exit0_rand_1636763499()
+{
+
+
+;
+
+
+}
+fun Timer_Loop_entry0_rand_665953883(Timer_Loop_entry0_rand_665953883__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun Timer_Loop_exit0_rand_354888539()
+{
+
+
+;
+
+
+}
+fun Timer_TimerStarted_entry501(Timer_TimerStarted_entry501__payload_7: any)
+{
+var _tmp1099: bool;
+
+
+_tmp1099 = $;
+;
+if(_tmp1099)
+{
+
+raise local;
+;
+raise local;
+
+
+
+}
+else
+{
+
+;
+;
+;
+
+
+
+}
+
+
+}
+fun Timer_TimerStarted_exit0_rand_1046664400()
+{
+
+
+;
+
+
+}
+fun Timer_Init_on_local_goto_Timer_Loop0_rand_841601176(Timer_Init_on_local_goto_Timer_Loop0_rand_841601176__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun Timer_Loop_on_startTimer_goto_Timer_TimerStarted0_rand_1632181416(Timer_Loop_on_startTimer_goto_Timer_TimerStarted0_rand_1632181416__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun Timer_TimerStarted_on_local_goto_Timer_Loop0_rand_1089282891(Timer_TimerStarted_on_local_goto_Timer_Loop0_rand_1089282891__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun Timer_TimerStarted_on_cancelTimer_goto_Timer_Loop0_rand_208024838(Timer_TimerStarted_on_cancelTimer_goto_Timer_Loop0_rand_208024838__payload_skip: any)
+{
+
+
+;
+
+
+}start  state Timer_Init
+{entry (payload: (machine, int)) {
+Timer_Init_entry486(payload);
+}
+exit  {
+Timer_Init_exit0_rand_1636763499();
+}
+}
+ state Timer_Loop
+{entry (payload: any) {
+Timer_Loop_entry0_rand_665953883(payload);
+}
+exit  {
+Timer_Loop_exit0_rand_354888539();
+}
+}
+ state Timer_TimerStarted
+{entry (payload: any) {
+Timer_TimerStarted_entry501(payload);
+}
+exit  {
+Timer_TimerStarted_exit0_rand_1046664400();
+}
+}
+}
+
+main machine GodMachine
+{
+var GodMachine_paxosnodes: seq[machine];
+var GodMachine_temp: machine;
+var GodMachine_iter: int;
+
+fun GodMachine_Init_entry519(GodMachine_Init_entry519__payload_8: any)
+{
+var _tmp1100: (int);
+var _tmp1101: machine;
+var _tmp1102: (int);
+var _tmp1103: machine;
+var _tmp1104: (int);
+var _tmp1105: machine;
+var _tmp1106: machine;
+var _tmp1107: (seq[machine]);
+
+
+_tmp1100 = (3,);
+;
+_tmp1101 = new PaxosNode(_tmp1100);
+;
+GodMachine_temp = _tmp1101;
+;
+GodMachine_paxosnodes += (0, GodMachine_temp);
+;
+_tmp1102 = (2,);
+;
+_tmp1103 = new PaxosNode(_tmp1102);
+;
+GodMachine_temp = _tmp1103;
+;
+GodMachine_paxosnodes += (0, GodMachine_temp);
+;
+_tmp1104 = (1,);
+;
+_tmp1105 = new PaxosNode(_tmp1104);
+;
+GodMachine_temp = _tmp1105;
+;
+GodMachine_paxosnodes += (0, GodMachine_temp);
+;
+GodMachine_iter = 0;
+;
+while((GodMachine_iter < sizeof(GodMachine_paxosnodes)))
+{
+
+_tmp1106 = GodMachine_paxosnodes[GodMachine_iter];
+;
+_tmp1107 = (GodMachine_paxosnodes,);
+;
+send _tmp1106, allNodes, _tmp1107;
+;
+GodMachine_iter = (GodMachine_iter + 1);
+;
+send GodMachine_paxosnodes[GodMachine_iter], allNodes, (GodMachine_paxosnodes,);
+;
+GodMachine_iter = (GodMachine_iter + 1);
+
+
+
+}
+;
+new Client(GodMachine_paxosnodes);
+
+
+}
+fun GodMachine_Init_exit0_rand_1578908937()
+{
+
+
+;
+
+
+}start  state GodMachine_Init
+{entry (payload: any) {
+GodMachine_Init_entry519(payload);
+}
+exit  {
+GodMachine_Init_exit0_rand_1578908937();
+}
+}
+}
+
+model Client
+{
+var Client_servers: seq[machine];
+
+fun Client_Init_entry542(Client_Init_entry542_payload: seq[machine])
+{
+
+
+Client_servers = Client_Init_entry542_payload;
+;
+raise local;
+
+
+}
+fun Client_Init_exit0_rand_1314092298()
+{
+
+
+;
+
+
+}
+fun Client_PumpRequestOne_entry0_rand_64707019(Client_PumpRequestOne_entry0_rand_64707019__payload_9: any)
+{
+var _tmp1108: bool;
+var _tmp1109: machine;
+var _tmp1110: (int, int);
+var _tmp1111: machine;
+var _tmp1112: (int, int);
+
+
+;
+;
+_tmp1108 = $;
+;
+if(_tmp1108)
+{
+
+_tmp1109 = Client_servers[0];
+;
+_tmp1110 = (0, 1);
+;
+send _tmp1109, update, _tmp1110;
+;
+send Client_servers[0], update, (0, 1);
+
+
+
+}
+else
+{
+
+_tmp1111 = Client_servers[(sizeof(Client_servers) - 1)];
+;
+_tmp1112 = (0, 1);
+;
+send _tmp1111, update, _tmp1112;
+;
+send Client_servers[(sizeof(Client_servers) - 1)], update, (0, 1);
+
+
+
+}
+;
+raise response;
+
+
+}
+fun Client_PumpRequestOne_exit0_rand_9109244()
+{
+
+
+;
+
+
+}
+fun Client_PumpRequestTwo_entry0_rand_1640224416(Client_PumpRequestTwo_entry0_rand_1640224416__payload_10: any)
+{
+var _tmp1113: bool;
+var _tmp1114: machine;
+var _tmp1115: (int, int);
+var _tmp1116: machine;
+var _tmp1117: (int, int);
+
+
+;
+;
+_tmp1113 = $;
+;
+if(_tmp1113)
+{
+
+_tmp1114 = Client_servers[0];
+;
+_tmp1115 = (0, 2);
+;
+send _tmp1114, update, _tmp1115;
+;
+send Client_servers[0], update, (0, 2);
+
+
+
+}
+else
+{
+
+_tmp1116 = Client_servers[(sizeof(Client_servers) - 1)];
+;
+_tmp1117 = (0, 2);
+;
+send _tmp1116, update, _tmp1117;
+;
+send Client_servers[(sizeof(Client_servers) - 1)], update, (0, 2);
+
+
+
+}
+;
+raise response;
+
+
+}
+fun Client_PumpRequestTwo_exit0_rand_1553103096()
+{
+
+
+;
+
+
+}
+fun Client_Done_entry0_rand_2099991429(Client_Done_entry0_rand_2099991429__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun Client_Done_exit0_rand_981145()
+{
+
+
+;
+
+
+}
+fun Client_Init_on_local_goto_Client_PumpRequestOne0_rand_1296486649(Client_Init_on_local_goto_Client_PumpRequestOne0_rand_1296486649__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun Client_PumpRequestOne_on_response_goto_Client_PumpRequestTwo0_rand_735742324(Client_PumpRequestOne_on_response_goto_Client_PumpRequestTwo0_rand_735742324__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun Client_PumpRequestTwo_on_response_goto_Client_Done0_rand_1439374286(Client_PumpRequestTwo_on_response_goto_Client_Done0_rand_1439374286__payload_skip: any)
+{
+
+
+;
+
+
+}start  state Client_Init
+{entry (payload: seq[machine]) {
+Client_Init_entry542(payload);
+}
+exit  {
+Client_Init_exit0_rand_1314092298();
+}
+}
+ state Client_PumpRequestOne
+{entry (payload: any) {
+Client_PumpRequestOne_entry0_rand_64707019(payload);
+}
+exit  {
+Client_PumpRequestOne_exit0_rand_9109244();
+}
+}
+ state Client_PumpRequestTwo
+{entry (payload: any) {
+Client_PumpRequestTwo_entry0_rand_1640224416(payload);
+}
+exit  {
+Client_PumpRequestTwo_exit0_rand_1553103096();
+}
+}
+ state Client_Done
+{entry (payload: any) {
+Client_Done_entry0_rand_2099991429(payload);
+}
+exit  {
+Client_Done_exit0_rand_981145();
+}
+}
+}
+

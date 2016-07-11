@@ -1,51 +1,108 @@
-// Liveness test: "check passed"
-// This is a simplest sample with FAIRNONDET in liveness
-//checking symmetry in how FAIRNONDET works
-
-event UserEvent assert 1;
-event Done assert 1;
-event Loop assert 1;
-event Waiting assert 1;
-event Computing assert 1;
+event UserEvent  assert 1;
+event Done  assert 1;
+event Loop  assert 1;
+event Waiting  assert 1;
+event Computing  assert 1;
 
 main machine EventHandler
 {
-       start state WaitForUser
-       {
-            entry { 
-				monitor Waiting;
-				send this, UserEvent;
-				}
-            on UserEvent goto HandleEvent;
-       }
-  
-       state HandleEvent
-       {
-            entry { 
-				monitor Computing;
-				if ($$) {
-					send this, Loop;
-				}
-				else {
-					send this, Done;
-				}
-				}			
-            on Done goto WaitForUser;
-			on Loop goto HandleEvent;
-       }
+
+fun EventHandler_WaitForUser_entry0_rand_1759368254(EventHandler_WaitForUser_entry0_rand_1759368254__payload_0: any)
+{
+
+
+;
+;
+send this, UserEvent;
+
+
+}
+fun EventHandler_WaitForUser_exit0_rand_220296777()
+{
+
+
+;
+
+
+}
+fun EventHandler_HandleEvent_entry0_rand_697388349(EventHandler_HandleEvent_entry0_rand_697388349__payload_1: any)
+{
+var _tmp1239: bool;
+
+
+;
+;
+_tmp1239 = $;
+;
+if(_tmp1239)
+{
+
+send this, Loop;
+;
+send this, Loop;
+
+
+
+}
+else
+{
+
+send this, Done;
+;
+send this, Done;
+
+
+
 }
 
-spec WatchDog monitors Computing, Waiting
+
+}
+fun EventHandler_HandleEvent_exit0_rand_987685627()
 {
-      start cold state CanGetUserInput
-      {
-             on Waiting goto CanGetUserInput;
-             on Computing goto CannotGetUserInput;
-      } 
-	  hot state CannotGetUserInput
-     {
-             on Waiting goto CanGetUserInput;
-             on Computing goto CannotGetUserInput;
-     }
+
+
+;
+
+
+}
+fun EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_1299731508(EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_1299731508__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_447685181(EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_447685181__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun EventHandler_HandleEvent_on_Loop_goto_EventHandler_HandleEvent0_rand_1736312506(EventHandler_HandleEvent_on_Loop_goto_EventHandler_HandleEvent0_rand_1736312506__payload_skip: any)
+{
+
+
+;
+
+
+}start  state EventHandler_WaitForUser
+{entry (payload: any) {
+EventHandler_WaitForUser_entry0_rand_1759368254(payload);
+}
+exit  {
+EventHandler_WaitForUser_exit0_rand_220296777();
+}
+}
+ state EventHandler_HandleEvent
+{entry (payload: any) {
+EventHandler_HandleEvent_entry0_rand_697388349(payload);
+}
+exit  {
+EventHandler_HandleEvent_exit0_rand_987685627();
+}
+}
 }
 

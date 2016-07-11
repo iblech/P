@@ -167,7 +167,9 @@ module ProgramTyping =
       end
     | Expr.Bin(op, e1, e2) when is_comparison op ->
       begin
-        type_assert ((is_subtype (typecheck_expr prog G cm e1) Int) && (is_subtype (typecheck_expr prog G cm e2) Int)) (sprintf "Error: Non-integer arguments to intOp: %s" (print_expr expr))
+        let t1 = (typecheck_expr prog G cm e1)
+        let t2 = (typecheck_expr prog G cm e2)
+        type_assert (t1 = t2) (sprintf "Error: Arguments to ComparisonOp not of same type: %s" (print_expr expr))
         Bool
       end
     | Expr.Un(Not, e1) -> 
@@ -333,7 +335,12 @@ module ProgramTyping =
   ///typecheck_stmt <program> <Referencing Environment> <current machine> <current function> <statement>
   let rec typecheck_stmt prog G cm cf st =
     match st with
-    | Assign(l, e) -> type_assert (is_subtype (typeof_lval l G) (typecheck_expr prog G cm e)) (sprintf "Invalid assignment: %s" (print_stmt prog cm st))
+    | Assign(l, e) -> 
+      begin
+        let ltype = (typeof_lval l G)
+        let rtype = (typecheck_expr prog G cm e)
+        type_assert (is_subtype rtype ltype) (sprintf "Invalid assignment: %s; lhs has type %s, but rhs has type %s " (print_stmt prog cm st) (print_type ltype) (print_type rtype))
+      end
     | Insert(l, e1, e2) -> 
       match typeof_lval l G with
       | Seq(t) -> type_assert ((is_subtype (typecheck_expr prog G cm e1) Int) && (is_subtype (typecheck_expr prog G cm e2) t)) (sprintf "Invalid insert: %s" (print_stmt prog cm st))

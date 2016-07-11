@@ -1,24 +1,53 @@
-// P semantics test: two machines, machine is halted with "raise halt" (unhandled)
-// Action2 is never executed after raising E1; test passes
-event E1 assert 1;
-event E2 assert 1;
+event E1  assert 1;
+event E2  assert 1;
 
-main machine Real1 {
-    var test: bool;  //init with "false"
-    start state Real1_Init {
-        entry { 	 
-			raise E1;
-			send this, E2;
-        }
-		
-        on E1 do Action1;   // checking "raise"
-        on E2 do Action2;   // checking "send"
-        exit {   }
-	}
-    fun Action1() {
-		test = true;
-    }
-	fun Action2() {
-		assert(test == false); //unreachable
-    }
+main machine Real1
+{
+var Real1_test: bool;
+
+fun Real1_Action1()
+{
+
+
+Real1_test = true;
+
+
 }
+fun Real1_Action2()
+{
+var _tmp1166: bool;
+
+
+_tmp1166 = (Real1_test == false);
+;
+assert _tmp1166;
+
+
+}
+fun Real1_Real1_Init_entry10(Real1_Real1_Init_entry10__payload_0: any)
+{
+
+
+raise E1;
+;
+send this, E2;
+
+
+}
+fun Real1_Real1_Init_exit0_rand_1569536076()
+{
+
+
+;
+
+
+}start  state Real1_Real1_Init
+{entry (payload: any) {
+Real1_Real1_Init_entry10(payload);
+}
+exit  {
+Real1_Real1_Init_exit0_rand_1569536076();
+}
+}
+}
+

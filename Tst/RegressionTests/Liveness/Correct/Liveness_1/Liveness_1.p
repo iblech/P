@@ -1,7 +1,3 @@
-// Liveness test: "check passed"
-// This is a simplest sample demonstrating liveness checking
-// by Zing
-
 event UserEvent;
 event Done;
 event Waiting;
@@ -9,36 +5,73 @@ event Computing;
 
 main machine EventHandler
 {
-       start state WaitForUser
-       {
-            entry { 
-				monitor Waiting;
-				send this, UserEvent;
-				}
-            on UserEvent goto HandleEvent;
-       }
-  
-       state HandleEvent
-       {
-            entry { 
-				monitor Computing;
-				send this, Done;
-				}			
-            on Done goto WaitForUser;
-       }
-}
 
-spec WatchDog monitors Waiting, Computing
+fun EventHandler_WaitForUser_entry0_rand_405439435(EventHandler_WaitForUser_entry0_rand_405439435__payload_0: any)
 {
-      start cold state CanGetUserInput
-      {
-             on Waiting goto CanGetUserInput;
-             on Computing goto CannotGetUserInput;
-      } 
-	  hot state CannotGetUserInput
-     {
-             on Waiting goto CanGetUserInput;
-             on Computing goto CannotGetUserInput;
-     }
+
+
+;
+;
+send this, UserEvent;
+
+
+}
+fun EventHandler_WaitForUser_exit0_rand_1746691261()
+{
+
+
+;
+
+
+}
+fun EventHandler_HandleEvent_entry0_rand_1592174523(EventHandler_HandleEvent_entry0_rand_1592174523__payload_1: any)
+{
+
+
+;
+;
+send this, Done;
+
+
+}
+fun EventHandler_HandleEvent_exit0_rand_266189609()
+{
+
+
+;
+
+
+}
+fun EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_971408051(EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_971408051__payload_skip: any)
+{
+
+
+;
+
+
+}
+fun EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_656103717(EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_656103717__payload_skip: any)
+{
+
+
+;
+
+
+}start  state EventHandler_WaitForUser
+{entry (payload: any) {
+EventHandler_WaitForUser_entry0_rand_405439435(payload);
+}
+exit  {
+EventHandler_WaitForUser_exit0_rand_1746691261();
+}
+}
+ state EventHandler_HandleEvent
+{entry (payload: any) {
+EventHandler_HandleEvent_entry0_rand_1592174523(payload);
+}
+exit  {
+EventHandler_HandleEvent_exit0_rand_266189609();
+}
+}
 }
 
