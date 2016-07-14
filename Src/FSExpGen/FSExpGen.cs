@@ -7,6 +7,7 @@ using Microsoft.Formula.API.Generators;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.P2Boogie;
+using System.Text.RegularExpressions;
 
 namespace Microsoft.P_FS_Boogie
 {
@@ -15,6 +16,12 @@ namespace Microsoft.P_FS_Boogie
         private List<PProgram> parsedPrograms { get; set; }
         private Compiler compiler;
         private static Random r = new Random();
+        
+        //This is to check whether an AnonFunction has a parameter or not.
+        //If it does not, the Parser desugars it, and gives it a parameter
+        //named _payload_0 
+        private static Regex anonFunParamRegex =
+            new Regex(@"_payload_([0-9]+|skip)");
 
         //Data Structures Dealing with States
         private Dictionary<string, List<Syntax.DoDecl.T>>
@@ -1026,6 +1033,31 @@ namespace Microsoft.P_FS_Boogie
             return new Syntax.FunDecl(name, @params, rettype, locals, stmt, is_model, is_pure, true, null);
         }
 
+        //Check if the params are called _payload_0, _payload_skip... etc.
+        //If not, add them to the param list.
+        private void getAnonFunParams(P_Root.NmdTupType x, string owner, ref List<Syntax.VarDecl> args, ref bool hasParams)
+        {
+            while (x.tl.Symbol.ToString() != "NIL")
+            {
+                x = x.tl as P_Root.NmdTupType;
+            }
+            var n = x.hd as P_Root.NmdTupTypeField;
+
+            var name = getString(n.name);
+            var type = genTypeExpr(n.type as P_Root.TypeExpr);
+
+            if (!(anonFunParamRegex.Match(name).Success && type == Syntax.Type.Any))
+            {
+                symbolTable.AddVar(name, type);
+                name = owner + '_' + name;
+                args.Add(new Syntax.VarDecl(name, type));
+                hasParams = true;
+            }
+            else
+                hasParams = false;
+        }
+
+
         //A(sad?) Departure from Design. 
         //We generate the name of the AnonFunction, and also a FunDecl to
         //that effect, add it to the appropriate list, and return the name.
@@ -1049,13 +1081,8 @@ namespace Microsoft.P_FS_Boogie
             var args = new List<Syntax.VarDecl>();
             if (hasParams && d.envVars.Symbol.ToString() != "NIL")
             {
-                var x = (d.envVars as P_Root.NmdTupType);
-                while (x.tl.Symbol.ToString() != "NIL")
-                {
-                    x = x.tl as P_Root.NmdTupType;
-                }
-                var v = genVar(x.hd as P_Root.NmdTupTypeField, name + "_payload");
-                args.Add(v);
+                var x = d.envVars as P_Root.NmdTupType;
+                getAnonFunParams(x, name, ref args, ref hasParams);
             }
 
             //Get Locals

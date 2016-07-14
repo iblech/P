@@ -66,7 +66,7 @@ module RemoveNamedTuples =
     | While(c, s) -> While((process_expr G c), (process_stmt G s))
     | Ite(c, i, e) -> Ite((process_expr G c), (process_stmt G i), (process_stmt G e))
     | SeqStmt(l) -> SeqStmt(List.map (process_stmt G) l)
-    | Receive(l) -> st //Come back!
+    | Receive(_) -> st 
     | Pop -> st
     | Return(None) -> st
     | Return(Some(e)) -> Return (Some (process_expr G e))

@@ -1,3 +1,5 @@
+event halt;
+event null;
 event Unit;
 event UserEvent;
 event Done;
@@ -7,7 +9,7 @@ event Computing;
 main machine EventHandler
 {
 
-fun EventHandler_Init_entry12(EventHandler_Init_entry12__payload_0: any)
+fun EventHandler_Init_entry12()
 {
 
 
@@ -15,7 +17,7 @@ raise Unit;
 
 
 }
-fun EventHandler_Init_exit0_rand_261242102()
+fun EventHandler_Init_exit0_rand_1319996857()
 {
 
 
@@ -23,7 +25,7 @@ fun EventHandler_Init_exit0_rand_261242102()
 
 
 }
-fun EventHandler_WaitForUser_entry0_rand_134202139(EventHandler_WaitForUser_entry0_rand_134202139__payload_1: any)
+fun EventHandler_WaitForUser_entry0_rand_1026700467()
 {
 
 
@@ -33,7 +35,7 @@ send this, UserEvent;
 
 
 }
-fun EventHandler_WaitForUser_exit0_rand_459710856()
+fun EventHandler_WaitForUser_exit0_rand_610093628()
 {
 
 
@@ -41,7 +43,7 @@ fun EventHandler_WaitForUser_exit0_rand_459710856()
 
 
 }
-fun EventHandler_HandleEvent_entry0_rand_1881759341(EventHandler_HandleEvent_entry0_rand_1881759341__payload_2: any)
+fun EventHandler_HandleEvent_entry0_rand_1680722967()
 {
 
 
@@ -49,7 +51,7 @@ fun EventHandler_HandleEvent_entry0_rand_1881759341(EventHandler_HandleEvent_ent
 
 
 }
-fun EventHandler_HandleEvent_exit0_rand_1269335074()
+fun EventHandler_HandleEvent_exit0_rand_901603629()
 {
 
 
@@ -57,7 +59,7 @@ fun EventHandler_HandleEvent_exit0_rand_1269335074()
 
 
 }
-fun EventHandler_Init_on_Unit_goto_EventHandler_WaitForUser0_rand_1200511990(EventHandler_Init_on_Unit_goto_EventHandler_WaitForUser0_rand_1200511990__payload_skip: any)
+fun EventHandler_Init_on_Unit_goto_EventHandler_WaitForUser0_rand_90048947()
 {
 
 
@@ -65,7 +67,7 @@ fun EventHandler_Init_on_Unit_goto_EventHandler_WaitForUser0_rand_1200511990(Eve
 
 
 }
-fun EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_795512400(EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_795512400__payload_skip: any)
+fun EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_950407550()
 {
 
 
@@ -73,7 +75,7 @@ fun EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_79
 
 
 }
-fun EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_2049646827(EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_2049646827__payload_skip: any)
+fun EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_389543536()
 {
 
 
@@ -81,27 +83,27 @@ fun EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_2049646
 
 
 }start  state EventHandler_Init
-{entry (payload: any) {
-EventHandler_Init_entry12(payload);
+{entry  {
+EventHandler_Init_entry12();
 }
 exit  {
-EventHandler_Init_exit0_rand_261242102();
+EventHandler_Init_exit0_rand_1319996857();
 }
 }
  state EventHandler_WaitForUser
-{entry (payload: any) {
-EventHandler_WaitForUser_entry0_rand_134202139(payload);
+{entry  {
+EventHandler_WaitForUser_entry0_rand_1026700467();
 }
 exit  {
-EventHandler_WaitForUser_exit0_rand_459710856();
+EventHandler_WaitForUser_exit0_rand_610093628();
 }
 }
  state EventHandler_HandleEvent
-{entry (payload: any) {
-EventHandler_HandleEvent_entry0_rand_1881759341(payload);
+{entry  {
+EventHandler_HandleEvent_entry0_rand_1680722967();
 }
 exit  {
-EventHandler_HandleEvent_exit0_rand_1269335074();
+EventHandler_HandleEvent_exit0_rand_901603629();
 }
 }
 }

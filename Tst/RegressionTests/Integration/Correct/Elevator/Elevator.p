@@ -1,3 +1,5 @@
+event halt;
+event null;
 event eOpenDoor  assume 1;
 event eCloseDoor  assume 1;
 event eResetDoor  assert 1;
@@ -23,25 +25,25 @@ machine Elevator
 var Elevator_DoorV: machine;
 var Elevator_TimerV: machine;
 
-fun Elevator_Init_entry26(Elevator_Init_entry26__payload_0: any)
+fun Elevator_Init_entry26()
 {
-var _tmp970: machine;
-var _tmp971: machine;
+var _tmp381: machine;
+var _tmp382: machine;
 
 
-_tmp970 = new Timer(this);
+_tmp381 = new Timer(this);
 
-Elevator_TimerV = _tmp970;
+Elevator_TimerV = _tmp381;
 
-_tmp971 = new Door(this);
+_tmp382 = new Door(this);
 
-Elevator_DoorV = _tmp971;
+Elevator_DoorV = _tmp382;
 
 raise eUnit;
 
 
 }
-fun Elevator_Init_exit0_rand_532656273()
+fun Elevator_Init_exit0_rand_1684260961()
 {
 
 
@@ -49,7 +51,7 @@ fun Elevator_Init_exit0_rand_532656273()
 
 
 }
-fun Elevator_DoorClosed_entry38(Elevator_DoorClosed_entry38__payload_1: any)
+fun Elevator_DoorClosed_entry38()
 {
 
 
@@ -57,7 +59,7 @@ send Elevator_DoorV, eSendCommandToResetDoor;
 
 
 }
-fun Elevator_DoorClosed_exit0_rand_915666412()
+fun Elevator_DoorClosed_exit0_rand_15165319()
 {
 
 
@@ -65,7 +67,7 @@ fun Elevator_DoorClosed_exit0_rand_915666412()
 
 
 }
-fun Elevator_DoorOpening_entry49(Elevator_DoorOpening_entry49__payload_2: any)
+fun Elevator_DoorOpening_entry49()
 {
 
 
@@ -73,7 +75,7 @@ send Elevator_DoorV, eSendCommandToOpenDoor;
 
 
 }
-fun Elevator_DoorOpening_exit0_rand_783680686()
+fun Elevator_DoorOpening_exit0_rand_1598635739()
 {
 
 
@@ -81,7 +83,7 @@ fun Elevator_DoorOpening_exit0_rand_783680686()
 
 
 }
-fun Elevator_DoorOpened_entry59(Elevator_DoorOpened_entry59__payload_3: any)
+fun Elevator_DoorOpened_entry59()
 {
 
 
@@ -91,7 +93,7 @@ send Elevator_TimerV, eStartDoorCloseTimer;
 
 
 }
-fun Elevator_DoorOpened_exit0_rand_1496410437()
+fun Elevator_DoorOpened_exit0_rand_1678857423()
 {
 
 
@@ -99,7 +101,7 @@ fun Elevator_DoorOpened_exit0_rand_1496410437()
 
 
 }
-fun Elevator_DoorOpenedOkToClose_entry72(Elevator_DoorOpenedOkToClose_entry72__payload_4: any)
+fun Elevator_DoorOpenedOkToClose_entry72()
 {
 
 
@@ -107,7 +109,7 @@ send Elevator_TimerV, eStartDoorCloseTimer;
 
 
 }
-fun Elevator_DoorOpenedOkToClose_exit0_rand_451823289()
+fun Elevator_DoorOpenedOkToClose_exit0_rand_328990523()
 {
 
 
@@ -115,7 +117,7 @@ fun Elevator_DoorOpenedOkToClose_exit0_rand_451823289()
 
 
 }
-fun Elevator_DoorClosing_entry83(Elevator_DoorClosing_entry83__payload_5: any)
+fun Elevator_DoorClosing_entry83()
 {
 
 
@@ -123,7 +125,7 @@ send Elevator_DoorV, eSendCommandToCloseDoor;
 
 
 }
-fun Elevator_DoorClosing_exit0_rand_1161808300()
+fun Elevator_DoorClosing_exit0_rand_892286445()
 {
 
 
@@ -131,7 +133,7 @@ fun Elevator_DoorClosing_exit0_rand_1161808300()
 
 
 }
-fun Elevator_StoppingDoor_entry96(Elevator_StoppingDoor_entry96__payload_6: any)
+fun Elevator_StoppingDoor_entry96()
 {
 
 
@@ -139,7 +141,7 @@ send Elevator_DoorV, eSendCommandToStopDoor;
 
 
 }
-fun Elevator_StoppingDoor_exit0_rand_987242430()
+fun Elevator_StoppingDoor_exit0_rand_1753810820()
 {
 
 
@@ -147,7 +149,7 @@ fun Elevator_StoppingDoor_exit0_rand_987242430()
 
 
 }
-fun Elevator_StoppingTimer_entry108(Elevator_StoppingTimer_entry108__payload_7: any)
+fun Elevator_StoppingTimer_entry108()
 {
 
 
@@ -155,7 +157,7 @@ send Elevator_TimerV, eStopDoorCloseTimer;
 
 
 }
-fun Elevator_StoppingTimer_exit0_rand_2060114030()
+fun Elevator_StoppingTimer_exit0_rand_1805726763()
 {
 
 
@@ -163,7 +165,7 @@ fun Elevator_StoppingTimer_exit0_rand_2060114030()
 
 
 }
-fun Elevator_WaitingForTimer_entry0_rand_289126073(Elevator_WaitingForTimer_entry0_rand_289126073__payload_8: any)
+fun Elevator_WaitingForTimer_entry0_rand_1084262102()
 {
 
 
@@ -171,7 +173,7 @@ fun Elevator_WaitingForTimer_entry0_rand_289126073(Elevator_WaitingForTimer_entr
 
 
 }
-fun Elevator_WaitingForTimer_exit0_rand_1494778538()
+fun Elevator_WaitingForTimer_exit0_rand_137095303()
 {
 
 
@@ -179,7 +181,7 @@ fun Elevator_WaitingForTimer_exit0_rand_1494778538()
 
 
 }
-fun Elevator_ReturnState_entry124(Elevator_ReturnState_entry124__payload_9: any)
+fun Elevator_ReturnState_entry124()
 {
 
 
@@ -187,7 +189,7 @@ raise eStopTimerReturned;
 
 
 }
-fun Elevator_ReturnState_exit0_rand_2069761097()
+fun Elevator_ReturnState_exit0_rand_442274439()
 {
 
 
@@ -195,7 +197,7 @@ fun Elevator_ReturnState_exit0_rand_2069761097()
 
 
 }
-fun Elevator_Init_on_eUnit_goto_Elevator_DoorClosed0_rand_484631031(Elevator_Init_on_eUnit_goto_Elevator_DoorClosed0_rand_484631031__payload_skip: any)
+fun Elevator_Init_on_eUnit_goto_Elevator_DoorClosed0_rand_1699631151()
 {
 
 
@@ -203,7 +205,7 @@ fun Elevator_Init_on_eUnit_goto_Elevator_DoorClosed0_rand_484631031(Elevator_Ini
 
 
 }
-fun Elevator_DoorClosed_on_eOpenDoor_goto_Elevator_DoorOpening0_rand_598581119(Elevator_DoorClosed_on_eOpenDoor_goto_Elevator_DoorOpening0_rand_598581119__payload_skip: any)
+fun Elevator_DoorClosed_on_eOpenDoor_goto_Elevator_DoorOpening0_rand_417044959()
 {
 
 
@@ -211,7 +213,7 @@ fun Elevator_DoorClosed_on_eOpenDoor_goto_Elevator_DoorOpening0_rand_598581119(E
 
 
 }
-fun Elevator_DoorOpening_on_eDoorOpened_goto_Elevator_DoorOpened0_rand_1139690815(Elevator_DoorOpening_on_eDoorOpened_goto_Elevator_DoorOpened0_rand_1139690815__payload_skip: any)
+fun Elevator_DoorOpening_on_eDoorOpened_goto_Elevator_DoorOpened0_rand_50512425()
 {
 
 
@@ -219,7 +221,7 @@ fun Elevator_DoorOpening_on_eDoorOpened_goto_Elevator_DoorOpened0_rand_113969081
 
 
 }
-fun Elevator_DoorOpened_on_eTimerFired_goto_Elevator_DoorOpenedOkToClose0_rand_1566981043(Elevator_DoorOpened_on_eTimerFired_goto_Elevator_DoorOpenedOkToClose0_rand_1566981043__payload_skip: any)
+fun Elevator_DoorOpened_on_eTimerFired_goto_Elevator_DoorOpenedOkToClose0_rand_1020312940()
 {
 
 
@@ -227,7 +229,7 @@ fun Elevator_DoorOpened_on_eTimerFired_goto_Elevator_DoorOpenedOkToClose0_rand_1
 
 
 }
-fun Elevator_DoorOpened_on_eStopTimerReturned_goto_Elevator_DoorOpened0_rand_1908528259(Elevator_DoorOpened_on_eStopTimerReturned_goto_Elevator_DoorOpened0_rand_1908528259__payload_skip: any)
+fun Elevator_DoorOpened_on_eStopTimerReturned_goto_Elevator_DoorOpened0_rand_1712664340()
 {
 
 
@@ -235,7 +237,7 @@ fun Elevator_DoorOpened_on_eStopTimerReturned_goto_Elevator_DoorOpened0_rand_190
 
 
 }
-fun Elevator_DoorOpenedOkToClose_on_eStopTimerReturned_goto_Elevator_DoorClosing0_rand_1584575134(Elevator_DoorOpenedOkToClose_on_eStopTimerReturned_goto_Elevator_DoorClosing0_rand_1584575134__payload_skip: any)
+fun Elevator_DoorOpenedOkToClose_on_eStopTimerReturned_goto_Elevator_DoorClosing0_rand_1973958015()
 {
 
 
@@ -243,7 +245,7 @@ fun Elevator_DoorOpenedOkToClose_on_eStopTimerReturned_goto_Elevator_DoorClosing
 
 
 }
-fun Elevator_DoorOpenedOkToClose_on_eTimerFired_goto_Elevator_DoorClosing0_rand_264452133(Elevator_DoorOpenedOkToClose_on_eTimerFired_goto_Elevator_DoorClosing0_rand_264452133__payload_skip: any)
+fun Elevator_DoorOpenedOkToClose_on_eTimerFired_goto_Elevator_DoorClosing0_rand_1050811112()
 {
 
 
@@ -251,7 +253,7 @@ fun Elevator_DoorOpenedOkToClose_on_eTimerFired_goto_Elevator_DoorClosing0_rand_
 
 
 }
-fun Elevator_DoorClosing_on_eOpenDoor_goto_Elevator_StoppingDoor0_rand_1705383132(Elevator_DoorClosing_on_eOpenDoor_goto_Elevator_StoppingDoor0_rand_1705383132__payload_skip: any)
+fun Elevator_DoorClosing_on_eOpenDoor_goto_Elevator_StoppingDoor0_rand_212773951()
 {
 
 
@@ -259,7 +261,7 @@ fun Elevator_DoorClosing_on_eOpenDoor_goto_Elevator_StoppingDoor0_rand_170538313
 
 
 }
-fun Elevator_DoorClosing_on_eDoorClosed_goto_Elevator_DoorClosed0_rand_1919854658(Elevator_DoorClosing_on_eDoorClosed_goto_Elevator_DoorClosed0_rand_1919854658__payload_skip: any)
+fun Elevator_DoorClosing_on_eDoorClosed_goto_Elevator_DoorClosed0_rand_504283857()
 {
 
 
@@ -267,7 +269,7 @@ fun Elevator_DoorClosing_on_eDoorClosed_goto_Elevator_DoorClosed0_rand_191985465
 
 
 }
-fun Elevator_DoorClosing_on_eObjectDetected_goto_Elevator_DoorOpening0_rand_88273413(Elevator_DoorClosing_on_eObjectDetected_goto_Elevator_DoorOpening0_rand_88273413__payload_skip: any)
+fun Elevator_DoorClosing_on_eObjectDetected_goto_Elevator_DoorOpening0_rand_1257909395()
 {
 
 
@@ -275,7 +277,7 @@ fun Elevator_DoorClosing_on_eObjectDetected_goto_Elevator_DoorOpening0_rand_8827
 
 
 }
-fun Elevator_StoppingDoor_on_eDoorOpened_goto_Elevator_DoorOpened0_rand_62640068(Elevator_StoppingDoor_on_eDoorOpened_goto_Elevator_DoorOpened0_rand_62640068__payload_skip: any)
+fun Elevator_StoppingDoor_on_eDoorOpened_goto_Elevator_DoorOpened0_rand_2041575271()
 {
 
 
@@ -283,7 +285,7 @@ fun Elevator_StoppingDoor_on_eDoorOpened_goto_Elevator_DoorOpened0_rand_62640068
 
 
 }
-fun Elevator_StoppingDoor_on_eDoorClosed_goto_Elevator_DoorClosed0_rand_1673219453(Elevator_StoppingDoor_on_eDoorClosed_goto_Elevator_DoorClosed0_rand_1673219453__payload_skip: any)
+fun Elevator_StoppingDoor_on_eDoorClosed_goto_Elevator_DoorClosed0_rand_849347776()
 {
 
 
@@ -291,7 +293,7 @@ fun Elevator_StoppingDoor_on_eDoorClosed_goto_Elevator_DoorClosed0_rand_16732194
 
 
 }
-fun Elevator_StoppingDoor_on_eDoorStopped_goto_Elevator_DoorOpening0_rand_1467909087(Elevator_StoppingDoor_on_eDoorStopped_goto_Elevator_DoorOpening0_rand_1467909087__payload_skip: any)
+fun Elevator_StoppingDoor_on_eDoorStopped_goto_Elevator_DoorOpening0_rand_667611789()
 {
 
 
@@ -299,7 +301,7 @@ fun Elevator_StoppingDoor_on_eDoorStopped_goto_Elevator_DoorOpening0_rand_146790
 
 
 }
-fun Elevator_StoppingTimer_on_eOperationSuccess_goto_Elevator_ReturnState0_rand_1070580758(Elevator_StoppingTimer_on_eOperationSuccess_goto_Elevator_ReturnState0_rand_1070580758__payload_skip: any)
+fun Elevator_StoppingTimer_on_eOperationSuccess_goto_Elevator_ReturnState0_rand_93420304()
 {
 
 
@@ -307,7 +309,7 @@ fun Elevator_StoppingTimer_on_eOperationSuccess_goto_Elevator_ReturnState0_rand_
 
 
 }
-fun Elevator_StoppingTimer_on_eOperationFailure_goto_Elevator_WaitingForTimer0_rand_1810278134(Elevator_StoppingTimer_on_eOperationFailure_goto_Elevator_WaitingForTimer0_rand_1810278134__payload_skip: any)
+fun Elevator_StoppingTimer_on_eOperationFailure_goto_Elevator_WaitingForTimer0_rand_2054812689()
 {
 
 
@@ -315,7 +317,7 @@ fun Elevator_StoppingTimer_on_eOperationFailure_goto_Elevator_WaitingForTimer0_r
 
 
 }
-fun Elevator_WaitingForTimer_on_eTimerFired_goto_Elevator_ReturnState0_rand_1954379058(Elevator_WaitingForTimer_on_eTimerFired_goto_Elevator_ReturnState0_rand_1954379058__payload_skip: any)
+fun Elevator_WaitingForTimer_on_eTimerFired_goto_Elevator_ReturnState0_rand_1755269030()
 {
 
 
@@ -323,83 +325,83 @@ fun Elevator_WaitingForTimer_on_eTimerFired_goto_Elevator_ReturnState0_rand_1954
 
 
 }start  state Elevator_Init
-{entry (payload: any) {
-Elevator_Init_entry26(payload);
+{entry  {
+Elevator_Init_entry26();
 }
 exit  {
-Elevator_Init_exit0_rand_532656273();
+Elevator_Init_exit0_rand_1684260961();
 }
 }
  state Elevator_DoorClosed
-{entry (payload: any) {
-Elevator_DoorClosed_entry38(payload);
+{entry  {
+Elevator_DoorClosed_entry38();
 }
 exit  {
-Elevator_DoorClosed_exit0_rand_915666412();
+Elevator_DoorClosed_exit0_rand_15165319();
 }
 }
  state Elevator_DoorOpening
-{entry (payload: any) {
-Elevator_DoorOpening_entry49(payload);
+{entry  {
+Elevator_DoorOpening_entry49();
 }
 exit  {
-Elevator_DoorOpening_exit0_rand_783680686();
+Elevator_DoorOpening_exit0_rand_1598635739();
 }
 }
  state Elevator_DoorOpened
-{entry (payload: any) {
-Elevator_DoorOpened_entry59(payload);
+{entry  {
+Elevator_DoorOpened_entry59();
 }
 exit  {
-Elevator_DoorOpened_exit0_rand_1496410437();
+Elevator_DoorOpened_exit0_rand_1678857423();
 }
 }
  state Elevator_DoorOpenedOkToClose
-{entry (payload: any) {
-Elevator_DoorOpenedOkToClose_entry72(payload);
+{entry  {
+Elevator_DoorOpenedOkToClose_entry72();
 }
 exit  {
-Elevator_DoorOpenedOkToClose_exit0_rand_451823289();
+Elevator_DoorOpenedOkToClose_exit0_rand_328990523();
 }
 }
  state Elevator_DoorClosing
-{entry (payload: any) {
-Elevator_DoorClosing_entry83(payload);
+{entry  {
+Elevator_DoorClosing_entry83();
 }
 exit  {
-Elevator_DoorClosing_exit0_rand_1161808300();
+Elevator_DoorClosing_exit0_rand_892286445();
 }
 }
  state Elevator_StoppingDoor
-{entry (payload: any) {
-Elevator_StoppingDoor_entry96(payload);
+{entry  {
+Elevator_StoppingDoor_entry96();
 }
 exit  {
-Elevator_StoppingDoor_exit0_rand_987242430();
+Elevator_StoppingDoor_exit0_rand_1753810820();
 }
 }
  state Elevator_StoppingTimer
-{entry (payload: any) {
-Elevator_StoppingTimer_entry108(payload);
+{entry  {
+Elevator_StoppingTimer_entry108();
 }
 exit  {
-Elevator_StoppingTimer_exit0_rand_2060114030();
+Elevator_StoppingTimer_exit0_rand_1805726763();
 }
 }
  state Elevator_WaitingForTimer
-{entry (payload: any) {
-Elevator_WaitingForTimer_entry0_rand_289126073(payload);
+{entry  {
+Elevator_WaitingForTimer_entry0_rand_1084262102();
 }
 exit  {
-Elevator_WaitingForTimer_exit0_rand_1494778538();
+Elevator_WaitingForTimer_exit0_rand_137095303();
 }
 }
  state Elevator_ReturnState
-{entry (payload: any) {
-Elevator_ReturnState_entry124(payload);
+{entry  {
+Elevator_ReturnState_entry124();
 }
 exit  {
-Elevator_ReturnState_exit0_rand_2069761097();
+Elevator_ReturnState_exit0_rand_442274439();
 }
 }
 }
@@ -408,20 +410,20 @@ main machine User
 {
 var User_ElevatorV: machine;
 
-fun User_Init_entry134(User_Init_entry134__payload_10: any)
+fun User_Init_entry134()
 {
-var _tmp972: machine;
+var _tmp383: machine;
 
 
-_tmp972 = new Elevator(null);
+_tmp383 = new Elevator(null);
 
-User_ElevatorV = _tmp972;
+User_ElevatorV = _tmp383;
 
 raise eUnit;
 
 
 }
-fun User_Init_exit0_rand_503503967()
+fun User_Init_exit0_rand_217765003()
 {
 
 
@@ -429,15 +431,15 @@ fun User_Init_exit0_rand_503503967()
 
 
 }
-fun User_Loop_entry143(User_Loop_entry143__payload_11: any)
+fun User_Loop_entry143()
 {
-var _tmp973: bool;
-var _tmp974: bool;
+var _tmp384: bool;
+var _tmp385: bool;
 
 
-_tmp973 = $;
+_tmp384 = $;
 
-if(_tmp973)
+if(_tmp384)
 {
 
 send User_ElevatorV, eOpenDoor;
@@ -450,9 +452,9 @@ send User_ElevatorV, eOpenDoor;
 else
 {
 
-_tmp974 = $;
+_tmp385 = $;
 
-if(_tmp974)
+if(_tmp385)
 {
 
 send User_ElevatorV, eCloseDoor;
@@ -492,7 +494,7 @@ raise eUnit;
 
 
 }
-fun User_Loop_exit0_rand_746769718()
+fun User_Loop_exit0_rand_584146217()
 {
 
 
@@ -500,7 +502,7 @@ fun User_Loop_exit0_rand_746769718()
 
 
 }
-fun User_Init_on_eUnit_goto_User_Loop0_rand_1886902835(User_Init_on_eUnit_goto_User_Loop0_rand_1886902835__payload_skip: any)
+fun User_Init_on_eUnit_goto_User_Loop0_rand_1515026139()
 {
 
 
@@ -508,7 +510,7 @@ fun User_Init_on_eUnit_goto_User_Loop0_rand_1886902835(User_Init_on_eUnit_goto_U
 
 
 }
-fun User_Loop_on_eUnit_goto_User_Loop0_rand_219491439(User_Loop_on_eUnit_goto_User_Loop0_rand_219491439__payload_skip: any)
+fun User_Loop_on_eUnit_goto_User_Loop0_rand_1525001208()
 {
 
 
@@ -516,19 +518,19 @@ fun User_Loop_on_eUnit_goto_User_Loop0_rand_219491439(User_Loop_on_eUnit_goto_Us
 
 
 }start  state User_Init
-{entry (payload: any) {
-User_Init_entry134(payload);
+{entry  {
+User_Init_entry134();
 }
 exit  {
-User_Init_exit0_rand_503503967();
+User_Init_exit0_rand_217765003();
 }
 }
  state User_Loop
-{entry (payload: any) {
-User_Loop_entry143(payload);
+{entry  {
+User_Loop_entry143();
 }
 exit  {
-User_Loop_exit0_rand_746769718();
+User_Loop_exit0_rand_584146217();
 }
 }
 }
@@ -547,7 +549,7 @@ raise eUnit;
 
 
 }
-fun Door__Init_exit0_rand_1708741429()
+fun Door__Init_exit0_rand_684954791()
 {
 
 
@@ -555,7 +557,7 @@ fun Door__Init_exit0_rand_1708741429()
 
 
 }
-fun Door_Init_entry0_rand_291815934(Door_Init_entry0_rand_291815934__payload_12: any)
+fun Door_Init_entry0_rand_114917715()
 {
 
 
@@ -563,7 +565,7 @@ fun Door_Init_entry0_rand_291815934(Door_Init_entry0_rand_291815934__payload_12:
 
 
 }
-fun Door_Init_exit0_rand_84733312()
+fun Door_Init_exit0_rand_467161449()
 {
 
 
@@ -571,7 +573,7 @@ fun Door_Init_exit0_rand_84733312()
 
 
 }
-fun Door_OpenDoor_entry173(Door_OpenDoor_entry173__payload_13: any)
+fun Door_OpenDoor_entry173()
 {
 
 
@@ -581,7 +583,7 @@ raise eUnit;
 
 
 }
-fun Door_OpenDoor_exit0_rand_635678789()
+fun Door_OpenDoor_exit0_rand_1062228071()
 {
 
 
@@ -589,15 +591,15 @@ fun Door_OpenDoor_exit0_rand_635678789()
 
 
 }
-fun Door_ConsiderClosingDoor_entry182(Door_ConsiderClosingDoor_entry182__payload_14: any)
+fun Door_ConsiderClosingDoor_entry182()
 {
-var _tmp975: bool;
-var _tmp976: bool;
+var _tmp386: bool;
+var _tmp387: bool;
 
 
-_tmp975 = $;
+_tmp386 = $;
 
-if(_tmp975)
+if(_tmp386)
 {
 
 raise eUnit;
@@ -610,9 +612,9 @@ raise eUnit;
 else
 {
 
-_tmp976 = $;
+_tmp387 = $;
 
-if(_tmp976)
+if(_tmp387)
 {
 
 raise eObjectEncountered;
@@ -650,7 +652,7 @@ else
 
 
 }
-fun Door_ConsiderClosingDoor_exit0_rand_1628020932()
+fun Door_ConsiderClosingDoor_exit0_rand_899330250()
 {
 
 
@@ -658,7 +660,7 @@ fun Door_ConsiderClosingDoor_exit0_rand_1628020932()
 
 
 }
-fun Door_ObjectEncountered_entry196(Door_ObjectEncountered_entry196__payload_15: any)
+fun Door_ObjectEncountered_entry196()
 {
 
 
@@ -668,7 +670,7 @@ raise eUnit;
 
 
 }
-fun Door_ObjectEncountered_exit0_rand_1641956910()
+fun Door_ObjectEncountered_exit0_rand_464680635()
 {
 
 
@@ -676,7 +678,7 @@ fun Door_ObjectEncountered_exit0_rand_1641956910()
 
 
 }
-fun Door_CloseDoor_entry205(Door_CloseDoor_entry205__payload_16: any)
+fun Door_CloseDoor_entry205()
 {
 
 
@@ -686,7 +688,7 @@ raise eUnit;
 
 
 }
-fun Door_CloseDoor_exit0_rand_545136919()
+fun Door_CloseDoor_exit0_rand_876414016()
 {
 
 
@@ -694,7 +696,7 @@ fun Door_CloseDoor_exit0_rand_545136919()
 
 
 }
-fun Door_StopDoor_entry213(Door_StopDoor_entry213__payload_17: any)
+fun Door_StopDoor_entry213()
 {
 
 
@@ -704,7 +706,7 @@ raise eUnit;
 
 
 }
-fun Door_StopDoor_exit0_rand_686045225()
+fun Door_StopDoor_exit0_rand_1329869067()
 {
 
 
@@ -712,7 +714,7 @@ fun Door_StopDoor_exit0_rand_686045225()
 
 
 }
-fun Door_ResetDoor_entry0_rand_1994917664(Door_ResetDoor_entry0_rand_1994917664__payload_18: any)
+fun Door_ResetDoor_entry0_rand_1373678929()
 {
 
 
@@ -720,7 +722,7 @@ fun Door_ResetDoor_entry0_rand_1994917664(Door_ResetDoor_entry0_rand_1994917664_
 
 
 }
-fun Door_ResetDoor_exit0_rand_1882317246()
+fun Door_ResetDoor_exit0_rand_1389422092()
 {
 
 
@@ -728,7 +730,7 @@ fun Door_ResetDoor_exit0_rand_1882317246()
 
 
 }
-fun Door__Init_on_eUnit_goto_Door_Init0_rand_729866184(Door__Init_on_eUnit_goto_Door_Init0_rand_729866184__payload_skip: any)
+fun Door__Init_on_eUnit_goto_Door_Init0_rand_2011941891()
 {
 
 
@@ -736,7 +738,7 @@ fun Door__Init_on_eUnit_goto_Door_Init0_rand_729866184(Door__Init_on_eUnit_goto_
 
 
 }
-fun Door_Init_on_eSendCommandToOpenDoor_goto_Door_OpenDoor0_rand_91528563(Door_Init_on_eSendCommandToOpenDoor_goto_Door_OpenDoor0_rand_91528563__payload_skip: any)
+fun Door_Init_on_eSendCommandToOpenDoor_goto_Door_OpenDoor0_rand_304784659()
 {
 
 
@@ -744,7 +746,7 @@ fun Door_Init_on_eSendCommandToOpenDoor_goto_Door_OpenDoor0_rand_91528563(Door_I
 
 
 }
-fun Door_Init_on_eSendCommandToCloseDoor_goto_Door_ConsiderClosingDoor0_rand_237167738(Door_Init_on_eSendCommandToCloseDoor_goto_Door_ConsiderClosingDoor0_rand_237167738__payload_skip: any)
+fun Door_Init_on_eSendCommandToCloseDoor_goto_Door_ConsiderClosingDoor0_rand_1734006768()
 {
 
 
@@ -752,7 +754,7 @@ fun Door_Init_on_eSendCommandToCloseDoor_goto_Door_ConsiderClosingDoor0_rand_237
 
 
 }
-fun Door_OpenDoor_on_eUnit_goto_Door_ResetDoor0_rand_147018857(Door_OpenDoor_on_eUnit_goto_Door_ResetDoor0_rand_147018857__payload_skip: any)
+fun Door_OpenDoor_on_eUnit_goto_Door_ResetDoor0_rand_1700048094()
 {
 
 
@@ -760,7 +762,7 @@ fun Door_OpenDoor_on_eUnit_goto_Door_ResetDoor0_rand_147018857(Door_OpenDoor_on_
 
 
 }
-fun Door_ConsiderClosingDoor_on_eUnit_goto_Door_CloseDoor0_rand_1926762496(Door_ConsiderClosingDoor_on_eUnit_goto_Door_CloseDoor0_rand_1926762496__payload_skip: any)
+fun Door_ConsiderClosingDoor_on_eUnit_goto_Door_CloseDoor0_rand_75258849()
 {
 
 
@@ -768,7 +770,7 @@ fun Door_ConsiderClosingDoor_on_eUnit_goto_Door_CloseDoor0_rand_1926762496(Door_
 
 
 }
-fun Door_ConsiderClosingDoor_on_eObjectEncountered_goto_Door_ObjectEncountered0_rand_1805573799(Door_ConsiderClosingDoor_on_eObjectEncountered_goto_Door_ObjectEncountered0_rand_1805573799__payload_skip: any)
+fun Door_ConsiderClosingDoor_on_eObjectEncountered_goto_Door_ObjectEncountered0_rand_760622740()
 {
 
 
@@ -776,7 +778,7 @@ fun Door_ConsiderClosingDoor_on_eObjectEncountered_goto_Door_ObjectEncountered0_
 
 
 }
-fun Door_ConsiderClosingDoor_on_eSendCommandToStopDoor_goto_Door_StopDoor0_rand_981909886(Door_ConsiderClosingDoor_on_eSendCommandToStopDoor_goto_Door_StopDoor0_rand_981909886__payload_skip: any)
+fun Door_ConsiderClosingDoor_on_eSendCommandToStopDoor_goto_Door_StopDoor0_rand_120700773()
 {
 
 
@@ -784,7 +786,7 @@ fun Door_ConsiderClosingDoor_on_eSendCommandToStopDoor_goto_Door_StopDoor0_rand_
 
 
 }
-fun Door_ObjectEncountered_on_eUnit_goto_Door_Init0_rand_848749611(Door_ObjectEncountered_on_eUnit_goto_Door_Init0_rand_848749611__payload_skip: any)
+fun Door_ObjectEncountered_on_eUnit_goto_Door_Init0_rand_749557213()
 {
 
 
@@ -792,7 +794,7 @@ fun Door_ObjectEncountered_on_eUnit_goto_Door_Init0_rand_848749611(Door_ObjectEn
 
 
 }
-fun Door_CloseDoor_on_eUnit_goto_Door_ResetDoor0_rand_685222256(Door_CloseDoor_on_eUnit_goto_Door_ResetDoor0_rand_685222256__payload_skip: any)
+fun Door_CloseDoor_on_eUnit_goto_Door_ResetDoor0_rand_310582032()
 {
 
 
@@ -800,7 +802,7 @@ fun Door_CloseDoor_on_eUnit_goto_Door_ResetDoor0_rand_685222256(Door_CloseDoor_o
 
 
 }
-fun Door_StopDoor_on_eUnit_goto_Door_OpenDoor0_rand_1180832813(Door_StopDoor_on_eUnit_goto_Door_OpenDoor0_rand_1180832813__payload_skip: any)
+fun Door_StopDoor_on_eUnit_goto_Door_OpenDoor0_rand_773226874()
 {
 
 
@@ -808,7 +810,7 @@ fun Door_StopDoor_on_eUnit_goto_Door_OpenDoor0_rand_1180832813(Door_StopDoor_on_
 
 
 }
-fun Door_ResetDoor_on_eSendCommandToResetDoor_goto_Door_Init0_rand_295083030(Door_ResetDoor_on_eSendCommandToResetDoor_goto_Door_Init0_rand_295083030__payload_skip: any)
+fun Door_ResetDoor_on_eSendCommandToResetDoor_goto_Door_Init0_rand_56401310()
 {
 
 
@@ -820,63 +822,63 @@ fun Door_ResetDoor_on_eSendCommandToResetDoor_goto_Door_Init0_rand_295083030(Doo
 Door__Init_entry159(payload);
 }
 exit  {
-Door__Init_exit0_rand_1708741429();
+Door__Init_exit0_rand_684954791();
 }
 }
  state Door_Init
-{entry (payload: any) {
-Door_Init_entry0_rand_291815934(payload);
+{entry  {
+Door_Init_entry0_rand_114917715();
 }
 exit  {
-Door_Init_exit0_rand_84733312();
+Door_Init_exit0_rand_467161449();
 }
 }
  state Door_OpenDoor
-{entry (payload: any) {
-Door_OpenDoor_entry173(payload);
+{entry  {
+Door_OpenDoor_entry173();
 }
 exit  {
-Door_OpenDoor_exit0_rand_635678789();
+Door_OpenDoor_exit0_rand_1062228071();
 }
 }
  state Door_ConsiderClosingDoor
-{entry (payload: any) {
-Door_ConsiderClosingDoor_entry182(payload);
+{entry  {
+Door_ConsiderClosingDoor_entry182();
 }
 exit  {
-Door_ConsiderClosingDoor_exit0_rand_1628020932();
+Door_ConsiderClosingDoor_exit0_rand_899330250();
 }
 }
  state Door_ObjectEncountered
-{entry (payload: any) {
-Door_ObjectEncountered_entry196(payload);
+{entry  {
+Door_ObjectEncountered_entry196();
 }
 exit  {
-Door_ObjectEncountered_exit0_rand_1641956910();
+Door_ObjectEncountered_exit0_rand_464680635();
 }
 }
  state Door_CloseDoor
-{entry (payload: any) {
-Door_CloseDoor_entry205(payload);
+{entry  {
+Door_CloseDoor_entry205();
 }
 exit  {
-Door_CloseDoor_exit0_rand_545136919();
+Door_CloseDoor_exit0_rand_876414016();
 }
 }
  state Door_StopDoor
-{entry (payload: any) {
-Door_StopDoor_entry213(payload);
+{entry  {
+Door_StopDoor_entry213();
 }
 exit  {
-Door_StopDoor_exit0_rand_686045225();
+Door_StopDoor_exit0_rand_1329869067();
 }
 }
  state Door_ResetDoor
-{entry (payload: any) {
-Door_ResetDoor_entry0_rand_1994917664(payload);
+{entry  {
+Door_ResetDoor_entry0_rand_1373678929();
 }
 exit  {
-Door_ResetDoor_exit0_rand_1882317246();
+Door_ResetDoor_exit0_rand_1389422092();
 }
 }
 }
@@ -895,7 +897,7 @@ raise eUnit;
 
 
 }
-fun Timer__Init_exit0_rand_488597656()
+fun Timer__Init_exit0_rand_1542234429()
 {
 
 
@@ -903,7 +905,7 @@ fun Timer__Init_exit0_rand_488597656()
 
 
 }
-fun Timer_Init_entry0_rand_1541726641(Timer_Init_entry0_rand_1541726641__payload_19: any)
+fun Timer_Init_entry0_rand_1733694935()
 {
 
 
@@ -911,7 +913,7 @@ fun Timer_Init_entry0_rand_1541726641(Timer_Init_entry0_rand_1541726641__payload
 
 
 }
-fun Timer_Init_exit0_rand_584702949()
+fun Timer_Init_exit0_rand_434782272()
 {
 
 
@@ -919,14 +921,14 @@ fun Timer_Init_exit0_rand_584702949()
 
 
 }
-fun Timer_TimerStarted_entry245(Timer_TimerStarted_entry245__payload_20: any)
+fun Timer_TimerStarted_entry245()
 {
-var _tmp977: bool;
+var _tmp388: bool;
 
 
-_tmp977 = $;
+_tmp388 = $;
 
-if(_tmp977)
+if(_tmp388)
 {
 
 raise eUnit;
@@ -949,7 +951,7 @@ else
 
 
 }
-fun Timer_TimerStarted_exit0_rand_639908389()
+fun Timer_TimerStarted_exit0_rand_151579705()
 {
 
 
@@ -957,7 +959,7 @@ fun Timer_TimerStarted_exit0_rand_639908389()
 
 
 }
-fun Timer_SendTimerFired_entry254(Timer_SendTimerFired_entry254__payload_21: any)
+fun Timer_SendTimerFired_entry254()
 {
 
 
@@ -967,7 +969,7 @@ raise eUnit;
 
 
 }
-fun Timer_SendTimerFired_exit0_rand_1530487582()
+fun Timer_SendTimerFired_exit0_rand_2147210193()
 {
 
 
@@ -975,14 +977,14 @@ fun Timer_SendTimerFired_exit0_rand_1530487582()
 
 
 }
-fun Timer_ConsiderStopping_entry262(Timer_ConsiderStopping_entry262__payload_22: any)
+fun Timer_ConsiderStopping_entry262()
 {
-var _tmp978: bool;
+var _tmp389: bool;
 
 
-_tmp978 = $;
+_tmp389 = $;
 
-if(_tmp978)
+if(_tmp389)
 {
 
 send Timer_ElevatorV, eOperationFailure;
@@ -1011,7 +1013,7 @@ raise eUnit;
 
 
 }
-fun Timer_ConsiderStopping_exit0_rand_717724997()
+fun Timer_ConsiderStopping_exit0_rand_2068624400()
 {
 
 
@@ -1019,7 +1021,7 @@ fun Timer_ConsiderStopping_exit0_rand_717724997()
 
 
 }
-fun Timer__Init_on_eUnit_goto_Timer_Init0_rand_2102167443(Timer__Init_on_eUnit_goto_Timer_Init0_rand_2102167443__payload_skip: any)
+fun Timer__Init_on_eUnit_goto_Timer_Init0_rand_2092646135()
 {
 
 
@@ -1027,7 +1029,7 @@ fun Timer__Init_on_eUnit_goto_Timer_Init0_rand_2102167443(Timer__Init_on_eUnit_g
 
 
 }
-fun Timer_Init_on_eStartDoorCloseTimer_goto_Timer_TimerStarted0_rand_2014603987(Timer_Init_on_eStartDoorCloseTimer_goto_Timer_TimerStarted0_rand_2014603987__payload_skip: any)
+fun Timer_Init_on_eStartDoorCloseTimer_goto_Timer_TimerStarted0_rand_2041691898()
 {
 
 
@@ -1035,7 +1037,7 @@ fun Timer_Init_on_eStartDoorCloseTimer_goto_Timer_TimerStarted0_rand_2014603987(
 
 
 }
-fun Timer_TimerStarted_on_eUnit_goto_Timer_SendTimerFired0_rand_521899911(Timer_TimerStarted_on_eUnit_goto_Timer_SendTimerFired0_rand_521899911__payload_skip: any)
+fun Timer_TimerStarted_on_eUnit_goto_Timer_SendTimerFired0_rand_740706740()
 {
 
 
@@ -1043,7 +1045,7 @@ fun Timer_TimerStarted_on_eUnit_goto_Timer_SendTimerFired0_rand_521899911(Timer_
 
 
 }
-fun Timer_TimerStarted_on_eStopDoorCloseTimer_goto_Timer_ConsiderStopping0_rand_1604238495(Timer_TimerStarted_on_eStopDoorCloseTimer_goto_Timer_ConsiderStopping0_rand_1604238495__payload_skip: any)
+fun Timer_TimerStarted_on_eStopDoorCloseTimer_goto_Timer_ConsiderStopping0_rand_1754084274()
 {
 
 
@@ -1051,7 +1053,7 @@ fun Timer_TimerStarted_on_eStopDoorCloseTimer_goto_Timer_ConsiderStopping0_rand_
 
 
 }
-fun Timer_SendTimerFired_on_eUnit_goto_Timer_Init0_rand_1342389033(Timer_SendTimerFired_on_eUnit_goto_Timer_Init0_rand_1342389033__payload_skip: any)
+fun Timer_SendTimerFired_on_eUnit_goto_Timer_Init0_rand_1884586010()
 {
 
 
@@ -1059,7 +1061,7 @@ fun Timer_SendTimerFired_on_eUnit_goto_Timer_Init0_rand_1342389033(Timer_SendTim
 
 
 }
-fun Timer_ConsiderStopping_on_eUnit_goto_Timer_Init0_rand_1951978689(Timer_ConsiderStopping_on_eUnit_goto_Timer_Init0_rand_1951978689__payload_skip: any)
+fun Timer_ConsiderStopping_on_eUnit_goto_Timer_Init0_rand_1532114598()
 {
 
 
@@ -1071,39 +1073,39 @@ fun Timer_ConsiderStopping_on_eUnit_goto_Timer_Init0_rand_1951978689(Timer_Consi
 Timer__Init_entry232(payload);
 }
 exit  {
-Timer__Init_exit0_rand_488597656();
+Timer__Init_exit0_rand_1542234429();
 }
 }
  state Timer_Init
-{entry (payload: any) {
-Timer_Init_entry0_rand_1541726641(payload);
+{entry  {
+Timer_Init_entry0_rand_1733694935();
 }
 exit  {
-Timer_Init_exit0_rand_584702949();
+Timer_Init_exit0_rand_434782272();
 }
 }
  state Timer_TimerStarted
-{entry (payload: any) {
-Timer_TimerStarted_entry245(payload);
+{entry  {
+Timer_TimerStarted_entry245();
 }
 exit  {
-Timer_TimerStarted_exit0_rand_639908389();
+Timer_TimerStarted_exit0_rand_151579705();
 }
 }
  state Timer_SendTimerFired
-{entry (payload: any) {
-Timer_SendTimerFired_entry254(payload);
+{entry  {
+Timer_SendTimerFired_entry254();
 }
 exit  {
-Timer_SendTimerFired_exit0_rand_1530487582();
+Timer_SendTimerFired_exit0_rand_2147210193();
 }
 }
  state Timer_ConsiderStopping
-{entry (payload: any) {
-Timer_ConsiderStopping_entry262(payload);
+{entry  {
+Timer_ConsiderStopping_entry262();
 }
 exit  {
-Timer_ConsiderStopping_exit0_rand_717724997();
+Timer_ConsiderStopping_exit0_rand_2068624400();
 }
 }
 }

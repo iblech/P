@@ -1,3 +1,5 @@
+event halt;
+event null;
 event x;
 
 main machine TestMachine
@@ -12,7 +14,7 @@ return (0);
 
 
 }
-fun TestMachine_Init_entry6(TestMachine_Init_entry6__payload_0: any)
+fun TestMachine_Init_entry6()
 {
 
 
@@ -20,7 +22,7 @@ TestMachine_foo(1, 3, x);
 
 
 }
-fun TestMachine_Init_exit0_rand_434918559()
+fun TestMachine_Init_exit0_rand_223918300()
 {
 
 
@@ -28,11 +30,11 @@ fun TestMachine_Init_exit0_rand_434918559()
 
 
 }start  state TestMachine_Init
-{entry (payload: any) {
-TestMachine_Init_entry6(payload);
+{entry  {
+TestMachine_Init_entry6();
 }
 exit  {
-TestMachine_Init_exit0_rand_434918559();
+TestMachine_Init_exit0_rand_223918300();
 }
 }
 }

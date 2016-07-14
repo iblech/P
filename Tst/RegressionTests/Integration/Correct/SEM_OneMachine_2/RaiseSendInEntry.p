@@ -1,3 +1,5 @@
+event halt;
+event null;
 event E1  assert 1;
 event E2  assert 1;
 
@@ -15,16 +17,16 @@ Real1_test = true;
 }
 fun Real1_Action2()
 {
-var _tmp1173: bool;
+var _tmp584: bool;
 
 
-_tmp1173 = (Real1_test == false);
+_tmp584 = (Real1_test == false);
 
-assert _tmp1173;
+assert _tmp584;
 
 
 }
-fun Real1_Real1_Init_entry10(Real1_Real1_Init_entry10__payload_0: any)
+fun Real1_Real1_Init_entry10()
 {
 
 
@@ -34,7 +36,7 @@ send this, E2;
 
 
 }
-fun Real1_Real1_Init_exit0_rand_573792702()
+fun Real1_Real1_Init_exit0_rand_58587459()
 {
 
 
@@ -42,11 +44,11 @@ fun Real1_Real1_Init_exit0_rand_573792702()
 
 
 }start  state Real1_Real1_Init
-{entry (payload: any) {
-Real1_Real1_Init_entry10(payload);
+{entry  {
+Real1_Real1_Init_entry10();
 }
 exit  {
-Real1_Real1_Init_exit0_rand_573792702();
+Real1_Real1_Init_exit0_rand_58587459();
 }
 }
 }

@@ -1,3 +1,5 @@
+event halt;
+event null;
 
 main machine M
 {
@@ -6,12 +8,12 @@ var M_i: int;
 
 fun M_F(): int
 {
-var _tmp193: bool;
+var _tmp169: bool;
 
 
-_tmp193 = $;
+_tmp169 = $;
 
-if(_tmp193)
+if(_tmp169)
 {
 
 return (0);
@@ -42,7 +44,7 @@ return (1);
 
 
 }
-fun M_S_entry20(M_S_entry20__payload_0: any)
+fun M_S_entry20()
 {
 
 
@@ -56,7 +58,7 @@ M_t.0 -= M_i;
 
 
 }
-fun M_S_exit0_rand_41198906()
+fun M_S_exit0_rand_166940022()
 {
 
 
@@ -64,11 +66,11 @@ fun M_S_exit0_rand_41198906()
 
 
 }start  state M_S
-{entry (payload: any) {
-M_S_entry20(payload);
+{entry  {
+M_S_entry20();
 }
 exit  {
-M_S_exit0_rand_41198906();
+M_S_exit0_rand_166940022();
 }
 }
 }

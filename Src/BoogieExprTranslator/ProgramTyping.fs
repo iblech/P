@@ -194,7 +194,7 @@ module ProgramTyping =
       begin
         let t1 = (typecheck_expr prog G cm e1)
         let t2 = (typecheck_expr prog G cm e2)
-        type_assert (t1 = t2) (sprintf "Error: Arguments to ComparisonOp not of same type: %s" (print_expr expr))
+        type_assert ((is_subtype t1 t2) || (is_subtype t2 t1))(sprintf "Error: Arguments to ComparisonOp not of same type: %s" (print_expr expr))
         Bool
       end
     | Expr.Un(Not, e1) -> 
@@ -244,7 +244,7 @@ module ProgramTyping =
     | Expr.Tuple(es) -> Type.Tuple(List.map (fun e -> (typecheck_expr prog G cm e)) es)
     | Expr.NamedTuple(es) -> Type.NamedTuple(List.map (fun (f, e) -> (f, typecheck_expr prog G cm e)) es)
     | Default(t) -> t
-    | New(m, e) -> (typecheck_new prog G cm e)
+    | New(m, e) -> typecheck_new prog G m e
     | Call(callee, args) -> 
       match (typecheck_call prog G cm callee args) with (* More checks here. *)
       | None -> (raise (Type_exception (sprintf "A void function %s is present in expression %s" callee (print_expr expr))))
@@ -296,20 +296,20 @@ module ProgramTyping =
     | Lval.Var(v) -> Map.find v G
     | Lval.Dot(l, i) -> 
       begin
-        match (typecheck_lval prog G cm lval) with
+        match (typecheck_lval prog G cm l) with
         | Type.Tuple(ls) -> List.item i ls
         | _ -> raise Not_defined
       end
     | Lval.NamedDot(l, f) -> 
       begin
-        match (typecheck_lval prog G cm lval) with
+        match (typecheck_lval prog G cm l) with
         | Type.NamedTuple(ls) -> lookup_named_field_type f ls
         | _ -> raise Not_defined
       end
     | Lval.Index(l, e) ->
       begin
         let eType = typecheck_expr prog G cm e
-        match typecheck_lval prog G cm lval with
+        match typecheck_lval prog G cm l with
         | Type.Seq(t) -> 
           begin
             type_assert (is_subtype eType Int) (sprintf "Error in indexing: %s is not an integer" (print_expr e))
@@ -345,32 +345,16 @@ module ProgramTyping =
       //ToDo add dynamic check for arg type.
     | _ -> raise Not_defined
 
-  ///Check if an expression returns a valid machine.
-  ///typecheck_machine_expr <program> <Referencing Environment> <current machine> <Machine expression>  
-  let typecheck_machine_expr prog G cm M = 
-    match M with
-    | Expr.Var(name) -> (type_assert ((Map.containsKey name G) && (is_subtype (Map.find name G) Type.Machine)) 
-                                    (sprintf "No machine named %s!" name))
-    | New(name, arg) -> ignore (typecheck_new prog G name arg)
-    | Call(fName, args) -> 
-        let ret = (typecheck_call prog G cm fName args) in
-          if ret.IsSome then
-            (type_assert (is_subtype ret.Value Type.Machine) 
-                        (sprintf "The function %s does not return a machine!" fName))
-          else (raise (Type_exception (sprintf "The function %s does not return a machine!" fName)))
-    | This -> (ignore true) //Fancy way of saying do nothing.
-    | _ -> raise Not_defined  
-
   ///Check if a send statement is valid.
   ///typecheck_send <program> <Referencing Environment> <current machine> <destination machine> <event> <arg>
   let typecheck_send (prog: Syntax.ProgramDecl) G cm M ev arg = 
-    typecheck_machine_expr prog G cm M
+    type_assert (is_subtype (typecheck_expr prog G cm M) Type.Machine) (sprintf "%s is not a machine!" (print_expr M))
     typecheck_event_with_args prog G cm ev arg
   
   ///Check if a case is valid.
   ///typecheck_case <program> <Referencing Environment> <current machine> <event> <action>  
   //This is a special case. We have to exclude the environment arg of the anon function.
-  let typecheck_case (prog: ProgramDecl) G cm e f= 
+  let typecheck_case (prog: ProgramDecl) cm e f= 
     let ev = prog.EventMap.[e]
     let fd = if (prog.FunMap.ContainsKey f) then prog.FunMap.[f]
              else  (prog.MachineMap.[cm].FunMap.[f]) 
@@ -421,7 +405,7 @@ module ProgramTyping =
     | Assume e ->  type_assert (is_subtype (typecheck_expr prog G cm e) Bool) (sprintf "Invalid assume: %s" (print_stmt prog cm st))
     | Assert e -> type_assert (is_subtype (typecheck_expr prog G cm e) Bool) (sprintf "Invalid assert: %s" (print_stmt prog cm st))
     | NewStmt(m, e) -> 
-      match (typecheck_new prog G cm e) with
+      match (typecheck_new prog G m e) with
       | Type.Machine -> (type_assert true (sprintf "Invalid New Statement: %s" (print_stmt prog cm st)))
       | _ -> (type_assert false (sprintf "Invalid New Statement: %s" (print_stmt prog cm st)))
     | FunStmt(f, el, None) -> ignore (typecheck_call prog G cm f el)
@@ -443,12 +427,14 @@ module ProgramTyping =
         (typecheck_stmt prog G cm cf e)
       end
     | SeqStmt(lst) -> (List.iter (fun s -> (typecheck_stmt prog G cm cf s)) lst)
-    | Receive(lst) -> (List.iter(fun(e, a) -> (typecheck_case prog G cm e a)) lst)
+    | Receive(lst) -> (List.iter(fun(e, a) -> (typecheck_case prog cm e a)) lst)
     //ToDo add dynamic check that the event will accept the arg given.
     | Monitor(e, arg) -> (typecheck_event_with_args prog G cm e arg)
     | Return(Some(e)) -> 
       begin
-        let rettype = prog.MachineMap.[cm].FunMap.[cf].RetType
+        let fn = (if (prog.FunMap.ContainsKey cf) then prog.FunMap.[cf]
+                  else  (prog.MachineMap.[cm].FunMap.[cf]))
+        let rettype = fn.RetType
         if (rettype.IsSome) then   
           (type_assert (is_subtype (typecheck_expr prog G cm e) rettype.Value) 
                        (sprintf "%s: Invalid value for return expression: expected %s, got %s" cf 
@@ -458,8 +444,13 @@ module ProgramTyping =
       end
     | Return(None) ->
       begin
-        let rettype = prog.MachineMap.[cm].FunMap.[cf].RetType
-        type_assert rettype.IsNone  (sprintf "%s: Function returns a %s, but got no return value" cf (print_type rettype.Value))
+        let fn = (if (prog.FunMap.ContainsKey cf) then prog.FunMap.[cf]
+                  else  (prog.MachineMap.[cm].FunMap.[cf]))
+        let rettype = fn.RetType
+        type_assert rettype.IsNone 
+          (if rettype.IsSome then 
+            (sprintf "%s: Function returns a %s, but got no return value" cf (print_type rettype.Value))
+          else "")
       end
     | Pop -> ignore true
     | Skip -> ignore true //A fancy way of generating unit.

@@ -1,3 +1,5 @@
+event halt;
+event null;
 event unit;
 event seqpayload: seq[int];
 
@@ -8,10 +10,10 @@ var Entry_i: int;
 var Entry_mac: machine;
 var Entry_t: (seq[int], int);
 
-fun Entry_init_entry12(Entry_init_entry12__payload_0: any)
+fun Entry_init_entry12()
 {
-var _tmp63: (seq[int], int);
-var _tmp64: machine;
+var _tmp39: (seq[int], int);
+var _tmp40: machine;
 
 
 Entry_l += (0, 12);
@@ -26,17 +28,17 @@ Entry_l += (0, 12);
 
 Entry_l += (0, 23);
 
-_tmp63 = (Entry_l, 1);
+_tmp39 = (Entry_l, 1);
 
-_tmp64 = new test(_tmp63);
+_tmp40 = new test(_tmp39);
 
-Entry_mac = _tmp64;
+Entry_mac = _tmp40;
 
 send Entry_mac, seqpayload, Entry_l;
 
 
 }
-fun Entry_init_exit0_rand_160618285()
+fun Entry_init_exit0_rand_1251058704()
 {
 
 
@@ -44,11 +46,11 @@ fun Entry_init_exit0_rand_160618285()
 
 
 }start  state Entry_init
-{entry (payload: any) {
-Entry_init_entry12(payload);
+{entry  {
+Entry_init_entry12();
 }
 exit  {
-Entry_init_exit0_rand_160618285();
+Entry_init_exit0_rand_1251058704();
 }
 }
 }
@@ -61,26 +63,26 @@ var test_i: int;
 
 fun test_init_entry30(test_init_entry30_payload: (seq[int], int))
 {
-var _tmp65: int;
-var _tmp66: bool;
-var _tmp67: bool;
+var _tmp41: int;
+var _tmp42: bool;
+var _tmp43: bool;
 
 
 test_ii = test_init_entry30_payload.0;
 
-_tmp65 = test_init_entry30_payload.0[0];
+_tmp41 = test_init_entry30_payload.0[0];
 
-_tmp66 = (_tmp65 == 23);
+_tmp42 = (_tmp41 == 23);
 
-assert _tmp66;
+assert _tmp42;
 
-_tmp67 = (test_init_entry30_payload.1 == 1);
+_tmp43 = (test_init_entry30_payload.1 == 1);
 
-assert _tmp67;
+assert _tmp43;
 
 
 }
-fun test_init_exit0_rand_579801220()
+fun test_init_exit0_rand_1332088965()
 {
 
 
@@ -90,9 +92,9 @@ fun test_init_exit0_rand_579801220()
 }
 fun test_testitnow_entry39(test_testitnow_entry39_payload: seq[int])
 {
-var _tmp68: int;
-var _tmp69: int;
-var _tmp70: bool;
+var _tmp44: int;
+var _tmp45: int;
+var _tmp46: bool;
 
 
 test_rec = test_testitnow_entry39_payload;
@@ -102,13 +104,13 @@ test_i = (sizeof(test_rec) - 1);
 while((test_i >= 0))
 {
 
-_tmp68 = test_rec[test_i];
+_tmp44 = test_rec[test_i];
 
-_tmp69 = test_ii[test_i];
+_tmp45 = test_ii[test_i];
 
-_tmp70 = (_tmp68 == _tmp69);
+_tmp46 = (_tmp44 == _tmp45);
 
-assert _tmp70;
+assert _tmp46;
 
 test_i = (test_i - 1);
 
@@ -122,7 +124,7 @@ test_i = (test_i - 1);
 
 
 }
-fun test_testitnow_exit0_rand_2128876318()
+fun test_testitnow_exit0_rand_1655723972()
 {
 
 
@@ -130,7 +132,7 @@ fun test_testitnow_exit0_rand_2128876318()
 
 
 }
-fun test_init_on_seqpayload_goto_test_testitnow0_rand_1420773118(test_init_on_seqpayload_goto_test_testitnow0_rand_1420773118__payload_skip: any)
+fun test_init_on_seqpayload_goto_test_testitnow0_rand_403877688()
 {
 
 
@@ -142,7 +144,7 @@ fun test_init_on_seqpayload_goto_test_testitnow0_rand_1420773118(test_init_on_se
 test_init_entry30(payload);
 }
 exit  {
-test_init_exit0_rand_579801220();
+test_init_exit0_rand_1332088965();
 }
 }
  state test_testitnow
@@ -150,7 +152,7 @@ test_init_exit0_rand_579801220();
 test_testitnow_entry39(payload);
 }
 exit  {
-test_testitnow_exit0_rand_2128876318();
+test_testitnow_exit0_rand_1655723972();
 }
 }
 }

@@ -1,10 +1,12 @@
+event halt;
+event null;
 event E;
 
 main machine Program
 {
 var Program_i: int;
 
-fun Program_Init_entry10(Program_Init_entry10__payload_0: any)
+fun Program_Init_entry10()
 {
 
 
@@ -22,14 +24,14 @@ assert false;
 
 
 }
-fun Program_Call_entry18(Program_Call_entry18__payload_2: any)
+fun Program_Call_entry18()
 {
-var _tmp1174: bool;
+var _tmp585: bool;
 
 
-_tmp1174 = (Program_i == 0);
+_tmp585 = (Program_i == 0);
 
-if(_tmp1174)
+if(_tmp585)
 {
 
 raise E;
@@ -62,16 +64,16 @@ assert false;
 
 
 }start  state Program_Init
-{entry (payload: any) {
-Program_Init_entry10(payload);
+{entry  {
+Program_Init_entry10();
 }
 exit  {
 Program_Init_exit12();
 }
 }
  state Program_Call
-{entry (payload: any) {
-Program_Call_entry18(payload);
+{entry  {
+Program_Call_entry18();
 }
 exit  {
 Program_Call_exit28();

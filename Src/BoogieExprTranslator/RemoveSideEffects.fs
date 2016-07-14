@@ -149,7 +149,7 @@ module RemoveSideEffects =
     | Lval.Index(l, e) ->
       begin
         let (e', stlist1, G') = remove_side_effects_expr e G in
-        let (l', stlist2, G'') = remove_side_effects_lval l G in
+        let (l', stlist2, G'') = remove_side_effects_lval l G' in
         (Lval.Index(l', e'), stlist1 @ stlist2, G'')
       end
 
@@ -239,7 +239,7 @@ module RemoveSideEffects =
               d1 @ [Ite(c', i', e')], G'''
       end
     | SeqStmt(l) -> remove_side_effects_stlist l G
-    | Receive(l) -> [stmt], G //Come back!
+    | Receive(_) -> [stmt], G
     | Pop -> [stmt], G
     | Return(None) -> [stmt], G
     | Return(Some(e)) -> 

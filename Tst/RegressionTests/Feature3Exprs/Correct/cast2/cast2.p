@@ -1,3 +1,5 @@
+event halt;
+event null;
 
 main machine A
 {
@@ -10,30 +12,30 @@ return (3);
 
 
 }
-fun A_S_entry6(A_S_entry6__payload_0: any)
+fun A_S_entry6()
 {
 var A_S_entry6_x: int;
 var A_S_entry6_y: any;
-var _tmp97: int;
-var _tmp98: int;
-var _tmp99: bool;
+var _tmp73: int;
+var _tmp74: int;
+var _tmp75: bool;
 
 
 A_S_entry6_y = A_foo();
 
-_tmp97 = (A_S_entry6_y as int);
+_tmp73 = (A_S_entry6_y as int);
 
-_tmp98 = (A_S_entry6_y as int);
+_tmp74 = (A_S_entry6_y as int);
 
-A_S_entry6_x = (_tmp97 + _tmp98);
+A_S_entry6_x = (_tmp73 + _tmp74);
 
-_tmp99 = (A_S_entry6_x == 6);
+_tmp75 = (A_S_entry6_x == 6);
 
-assert _tmp99;
+assert _tmp75;
 
 
 }
-fun A_S_exit0_rand_511067576()
+fun A_S_exit0_rand_700992740()
 {
 
 
@@ -41,11 +43,11 @@ fun A_S_exit0_rand_511067576()
 
 
 }start  state A_S
-{entry (payload: any) {
-A_S_entry6(payload);
+{entry  {
+A_S_entry6();
 }
 exit  {
-A_S_exit0_rand_511067576();
+A_S_exit0_rand_700992740();
 }
 }
 }

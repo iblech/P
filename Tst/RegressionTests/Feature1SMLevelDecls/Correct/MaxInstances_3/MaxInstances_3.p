@@ -1,3 +1,5 @@
+event halt;
+event null;
 event E0;
 event E1  assume 0;
 
@@ -14,22 +16,22 @@ assert false;
 
 
 }
-fun Real_Real_Init_entry11(Real_Real_Init_entry11__payload_0: any)
+fun Real_Real_Init_entry11()
 {
-var _tmp23: machine;
+var _tmp21: machine;
 
 
 Real_x = 0;
 
-_tmp23 = new Ghost(this);
+_tmp21 = new Ghost(this);
 
-Real_ghost_machine = _tmp23;
+Real_ghost_machine = _tmp21;
 
 send Real_ghost_machine, E0;
 
 
 }
-fun Real_Real_Init_exit0_rand_868988117()
+fun Real_Real_Init_exit0_rand_1549114118()
 {
 
 
@@ -37,11 +39,11 @@ fun Real_Real_Init_exit0_rand_868988117()
 
 
 }start  state Real_Real_Init
-{entry (payload: any) {
-Real_Real_Init_entry11(payload);
+{entry  {
+Real_Real_Init_entry11();
 }
 exit  {
-Real_Real_Init_exit0_rand_868988117();
+Real_Real_Init_exit0_rand_1549114118();
 }
 }
 }
@@ -60,7 +62,7 @@ send Ghost_real_machine, E1;
 
 
 }
-fun Ghost__Init_exit0_rand_685339336()
+fun Ghost__Init_exit0_rand_1816934985()
 {
 
 
@@ -72,7 +74,7 @@ fun Ghost__Init_exit0_rand_685339336()
 Ghost__Init_entry26(payload);
 }
 exit  {
-Ghost__Init_exit0_rand_685339336();
+Ghost__Init_exit0_rand_1816934985();
 }
 }
 }

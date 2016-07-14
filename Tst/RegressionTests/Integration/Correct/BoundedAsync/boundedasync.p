@@ -1,3 +1,5 @@
+event halt;
+event null;
 event unit;
 event init: (machine, machine);
 event myCount: int;
@@ -13,14 +15,14 @@ var Scheduler_count: int;
 
 fun Scheduler_CountReq()
 {
-var _tmp963: bool;
+var _tmp374: bool;
 
 
 Scheduler_count = (Scheduler_count + 1);
 
-_tmp963 = (Scheduler_count == 3);
+_tmp374 = (Scheduler_count == 3);
 
-if(_tmp963)
+if(_tmp374)
 {
 
 Scheduler_count = 0;
@@ -47,39 +49,39 @@ else
 
 
 }
-fun Scheduler_inits_entry15(Scheduler_inits_entry15__payload_0: any)
+fun Scheduler_inits_entry15()
 {
-var _tmp964: machine;
-var _tmp965: machine;
-var _tmp966: machine;
-var _tmp967: (machine, machine);
-var _tmp968: (machine, machine);
-var _tmp969: (machine, machine);
+var _tmp375: machine;
+var _tmp376: machine;
+var _tmp377: machine;
+var _tmp378: (machine, machine);
+var _tmp379: (machine, machine);
+var _tmp380: (machine, machine);
 
 
-_tmp964 = new Process(this);
+_tmp375 = new Process(this);
 
-Scheduler_p1 = _tmp964;
+Scheduler_p1 = _tmp375;
 
-_tmp965 = new Process(this);
+_tmp376 = new Process(this);
 
-Scheduler_p2 = _tmp965;
+Scheduler_p2 = _tmp376;
 
-_tmp966 = new Process(this);
+_tmp377 = new Process(this);
 
-Scheduler_p3 = _tmp966;
+Scheduler_p3 = _tmp377;
 
-_tmp967 = (Scheduler_p3, Scheduler_p2);
+_tmp378 = (Scheduler_p3, Scheduler_p2);
 
-send Scheduler_p1, init, _tmp967;
+send Scheduler_p1, init, _tmp378;
 
-_tmp968 = (Scheduler_p3, Scheduler_p1);
+_tmp379 = (Scheduler_p3, Scheduler_p1);
 
-send Scheduler_p2, init, _tmp968;
+send Scheduler_p2, init, _tmp379;
 
-_tmp969 = (Scheduler_p1, Scheduler_p2);
+_tmp380 = (Scheduler_p1, Scheduler_p2);
 
-send Scheduler_p3, init, _tmp969;
+send Scheduler_p3, init, _tmp380;
 
 Scheduler_count = 0;
 
@@ -87,7 +89,7 @@ raise unit;
 
 
 }
-fun Scheduler_inits_exit0_rand_1380539470()
+fun Scheduler_inits_exit0_rand_325854905()
 {
 
 
@@ -95,7 +97,7 @@ fun Scheduler_inits_exit0_rand_1380539470()
 
 
 }
-fun Scheduler_Sync_entry0_rand_1359706831(Scheduler_Sync_entry0_rand_1359706831__payload_skip: any)
+fun Scheduler_Sync_entry0_rand_1177682406()
 {
 
 
@@ -115,7 +117,7 @@ send Scheduler_p3, Resp;
 
 
 }
-fun Scheduler_inits_on_unit_goto_Scheduler_Sync0_rand_383344497(Scheduler_inits_on_unit_goto_Scheduler_Sync0_rand_383344497__payload_skip: any)
+fun Scheduler_inits_on_unit_goto_Scheduler_Sync0_rand_419702374()
 {
 
 
@@ -123,7 +125,7 @@ fun Scheduler_inits_on_unit_goto_Scheduler_Sync0_rand_383344497(Scheduler_inits_
 
 
 }
-fun Scheduler_Sync_on_Resp_goto_Scheduler_Sync0_rand_321901050(Scheduler_Sync_on_Resp_goto_Scheduler_Sync0_rand_321901050__payload_skip: any)
+fun Scheduler_Sync_on_Resp_goto_Scheduler_Sync0_rand_53684570()
 {
 
 
@@ -131,16 +133,16 @@ fun Scheduler_Sync_on_Resp_goto_Scheduler_Sync0_rand_321901050(Scheduler_Sync_on
 
 
 }start  state Scheduler_inits
-{entry (payload: any) {
-Scheduler_inits_entry15(payload);
+{entry  {
+Scheduler_inits_entry15();
 }
 exit  {
-Scheduler_inits_exit0_rand_1380539470();
+Scheduler_inits_exit0_rand_325854905();
 }
 }
  state Scheduler_Sync
-{entry (payload: any) {
-Scheduler_Sync_entry0_rand_1359706831(payload);
+{entry  {
+Scheduler_Sync_entry0_rand_1177682406();
 }
 exit  {
 Scheduler_Sync_exit39();
@@ -185,7 +187,7 @@ raise unit;
 
 
 }
-fun Process__init_exit0_rand_1157573025()
+fun Process__init_exit0_rand_44424345()
 {
 
 
@@ -193,7 +195,7 @@ fun Process__init_exit0_rand_1157573025()
 
 
 }
-fun Process_inits_entry63(Process_inits_entry63__payload_2: any)
+fun Process_inits_entry63()
 {
 
 
@@ -201,7 +203,7 @@ Process_count = 0;
 
 
 }
-fun Process_inits_exit0_rand_1876656508()
+fun Process_inits_exit0_rand_50059822()
 {
 
 
@@ -209,7 +211,7 @@ fun Process_inits_exit0_rand_1876656508()
 
 
 }
-fun Process_SendCount_entry80(Process_SendCount_entry80__payload_3: any)
+fun Process_SendCount_entry80()
 {
 
 
@@ -244,7 +246,7 @@ else
 
 
 }
-fun Process_SendCount_exit0_rand_242923155()
+fun Process_SendCount_exit0_rand_1732791142()
 {
 
 
@@ -252,7 +254,7 @@ fun Process_SendCount_exit0_rand_242923155()
 
 
 }
-fun Process_done_entry0_rand_966261157(Process_done_entry0_rand_966261157__payload_skip: any)
+fun Process_done_entry0_rand_2109147425()
 {
 
 
@@ -260,7 +262,7 @@ fun Process_done_entry0_rand_966261157(Process_done_entry0_rand_966261157__paylo
 
 
 }
-fun Process_done_exit0_rand_291123966()
+fun Process_done_exit0_rand_549413035()
 {
 
 
@@ -284,7 +286,7 @@ Process_ConfirmThatInSync(Process_SendCount_do_myCount91_payload);
 
 
 }
-fun Process__init_on_unit_goto_Process_inits0_rand_782697646(Process__init_on_unit_goto_Process_inits0_rand_782697646__payload_skip: any)
+fun Process__init_on_unit_goto_Process_inits0_rand_614792518()
 {
 
 
@@ -292,7 +294,7 @@ fun Process__init_on_unit_goto_Process_inits0_rand_782697646(Process__init_on_un
 
 
 }
-fun Process_inits_on_myCount_goto_Process_inits0_rand_1407299781(Process_inits_on_myCount_goto_Process_inits0_rand_1407299781__payload_skip: any)
+fun Process_inits_on_myCount_goto_Process_inits0_rand_974589099()
 {
 
 
@@ -300,7 +302,7 @@ fun Process_inits_on_myCount_goto_Process_inits0_rand_1407299781(Process_inits_o
 
 
 }
-fun Process_inits_on_Resp_goto_Process_SendCount0_rand_1300047062(Process_inits_on_Resp_goto_Process_SendCount0_rand_1300047062__payload_skip: any)
+fun Process_inits_on_Resp_goto_Process_SendCount0_rand_1225303375()
 {
 
 
@@ -308,7 +310,7 @@ fun Process_inits_on_Resp_goto_Process_SendCount0_rand_1300047062(Process_inits_
 
 
 }
-fun Process_SendCount_on_unit_goto_Process_done0_rand_1527046805(Process_SendCount_on_unit_goto_Process_done0_rand_1527046805__payload_skip: any)
+fun Process_SendCount_on_unit_goto_Process_done0_rand_997114789()
 {
 
 
@@ -316,7 +318,7 @@ fun Process_SendCount_on_unit_goto_Process_done0_rand_1527046805(Process_SendCou
 
 
 }
-fun Process_SendCount_on_Resp_goto_Process_SendCount0_rand_1534794836(Process_SendCount_on_Resp_goto_Process_SendCount0_rand_1534794836__payload_skip: any)
+fun Process_SendCount_on_Resp_goto_Process_SendCount0_rand_2079426280()
 {
 
 
@@ -328,31 +330,31 @@ fun Process_SendCount_on_Resp_goto_Process_SendCount0_rand_1534794836(Process_Se
 Process__init_entry55(payload);
 }
 exit  {
-Process__init_exit0_rand_1157573025();
+Process__init_exit0_rand_44424345();
 }
 }
  state Process_inits
-{entry (payload: any) {
-Process_inits_entry63(payload);
+{entry  {
+Process_inits_entry63();
 }
 exit  {
-Process_inits_exit0_rand_1876656508();
+Process_inits_exit0_rand_50059822();
 }
 }
  state Process_SendCount
-{entry (payload: any) {
-Process_SendCount_entry80(payload);
+{entry  {
+Process_SendCount_entry80();
 }
 exit  {
-Process_SendCount_exit0_rand_242923155();
+Process_SendCount_exit0_rand_1732791142();
 }
 }
  state Process_done
-{entry (payload: any) {
-Process_done_entry0_rand_966261157(payload);
+{entry  {
+Process_done_entry0_rand_2109147425();
 }
 exit  {
-Process_done_exit0_rand_291123966();
+Process_done_exit0_rand_549413035();
 }
 }
 }

@@ -7,7 +7,7 @@ REM cd %SCRIPTDIR%
 
 set Configuration=Debug
 
-"C:\Users\t-suchav\P\Src\FSExpGen\bin\Debug\FSExpGen.exe"
+"C:\Users\t-suchav\P\Src\FSExpGen\bin\Debug\FSExpGen.exe Correct.txt"
 if %ERRORLEVEL% neq 0 (
   echo Fix the compiler first.
   exit /B 1
@@ -20,8 +20,11 @@ if %ERRORLEVEL% neq 0 (
   exit /B 2
 )
 
-echo %SCRIPTDIR%..\Bld\Drops\%Configuration%\x86\Binaries\RunPTool.exe "C:\Users\t-suchav\Desktop\Dirs.txt"
-"%SCRIPTDIR%..\Bld\Drops\%Configuration%\x86\Binaries\RunPTool.exe"  "C:\Users\t-suchav\Desktop\Dirs.txt"
+echo python gen_dirs.py Correct.txt
+"python gen_dirs.py Correct.txt"
+
+echo %SCRIPTDIR%..\Bld\Drops\%Configuration%\x86\Binaries\RunPTool.exe "dirs.txt"
+"%SCRIPTDIR%..\Bld\Drops\%Configuration%\x86\Binaries\RunPTool.exe"  "dirs.txt"
 
 mshta "javascript:var sh=new ActiveXObject( 'WScript.Shell' ); sh.Popup( 'Done with Tests!', 10, 'Check Back!', 64 );close()"
 

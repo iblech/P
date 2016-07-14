@@ -1,3 +1,5 @@
+event halt;
+event null;
 event UserEvent;
 event Done;
 event Waiting;
@@ -6,7 +8,7 @@ event Computing;
 main machine EventHandler
 {
 
-fun EventHandler_WaitForUser_entry0_rand_242505861(EventHandler_WaitForUser_entry0_rand_242505861__payload_0: any)
+fun EventHandler_WaitForUser_entry0_rand_2050443378()
 {
 
 
@@ -16,7 +18,7 @@ send this, UserEvent;
 
 
 }
-fun EventHandler_WaitForUser_exit0_rand_149307593()
+fun EventHandler_WaitForUser_exit0_rand_1242776977()
 {
 
 
@@ -24,7 +26,7 @@ fun EventHandler_WaitForUser_exit0_rand_149307593()
 
 
 }
-fun EventHandler_HandleEvent_entry0_rand_555349384(EventHandler_HandleEvent_entry0_rand_555349384__payload_1: any)
+fun EventHandler_HandleEvent_entry0_rand_1989164520()
 {
 
 
@@ -34,7 +36,7 @@ send this, Done;
 
 
 }
-fun EventHandler_HandleEvent_exit0_rand_1305368372()
+fun EventHandler_HandleEvent_exit0_rand_1551145443()
 {
 
 
@@ -42,7 +44,7 @@ fun EventHandler_HandleEvent_exit0_rand_1305368372()
 
 
 }
-fun EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_120673877(EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_120673877__payload_skip: any)
+fun EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_1597611690()
 {
 
 
@@ -50,7 +52,7 @@ fun EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_12
 
 
 }
-fun EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_113460419(EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_113460419__payload_skip: any)
+fun EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_118083988()
 {
 
 
@@ -58,19 +60,19 @@ fun EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_1134604
 
 
 }start  state EventHandler_WaitForUser
-{entry (payload: any) {
-EventHandler_WaitForUser_entry0_rand_242505861(payload);
+{entry  {
+EventHandler_WaitForUser_entry0_rand_2050443378();
 }
 exit  {
-EventHandler_WaitForUser_exit0_rand_149307593();
+EventHandler_WaitForUser_exit0_rand_1242776977();
 }
 }
  state EventHandler_HandleEvent
-{entry (payload: any) {
-EventHandler_HandleEvent_entry0_rand_555349384(payload);
+{entry  {
+EventHandler_HandleEvent_entry0_rand_1989164520();
 }
 exit  {
-EventHandler_HandleEvent_exit0_rand_1305368372();
+EventHandler_HandleEvent_exit0_rand_1551145443();
 }
 }
 }

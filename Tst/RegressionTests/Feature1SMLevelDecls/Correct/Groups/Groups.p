@@ -1,8 +1,10 @@
+event halt;
+event null;
 
 main machine M
 {
 
-fun M_G1_S1_entry0_rand_1852399573(M_G1_S1_entry0_rand_1852399573__payload_skip: any)
+fun M_G1_S1_entry0_rand_2008927903()
 {
 
 
@@ -10,7 +12,7 @@ fun M_G1_S1_entry0_rand_1852399573(M_G1_S1_entry0_rand_1852399573__payload_skip:
 
 
 }
-fun M_G1_S1_exit0_rand_1035314431()
+fun M_G1_S1_exit0_rand_804408864()
 {
 
 
@@ -18,7 +20,7 @@ fun M_G1_S1_exit0_rand_1035314431()
 
 
 }
-fun M_G1_S2_entry0_rand_658500237(M_G1_S2_entry0_rand_658500237__payload_skip: any)
+fun M_G1_S2_entry0_rand_1648372166()
 {
 
 
@@ -26,7 +28,7 @@ fun M_G1_S2_entry0_rand_658500237(M_G1_S2_entry0_rand_658500237__payload_skip: a
 
 
 }
-fun M_G1_S2_exit0_rand_1285615757()
+fun M_G1_S2_exit0_rand_1248344913()
 {
 
 
@@ -34,7 +36,7 @@ fun M_G1_S2_exit0_rand_1285615757()
 
 
 }
-fun M_G2_S1_entry0_rand_322726958(M_G2_S1_entry0_rand_322726958__payload_skip: any)
+fun M_G2_S1_entry0_rand_874053352()
 {
 
 
@@ -42,7 +44,7 @@ fun M_G2_S1_entry0_rand_322726958(M_G2_S1_entry0_rand_322726958__payload_skip: a
 
 
 }
-fun M_G2_S1_exit0_rand_628975377()
+fun M_G2_S1_exit0_rand_1182829325()
 {
 
 
@@ -50,7 +52,7 @@ fun M_G2_S1_exit0_rand_628975377()
 
 
 }
-fun M_G2_S2_entry0_rand_339199204(M_G2_S2_entry0_rand_339199204__payload_skip: any)
+fun M_G2_S2_entry0_rand_1281248715()
 {
 
 
@@ -58,7 +60,7 @@ fun M_G2_S2_entry0_rand_339199204(M_G2_S2_entry0_rand_339199204__payload_skip: a
 
 
 }
-fun M_G2_S2_exit0_rand_1239718199()
+fun M_G2_S2_exit0_rand_226937369()
 {
 
 
@@ -66,7 +68,7 @@ fun M_G2_S2_exit0_rand_1239718199()
 
 
 }
-fun M_G2_G3_S3_entry0_rand_889865865(M_G2_G3_S3_entry0_rand_889865865__payload_skip: any)
+fun M_G2_G3_S3_entry0_rand_1269321328()
 {
 
 
@@ -74,7 +76,7 @@ fun M_G2_G3_S3_entry0_rand_889865865(M_G2_G3_S3_entry0_rand_889865865__payload_s
 
 
 }
-fun M_G2_G3_S3_exit0_rand_105238293()
+fun M_G2_G3_S3_exit0_rand_2046904303()
 {
 
 
@@ -82,43 +84,43 @@ fun M_G2_G3_S3_exit0_rand_105238293()
 
 
 }start  state M_G1_S1
-{entry (payload: any) {
-M_G1_S1_entry0_rand_1852399573(payload);
+{entry  {
+M_G1_S1_entry0_rand_2008927903();
 }
 exit  {
-M_G1_S1_exit0_rand_1035314431();
+M_G1_S1_exit0_rand_804408864();
 }
 }
  state M_G1_S2
-{entry (payload: any) {
-M_G1_S2_entry0_rand_658500237(payload);
+{entry  {
+M_G1_S2_entry0_rand_1648372166();
 }
 exit  {
-M_G1_S2_exit0_rand_1285615757();
+M_G1_S2_exit0_rand_1248344913();
 }
 }
  state M_G2_S1
-{entry (payload: any) {
-M_G2_S1_entry0_rand_322726958(payload);
+{entry  {
+M_G2_S1_entry0_rand_874053352();
 }
 exit  {
-M_G2_S1_exit0_rand_628975377();
+M_G2_S1_exit0_rand_1182829325();
 }
 }
  state M_G2_S2
-{entry (payload: any) {
-M_G2_S2_entry0_rand_339199204(payload);
+{entry  {
+M_G2_S2_entry0_rand_1281248715();
 }
 exit  {
-M_G2_S2_exit0_rand_1239718199();
+M_G2_S2_exit0_rand_226937369();
 }
 }
  state M_G2_G3_S3
-{entry (payload: any) {
-M_G2_G3_S3_entry0_rand_889865865(payload);
+{entry  {
+M_G2_G3_S3_entry0_rand_1269321328();
 }
 exit  {
-M_G2_G3_S3_exit0_rand_105238293();
+M_G2_G3_S3_exit0_rand_2046904303();
 }
 }
 }

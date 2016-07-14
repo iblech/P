@@ -1,3 +1,5 @@
+event halt;
+event null;
 event test: ((int, (int, bool)), seq[(int, (int, bool))]);
 
 main machine Main
@@ -5,7 +7,7 @@ main machine Main
 var Main_compVal2: ((int, (int, bool)), seq[(int, (int, bool))]);
 var Main_compVal1: (int, (int, bool));
 
-fun Main_S1_entry12(Main_S1_entry12__payload_0: any)
+fun Main_S1_entry12()
 {
 
 
@@ -23,7 +25,7 @@ send this, test, Main_compVal2;
 
 
 }
-fun Main_S1_exit0_rand_1224448368()
+fun Main_S1_exit0_rand_786378069()
 {
 
 
@@ -33,35 +35,35 @@ fun Main_S1_exit0_rand_1224448368()
 }
 fun Main_S1_do_test22(Main_S1_do_test22_payload: ((int, (int, bool)), seq[(int, (int, bool))]))
 {
-var _tmp958: bool;
-var _tmp959: bool;
-var _tmp960: bool;
-var _tmp961: bool;
+var _tmp369: bool;
+var _tmp370: bool;
+var _tmp371: bool;
+var _tmp372: bool;
 
 
-_tmp958 = (Main_S1_do_test22_payload.0.0 == 1);
+_tmp369 = (Main_S1_do_test22_payload.0.0 == 1);
 
-assert _tmp958;
+assert _tmp369;
 
-_tmp959 = (Main_S1_do_test22_payload.0.1.0 == 100);
+_tmp370 = (Main_S1_do_test22_payload.0.1.0 == 100);
 
-assert _tmp959;
+assert _tmp370;
 
-_tmp960 = (Main_S1_do_test22_payload.0.1.1 == false);
+_tmp371 = (Main_S1_do_test22_payload.0.1.1 == false);
 
-assert _tmp960;
+assert _tmp371;
 
-_tmp961 = (sizeof(Main_S1_do_test22_payload.1) == 1);
+_tmp372 = (sizeof(Main_S1_do_test22_payload.1) == 1);
 
-assert _tmp961;
+assert _tmp372;
 
 
 }start  state Main_S1
-{entry (payload: any) {
-Main_S1_entry12(payload);
+{entry  {
+Main_S1_entry12();
 }
 exit  {
-Main_S1_exit0_rand_1224448368();
+Main_S1_exit0_rand_786378069();
 }
 }
 }

@@ -1,3 +1,5 @@
+event halt;
+event null;
 
 main machine Entry
 {
@@ -11,7 +13,7 @@ var Entry_swapped: bool;
 
 model fun Entry_reverse(Entry_reverse_l: seq[int]): seq[int]
 {
-var _tmp83: int;
+var _tmp59: int;
 
 
 Entry_i = 0;
@@ -21,9 +23,9 @@ Entry_s = sizeof(Entry_reverse_l);
 while((Entry_i < Entry_s))
 {
 
-_tmp83 = Entry_reverse_l[Entry_i];
+_tmp59 = Entry_reverse_l[Entry_i];
 
-Entry_t = _tmp83;
+Entry_t = _tmp59;
 
 Entry_reverse_l -= Entry_i;
 
@@ -49,10 +51,10 @@ return (Entry_reverse_l);
 }
 model fun Entry_BubbleSort(Entry_BubbleSort_l: seq[int]): seq[int]
 {
-var _tmp84: int;
-var _tmp85: int;
-var _tmp86: int;
-var _tmp87: int;
+var _tmp60: int;
+var _tmp61: int;
+var _tmp62: int;
+var _tmp63: int;
 
 
 Entry_swapped = true;
@@ -67,20 +69,20 @@ Entry_swapped = false;
 while((Entry_i < (sizeof(Entry_BubbleSort_l) - 1)))
 {
 
-_tmp84 = Entry_BubbleSort_l[Entry_i];
+_tmp60 = Entry_BubbleSort_l[Entry_i];
 
-_tmp85 = Entry_BubbleSort_l[(Entry_i + 1)];
+_tmp61 = Entry_BubbleSort_l[(Entry_i + 1)];
 
-if((_tmp84 > _tmp85))
+if((_tmp60 > _tmp61))
 {
 
-_tmp86 = Entry_BubbleSort_l[Entry_i];
+_tmp62 = Entry_BubbleSort_l[Entry_i];
 
-Entry_t = _tmp86;
+Entry_t = _tmp62;
 
-_tmp87 = Entry_BubbleSort_l[(Entry_i + 1)];
+_tmp63 = Entry_BubbleSort_l[(Entry_i + 1)];
 
-Entry_BubbleSort_l[Entry_i] = _tmp87;
+Entry_BubbleSort_l[Entry_i] = _tmp63;
 
 Entry_BubbleSort_l[(Entry_i + 1)] = Entry_t;
 
@@ -179,8 +181,8 @@ return (Entry_BubbleSort_l);
 }
 model fun Entry_IsSorted(Entry_IsSorted_l: seq[int]): bool
 {
-var _tmp88: int;
-var _tmp89: int;
+var _tmp64: int;
+var _tmp65: int;
 
 
 Entry_i = 0;
@@ -188,11 +190,11 @@ Entry_i = 0;
 while((Entry_i < (sizeof(Entry_IsSorted_l) - 1)))
 {
 
-_tmp88 = Entry_IsSorted_l[Entry_i];
+_tmp64 = Entry_IsSorted_l[Entry_i];
 
-_tmp89 = Entry_IsSorted_l[(Entry_i + 1)];
+_tmp65 = Entry_IsSorted_l[(Entry_i + 1)];
 
-if((_tmp88 > _tmp89))
+if((_tmp64 > _tmp65))
 {
 
 return (false);
@@ -236,10 +238,10 @@ return (true);
 
 
 }
-fun Entry_init_entry52(Entry_init_entry52__payload_0: any)
+fun Entry_init_entry52()
 {
-var _tmp90: bool;
-var _tmp91: bool;
+var _tmp66: bool;
+var _tmp67: bool;
 
 
 Entry_i = 0;
@@ -263,9 +265,9 @@ Entry_i = (Entry_i + 1);
 
 }
 
-_tmp90 = (sizeof(Entry_rev) == 10);
+_tmp66 = (sizeof(Entry_rev) == 10);
 
-assert _tmp90;
+assert _tmp66;
 
 Entry_sorted = Entry_reverse(Entry_rev);
 
@@ -279,9 +281,9 @@ assert !(Entry_b);
 
 Entry_sorted = Entry_BubbleSort(Entry_rev);
 
-_tmp91 = (sizeof(Entry_sorted) == 10);
+_tmp67 = (sizeof(Entry_sorted) == 10);
 
-assert _tmp91;
+assert _tmp67;
 
 Entry_b = Entry_IsSorted(Entry_sorted);
 
@@ -293,7 +295,7 @@ assert !(Entry_b);
 
 
 }
-fun Entry_init_exit0_rand_144298165()
+fun Entry_init_exit0_rand_1319002430()
 {
 
 
@@ -301,11 +303,11 @@ fun Entry_init_exit0_rand_144298165()
 
 
 }start  state Entry_init
-{entry (payload: any) {
-Entry_init_entry52(payload);
+{entry  {
+Entry_init_entry52();
 }
 exit  {
-Entry_init_exit0_rand_144298165();
+Entry_init_exit0_rand_1319002430();
 }
 }
 }

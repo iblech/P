@@ -1,3 +1,5 @@
+event halt;
+event null;
 
 main machine M
 {
@@ -6,12 +8,12 @@ var M_i: int;
 
 fun M_F(): int
 {
-var _tmp194: bool;
+var _tmp170: bool;
 
 
-_tmp194 = $;
+_tmp170 = $;
 
-if(_tmp194)
+if(_tmp170)
 {
 
 return (0);
@@ -34,25 +36,25 @@ return (1);
 
 
 }
-fun M_S_entry15(M_S_entry15__payload_0: any)
+fun M_S_entry15()
 {
-var _tmp195: bool;
-var _tmp196: bool;
+var _tmp171: bool;
+var _tmp172: bool;
 
 
 M_i = M_F();
 
 M_x.0.0 = M_i;
 
-_tmp195 = (M_x.0.0 == 0);
+_tmp171 = (M_x.0.0 == 0);
 
-_tmp196 = (M_x.0.0 == 1);
+_tmp172 = (M_x.0.0 == 1);
 
-assert (_tmp195 || _tmp196);
+assert (_tmp171 || _tmp172);
 
 
 }
-fun M_S_exit0_rand_1091131844()
+fun M_S_exit0_rand_1391634058()
 {
 
 
@@ -60,11 +62,11 @@ fun M_S_exit0_rand_1091131844()
 
 
 }start  state M_S
-{entry (payload: any) {
-M_S_entry15(payload);
+{entry  {
+M_S_entry15();
 }
 exit  {
-M_S_exit0_rand_1091131844();
+M_S_exit0_rand_1391634058();
 }
 }
 }

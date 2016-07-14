@@ -1,3 +1,5 @@
+event halt;
+event null;
 event E: int;
 
 main machine M
@@ -12,24 +14,24 @@ M_F_a = (M_F_a + M_F_b);
 
 
 }
-fun M_S_entry13(M_S_entry13__payload_0: any)
+fun M_S_entry13()
 {
 var M_S_entry13_y: int;
-var _tmp59: bool;
-var _tmp60: bool;
+var _tmp35: bool;
+var _tmp36: bool;
 
 
 M_S_entry13_y = 1;
 
 M_F(M_g, M_S_entry13_y);
 
-_tmp59 = (M_g == 1);
+_tmp35 = (M_g == 1);
 
-assert _tmp59;
+assert _tmp35;
 
-_tmp60 = (M_S_entry13_y == 1);
+_tmp36 = (M_S_entry13_y == 1);
 
-assert _tmp60;
+assert _tmp36;
 
 raise E, 1;
 
@@ -45,16 +47,16 @@ M_F(M_g, 1);
 }
 fun M_T_entry30(M_T_entry30_j: int)
 {
-var _tmp61: bool;
+var _tmp37: bool;
 
 
-_tmp61 = (M_T_entry30_j == 2);
+_tmp37 = (M_T_entry30_j == 2);
 
-assert _tmp61;
+assert _tmp37;
 
 
 }
-fun M_T_exit0_rand_1209586314()
+fun M_T_exit0_rand_338746521()
 {
 
 
@@ -64,19 +66,19 @@ fun M_T_exit0_rand_1209586314()
 }
 fun M_S_on_E_goto_M_T20(M_S_on_E_goto_M_T20_i: int)
 {
-var _tmp62: bool;
+var _tmp38: bool;
 
 
-_tmp62 = (M_g == 2);
+_tmp38 = (M_g == 2);
 
-assert _tmp62;
+assert _tmp38;
 
 M_S_on_E_goto_M_T20_i = (M_S_on_E_goto_M_T20_i + 1);
 
 
 }start  state M_S
-{entry (payload: any) {
-M_S_entry13(payload);
+{entry  {
+M_S_entry13();
 }
 exit  {
 M_S_exit24();
@@ -87,7 +89,7 @@ M_S_exit24();
 M_T_entry30(payload);
 }
 exit  {
-M_T_exit0_rand_1209586314();
+M_T_exit0_rand_338746521();
 }
 }
 }

@@ -1,5 +1,5 @@
 ﻿namespace Microsoft.P2Boogie
-(* (* 
+
 module Translator = 
 
   open System
@@ -357,4 +357,3 @@ module Translator =
       let s = IO.File.ReadAllLines("CommonBpl.bpl") in
       Array.iter (fun s -> printfn "%s" s) s
       0 // return an integer exit code
-*) *)

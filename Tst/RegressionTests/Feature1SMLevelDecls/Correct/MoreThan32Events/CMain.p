@@ -1,3 +1,5 @@
+event halt;
+event null;
 event ArtifactManagerGoalStateAcheived;
 event ArtifactManagerGoalStateNotAcheived;
 event CreateAssemblyManager;
@@ -64,7 +66,7 @@ event E13;
 machine DownloadManagerMachine
 {
 
-fun DownloadManagerMachine_Begin_entry0_rand_333061507(DownloadManagerMachine_Begin_entry0_rand_333061507__payload_skip: any)
+fun DownloadManagerMachine_Begin_entry0_rand_1995240114()
 {
 
 
@@ -72,7 +74,7 @@ fun DownloadManagerMachine_Begin_entry0_rand_333061507(DownloadManagerMachine_Be
 
 
 }
-fun DownloadManagerMachine_Begin_exit0_rand_746993867()
+fun DownloadManagerMachine_Begin_exit0_rand_1054830274()
 {
 
 
@@ -80,7 +82,7 @@ fun DownloadManagerMachine_Begin_exit0_rand_746993867()
 
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_entry0_rand_1341163148(DownloadManagerMachine_QueryingArtifacts_entry0_rand_1341163148__payload_skip: any)
+fun DownloadManagerMachine_QueryingArtifacts_entry0_rand_625933573()
 {
 
 
@@ -88,7 +90,7 @@ fun DownloadManagerMachine_QueryingArtifacts_entry0_rand_1341163148(DownloadMana
 
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_exit0_rand_2125972897()
+fun DownloadManagerMachine_QueryingArtifacts_exit0_rand_161044605()
 {
 
 
@@ -96,7 +98,7 @@ fun DownloadManagerMachine_QueryingArtifacts_exit0_rand_2125972897()
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_entry0_rand_1652173334(DownloadManagerMachine_CloneArtifactPart_entry0_rand_1652173334__payload_skip: any)
+fun DownloadManagerMachine_CloneArtifactPart_entry0_rand_108923361()
 {
 
 
@@ -104,7 +106,7 @@ fun DownloadManagerMachine_CloneArtifactPart_entry0_rand_1652173334(DownloadMana
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_exit0_rand_78639008()
+fun DownloadManagerMachine_CloneArtifactPart_exit0_rand_1842395216()
 {
 
 
@@ -112,7 +114,7 @@ fun DownloadManagerMachine_CloneArtifactPart_exit0_rand_78639008()
 
 
 }
-fun DownloadManagerMachine_Downloading_entry0_rand_990924134(DownloadManagerMachine_Downloading_entry0_rand_990924134__payload_skip: any)
+fun DownloadManagerMachine_Downloading_entry0_rand_1164815944()
 {
 
 
@@ -120,7 +122,7 @@ fun DownloadManagerMachine_Downloading_entry0_rand_990924134(DownloadManagerMach
 
 
 }
-fun DownloadManagerMachine_Downloading_exit0_rand_1924842499()
+fun DownloadManagerMachine_Downloading_exit0_rand_744407786()
 {
 
 
@@ -128,7 +130,7 @@ fun DownloadManagerMachine_Downloading_exit0_rand_1924842499()
 
 
 }
-fun DownloadManagerMachine_Canceling_entry0_rand_1339742124(DownloadManagerMachine_Canceling_entry0_rand_1339742124__payload_skip: any)
+fun DownloadManagerMachine_Canceling_entry0_rand_2045781533()
 {
 
 
@@ -136,7 +138,7 @@ fun DownloadManagerMachine_Canceling_entry0_rand_1339742124(DownloadManagerMachi
 
 
 }
-fun DownloadManagerMachine_Canceling_exit0_rand_1463688544()
+fun DownloadManagerMachine_Canceling_exit0_rand_1940149471()
 {
 
 
@@ -144,7 +146,7 @@ fun DownloadManagerMachine_Canceling_exit0_rand_1463688544()
 
 
 }
-fun DownloadManagerMachine_Complete_entry121(DownloadManagerMachine_Complete_entry121__payload_27: any)
+fun DownloadManagerMachine_Complete_entry121()
 {
 
 
@@ -152,7 +154,7 @@ raise halt;
 
 
 }
-fun DownloadManagerMachine_Complete_exit0_rand_1707614458()
+fun DownloadManagerMachine_Complete_exit0_rand_983336721()
 {
 
 
@@ -160,7 +162,7 @@ fun DownloadManagerMachine_Complete_exit0_rand_1707614458()
 
 
 }
-fun DownloadManagerMachine_Begin_do_BeginDownload0_rand_1881419560(DownloadManagerMachine_Begin_do_BeginDownload0_rand_1881419560__payload_0: any)
+fun DownloadManagerMachine_Begin_do_BeginDownload0_rand_139373274()
 {
 
 
@@ -168,7 +170,7 @@ fun DownloadManagerMachine_Begin_do_BeginDownload0_rand_1881419560(DownloadManag
 
 
 }
-fun DownloadManagerMachine_Begin_do_E60_rand_370696384(DownloadManagerMachine_Begin_do_E60_rand_370696384__payload_1: any)
+fun DownloadManagerMachine_Begin_do_E60_rand_1166059474()
 {
 
 
@@ -176,7 +178,7 @@ fun DownloadManagerMachine_Begin_do_E60_rand_370696384(DownloadManagerMachine_Be
 
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_1052164493(DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_1052164493__payload_2: any)
+fun DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_1499596804()
 {
 
 
@@ -184,7 +186,7 @@ fun DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_1052164493(
 
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0_rand_1119343265(DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0_rand_1119343265__payload_3: any)
+fun DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0_rand_1548398686()
 {
 
 
@@ -192,7 +194,7 @@ fun DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0
 
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_1184316759(DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_1184316759__payload_4: any)
+fun DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_838459878()
 {
 
 
@@ -200,7 +202,7 @@ fun DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_1184316759(
 
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1168118090(DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1168118090__payload_5: any)
+fun DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1983919543()
 {
 
 
@@ -208,7 +210,7 @@ fun DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1168
 
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_304243213(DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_304243213__payload_6: any)
+fun DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_503599365()
 {
 
 
@@ -216,7 +218,7 @@ fun DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_3
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_1755997963(DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_1755997963__payload_7: any)
+fun DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_1483232311()
 {
 
 
@@ -224,7 +226,7 @@ fun DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_1755997963(DownloadMa
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_null0_rand_1840249711(DownloadManagerMachine_CloneArtifactPart_do_null0_rand_1840249711__payload_8: any)
+fun DownloadManagerMachine_CloneArtifactPart_do_null0_rand_1813520007()
 {
 
 
@@ -232,7 +234,7 @@ fun DownloadManagerMachine_CloneArtifactPart_do_null0_rand_1840249711(DownloadMa
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1998596771(DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1998596771__payload_9: any)
+fun DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1614647316()
 {
 
 
@@ -240,7 +242,7 @@ fun DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1998596771(
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationComplete0_rand_895511707(DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationComplete0_rand_895511707__payload_10: any)
+fun DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationComplete0_rand_685278571()
 {
 
 
@@ -248,7 +250,7 @@ fun DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationCo
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_216649950(DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_216649950__payload_11: any)
+fun DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_859516496()
 {
 
 
@@ -256,7 +258,7 @@ fun DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_2166
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_79811043(DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_79811043__payload_12: any)
+fun DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_1212960665()
 {
 
 
@@ -264,7 +266,7 @@ fun DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_7
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_E10_rand_1179001106(DownloadManagerMachine_CloneArtifactPart_do_E10_rand_1179001106__payload_13: any)
+fun DownloadManagerMachine_CloneArtifactPart_do_E10_rand_992019010()
 {
 
 
@@ -272,7 +274,7 @@ fun DownloadManagerMachine_CloneArtifactPart_do_E10_rand_1179001106(DownloadMana
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_E50_rand_1618877246(DownloadManagerMachine_CloneArtifactPart_do_E50_rand_1618877246__payload_14: any)
+fun DownloadManagerMachine_CloneArtifactPart_do_E50_rand_439379371()
 {
 
 
@@ -280,7 +282,7 @@ fun DownloadManagerMachine_CloneArtifactPart_do_E50_rand_1618877246(DownloadMana
 
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_E130_rand_2056383244(DownloadManagerMachine_CloneArtifactPart_do_E130_rand_2056383244__payload_15: any)
+fun DownloadManagerMachine_CloneArtifactPart_do_E130_rand_1298612248()
 {
 
 
@@ -288,7 +290,7 @@ fun DownloadManagerMachine_CloneArtifactPart_do_E130_rand_2056383244(DownloadMan
 
 
 }
-fun DownloadManagerMachine_Downloading_do_CancelDownload0_rand_20342418(DownloadManagerMachine_Downloading_do_CancelDownload0_rand_20342418__payload_16: any)
+fun DownloadManagerMachine_Downloading_do_CancelDownload0_rand_2020025440()
 {
 
 
@@ -296,7 +298,7 @@ fun DownloadManagerMachine_Downloading_do_CancelDownload0_rand_20342418(Download
 
 
 }
-fun DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0_rand_1667190008(DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0_rand_1667190008__payload_17: any)
+fun DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0_rand_159597385()
 {
 
 
@@ -304,7 +306,7 @@ fun DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0
 
 
 }
-fun DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_1617694734(DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_1617694734__payload_18: any)
+fun DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_1879618244()
 {
 
 
@@ -312,7 +314,7 @@ fun DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_1617694
 
 
 }
-fun DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_554378863(DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_554378863__payload_19: any)
+fun DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_557486031()
 {
 
 
@@ -320,7 +322,7 @@ fun DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_554378863
 
 
 }
-fun DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_1637530005(DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_1637530005__payload_20: any)
+fun DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_1604694232()
 {
 
 
@@ -328,7 +330,7 @@ fun DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_16
 
 
 }
-fun DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_rand_1919660433(DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_rand_1919660433__payload_21: any)
+fun DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_rand_51664189()
 {
 
 
@@ -336,7 +338,7 @@ fun DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_
 
 
 }
-fun DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_rand_134087350(DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_rand_134087350__payload_22: any)
+fun DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_rand_1084789931()
 {
 
 
@@ -344,7 +346,7 @@ fun DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_r
 
 
 }
-fun DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_rand_709005497(DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_rand_709005497__payload_23: any)
+fun DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_rand_1451390331()
 {
 
 
@@ -352,7 +354,7 @@ fun DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_
 
 
 }
-fun DownloadManagerMachine_Canceling_do_E20_rand_1209591461(DownloadManagerMachine_Canceling_do_E20_rand_1209591461__payload_24: any)
+fun DownloadManagerMachine_Canceling_do_E20_rand_367504540()
 {
 
 
@@ -360,7 +362,7 @@ fun DownloadManagerMachine_Canceling_do_E20_rand_1209591461(DownloadManagerMachi
 
 
 }
-fun DownloadManagerMachine_Canceling_do_E80_rand_757131692(DownloadManagerMachine_Canceling_do_E80_rand_757131692__payload_25: any)
+fun DownloadManagerMachine_Canceling_do_E80_rand_707372386()
 {
 
 
@@ -368,7 +370,7 @@ fun DownloadManagerMachine_Canceling_do_E80_rand_757131692(DownloadManagerMachin
 
 
 }
-fun DownloadManagerMachine_Canceling_do_E110_rand_542642059(DownloadManagerMachine_Canceling_do_E110_rand_542642059__payload_26: any)
+fun DownloadManagerMachine_Canceling_do_E110_rand_886033839()
 {
 
 
@@ -376,51 +378,51 @@ fun DownloadManagerMachine_Canceling_do_E110_rand_542642059(DownloadManagerMachi
 
 
 }start  state DownloadManagerMachine_Begin
-{entry (payload: any) {
-DownloadManagerMachine_Begin_entry0_rand_333061507(payload);
+{entry  {
+DownloadManagerMachine_Begin_entry0_rand_1995240114();
 }
 exit  {
-DownloadManagerMachine_Begin_exit0_rand_746993867();
+DownloadManagerMachine_Begin_exit0_rand_1054830274();
 }
 }
  state DownloadManagerMachine_QueryingArtifacts
-{entry (payload: any) {
-DownloadManagerMachine_QueryingArtifacts_entry0_rand_1341163148(payload);
+{entry  {
+DownloadManagerMachine_QueryingArtifacts_entry0_rand_625933573();
 }
 exit  {
-DownloadManagerMachine_QueryingArtifacts_exit0_rand_2125972897();
+DownloadManagerMachine_QueryingArtifacts_exit0_rand_161044605();
 }
 }
  state DownloadManagerMachine_CloneArtifactPart
-{entry (payload: any) {
-DownloadManagerMachine_CloneArtifactPart_entry0_rand_1652173334(payload);
+{entry  {
+DownloadManagerMachine_CloneArtifactPart_entry0_rand_108923361();
 }
 exit  {
-DownloadManagerMachine_CloneArtifactPart_exit0_rand_78639008();
+DownloadManagerMachine_CloneArtifactPart_exit0_rand_1842395216();
 }
 }
  state DownloadManagerMachine_Downloading
-{entry (payload: any) {
-DownloadManagerMachine_Downloading_entry0_rand_990924134(payload);
+{entry  {
+DownloadManagerMachine_Downloading_entry0_rand_1164815944();
 }
 exit  {
-DownloadManagerMachine_Downloading_exit0_rand_1924842499();
+DownloadManagerMachine_Downloading_exit0_rand_744407786();
 }
 }
  state DownloadManagerMachine_Canceling
-{entry (payload: any) {
-DownloadManagerMachine_Canceling_entry0_rand_1339742124(payload);
+{entry  {
+DownloadManagerMachine_Canceling_entry0_rand_2045781533();
 }
 exit  {
-DownloadManagerMachine_Canceling_exit0_rand_1463688544();
+DownloadManagerMachine_Canceling_exit0_rand_1940149471();
 }
 }
  state DownloadManagerMachine_Complete
-{entry (payload: any) {
-DownloadManagerMachine_Complete_entry121(payload);
+{entry  {
+DownloadManagerMachine_Complete_entry121();
 }
 exit  {
-DownloadManagerMachine_Complete_exit0_rand_1707614458();
+DownloadManagerMachine_Complete_exit0_rand_983336721();
 }
 }
 }
@@ -428,7 +430,7 @@ DownloadManagerMachine_Complete_exit0_rand_1707614458();
 main machine MainMachine
 {
 
-fun MainMachine_Init_entry0_rand_1869742700(MainMachine_Init_entry0_rand_1869742700__payload_28: any)
+fun MainMachine_Init_entry0_rand_2086215392()
 {
 
 
@@ -436,7 +438,7 @@ fun MainMachine_Init_entry0_rand_1869742700(MainMachine_Init_entry0_rand_1869742
 
 
 }
-fun MainMachine_Init_exit0_rand_26524287()
+fun MainMachine_Init_exit0_rand_1175300824()
 {
 
 
@@ -444,11 +446,11 @@ fun MainMachine_Init_exit0_rand_26524287()
 
 
 }start  state MainMachine_Init
-{entry (payload: any) {
-MainMachine_Init_entry0_rand_1869742700(payload);
+{entry  {
+MainMachine_Init_entry0_rand_2086215392();
 }
 exit  {
-MainMachine_Init_exit0_rand_26524287();
+MainMachine_Init_exit0_rand_1175300824();
 }
 }
 }

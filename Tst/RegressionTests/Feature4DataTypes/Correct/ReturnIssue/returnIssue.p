@@ -1,3 +1,5 @@
+event halt;
+event null;
 
 main machine Manager
 {
@@ -39,7 +41,7 @@ return ((0 + default(int)));
 
 
 }
-fun Manager_Init_entry0_rand_1268781448(Manager_Init_entry0_rand_1268781448__payload_skip: any)
+fun Manager_Init_entry0_rand_35657633()
 {
 
 
@@ -47,7 +49,7 @@ fun Manager_Init_entry0_rand_1268781448(Manager_Init_entry0_rand_1268781448__pay
 
 
 }
-fun Manager_Init_exit0_rand_540096702()
+fun Manager_Init_exit0_rand_1586899918()
 {
 
 
@@ -55,11 +57,11 @@ fun Manager_Init_exit0_rand_540096702()
 
 
 }start  state Manager_Init
-{entry (payload: any) {
-Manager_Init_entry0_rand_1268781448(payload);
+{entry  {
+Manager_Init_entry0_rand_35657633();
 }
 exit  {
-Manager_Init_exit0_rand_540096702();
+Manager_Init_exit0_rand_1586899918();
 }
 }
 }

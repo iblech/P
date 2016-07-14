@@ -8,9 +8,7 @@ module Main =
   open Syntax
   open Helper
   open ProgramTyping
-
-  let file = @"C:\Users\t-suchav\Desktop\Correct.txt"
-  //let sr = new System.IO.StreamReader(file)
+  open RemoveSideEffects
   
   let getProgram pFile = 
     begin
@@ -33,8 +31,14 @@ module Main =
 
   [<EntryPoint>]
   let main argv = 
-    //File.ReadLines(file) |> Seq.iter (printProgram)
-    let prog = getProgram @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\receive1\receive1.p"
+    File.ReadLines(argv.[0]) |> Seq.iter (printProgram)
+(*
+    let file = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\PingPong\PingPong.p"
+    let prog = remove_side_effects_program (getProgram file) 
+    let opFile = new System.IO.StreamWriter(@"C:\Users\t-suchav\Desktop\recv12.p")
+    print_prog prog opFile
+    print_prog prog System.Console.Out
     typecheck_program prog
+*)
     0
 

@@ -1,3 +1,5 @@
+event halt;
+event null;
 
 main machine M
 {
@@ -7,23 +9,23 @@ var M_z: (int, int);
 
 model fun M_bar()
 {
-var _tmp513: bool;
+var _tmp359: bool;
 
 
-_tmp513 = (M_z.0 == M_z.1);
+_tmp359 = (M_z.0 == M_z.1);
 
-assert _tmp513;
+assert _tmp359;
 
 
 }
 model fun M_foo(M_foo_x: int, M_foo_y: int): (int, int)
 {
-var _tmp514: (int, int);
+var _tmp360: (int, int);
 
 
-_tmp514 = (M_foo_x, M_foo_y);
+_tmp360 = (M_foo_x, M_foo_y);
 
-return (_tmp514);
+return (_tmp360);
 
 
 }
@@ -35,7 +37,7 @@ return (1);
 
 
 }
-fun M_Init_entry12(M_Init_entry12__payload_0: any)
+fun M_Init_entry12()
 {
 
 
@@ -49,7 +51,7 @@ M_bar();
 
 
 }
-fun M_Init_exit0_rand_1138095451()
+fun M_Init_exit0_rand_1644606973()
 {
 
 
@@ -57,11 +59,11 @@ fun M_Init_exit0_rand_1138095451()
 
 
 }start  state M_Init
-{entry (payload: any) {
-M_Init_entry12(payload);
+{entry  {
+M_Init_entry12();
 }
 exit  {
-M_Init_exit0_rand_1138095451();
+M_Init_exit0_rand_1644606973();
 }
 }
 }
