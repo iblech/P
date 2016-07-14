@@ -16,7 +16,7 @@ namespace Microsoft.P_FS_Boogie
             string line = null;
             int t = 0;
             int w = 0;
-            using (var sr = new StreamReader(@"..\..\..\..\Tst\Correct.txt"))
+            using (var sr = new StreamReader(args[0]))
             {
                 //line = @"C:\Users\t-suchav\Desktop\yo.p";
                 //line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\NonDetFunctionInExpr_2\nonDetFunctionInExpr_2.p";
