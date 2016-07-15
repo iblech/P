@@ -6,11 +6,11 @@ var M_i: int;
 
 fun M_F(): int
 {
-var _tmp169: bool;
+var Tmp169: bool;
 
 
-_tmp169 = $;
-if(_tmp169)
+Tmp169 = $;
+if(Tmp169)
 {
 
 return (0);
@@ -39,18 +39,20 @@ M_t.0 += (1, 2);
 M_i = M_F();
 M_t.0 -= M_i;
 }
-fun M_S_exit0_rand_805118578()
+fun M_S_exit0_rand_822714489()
 {
 
 
 ;
 
-}start  state M_S
-{entry  {
+}start 
+ state M_S
+{
+entry  {
 M_S_entry20();
 }
 exit  {
-M_S_exit0_rand_805118578();
+M_S_exit0_rand_822714489();
 }
 }
 }

@@ -51,27 +51,27 @@ var PaxosNode_lastExecutedSlot: int;
 
 fun PaxosNode_UpdateAcceptors(PaxosNode_UpdateAcceptors_payload: (seq[machine]))
 {
-var _tmp408: bool;
-var _tmp409: (seq[machine], machine, int);
-var _tmp410: machine;
+var Tmp408: bool;
+var Tmp409: (seq[machine], machine, int);
+var Tmp410: machine;
 
 
 PaxosNode_acceptors = PaxosNode_UpdateAcceptors_payload.0;
 PaxosNode_majority = ((sizeof(PaxosNode_acceptors) / 2) + 1);
-_tmp408 = (PaxosNode_majority == 2);
-assert _tmp408;
-_tmp409 = (PaxosNode_acceptors, this, PaxosNode_myRank);
-_tmp410 = new LeaderElection(_tmp409);
-PaxosNode_leaderElectionService = _tmp410;
+Tmp408 = (PaxosNode_majority == 2);
+assert Tmp408;
+Tmp409 = (PaxosNode_acceptors, this, PaxosNode_myRank);
+Tmp410 = new LeaderElection(Tmp409);
+PaxosNode_leaderElectionService = Tmp410;
 raise local;
 }
 fun PaxosNode_CheckIfLeader(PaxosNode_CheckIfLeader_payload: (int, int))
 {
-var _tmp411: bool;
+var Tmp411: bool;
 
 
-_tmp411 = (PaxosNode_currentLeader.0 == PaxosNode_myRank);
-if(_tmp411)
+Tmp411 = (PaxosNode_currentLeader.0 == PaxosNode_myRank);
+if(Tmp411)
 {
 
 PaxosNode_commitValue = PaxosNode_CheckIfLeader_payload.1;
@@ -89,28 +89,28 @@ send PaxosNode_currentLeader.1, update, PaxosNode_CheckIfLeader_payload;
 }
 fun PaxosNode_preparefun(PaxosNode_preparefun_receivedMess_2: (machine, int, (int, int)))
 {
-var _tmp412: bool;
-var _tmp413: (int, int);
-var _tmp414: (int, (int, int), int);
-var _tmp415: ((int, int), int);
-var _tmp416: ((int, int), int);
-var _tmp417: ((int, int), int);
-var _tmp418: (int, (int, int));
-var _tmp419: ((int, int), int);
-var _tmp420: ((int, int), int);
-var _tmp421: (int, (int, int), int);
-var _tmp422: ((int, int), int);
+var Tmp412: bool;
+var Tmp413: (int, int);
+var Tmp414: (int, (int, int), int);
+var Tmp415: ((int, int), int);
+var Tmp416: ((int, int), int);
+var Tmp417: ((int, int), int);
+var Tmp418: (int, (int, int));
+var Tmp419: ((int, int), int);
+var Tmp420: ((int, int), int);
+var Tmp421: (int, (int, int), int);
+var Tmp422: ((int, int), int);
 
 
-_tmp412 = (PaxosNode_preparefun_receivedMess_2.1 in PaxosNode_acceptorSlots);
-if(!(_tmp412))
+Tmp412 = (PaxosNode_preparefun_receivedMess_2.1 in PaxosNode_acceptorSlots);
+if(!(Tmp412))
 {
 
-_tmp413 = (~(1), ~(1));
-_tmp414 = (PaxosNode_preparefun_receivedMess_2.1, _tmp413, ~(1));
-send PaxosNode_preparefun_receivedMess_2.0, agree, _tmp414;
-_tmp415 = (PaxosNode_preparefun_receivedMess_2.2, ~(1));
-PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1] = _tmp415;
+Tmp413 = (-(1), -(1));
+Tmp414 = (PaxosNode_preparefun_receivedMess_2.1, Tmp413, -(1));
+send PaxosNode_preparefun_receivedMess_2.0, agree, Tmp414;
+Tmp415 = (PaxosNode_preparefun_receivedMess_2.2, -(1));
+PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1] = Tmp415;
 
 }
 else
@@ -121,60 +121,60 @@ else
 
 }
 
-_tmp416 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
-PaxosNode_returnVal = PaxosNode_lessThan(PaxosNode_preparefun_receivedMess_2.2, _tmp416.0);
+Tmp416 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
+PaxosNode_returnVal = PaxosNode_lessThan(PaxosNode_preparefun_receivedMess_2.2, Tmp416.0);
 if(PaxosNode_returnVal)
 {
 
-_tmp417 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
-_tmp418 = (PaxosNode_preparefun_receivedMess_2.1, _tmp417.0);
-send PaxosNode_preparefun_receivedMess_2.0, reject, _tmp418;
+Tmp417 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
+Tmp418 = (PaxosNode_preparefun_receivedMess_2.1, Tmp417.0);
+send PaxosNode_preparefun_receivedMess_2.0, reject, Tmp418;
 
 }
 else
 {
 
-_tmp419 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
-_tmp420 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
-_tmp421 = (PaxosNode_preparefun_receivedMess_2.1, _tmp419.0, _tmp420.1);
-send PaxosNode_preparefun_receivedMess_2.0, agree, _tmp421;
-_tmp422 = (PaxosNode_preparefun_receivedMess_2.2, ~(1));
-PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1] = _tmp422;
+Tmp419 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
+Tmp420 = PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1];
+Tmp421 = (PaxosNode_preparefun_receivedMess_2.1, Tmp419.0, Tmp420.1);
+send PaxosNode_preparefun_receivedMess_2.0, agree, Tmp421;
+Tmp422 = (PaxosNode_preparefun_receivedMess_2.2, -(1));
+PaxosNode_acceptorSlots[PaxosNode_preparefun_receivedMess_2.1] = Tmp422;
 
 }
 
 }
 fun PaxosNode_acceptfun(PaxosNode_acceptfun_receivedMess_2: (machine, int, (int, int), int))
 {
-var _tmp423: bool;
-var _tmp424: ((int, int), int);
-var _tmp425: ((int, int), int);
-var _tmp426: (int, (int, int));
-var _tmp427: ((int, int), int);
-var _tmp428: (int, (int, int), int);
+var Tmp423: bool;
+var Tmp424: ((int, int), int);
+var Tmp425: ((int, int), int);
+var Tmp426: (int, (int, int));
+var Tmp427: ((int, int), int);
+var Tmp428: (int, (int, int), int);
 
 
-_tmp423 = (PaxosNode_acceptfun_receivedMess_2.1 in PaxosNode_acceptorSlots);
-if(_tmp423)
+Tmp423 = (PaxosNode_acceptfun_receivedMess_2.1 in PaxosNode_acceptorSlots);
+if(Tmp423)
 {
 
-_tmp424 = PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1];
-PaxosNode_returnVal = PaxosNode_equal(PaxosNode_acceptfun_receivedMess_2.2, _tmp424.0);
+Tmp424 = PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1];
+PaxosNode_returnVal = PaxosNode_equal(PaxosNode_acceptfun_receivedMess_2.2, Tmp424.0);
 if(!(PaxosNode_returnVal))
 {
 
-_tmp425 = PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1];
-_tmp426 = (PaxosNode_acceptfun_receivedMess_2.1, _tmp425.0);
-send PaxosNode_acceptfun_receivedMess_2.0, reject, _tmp426;
+Tmp425 = PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1];
+Tmp426 = (PaxosNode_acceptfun_receivedMess_2.1, Tmp425.0);
+send PaxosNode_acceptfun_receivedMess_2.0, reject, Tmp426;
 
 }
 else
 {
 
-_tmp427 = (PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptfun_receivedMess_2.3);
-PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1] = _tmp427;
-_tmp428 = (PaxosNode_acceptfun_receivedMess_2.1, PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptfun_receivedMess_2.3);
-send PaxosNode_acceptfun_receivedMess_2.0, accepted, _tmp428;
+Tmp427 = (PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptfun_receivedMess_2.3);
+PaxosNode_acceptorSlots[PaxosNode_acceptfun_receivedMess_2.1] = Tmp427;
+Tmp428 = (PaxosNode_acceptfun_receivedMess_2.1, PaxosNode_acceptfun_receivedMess_2.2, PaxosNode_acceptfun_receivedMess_2.3);
+send PaxosNode_acceptfun_receivedMess_2.0, accepted, Tmp428;
 
 }
 
@@ -191,21 +191,21 @@ else
 }
 fun PaxosNode_GetNextProposal(PaxosNode_GetNextProposal_maxRound: int): (int, int)
 {
-var _tmp429: (int, int);
+var Tmp429: (int, int);
 
 
-_tmp429 = ((PaxosNode_GetNextProposal_maxRound + 1), PaxosNode_myRank);
-return (_tmp429);
+Tmp429 = ((PaxosNode_GetNextProposal_maxRound + 1), PaxosNode_myRank);
+return (Tmp429);
 }
 fun PaxosNode_equal(PaxosNode_equal_p1: (int, int), PaxosNode_equal_p2: (int, int)): bool
 {
-var _tmp430: bool;
-var _tmp431: bool;
+var Tmp430: bool;
+var Tmp431: bool;
 
 
-_tmp430 = (PaxosNode_equal_p1.0 == PaxosNode_equal_p2.0);
-_tmp431 = (PaxosNode_equal_p1.1 == PaxosNode_equal_p2.1);
-if((_tmp430 && _tmp431))
+Tmp430 = (PaxosNode_equal_p1.0 == PaxosNode_equal_p2.0);
+Tmp431 = (PaxosNode_equal_p1.1 == PaxosNode_equal_p2.1);
+if((Tmp430 && Tmp431))
 {
 
 return (true);
@@ -221,7 +221,7 @@ return (false);
 }
 fun PaxosNode_lessThan(PaxosNode_lessThan_p1: (int, int), PaxosNode_lessThan_p2: (int, int)): bool
 {
-var _tmp432: bool;
+var Tmp432: bool;
 
 
 if((PaxosNode_lessThan_p1.0 < PaxosNode_lessThan_p2.0))
@@ -233,8 +233,8 @@ return (true);
 else
 {
 
-_tmp432 = (PaxosNode_lessThan_p1.0 == PaxosNode_lessThan_p2.0);
-if(_tmp432)
+Tmp432 = (PaxosNode_lessThan_p1.0 == PaxosNode_lessThan_p2.0);
+if(Tmp432)
 {
 
 if((PaxosNode_lessThan_p1.1 < PaxosNode_lessThan_p2.1))
@@ -265,15 +265,15 @@ return (false);
 }
 fun PaxosNode_BroadCastAcceptors(PaxosNode_BroadCastAcceptors_mess: event, PaxosNode_BroadCastAcceptors_pay: any)
 {
-var _tmp433: machine;
+var Tmp433: machine;
 
 
 PaxosNode_iter = 0;
 while((PaxosNode_iter < sizeof(PaxosNode_acceptors)))
 {
 
-_tmp433 = PaxosNode_acceptors[PaxosNode_iter];
-send _tmp433, PaxosNode_BroadCastAcceptors_mess, PaxosNode_BroadCastAcceptors_pay;
+Tmp433 = PaxosNode_acceptors[PaxosNode_iter];
+send Tmp433, PaxosNode_BroadCastAcceptors_mess, PaxosNode_BroadCastAcceptors_pay;
 PaxosNode_iter = (PaxosNode_iter + 1);
 
 }
@@ -281,12 +281,12 @@ PaxosNode_iter = (PaxosNode_iter + 1);
 }
 fun PaxosNode_CountAccepted(PaxosNode_CountAccepted_receivedMess_1: (int, (int, int), int))
 {
-var _tmp434: bool;
-var _tmp435: bool;
+var Tmp434: bool;
+var Tmp435: bool;
 
 
-_tmp434 = (PaxosNode_CountAccepted_receivedMess_1.0 == PaxosNode_nextSlotForProposer);
-if(_tmp434)
+Tmp434 = (PaxosNode_CountAccepted_receivedMess_1.0 == PaxosNode_nextSlotForProposer);
+if(Tmp434)
 {
 
 PaxosNode_returnVal = PaxosNode_equal(PaxosNode_CountAccepted_receivedMess_1.1, PaxosNode_nextProposal);
@@ -304,8 +304,8 @@ else
 
 }
 
-_tmp435 = (PaxosNode_countAccept == PaxosNode_majority);
-if(_tmp435)
+Tmp435 = (PaxosNode_countAccept == PaxosNode_majority);
+if(Tmp435)
 {
 
 ;
@@ -338,11 +338,11 @@ else
 }
 fun PaxosNode_getHighestProposedValue(): int
 {
-var _tmp436: bool;
+var Tmp436: bool;
 
 
-_tmp436 = (PaxosNode_receivedAgree.1 == ~(1));
-if(!(_tmp436))
+Tmp436 = (PaxosNode_receivedAgree.1 == -(1));
+if(!(Tmp436))
 {
 
 PaxosNode_currCommitOperation = false;
@@ -360,14 +360,14 @@ return (PaxosNode_commitValue);
 }
 fun PaxosNode_RunReplicatedMachine()
 {
-var _tmp437: bool;
+var Tmp437: bool;
 
 
 while(true)
 {
 
-_tmp437 = ((PaxosNode_lastExecutedSlot + 1) in PaxosNode_learnerSlots);
-if(_tmp437)
+Tmp437 = ((PaxosNode_lastExecutedSlot + 1) in PaxosNode_learnerSlots);
+if(Tmp437)
 {
 
 PaxosNode_lastExecutedSlot = (PaxosNode_lastExecutedSlot + 1);
@@ -422,12 +422,12 @@ PaxosNode_currentLeader = PaxosNode_PerformOperation_do_newLeader101_payload;
 }
 fun PaxosNode_ProposeValuePhase1_do_agree195(PaxosNode_ProposeValuePhase1_do_agree195_receivedMess: (int, (int, int), int))
 {
-var _tmp438: bool;
-var _tmp439: bool;
+var Tmp438: bool;
+var Tmp439: bool;
 
 
-_tmp438 = (PaxosNode_ProposeValuePhase1_do_agree195_receivedMess.0 == PaxosNode_nextSlotForProposer);
-if(_tmp438)
+Tmp438 = (PaxosNode_ProposeValuePhase1_do_agree195_receivedMess.0 == PaxosNode_nextSlotForProposer);
+if(Tmp438)
 {
 
 PaxosNode_countAgree = (PaxosNode_countAgree + 1);
@@ -447,8 +447,8 @@ else
 
 }
 
-_tmp439 = (PaxosNode_countAgree == PaxosNode_majority);
-if(_tmp439)
+Tmp439 = (PaxosNode_countAgree == PaxosNode_majority);
+if(Tmp439)
 {
 
 raise success;
@@ -479,7 +479,7 @@ fun PaxosNode_ProposeValuePhase2_do_accepted271(PaxosNode_ProposeValuePhase2_do_
 
 PaxosNode_CountAccepted(PaxosNode_ProposeValuePhase2_do_accepted271_payload);
 }
-fun PaxosNode_Init_on_local_goto_PaxosNode_PerformOperation0_rand_644634171()
+fun PaxosNode_Init_on_local_goto_PaxosNode_PerformOperation0_rand_418767562()
 {
 
 
@@ -512,7 +512,7 @@ fun PaxosNode_ProposeValuePhase1_on_success_goto_PaxosNode_ProposeValuePhase2216
 
 send PaxosNode_timer, cancelTimer;
 }
-fun PaxosNode_ProposeValuePhase1_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_1666768781()
+fun PaxosNode_ProposeValuePhase1_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_777081038()
 {
 
 
@@ -539,7 +539,7 @@ else
 
 send PaxosNode_timer, cancelTimer;
 }
-fun PaxosNode_ProposeValuePhase2_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_432278869()
+fun PaxosNode_ProposeValuePhase2_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_314902845()
 {
 
 
@@ -548,37 +548,37 @@ fun PaxosNode_ProposeValuePhase2_on_timeout_goto_PaxosNode_ProposeValuePhase10_r
 }
 fun PaxosNode_Init_entry50(PaxosNode_Init_entry50_payload: (int))
 {
-var _tmp440: (int, machine);
-var _tmp441: (machine, int);
-var _tmp442: machine;
+var Tmp440: (int, machine);
+var Tmp441: (machine, int);
+var Tmp442: machine;
 
 
 PaxosNode_myRank = PaxosNode_Init_entry50_payload.0;
-_tmp440 = (PaxosNode_myRank, this);
-PaxosNode_currentLeader = _tmp440;
+Tmp440 = (PaxosNode_myRank, this);
+PaxosNode_currentLeader = Tmp440;
 PaxosNode_roundNum = 0;
 PaxosNode_maxRound = 0;
-_tmp441 = (this, 10);
-_tmp442 = new Timer(_tmp441);
-PaxosNode_timer = _tmp442;
-PaxosNode_lastExecutedSlot = ~(1);
+Tmp441 = (this, 10);
+Tmp442 = new Timer(Tmp441);
+PaxosNode_timer = Tmp442;
+PaxosNode_lastExecutedSlot = -(1);
 PaxosNode_nextSlotForProposer = 0;
 }
-fun PaxosNode_Init_exit0_rand_1514055419()
+fun PaxosNode_Init_exit0_rand_377699695()
 {
 
 
 ;
 
 }
-fun PaxosNode_PerformOperation_entry0_rand_1470640658()
+fun PaxosNode_PerformOperation_entry0_rand_409318471()
 {
 
 
 ;
 
 }
-fun PaxosNode_PerformOperation_exit0_rand_1616212452()
+fun PaxosNode_PerformOperation_exit0_rand_1910890725()
 {
 
 
@@ -587,25 +587,25 @@ fun PaxosNode_PerformOperation_exit0_rand_1616212452()
 }
 fun PaxosNode_ProposeValuePhase1_entry186()
 {
-var _tmp443: (int, int);
-var _tmp444: ((int, int), int);
-var _tmp445: (int, int);
-var _tmp446: (machine, int, (int, int));
+var Tmp443: (int, int);
+var Tmp444: ((int, int), int);
+var Tmp445: (int, int);
+var Tmp446: (machine, int, (int, int));
 
 
 PaxosNode_countAgree = 0;
 PaxosNode_nextProposal = PaxosNode_GetNextProposal(PaxosNode_maxRound);
-_tmp443 = (~(1), ~(1));
-_tmp444 = (_tmp443, ~(1));
-PaxosNode_receivedAgree = _tmp444;
-_tmp445 = (PaxosNode_nextProposal.0, PaxosNode_myRank);
-_tmp446 = (this, PaxosNode_nextSlotForProposer, _tmp445);
-PaxosNode_BroadCastAcceptors(prepare, _tmp446);
+Tmp443 = (-(1), -(1));
+Tmp444 = (Tmp443, -(1));
+PaxosNode_receivedAgree = Tmp444;
+Tmp445 = (PaxosNode_nextProposal.0, PaxosNode_myRank);
+Tmp446 = (this, PaxosNode_nextSlotForProposer, Tmp445);
+PaxosNode_BroadCastAcceptors(prepare, Tmp446);
 ;
 
 send PaxosNode_timer, startTimer;
 }
-fun PaxosNode_ProposeValuePhase1_exit0_rand_504602256()
+fun PaxosNode_ProposeValuePhase1_exit0_rand_1946991105()
 {
 
 
@@ -614,7 +614,7 @@ fun PaxosNode_ProposeValuePhase1_exit0_rand_504602256()
 }
 fun PaxosNode_ProposeValuePhase2_entry260()
 {
-var _tmp447: (machine, int, (int, int), int);
+var Tmp447: (machine, int, (int, int), int);
 
 
 PaxosNode_countAccept = 0;
@@ -623,11 +623,11 @@ PaxosNode_proposeVal = PaxosNode_getHighestProposedValue();
 
 ;
 
-_tmp447 = (this, PaxosNode_nextSlotForProposer, PaxosNode_nextProposal, PaxosNode_proposeVal);
-PaxosNode_BroadCastAcceptors(accept, _tmp447);
+Tmp447 = (this, PaxosNode_nextSlotForProposer, PaxosNode_nextProposal, PaxosNode_proposeVal);
+PaxosNode_BroadCastAcceptors(accept, Tmp447);
 send PaxosNode_timer, startTimer;
 }
-fun PaxosNode_ProposeValuePhase2_exit0_rand_221747396()
+fun PaxosNode_ProposeValuePhase2_exit0_rand_817452832()
 {
 
 
@@ -636,15 +636,15 @@ fun PaxosNode_ProposeValuePhase2_exit0_rand_221747396()
 }
 fun PaxosNode_RunLearner_entry306(PaxosNode_RunLearner_entry306_receivedMess_1: (int, (int, int), int))
 {
-var _tmp448: ((int, int), int);
-var _tmp449: bool;
+var Tmp448: ((int, int), int);
+var Tmp449: bool;
 
 
-_tmp448 = (PaxosNode_RunLearner_entry306_receivedMess_1.1, PaxosNode_RunLearner_entry306_receivedMess_1.2);
-PaxosNode_learnerSlots[PaxosNode_RunLearner_entry306_receivedMess_1.0] = _tmp448;
+Tmp448 = (PaxosNode_RunLearner_entry306_receivedMess_1.1, PaxosNode_RunLearner_entry306_receivedMess_1.2);
+PaxosNode_learnerSlots[PaxosNode_RunLearner_entry306_receivedMess_1.0] = Tmp448;
 PaxosNode_RunReplicatedMachine();
-_tmp449 = (PaxosNode_commitValue == PaxosNode_RunLearner_entry306_receivedMess_1.2);
-if((PaxosNode_currCommitOperation && _tmp449))
+Tmp449 = (PaxosNode_commitValue == PaxosNode_RunLearner_entry306_receivedMess_1.2);
+if((PaxosNode_currCommitOperation && Tmp449))
 {
 
 pop;
@@ -659,33 +659,37 @@ raise goPropose;
 }
 
 }
-fun PaxosNode_RunLearner_exit0_rand_1257938425()
+fun PaxosNode_RunLearner_exit0_rand_1388544546()
 {
 
 
 ;
 
-}start  state PaxosNode_Init
-{entry (payload: (int)) {
+}start 
+ state PaxosNode_Init
+{
+entry (payload: (int)) {
 PaxosNode_Init_entry50(payload);
 }
 exit  {
-PaxosNode_Init_exit0_rand_1514055419();
+PaxosNode_Init_exit0_rand_377699695();
 }
 defer Ping;
 on allNodes do  (payload: (seq[machine])) {
 PaxosNode_Init_do_allNodes58(payload);
 }
 on local goto PaxosNode_PerformOperation with   {
-PaxosNode_Init_on_local_goto_PaxosNode_PerformOperation0_rand_644634171();
+PaxosNode_Init_on_local_goto_PaxosNode_PerformOperation0_rand_418767562();
 }
 }
+
  state PaxosNode_PerformOperation
-{entry  {
-PaxosNode_PerformOperation_entry0_rand_1470640658();
+{
+entry  {
+PaxosNode_PerformOperation_entry0_rand_409318471();
 }
 exit  {
-PaxosNode_PerformOperation_exit0_rand_1616212452();
+PaxosNode_PerformOperation_exit0_rand_1910890725();
 }
 ignore agree;
 ignore accepted;
@@ -711,12 +715,14 @@ PaxosNode_PerformOperation_do_newLeader101(payload);
 }
 on goPropose push PaxosNode_ProposeValuePhase1;
 on chosen push PaxosNode_RunLearner;}
+
  state PaxosNode_ProposeValuePhase1
-{entry  {
+{
+entry  {
 PaxosNode_ProposeValuePhase1_entry186();
 }
 exit  {
-PaxosNode_ProposeValuePhase1_exit0_rand_504602256();
+PaxosNode_ProposeValuePhase1_exit0_rand_1946991105();
 }
 ignore accepted;
 on agree do  (payload: (int, (int, int), int)) {
@@ -731,15 +737,17 @@ PaxosNode_ProposeValuePhase1_on_success_goto_PaxosNode_ProposeValuePhase2216();
 }
 
 on timeout goto PaxosNode_ProposeValuePhase1 with  (payload: (machine)) {
-PaxosNode_ProposeValuePhase1_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_1666768781();
+PaxosNode_ProposeValuePhase1_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_777081038();
 }
 }
+
  state PaxosNode_ProposeValuePhase2
-{entry  {
+{
+entry  {
 PaxosNode_ProposeValuePhase2_entry260();
 }
 exit  {
-PaxosNode_ProposeValuePhase2_exit0_rand_221747396();
+PaxosNode_ProposeValuePhase2_exit0_rand_817452832();
 }
 ignore agree;
 on accepted do  (payload: (int, (int, int), int)) {
@@ -750,15 +758,17 @@ PaxosNode_ProposeValuePhase2_on_reject_goto_PaxosNode_ProposeValuePhase1275(payl
 }
 
 on timeout goto PaxosNode_ProposeValuePhase1 with  (payload: (machine)) {
-PaxosNode_ProposeValuePhase2_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_432278869();
+PaxosNode_ProposeValuePhase2_on_timeout_goto_PaxosNode_ProposeValuePhase10_rand_314902845();
 }
 }
+
  state PaxosNode_RunLearner
-{entry (payload: (int, (int, int), int)) {
+{
+entry (payload: (int, (int, int), int)) {
 PaxosNode_RunLearner_entry306(payload);
 }
 exit  {
-PaxosNode_RunLearner_exit0_rand_1257938425();
+PaxosNode_RunLearner_exit0_rand_1388544546();
 }
 ignore agree;
 ignore accepted;
@@ -779,15 +789,15 @@ var LeaderElection_iter: int;
 
 model fun LeaderElection_GetNewLeader(): (int, machine)
 {
-var _tmp450: machine;
-var _tmp451: (int, machine);
+var Tmp450: machine;
+var Tmp451: (int, machine);
 
 
-_tmp450 = LeaderElection_servers[0];
-_tmp451 = (1, _tmp450);
-return (_tmp451);
+Tmp450 = LeaderElection_servers[0];
+Tmp451 = (1, Tmp450);
+return (Tmp451);
 }
-fun LeaderElection_Init_on_local_goto_LeaderElection_SendLeader0_rand_1319315790()
+fun LeaderElection_Init_on_local_goto_LeaderElection_SendLeader0_rand_1365023554()
 {
 
 
@@ -796,17 +806,17 @@ fun LeaderElection_Init_on_local_goto_LeaderElection_SendLeader0_rand_1319315790
 }
 fun LeaderElection_Init_entry440(LeaderElection_Init_entry440_payload: (seq[machine], machine, int))
 {
-var _tmp452: (int, machine);
+var Tmp452: (int, machine);
 
 
 LeaderElection_servers = LeaderElection_Init_entry440_payload.0;
 LeaderElection_parentServer = LeaderElection_Init_entry440_payload.1;
 LeaderElection_myRank = LeaderElection_Init_entry440_payload.2;
-_tmp452 = (LeaderElection_myRank, this);
-LeaderElection_currentLeader = _tmp452;
+Tmp452 = (LeaderElection_myRank, this);
+LeaderElection_currentLeader = Tmp452;
 raise local;
 }
-fun LeaderElection_Init_exit0_rand_1612181067()
+fun LeaderElection_Init_exit0_rand_1492278706()
 {
 
 
@@ -821,29 +831,33 @@ LeaderElection_currentLeader = LeaderElection_GetNewLeader();
 assert (LeaderElection_currentLeader.0 <= LeaderElection_myRank);
 send LeaderElection_parentServer, newLeader, LeaderElection_currentLeader;
 }
-fun LeaderElection_SendLeader_exit0_rand_1891067417()
+fun LeaderElection_SendLeader_exit0_rand_1195252329()
 {
 
 
 ;
 
-}start  state LeaderElection_Init
-{entry (payload: (seq[machine], machine, int)) {
+}start 
+ state LeaderElection_Init
+{
+entry (payload: (seq[machine], machine, int)) {
 LeaderElection_Init_entry440(payload);
 }
 exit  {
-LeaderElection_Init_exit0_rand_1612181067();
+LeaderElection_Init_exit0_rand_1492278706();
 }
 on local goto LeaderElection_SendLeader with   {
-LeaderElection_Init_on_local_goto_LeaderElection_SendLeader0_rand_1319315790();
+LeaderElection_Init_on_local_goto_LeaderElection_SendLeader0_rand_1365023554();
 }
 }
+
  state LeaderElection_SendLeader
-{entry  {
+{
+entry  {
 LeaderElection_SendLeader_entry452();
 }
 exit  {
-LeaderElection_SendLeader_exit0_rand_1891067417();
+LeaderElection_SendLeader_exit0_rand_1195252329();
 }
 }
 }
@@ -853,28 +867,28 @@ model Timer
 var Timer_target: machine;
 var Timer_timeoutvalue: int;
 
-fun Timer_Init_on_local_goto_Timer_Loop0_rand_423414758()
+fun Timer_Init_on_local_goto_Timer_Loop0_rand_162244880()
 {
 
 
 ;
 
 }
-fun Timer_Loop_on_startTimer_goto_Timer_TimerStarted0_rand_1909880156()
+fun Timer_Loop_on_startTimer_goto_Timer_TimerStarted0_rand_480419704()
 {
 
 
 ;
 
 }
-fun Timer_TimerStarted_on_local_goto_Timer_Loop0_rand_919170497()
+fun Timer_TimerStarted_on_local_goto_Timer_Loop0_rand_1335438817()
 {
 
 
 ;
 
 }
-fun Timer_TimerStarted_on_cancelTimer_goto_Timer_Loop0_rand_684033376()
+fun Timer_TimerStarted_on_cancelTimer_goto_Timer_Loop0_rand_153464734()
 {
 
 
@@ -889,21 +903,21 @@ Timer_target = Timer_Init_entry483_payload.0;
 Timer_timeoutvalue = Timer_Init_entry483_payload.1;
 raise local;
 }
-fun Timer_Init_exit0_rand_236072307()
+fun Timer_Init_exit0_rand_616961048()
 {
 
 
 ;
 
 }
-fun Timer_Loop_entry0_rand_624034828()
+fun Timer_Loop_entry0_rand_1967254408()
 {
 
 
 ;
 
 }
-fun Timer_Loop_exit0_rand_1130062466()
+fun Timer_Loop_exit0_rand_1765975432()
 {
 
 
@@ -912,11 +926,11 @@ fun Timer_Loop_exit0_rand_1130062466()
 }
 fun Timer_TimerStarted_entry498()
 {
-var _tmp453: bool;
+var Tmp453: bool;
 
 
-_tmp453 = $;
-if(_tmp453)
+Tmp453 = $;
+if(Tmp453)
 {
 
 raise local;
@@ -931,47 +945,53 @@ else
 }
 
 }
-fun Timer_TimerStarted_exit0_rand_1246749986()
+fun Timer_TimerStarted_exit0_rand_1562990335()
 {
 
 
 ;
 
-}start  state Timer_Init
-{entry (payload: (machine, int)) {
+}start 
+ state Timer_Init
+{
+entry (payload: (machine, int)) {
 Timer_Init_entry483(payload);
 }
 exit  {
-Timer_Init_exit0_rand_236072307();
+Timer_Init_exit0_rand_616961048();
 }
 on local goto Timer_Loop with   {
-Timer_Init_on_local_goto_Timer_Loop0_rand_423414758();
+Timer_Init_on_local_goto_Timer_Loop0_rand_162244880();
 }
 }
+
  state Timer_Loop
-{entry  {
-Timer_Loop_entry0_rand_624034828();
+{
+entry  {
+Timer_Loop_entry0_rand_1967254408();
 }
 exit  {
-Timer_Loop_exit0_rand_1130062466();
+Timer_Loop_exit0_rand_1765975432();
 }
 ignore cancelTimer;on startTimer goto Timer_TimerStarted with   {
-Timer_Loop_on_startTimer_goto_Timer_TimerStarted0_rand_1909880156();
+Timer_Loop_on_startTimer_goto_Timer_TimerStarted0_rand_480419704();
 }
 }
+
  state Timer_TimerStarted
-{entry  {
+{
+entry  {
 Timer_TimerStarted_entry498();
 }
 exit  {
-Timer_TimerStarted_exit0_rand_1246749986();
+Timer_TimerStarted_exit0_rand_1562990335();
 }
 ignore startTimer;on local goto Timer_Loop with   {
-Timer_TimerStarted_on_local_goto_Timer_Loop0_rand_919170497();
+Timer_TimerStarted_on_local_goto_Timer_Loop0_rand_1335438817();
 }
 
 on cancelTimer goto Timer_Loop with   {
-Timer_TimerStarted_on_cancelTimer_goto_Timer_Loop0_rand_684033376();
+Timer_TimerStarted_on_cancelTimer_goto_Timer_Loop0_rand_153464734();
 }
 }
 }
@@ -984,53 +1004,55 @@ var GodMachine_iter: int;
 
 fun GodMachine_Init_entry516()
 {
-var _tmp454: (int);
-var _tmp455: machine;
-var _tmp456: (int);
-var _tmp457: machine;
-var _tmp458: (int);
-var _tmp459: machine;
-var _tmp460: machine;
-var _tmp461: (seq[machine]);
+var Tmp454: (int);
+var Tmp455: machine;
+var Tmp456: (int);
+var Tmp457: machine;
+var Tmp458: (int);
+var Tmp459: machine;
+var Tmp460: machine;
+var Tmp461: (seq[machine]);
 
 
-_tmp454 = (3,);
-_tmp455 = new PaxosNode(_tmp454);
-GodMachine_temp = _tmp455;
+Tmp454 = (3,);
+Tmp455 = new PaxosNode(Tmp454);
+GodMachine_temp = Tmp455;
 GodMachine_paxosnodes += (0, GodMachine_temp);
-_tmp456 = (2,);
-_tmp457 = new PaxosNode(_tmp456);
-GodMachine_temp = _tmp457;
+Tmp456 = (2,);
+Tmp457 = new PaxosNode(Tmp456);
+GodMachine_temp = Tmp457;
 GodMachine_paxosnodes += (0, GodMachine_temp);
-_tmp458 = (1,);
-_tmp459 = new PaxosNode(_tmp458);
-GodMachine_temp = _tmp459;
+Tmp458 = (1,);
+Tmp459 = new PaxosNode(Tmp458);
+GodMachine_temp = Tmp459;
 GodMachine_paxosnodes += (0, GodMachine_temp);
 GodMachine_iter = 0;
 while((GodMachine_iter < sizeof(GodMachine_paxosnodes)))
 {
 
-_tmp460 = GodMachine_paxosnodes[GodMachine_iter];
-_tmp461 = (GodMachine_paxosnodes,);
-send _tmp460, allNodes, _tmp461;
+Tmp460 = GodMachine_paxosnodes[GodMachine_iter];
+Tmp461 = (GodMachine_paxosnodes,);
+send Tmp460, allNodes, Tmp461;
 GodMachine_iter = (GodMachine_iter + 1);
 
 }
 
 new Client(GodMachine_paxosnodes);
 }
-fun GodMachine_Init_exit0_rand_405067382()
+fun GodMachine_Init_exit0_rand_1596020082()
 {
 
 
 ;
 
-}start  state GodMachine_Init
-{entry  {
+}start 
+ state GodMachine_Init
+{
+entry  {
 GodMachine_Init_entry516();
 }
 exit  {
-GodMachine_Init_exit0_rand_405067382();
+GodMachine_Init_exit0_rand_1596020082();
 }
 }
 }
@@ -1039,21 +1061,21 @@ model Client
 {
 var Client_servers: seq[machine];
 
-fun Client_Init_on_local_goto_Client_PumpRequestOne0_rand_1211463924()
+fun Client_Init_on_local_goto_Client_PumpRequestOne0_rand_720379262()
 {
 
 
 ;
 
 }
-fun Client_PumpRequestOne_on_response_goto_Client_PumpRequestTwo0_rand_1791713986()
+fun Client_PumpRequestOne_on_response_goto_Client_PumpRequestTwo0_rand_1742790143()
 {
 
 
 ;
 
 }
-fun Client_PumpRequestTwo_on_response_goto_Client_Done0_rand_1193563649()
+fun Client_PumpRequestTwo_on_response_goto_Client_Done0_rand_337922979()
 {
 
 
@@ -1067,141 +1089,149 @@ fun Client_Init_entry539(Client_Init_entry539_payload: seq[machine])
 Client_servers = Client_Init_entry539_payload;
 raise local;
 }
-fun Client_Init_exit0_rand_228437237()
+fun Client_Init_exit0_rand_733089316()
 {
 
 
 ;
 
 }
-fun Client_PumpRequestOne_entry0_rand_1445492()
+fun Client_PumpRequestOne_entry0_rand_213544006()
 {
-var _tmp462: bool;
-var _tmp463: machine;
-var _tmp464: (int, int);
-var _tmp465: machine;
-var _tmp466: (int, int);
+var Tmp462: bool;
+var Tmp463: machine;
+var Tmp464: (int, int);
+var Tmp465: machine;
+var Tmp466: (int, int);
 
 
 ;
 
-_tmp462 = $;
-if(_tmp462)
+Tmp462 = $;
+if(Tmp462)
 {
 
-_tmp463 = Client_servers[0];
-_tmp464 = (0, 1);
-send _tmp463, update, _tmp464;
+Tmp463 = Client_servers[0];
+Tmp464 = (0, 1);
+send Tmp463, update, Tmp464;
 
 }
 else
 {
 
-_tmp465 = Client_servers[(sizeof(Client_servers) - 1)];
-_tmp466 = (0, 1);
-send _tmp465, update, _tmp466;
+Tmp465 = Client_servers[(sizeof(Client_servers) - 1)];
+Tmp466 = (0, 1);
+send Tmp465, update, Tmp466;
 
 }
 
 raise response;
 }
-fun Client_PumpRequestOne_exit0_rand_1568174590()
+fun Client_PumpRequestOne_exit0_rand_1644628047()
 {
 
 
 ;
 
 }
-fun Client_PumpRequestTwo_entry0_rand_1492701509()
+fun Client_PumpRequestTwo_entry0_rand_821928492()
 {
-var _tmp467: bool;
-var _tmp468: machine;
-var _tmp469: (int, int);
-var _tmp470: machine;
-var _tmp471: (int, int);
+var Tmp467: bool;
+var Tmp468: machine;
+var Tmp469: (int, int);
+var Tmp470: machine;
+var Tmp471: (int, int);
 
 
 ;
 
-_tmp467 = $;
-if(_tmp467)
+Tmp467 = $;
+if(Tmp467)
 {
 
-_tmp468 = Client_servers[0];
-_tmp469 = (0, 2);
-send _tmp468, update, _tmp469;
+Tmp468 = Client_servers[0];
+Tmp469 = (0, 2);
+send Tmp468, update, Tmp469;
 
 }
 else
 {
 
-_tmp470 = Client_servers[(sizeof(Client_servers) - 1)];
-_tmp471 = (0, 2);
-send _tmp470, update, _tmp471;
+Tmp470 = Client_servers[(sizeof(Client_servers) - 1)];
+Tmp471 = (0, 2);
+send Tmp470, update, Tmp471;
 
 }
 
 raise response;
 }
-fun Client_PumpRequestTwo_exit0_rand_1226300464()
+fun Client_PumpRequestTwo_exit0_rand_2041126027()
 {
 
 
 ;
 
 }
-fun Client_Done_entry0_rand_1300481551()
+fun Client_Done_entry0_rand_1179132921()
 {
 
 
 ;
 
 }
-fun Client_Done_exit0_rand_463268863()
+fun Client_Done_exit0_rand_743412703()
 {
 
 
 ;
 
-}start  state Client_Init
-{entry (payload: seq[machine]) {
+}start 
+ state Client_Init
+{
+entry (payload: seq[machine]) {
 Client_Init_entry539(payload);
 }
 exit  {
-Client_Init_exit0_rand_228437237();
+Client_Init_exit0_rand_733089316();
 }
 on local goto Client_PumpRequestOne with   {
-Client_Init_on_local_goto_Client_PumpRequestOne0_rand_1211463924();
+Client_Init_on_local_goto_Client_PumpRequestOne0_rand_720379262();
 }
 }
+
  state Client_PumpRequestOne
-{entry  {
-Client_PumpRequestOne_entry0_rand_1445492();
+{
+entry  {
+Client_PumpRequestOne_entry0_rand_213544006();
 }
 exit  {
-Client_PumpRequestOne_exit0_rand_1568174590();
+Client_PumpRequestOne_exit0_rand_1644628047();
 }
 on response goto Client_PumpRequestTwo with   {
-Client_PumpRequestOne_on_response_goto_Client_PumpRequestTwo0_rand_1791713986();
+Client_PumpRequestOne_on_response_goto_Client_PumpRequestTwo0_rand_1742790143();
 }
 }
+
  state Client_PumpRequestTwo
-{entry  {
-Client_PumpRequestTwo_entry0_rand_1492701509();
+{
+entry  {
+Client_PumpRequestTwo_entry0_rand_821928492();
 }
 exit  {
-Client_PumpRequestTwo_exit0_rand_1226300464();
+Client_PumpRequestTwo_exit0_rand_2041126027();
 }
 on response goto Client_Done with   {
-Client_PumpRequestTwo_on_response_goto_Client_Done0_rand_1193563649();
+Client_PumpRequestTwo_on_response_goto_Client_Done0_rand_337922979();
 }
 }
+
  state Client_Done
-{entry  {
-Client_Done_entry0_rand_1300481551();
+{
+entry  {
+Client_Done_entry0_rand_1179132921();
 }
 exit  {
-Client_Done_exit0_rand_463268863();
+Client_Done_exit0_rand_743412703();
 }
 }
 }

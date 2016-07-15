@@ -30,21 +30,21 @@ model Timer
 {
 var Timer_target: machine;
 
-fun Timer_Init_on_Unit_goto_Timer_Loop0_rand_1892318067()
+fun Timer_Init_on_Unit_goto_Timer_Loop0_rand_66887159()
 {
 
 
 ;
 
 }
-fun Timer_Loop_on_StartTimer_goto_Timer_TimerStarted0_rand_443076867()
+fun Timer_Loop_on_StartTimer_goto_Timer_TimerStarted0_rand_158627565()
 {
 
 
 ;
 
 }
-fun Timer_TimerStarted_on_Unit_goto_Timer_Loop0_rand_1919376283()
+fun Timer_TimerStarted_on_Unit_goto_Timer_Loop0_rand_428811240()
 {
 
 
@@ -53,11 +53,11 @@ fun Timer_TimerStarted_on_Unit_goto_Timer_Loop0_rand_1919376283()
 }
 fun Timer_TimerStarted_on_CancelTimer_goto_Timer_Loop56()
 {
-var _tmp627: bool;
+var Tmp627: bool;
 
 
-_tmp627 = $;
-if(_tmp627)
+Tmp627 = $;
+if(Tmp627)
 {
 
 send Timer_target, CancelTimerFailure;
@@ -79,21 +79,21 @@ fun Timer_Init_entry36(Timer_Init_entry36_payload: machine)
 Timer_target = Timer_Init_entry36_payload;
 raise Unit;
 }
-fun Timer_Init_exit0_rand_910759428()
+fun Timer_Init_exit0_rand_235481823()
 {
 
 
 ;
 
 }
-fun Timer_Loop_entry0_rand_1034318326()
+fun Timer_Loop_entry0_rand_709764398()
 {
 
 
 ;
 
 }
-fun Timer_Loop_exit0_rand_1221922164()
+fun Timer_Loop_exit0_rand_230124798()
 {
 
 
@@ -102,11 +102,11 @@ fun Timer_Loop_exit0_rand_1221922164()
 }
 fun Timer_TimerStarted_entry49()
 {
-var _tmp628: bool;
+var Tmp628: bool;
 
 
-_tmp628 = $;
-if(_tmp628)
+Tmp628 = $;
+if(Tmp628)
 {
 
 send Timer_target, Timeout;
@@ -122,43 +122,49 @@ else
 }
 
 }
-fun Timer_TimerStarted_exit0_rand_796479820()
+fun Timer_TimerStarted_exit0_rand_1296012326()
 {
 
 
 ;
 
-}start  state Timer_Init
-{entry (payload: machine) {
+}start 
+ state Timer_Init
+{
+entry (payload: machine) {
 Timer_Init_entry36(payload);
 }
 exit  {
-Timer_Init_exit0_rand_910759428();
+Timer_Init_exit0_rand_235481823();
 }
 on Unit goto Timer_Loop with   {
-Timer_Init_on_Unit_goto_Timer_Loop0_rand_1892318067();
+Timer_Init_on_Unit_goto_Timer_Loop0_rand_66887159();
 }
 }
+
  state Timer_Loop
-{entry  {
-Timer_Loop_entry0_rand_1034318326();
+{
+entry  {
+Timer_Loop_entry0_rand_709764398();
 }
 exit  {
-Timer_Loop_exit0_rand_1221922164();
+Timer_Loop_exit0_rand_230124798();
 }
 ignore CancelTimer;on StartTimer goto Timer_TimerStarted with  (payload: int) {
-Timer_Loop_on_StartTimer_goto_Timer_TimerStarted0_rand_443076867();
+Timer_Loop_on_StartTimer_goto_Timer_TimerStarted0_rand_158627565();
 }
 }
+
  state Timer_TimerStarted
-{entry  {
+{
+entry  {
 Timer_TimerStarted_entry49();
 }
 exit  {
-Timer_TimerStarted_exit0_rand_796479820();
+Timer_TimerStarted_exit0_rand_1296012326();
 }
 on Unit goto Timer_Loop with   {
-Timer_TimerStarted_on_Unit_goto_Timer_Loop0_rand_1919376283();
+Timer_TimerStarted_on_Unit_goto_Timer_Loop0_rand_428811240();
 }
 
 on CancelTimer goto Timer_Loop with   {
@@ -198,20 +204,20 @@ send Replica_coordinator, RESP_REPLICA_ABORT, Replica_pendingWriteReq.0;
 }
 model fun Replica_ShouldCommitWrite(): bool
 {
-var _tmp629: bool;
+var Tmp629: bool;
 
 
-_tmp629 = $;
-return (_tmp629);
+Tmp629 = $;
+return (Tmp629);
 }
 fun Replica_Loop_do_GLOBAL_ABORT96(Replica_Loop_do_GLOBAL_ABORT96_payload: int)
 {
-var _tmp630: bool;
+var Tmp630: bool;
 
 
 assert (Replica_pendingWriteReq.0 >= Replica_Loop_do_GLOBAL_ABORT96_payload);
-_tmp630 = (Replica_pendingWriteReq.0 == Replica_Loop_do_GLOBAL_ABORT96_payload);
-if(_tmp630)
+Tmp630 = (Replica_pendingWriteReq.0 == Replica_Loop_do_GLOBAL_ABORT96_payload);
+if(Tmp630)
 {
 
 Replica_lastSeqNum = Replica_Loop_do_GLOBAL_ABORT96_payload;
@@ -228,12 +234,12 @@ else
 }
 fun Replica_Loop_do_GLOBAL_COMMIT102(Replica_Loop_do_GLOBAL_COMMIT102_payload: int)
 {
-var _tmp631: bool;
+var Tmp631: bool;
 
 
 assert (Replica_pendingWriteReq.0 >= Replica_Loop_do_GLOBAL_COMMIT102_payload);
-_tmp631 = (Replica_pendingWriteReq.0 == Replica_Loop_do_GLOBAL_COMMIT102_payload);
-if(_tmp631)
+Tmp631 = (Replica_pendingWriteReq.0 == Replica_Loop_do_GLOBAL_COMMIT102_payload);
+if(Tmp631)
 {
 
 Replica_data[Replica_pendingWriteReq.1] = Replica_pendingWriteReq.2;
@@ -257,16 +263,16 @@ Replica_HandleReqReplica(Replica_Loop_do_REQ_REPLICA109_payload);
 }
 fun Replica_Loop_do_READ_REQ_REPLICA111(Replica_Loop_do_READ_REQ_REPLICA111_payload: int)
 {
-var _tmp632: bool;
-var _tmp633: int;
+var Tmp632: bool;
+var Tmp633: int;
 
 
-_tmp632 = (Replica_Loop_do_READ_REQ_REPLICA111_payload in Replica_data);
-if(_tmp632)
+Tmp632 = (Replica_Loop_do_READ_REQ_REPLICA111_payload in Replica_data);
+if(Tmp632)
 {
 
-_tmp633 = Replica_data[Replica_Loop_do_READ_REQ_REPLICA111_payload];
-send Replica_coordinator, REP_READ_SUCCESS, _tmp633;
+Tmp633 = Replica_data[Replica_Loop_do_READ_REQ_REPLICA111_payload];
+send Replica_coordinator, REP_READ_SUCCESS, Tmp633;
 
 }
 else
@@ -277,7 +283,7 @@ send Replica_coordinator, REP_READ_FAIL;
 }
 
 }
-fun Replica_Init_on_Unit_goto_Replica_Loop0_rand_260483190()
+fun Replica_Init_on_Unit_goto_Replica_Loop0_rand_342306602()
 {
 
 
@@ -292,43 +298,47 @@ Replica_coordinator = Replica_Init_entry75_payload;
 Replica_lastSeqNum = 0;
 raise Unit;
 }
-fun Replica_Init_exit0_rand_1499181880()
+fun Replica_Init_exit0_rand_1750609609()
 {
 
 
 ;
 
 }
-fun Replica_Loop_entry0_rand_1514452563()
+fun Replica_Loop_entry0_rand_2113660145()
 {
 
 
 ;
 
 }
-fun Replica_Loop_exit0_rand_1416101177()
+fun Replica_Loop_exit0_rand_674213171()
 {
 
 
 ;
 
-}start  state Replica_Init
-{entry (payload: machine) {
+}start 
+ state Replica_Init
+{
+entry (payload: machine) {
 Replica_Init_entry75(payload);
 }
 exit  {
-Replica_Init_exit0_rand_1499181880();
+Replica_Init_exit0_rand_1750609609();
 }
 on Unit goto Replica_Loop with   {
-Replica_Init_on_Unit_goto_Replica_Loop0_rand_260483190();
+Replica_Init_on_Unit_goto_Replica_Loop0_rand_342306602();
 }
 }
+
  state Replica_Loop
-{entry  {
-Replica_Loop_entry0_rand_1514452563();
+{
+entry  {
+Replica_Loop_entry0_rand_2113660145();
 }
 exit  {
-Replica_Loop_exit0_rand_1416101177();
+Replica_Loop_exit0_rand_674213171();
 }
 on GLOBAL_ABORT do  (payload: int) {
 Replica_Loop_do_GLOBAL_ABORT96(payload);
@@ -364,8 +374,8 @@ var Coordinator_readResult: (bool, int);
 
 fun Coordinator_DoWrite(Coordinator_DoWrite_pendingWriteReq: (machine, int, int))
 {
-var _tmp634: machine;
-var _tmp635: (int, int, int);
+var Tmp634: machine;
+var Tmp635: (int, int, int);
 
 
 Coordinator_currSeqNum = (Coordinator_currSeqNum + 1);
@@ -373,9 +383,9 @@ Coordinator_i = 0;
 while((Coordinator_i < sizeof(Coordinator_replicas)))
 {
 
-_tmp634 = Coordinator_replicas[Coordinator_i];
-_tmp635 = (Coordinator_currSeqNum, Coordinator_DoWrite_pendingWriteReq.1, Coordinator_DoWrite_pendingWriteReq.2);
-send _tmp634, REQ_REPLICA, _tmp635;
+Tmp634 = Coordinator_replicas[Coordinator_i];
+Tmp635 = (Coordinator_currSeqNum, Coordinator_DoWrite_pendingWriteReq.1, Coordinator_DoWrite_pendingWriteReq.2);
+send Tmp634, REQ_REPLICA, Tmp635;
 Coordinator_i = (Coordinator_i + 1);
 
 }
@@ -385,15 +395,15 @@ raise Unit;
 }
 fun Coordinator_DoGlobalAbort()
 {
-var _tmp636: machine;
+var Tmp636: machine;
 
 
 Coordinator_i = 0;
 while((Coordinator_i < sizeof(Coordinator_replicas)))
 {
 
-_tmp636 = Coordinator_replicas[Coordinator_i];
-send _tmp636, GLOBAL_ABORT, Coordinator_currSeqNum;
+Tmp636 = Coordinator_replicas[Coordinator_i];
+send Tmp636, GLOBAL_ABORT, Coordinator_currSeqNum;
 Coordinator_i = (Coordinator_i + 1);
 
 }
@@ -402,11 +412,11 @@ send Coordinator_pendingWriteReq.0, WRITE_FAIL;
 }
 fun Coordinator_HandleAbort(Coordinator_HandleAbort_payload: int)
 {
-var _tmp637: bool;
+var Tmp637: bool;
 
 
-_tmp637 = (Coordinator_currSeqNum == Coordinator_HandleAbort_payload);
-if(_tmp637)
+Tmp637 = (Coordinator_currSeqNum == Coordinator_HandleAbort_payload);
+if(Tmp637)
 {
 
 Coordinator_DoGlobalAbort();
@@ -435,7 +445,7 @@ fun Coordinator_CountVote_do_RESP_REPLICA_ABORT232(Coordinator_CountVote_do_RESP
 
 Coordinator_HandleAbort(Coordinator_CountVote_do_RESP_REPLICA_ABORT232_payload);
 }
-fun Coordinator_Init_on_Unit_goto_Coordinator_Loop0_rand_714864832()
+fun Coordinator_Init_on_Unit_goto_Coordinator_Loop0_rand_1225269460()
 {
 
 
@@ -454,14 +464,14 @@ fun Coordinator_DoRead_on_READ_SUCCESS_goto_Coordinator_Loop179(Coordinator_DoRe
 
 send Coordinator_client, READ_SUCCESS, Coordinator_DoRead_on_READ_SUCCESS_goto_Coordinator_Loop179_payload;
 }
-fun Coordinator_Loop_on_Unit_goto_Coordinator_CountVote0_rand_525674621()
+fun Coordinator_Loop_on_Unit_goto_Coordinator_CountVote0_rand_532565332()
 {
 
 
 ;
 
 }
-fun Coordinator_Loop_on_READ_REQ_goto_Coordinator_DoRead0_rand_513003028()
+fun Coordinator_Loop_on_READ_REQ_goto_Coordinator_DoRead0_rand_2122579787()
 {
 
 
@@ -470,11 +480,11 @@ fun Coordinator_Loop_on_READ_REQ_goto_Coordinator_DoRead0_rand_513003028()
 }
 fun Coordinator_CountVote_on_RESP_REPLICA_COMMIT_goto_Coordinator_CountVote228(Coordinator_CountVote_on_RESP_REPLICA_COMMIT_goto_Coordinator_CountVote228_payload: int)
 {
-var _tmp638: bool;
+var Tmp638: bool;
 
 
-_tmp638 = (Coordinator_currSeqNum == Coordinator_CountVote_on_RESP_REPLICA_COMMIT_goto_Coordinator_CountVote228_payload);
-if(_tmp638)
+Tmp638 = (Coordinator_currSeqNum == Coordinator_CountVote_on_RESP_REPLICA_COMMIT_goto_Coordinator_CountVote228_payload);
+if(Tmp638)
 {
 
 Coordinator_i = (Coordinator_i - 1);
@@ -495,35 +505,35 @@ fun Coordinator_CountVote_on_Timeout_goto_Coordinator_Loop234()
 
 Coordinator_DoGlobalAbort();
 }
-fun Coordinator_CountVote_on_Unit_goto_Coordinator_WaitForCancelTimerResponse0_rand_1602877925()
+fun Coordinator_CountVote_on_Unit_goto_Coordinator_WaitForCancelTimerResponse0_rand_356764479()
 {
 
 
 ;
 
 }
-fun Coordinator_WaitForCancelTimerResponse_on_Timeout_goto_Coordinator_Loop0_rand_1722637533()
+fun Coordinator_WaitForCancelTimerResponse_on_Timeout_goto_Coordinator_Loop0_rand_1827992310()
 {
 
 
 ;
 
 }
-fun Coordinator_WaitForCancelTimerResponse_on_CancelTimerSuccess_goto_Coordinator_Loop0_rand_544229727()
+fun Coordinator_WaitForCancelTimerResponse_on_CancelTimerSuccess_goto_Coordinator_Loop0_rand_345536141()
 {
 
 
 ;
 
 }
-fun Coordinator_WaitForCancelTimerResponse_on_CancelTimerFailure_goto_Coordinator_WaitForTimeout0_rand_1306212696()
+fun Coordinator_WaitForCancelTimerResponse_on_CancelTimerFailure_goto_Coordinator_WaitForTimeout0_rand_637901070()
 {
 
 
 ;
 
 }
-fun Coordinator_WaitForTimeout_on_Timeout_goto_Coordinator_Loop0_rand_1615266248()
+fun Coordinator_WaitForTimeout_on_Timeout_goto_Coordinator_Loop0_rand_566918183()
 {
 
 
@@ -532,8 +542,8 @@ fun Coordinator_WaitForTimeout_on_Timeout_goto_Coordinator_Loop0_rand_1615266248
 }
 fun Coordinator_Init_entry138(Coordinator_Init_entry138_payload: int)
 {
-var _tmp639: machine;
-var _tmp640: machine;
+var Tmp639: machine;
+var Tmp640: machine;
 
 
 Coordinator_numReplicas = Coordinator_Init_entry138_payload;
@@ -542,19 +552,19 @@ Coordinator_i = 0;
 while((Coordinator_i < Coordinator_numReplicas))
 {
 
-_tmp639 = new Replica(this);
-Coordinator_replica = _tmp639;
+Tmp639 = new Replica(this);
+Coordinator_replica = Tmp639;
 Coordinator_replicas += (Coordinator_i, Coordinator_replica);
 Coordinator_i = (Coordinator_i + 1);
 
 }
 
 Coordinator_currSeqNum = 0;
-_tmp640 = new Timer(this);
-Coordinator_timer = _tmp640;
+Tmp640 = new Timer(this);
+Coordinator_timer = Tmp640;
 raise Unit;
 }
-fun Coordinator_Init_exit0_rand_91170709()
+fun Coordinator_Init_exit0_rand_768327756()
 {
 
 
@@ -564,51 +574,51 @@ fun Coordinator_Init_exit0_rand_91170709()
 fun Coordinator_DoRead_entry156_case_REP_READ_SUCCESS166(env: ((machine, int)), Coordinator_DoRead_entry156_case_REP_READ_SUCCESS166_payload1: int): ((machine, int))
 {
 var Coordinator_DoRead_entry156_payload: (machine, int);
-var _tmp641: (bool, int);
-var _tmp642: ((machine, int));
+var Tmp641: (bool, int);
+var Tmp642: ((machine, int));
 
 
 Coordinator_DoRead_entry156_payload = env.0;
-_tmp641 = (false, Coordinator_DoRead_entry156_case_REP_READ_SUCCESS166_payload1);
-Coordinator_readResult = _tmp641;
-_tmp642 = (Coordinator_DoRead_entry156_payload,);
-return (_tmp642);
+Tmp641 = (false, Coordinator_DoRead_entry156_case_REP_READ_SUCCESS166_payload1);
+Coordinator_readResult = Tmp641;
+Tmp642 = (Coordinator_DoRead_entry156_payload,);
+return (Tmp642);
 }
 fun Coordinator_DoRead_entry156_case_REP_READ_FAIL165(env: ((machine, int))): ((machine, int))
 {
 var Coordinator_DoRead_entry156_payload: (machine, int);
-var _tmp643: (bool, int);
-var _tmp644: ((machine, int));
+var Tmp643: (bool, int);
+var Tmp644: ((machine, int));
 
 
 Coordinator_DoRead_entry156_payload = env.0;
-_tmp643 = (true, ~(1));
-Coordinator_readResult = _tmp643;
-_tmp644 = (Coordinator_DoRead_entry156_payload,);
-return (_tmp644);
+Tmp643 = (true, -(1));
+Coordinator_readResult = Tmp643;
+Tmp644 = (Coordinator_DoRead_entry156_payload,);
+return (Tmp644);
 }
 fun Coordinator_DoRead_entry156(Coordinator_DoRead_entry156_payload: (machine, int))
 {
-var _tmp645: bool;
-var _tmp646: machine;
-var _tmp647: machine;
+var Tmp645: bool;
+var Tmp646: machine;
+var Tmp647: machine;
 
 
 Coordinator_client = Coordinator_DoRead_entry156_payload.0;
 Coordinator_key = Coordinator_DoRead_entry156_payload.1;
-_tmp645 = $;
-if(_tmp645)
+Tmp645 = $;
+if(Tmp645)
 {
 
-_tmp646 = Coordinator_replicas[0];
-send _tmp646, READ_REQ_REPLICA, Coordinator_key;
+Tmp646 = Coordinator_replicas[0];
+send Tmp646, READ_REQ_REPLICA, Coordinator_key;
 
 }
 else
 {
 
-_tmp647 = Coordinator_replicas[(sizeof(Coordinator_replicas) - 1)];
-send _tmp647, READ_REQ_REPLICA, Coordinator_key;
+Tmp647 = Coordinator_replicas[(sizeof(Coordinator_replicas) - 1)];
+send Tmp647, READ_REQ_REPLICA, Coordinator_key;
 
 }
 
@@ -642,21 +652,21 @@ raise READ_SUCCESS, Coordinator_readResult.1;
 }
 
 }
-fun Coordinator_DoRead_exit0_rand_1438436337()
+fun Coordinator_DoRead_exit0_rand_803002495()
 {
 
 
 ;
 
 }
-fun Coordinator_Loop_entry0_rand_2118528489()
+fun Coordinator_Loop_entry0_rand_211082762()
 {
 
 
 ;
 
 }
-fun Coordinator_Loop_exit0_rand_1419169463()
+fun Coordinator_Loop_exit0_rand_737184102()
 {
 
 
@@ -665,19 +675,19 @@ fun Coordinator_Loop_exit0_rand_1419169463()
 }
 fun Coordinator_CountVote_entry214()
 {
-var _tmp648: bool;
-var _tmp649: machine;
+var Tmp648: bool;
+var Tmp649: machine;
 
 
-_tmp648 = (Coordinator_i == 0);
-if(_tmp648)
+Tmp648 = (Coordinator_i == 0);
+if(Tmp648)
 {
 
 while((Coordinator_i < sizeof(Coordinator_replicas)))
 {
 
-_tmp649 = Coordinator_replicas[Coordinator_i];
-send _tmp649, GLOBAL_COMMIT, Coordinator_currSeqNum;
+Tmp649 = Coordinator_replicas[Coordinator_i];
+send Tmp649, GLOBAL_COMMIT, Coordinator_currSeqNum;
 Coordinator_i = (Coordinator_i + 1);
 
 }
@@ -697,57 +707,61 @@ else
 }
 
 }
-fun Coordinator_CountVote_exit0_rand_695024862()
+fun Coordinator_CountVote_exit0_rand_328285278()
 {
 
 
 ;
 
 }
-fun Coordinator_WaitForCancelTimerResponse_entry0_rand_690497277()
+fun Coordinator_WaitForCancelTimerResponse_entry0_rand_1372334967()
 {
 
 
 ;
 
 }
-fun Coordinator_WaitForCancelTimerResponse_exit0_rand_1849884998()
+fun Coordinator_WaitForCancelTimerResponse_exit0_rand_573745962()
 {
 
 
 ;
 
 }
-fun Coordinator_WaitForTimeout_entry0_rand_1510103625()
+fun Coordinator_WaitForTimeout_entry0_rand_2069046015()
 {
 
 
 ;
 
 }
-fun Coordinator_WaitForTimeout_exit0_rand_1276659322()
+fun Coordinator_WaitForTimeout_exit0_rand_856296009()
 {
 
 
 ;
 
-}start  state Coordinator_Init
-{entry (payload: int) {
+}start 
+ state Coordinator_Init
+{
+entry (payload: int) {
 Coordinator_Init_entry138(payload);
 }
 exit  {
-Coordinator_Init_exit0_rand_91170709();
+Coordinator_Init_exit0_rand_768327756();
 }
 on Unit goto Coordinator_Loop with   {
-Coordinator_Init_on_Unit_goto_Coordinator_Loop0_rand_714864832();
+Coordinator_Init_on_Unit_goto_Coordinator_Loop0_rand_1225269460();
 }
 }
+
  state Coordinator_DoRead
-{entry (payload: (machine, int)) {
+{
+entry (payload: (machine, int)) {
 Coordinator_DoRead_entry156(payload);
 }
 exit  {
-Coordinator_DoRead_exit0_rand_1438436337();
+Coordinator_DoRead_exit0_rand_803002495();
 }
 on READ_FAIL goto Coordinator_Loop with   {
 Coordinator_DoRead_on_READ_FAIL_goto_Coordinator_Loop175();
@@ -757,12 +771,14 @@ on READ_SUCCESS goto Coordinator_Loop with  (payload: int) {
 Coordinator_DoRead_on_READ_SUCCESS_goto_Coordinator_Loop179(payload);
 }
 }
+
  state Coordinator_Loop
-{entry  {
-Coordinator_Loop_entry0_rand_2118528489();
+{
+entry  {
+Coordinator_Loop_entry0_rand_211082762();
 }
 exit  {
-Coordinator_Loop_exit0_rand_1419169463();
+Coordinator_Loop_exit0_rand_737184102();
 }
 on WRITE_REQ do  (payload: (machine, int, int)) {
 Coordinator_Loop_do_WRITE_REQ197(payload);
@@ -770,19 +786,21 @@ Coordinator_Loop_do_WRITE_REQ197(payload);
 
 ignore RESP_REPLICA_COMMIT;
 ignore RESP_REPLICA_ABORT;on Unit goto Coordinator_CountVote with   {
-Coordinator_Loop_on_Unit_goto_Coordinator_CountVote0_rand_525674621();
+Coordinator_Loop_on_Unit_goto_Coordinator_CountVote0_rand_532565332();
 }
 
 on READ_REQ goto Coordinator_DoRead with  (payload: (machine, int)) {
-Coordinator_Loop_on_READ_REQ_goto_Coordinator_DoRead0_rand_513003028();
+Coordinator_Loop_on_READ_REQ_goto_Coordinator_DoRead0_rand_2122579787();
 }
 }
+
  state Coordinator_CountVote
-{entry  {
+{
+entry  {
 Coordinator_CountVote_entry214();
 }
 exit  {
-Coordinator_CountVote_exit0_rand_695024862();
+Coordinator_CountVote_exit0_rand_328285278();
 }
 defer WRITE_REQ;
 defer READ_REQ;
@@ -798,43 +816,47 @@ Coordinator_CountVote_on_Timeout_goto_Coordinator_Loop234();
 }
 
 on Unit goto Coordinator_WaitForCancelTimerResponse with   {
-Coordinator_CountVote_on_Unit_goto_Coordinator_WaitForCancelTimerResponse0_rand_1602877925();
+Coordinator_CountVote_on_Unit_goto_Coordinator_WaitForCancelTimerResponse0_rand_356764479();
 }
 }
+
  state Coordinator_WaitForCancelTimerResponse
-{entry  {
-Coordinator_WaitForCancelTimerResponse_entry0_rand_690497277();
+{
+entry  {
+Coordinator_WaitForCancelTimerResponse_entry0_rand_1372334967();
 }
 exit  {
-Coordinator_WaitForCancelTimerResponse_exit0_rand_1849884998();
+Coordinator_WaitForCancelTimerResponse_exit0_rand_573745962();
 }
 defer WRITE_REQ;
 defer READ_REQ;
 ignore RESP_REPLICA_COMMIT;
 ignore RESP_REPLICA_ABORT;on Timeout goto Coordinator_Loop with   {
-Coordinator_WaitForCancelTimerResponse_on_Timeout_goto_Coordinator_Loop0_rand_1722637533();
+Coordinator_WaitForCancelTimerResponse_on_Timeout_goto_Coordinator_Loop0_rand_1827992310();
 }
 
 on CancelTimerSuccess goto Coordinator_Loop with   {
-Coordinator_WaitForCancelTimerResponse_on_CancelTimerSuccess_goto_Coordinator_Loop0_rand_544229727();
+Coordinator_WaitForCancelTimerResponse_on_CancelTimerSuccess_goto_Coordinator_Loop0_rand_345536141();
 }
 
 on CancelTimerFailure goto Coordinator_WaitForTimeout with   {
-Coordinator_WaitForCancelTimerResponse_on_CancelTimerFailure_goto_Coordinator_WaitForTimeout0_rand_1306212696();
+Coordinator_WaitForCancelTimerResponse_on_CancelTimerFailure_goto_Coordinator_WaitForTimeout0_rand_637901070();
 }
 }
+
  state Coordinator_WaitForTimeout
-{entry  {
-Coordinator_WaitForTimeout_entry0_rand_1510103625();
+{
+entry  {
+Coordinator_WaitForTimeout_entry0_rand_2069046015();
 }
 exit  {
-Coordinator_WaitForTimeout_exit0_rand_1276659322();
+Coordinator_WaitForTimeout_exit0_rand_856296009();
 }
 defer WRITE_REQ;
 defer READ_REQ;
 ignore RESP_REPLICA_COMMIT;
 ignore RESP_REPLICA_ABORT;on Timeout goto Coordinator_Loop with   {
-Coordinator_WaitForTimeout_on_Timeout_goto_Coordinator_Loop0_rand_1615266248();
+Coordinator_WaitForTimeout_on_Timeout_goto_Coordinator_Loop0_rand_566918183();
 }
 }
 }
@@ -845,42 +867,42 @@ var Client_coordinator: machine;
 var Client_mydata: int;
 var Client_counter: int;
 
-fun Client_Init_on_Unit_goto_Client_DoWrite0_rand_570688751()
+fun Client_Init_on_Unit_goto_Client_DoWrite0_rand_509414862()
 {
 
 
 ;
 
 }
-fun Client_DoWrite_on_WRITE_FAIL_goto_Client_DoRead0_rand_1333161717()
+fun Client_DoWrite_on_WRITE_FAIL_goto_Client_DoRead0_rand_36567315()
 {
 
 
 ;
 
 }
-fun Client_DoWrite_on_WRITE_SUCCESS_goto_Client_DoRead0_rand_1274296081()
+fun Client_DoWrite_on_WRITE_SUCCESS_goto_Client_DoRead0_rand_276933516()
 {
 
 
 ;
 
 }
-fun Client_DoWrite_on_goEnd_goto_Client_End0_rand_1916266649()
+fun Client_DoWrite_on_goEnd_goto_Client_End0_rand_1621371651()
 {
 
 
 ;
 
 }
-fun Client_DoRead_on_READ_FAIL_goto_Client_DoWrite0_rand_1735072760()
+fun Client_DoRead_on_READ_FAIL_goto_Client_DoWrite0_rand_1849117052()
 {
 
 
 ;
 
 }
-fun Client_DoRead_on_READ_SUCCESS_goto_Client_DoWrite0_rand_1725293258()
+fun Client_DoRead_on_READ_SUCCESS_goto_Client_DoWrite0_rand_1106483435()
 {
 
 
@@ -896,7 +918,7 @@ Client_mydata = Client_Init_entry269_payload.1;
 Client_counter = 0;
 raise Unit;
 }
-fun Client_Init_exit0_rand_1383100680()
+fun Client_Init_exit0_rand_1957140980()
 {
 
 
@@ -905,14 +927,14 @@ fun Client_Init_exit0_rand_1383100680()
 }
 fun Client_DoWrite_entry280()
 {
-var _tmp650: bool;
-var _tmp651: (machine, int, int);
+var Tmp650: bool;
+var Tmp651: (machine, int, int);
 
 
 Client_mydata = (Client_mydata + 1);
 Client_counter = (Client_counter + 1);
-_tmp650 = (Client_counter == 3);
-if(_tmp650)
+Tmp650 = (Client_counter == 3);
+if(Tmp650)
 {
 
 raise goEnd;
@@ -926,10 +948,10 @@ else
 
 }
 
-_tmp651 = (this, Client_mydata, Client_mydata);
-send Client_coordinator, WRITE_REQ, _tmp651;
+Tmp651 = (this, Client_mydata, Client_mydata);
+send Client_coordinator, WRITE_REQ, Tmp651;
 }
-fun Client_DoWrite_exit0_rand_555581937()
+fun Client_DoWrite_exit0_rand_1976288413()
 {
 
 
@@ -938,83 +960,91 @@ fun Client_DoWrite_exit0_rand_555581937()
 }
 fun Client_DoRead_entry293()
 {
-var _tmp652: (machine, int);
+var Tmp652: (machine, int);
 
 
-_tmp652 = (this, Client_mydata);
-send Client_coordinator, READ_REQ, _tmp652;
+Tmp652 = (this, Client_mydata);
+send Client_coordinator, READ_REQ, Tmp652;
 }
-fun Client_DoRead_exit0_rand_1700427338()
+fun Client_DoRead_exit0_rand_1217775297()
 {
 
 
 ;
 
 }
-fun Client_End_entry0_rand_128188198()
+fun Client_End_entry0_rand_696842213()
 {
 
 
 ;
 
 }
-fun Client_End_exit0_rand_54594412()
+fun Client_End_exit0_rand_382164095()
 {
 
 
 ;
 
-}start  state Client_Init
-{entry (payload: (machine, int)) {
+}start 
+ state Client_Init
+{
+entry (payload: (machine, int)) {
 Client_Init_entry269(payload);
 }
 exit  {
-Client_Init_exit0_rand_1383100680();
+Client_Init_exit0_rand_1957140980();
 }
 on Unit goto Client_DoWrite with   {
-Client_Init_on_Unit_goto_Client_DoWrite0_rand_570688751();
+Client_Init_on_Unit_goto_Client_DoWrite0_rand_509414862();
 }
 }
+
  state Client_DoWrite
-{entry  {
+{
+entry  {
 Client_DoWrite_entry280();
 }
 exit  {
-Client_DoWrite_exit0_rand_555581937();
+Client_DoWrite_exit0_rand_1976288413();
 }
 on WRITE_FAIL goto Client_DoRead with   {
-Client_DoWrite_on_WRITE_FAIL_goto_Client_DoRead0_rand_1333161717();
+Client_DoWrite_on_WRITE_FAIL_goto_Client_DoRead0_rand_36567315();
 }
 
 on WRITE_SUCCESS goto Client_DoRead with   {
-Client_DoWrite_on_WRITE_SUCCESS_goto_Client_DoRead0_rand_1274296081();
+Client_DoWrite_on_WRITE_SUCCESS_goto_Client_DoRead0_rand_276933516();
 }
 
 on goEnd goto Client_End with   {
-Client_DoWrite_on_goEnd_goto_Client_End0_rand_1916266649();
+Client_DoWrite_on_goEnd_goto_Client_End0_rand_1621371651();
 }
 }
+
  state Client_DoRead
-{entry  {
+{
+entry  {
 Client_DoRead_entry293();
 }
 exit  {
-Client_DoRead_exit0_rand_1700427338();
+Client_DoRead_exit0_rand_1217775297();
 }
 on READ_FAIL goto Client_DoWrite with   {
-Client_DoRead_on_READ_FAIL_goto_Client_DoWrite0_rand_1735072760();
+Client_DoRead_on_READ_FAIL_goto_Client_DoWrite0_rand_1849117052();
 }
 
 on READ_SUCCESS goto Client_DoWrite with  (payload: int) {
-Client_DoRead_on_READ_SUCCESS_goto_Client_DoWrite0_rand_1725293258();
+Client_DoRead_on_READ_SUCCESS_goto_Client_DoWrite0_rand_1106483435();
 }
 }
+
  state Client_End
-{entry  {
-Client_End_entry0_rand_128188198();
+{
+entry  {
+Client_End_entry0_rand_696842213();
 }
 exit  {
-Client_End_exit0_rand_54594412();
+Client_End_exit0_rand_382164095();
 }
 }
 }
@@ -1025,30 +1055,32 @@ var TwoPhaseCommit_coordinator: machine;
 
 fun TwoPhaseCommit_Init_entry308()
 {
-var _tmp653: machine;
-var _tmp654: (machine, int);
-var _tmp655: (machine, int);
+var Tmp653: machine;
+var Tmp654: (machine, int);
+var Tmp655: (machine, int);
 
 
-_tmp653 = new Coordinator(2);
-TwoPhaseCommit_coordinator = _tmp653;
-_tmp654 = (TwoPhaseCommit_coordinator, 100);
-new Client(_tmp654);
-_tmp655 = (TwoPhaseCommit_coordinator, 200);
-new Client(_tmp655);
+Tmp653 = new Coordinator(2);
+TwoPhaseCommit_coordinator = Tmp653;
+Tmp654 = (TwoPhaseCommit_coordinator, 100);
+new Client(Tmp654);
+Tmp655 = (TwoPhaseCommit_coordinator, 200);
+new Client(Tmp655);
 }
-fun TwoPhaseCommit_Init_exit0_rand_1424249956()
+fun TwoPhaseCommit_Init_exit0_rand_834918458()
 {
 
 
 ;
 
-}start  state TwoPhaseCommit_Init
-{entry  {
+}start 
+ state TwoPhaseCommit_Init
+{
+entry  {
 TwoPhaseCommit_Init_entry308();
 }
 exit  {
-TwoPhaseCommit_Init_exit0_rand_1424249956();
+TwoPhaseCommit_Init_exit0_rand_834918458();
 }
 }
 }

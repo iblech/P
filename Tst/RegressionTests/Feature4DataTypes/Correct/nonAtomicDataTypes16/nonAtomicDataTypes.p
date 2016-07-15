@@ -13,42 +13,42 @@ var M_mac: machine;
 
 fun M_S_entry22()
 {
-var _tmp361: bool;
-var _tmp362: bool;
-var _tmp363: bool;
-var _tmp364: bool;
-var _tmp365: bool;
-var _tmp366: bool;
-var _tmp367: bool;
-var _tmp368: bool;
+var Tmp361: bool;
+var Tmp362: bool;
+var Tmp363: bool;
+var Tmp364: bool;
+var Tmp365: bool;
+var Tmp366: bool;
+var Tmp367: bool;
+var Tmp368: bool;
 
 
 M_y = 2;
-_tmp361 = (M_y == 2);
-assert _tmp361;
+Tmp361 = (M_y == 2);
+assert Tmp361;
 M_y = default(int);
-_tmp362 = (M_y == 0);
-assert _tmp362;
+Tmp362 = (M_y == 0);
+assert Tmp362;
 M_b = true;
-_tmp363 = (M_b == true);
-assert _tmp363;
+Tmp363 = (M_b == true);
+assert Tmp363;
 M_b = default(bool);
-_tmp364 = (M_b == false);
-assert _tmp364;
+Tmp364 = (M_b == false);
+assert Tmp364;
 M_e = E;
-_tmp365 = (M_e == E);
-assert _tmp365;
+Tmp365 = (M_e == E);
+assert Tmp365;
 M_e = default(event);
-_tmp366 = (M_e == null);
-assert _tmp366;
+Tmp366 = (M_e == null);
+assert Tmp366;
 M_mac = this;
 M_mac = default(machine);
-_tmp367 = (M_mac == null);
-assert _tmp367;
+Tmp367 = (M_mac == null);
+assert Tmp367;
 M_a = true;
 M_a = default(any);
-_tmp368 = (M_a == null);
-if(_tmp368)
+Tmp368 = (M_a == null);
+if(Tmp368)
 {
 
 M_a = 1;
@@ -66,18 +66,20 @@ else
 
 raise halt;
 }
-fun M_S_exit0_rand_661809543()
+fun M_S_exit0_rand_171987812()
 {
 
 
 ;
 
-}start  state M_S
-{entry  {
+}start 
+ state M_S
+{
+entry  {
 M_S_entry22();
 }
 exit  {
-M_S_exit0_rand_661809543();
+M_S_exit0_rand_171987812();
 }
 }
 }

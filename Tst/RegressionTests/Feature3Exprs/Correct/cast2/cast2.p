@@ -12,30 +12,32 @@ fun A_S_entry6()
 {
 var A_S_entry6_x: int;
 var A_S_entry6_y: any;
-var _tmp73: int;
-var _tmp74: int;
-var _tmp75: bool;
+var Tmp73: int;
+var Tmp74: int;
+var Tmp75: bool;
 
 
 A_S_entry6_y = A_foo();
-_tmp73 = (A_S_entry6_y as int);
-_tmp74 = (A_S_entry6_y as int);
-A_S_entry6_x = (_tmp73 + _tmp74);
-_tmp75 = (A_S_entry6_x == 6);
-assert _tmp75;
+Tmp73 = (A_S_entry6_y as int);
+Tmp74 = (A_S_entry6_y as int);
+A_S_entry6_x = (Tmp73 + Tmp74);
+Tmp75 = (A_S_entry6_x == 6);
+assert Tmp75;
 }
-fun A_S_exit0_rand_1615295715()
+fun A_S_exit0_rand_1120994497()
 {
 
 
 ;
 
-}start  state A_S
-{entry  {
+}start 
+ state A_S
+{
+entry  {
 A_S_entry6();
 }
 exit  {
-A_S_exit0_rand_1615295715();
+A_S_exit0_rand_1120994497();
 }
 }
 }

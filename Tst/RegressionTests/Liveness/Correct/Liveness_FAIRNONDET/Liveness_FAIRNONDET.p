@@ -7,28 +7,28 @@ event Computing  assert 1;
 main machine EventHandler
 {
 
-fun EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_623694123()
+fun EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_456941704()
 {
 
 
 ;
 
 }
-fun EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_1234721931()
+fun EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_1877046484()
 {
 
 
 ;
 
 }
-fun EventHandler_HandleEvent_on_Loop_goto_EventHandler_HandleEvent0_rand_541958186()
+fun EventHandler_HandleEvent_on_Loop_goto_EventHandler_HandleEvent0_rand_1911497025()
 {
 
 
 ;
 
 }
-fun EventHandler_WaitForUser_entry0_rand_183708462()
+fun EventHandler_WaitForUser_entry0_rand_1767064024()
 {
 
 
@@ -36,22 +36,22 @@ fun EventHandler_WaitForUser_entry0_rand_183708462()
 
 send this, UserEvent;
 }
-fun EventHandler_WaitForUser_exit0_rand_1027612671()
+fun EventHandler_WaitForUser_exit0_rand_1499707032()
 {
 
 
 ;
 
 }
-fun EventHandler_HandleEvent_entry0_rand_2001216097()
+fun EventHandler_HandleEvent_entry0_rand_1120684821()
 {
-var _tmp656: bool;
+var Tmp656: bool;
 
 
 ;
 
-_tmp656 = $;
-if(_tmp656)
+Tmp656 = $;
+if(Tmp656)
 {
 
 send this, Done;
@@ -65,36 +65,40 @@ send this, Loop;
 }
 
 }
-fun EventHandler_HandleEvent_exit0_rand_1603811345()
+fun EventHandler_HandleEvent_exit0_rand_64155108()
 {
 
 
 ;
 
-}start  state EventHandler_WaitForUser
-{entry  {
-EventHandler_WaitForUser_entry0_rand_183708462();
+}start 
+ state EventHandler_WaitForUser
+{
+entry  {
+EventHandler_WaitForUser_entry0_rand_1767064024();
 }
 exit  {
-EventHandler_WaitForUser_exit0_rand_1027612671();
+EventHandler_WaitForUser_exit0_rand_1499707032();
 }
 on UserEvent goto EventHandler_HandleEvent with   {
-EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_623694123();
+EventHandler_WaitForUser_on_UserEvent_goto_EventHandler_HandleEvent0_rand_456941704();
 }
 }
+
  state EventHandler_HandleEvent
-{entry  {
-EventHandler_HandleEvent_entry0_rand_2001216097();
+{
+entry  {
+EventHandler_HandleEvent_entry0_rand_1120684821();
 }
 exit  {
-EventHandler_HandleEvent_exit0_rand_1603811345();
+EventHandler_HandleEvent_exit0_rand_64155108();
 }
 on Done goto EventHandler_WaitForUser with   {
-EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_1234721931();
+EventHandler_HandleEvent_on_Done_goto_EventHandler_WaitForUser0_rand_1877046484();
 }
 
 on Loop goto EventHandler_HandleEvent with   {
-EventHandler_HandleEvent_on_Loop_goto_EventHandler_HandleEvent0_rand_541958186();
+EventHandler_HandleEvent_on_Loop_goto_EventHandler_HandleEvent0_rand_1911497025();
 }
 }
 }

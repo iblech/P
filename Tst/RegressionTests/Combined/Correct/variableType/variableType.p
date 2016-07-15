@@ -16,18 +16,20 @@ fun TestMachine_Init_entry6()
 
 TestMachine_x = (TestMachine_x + 1);
 }
-fun TestMachine_Init_exit0_rand_1925431374()
+fun TestMachine_Init_exit0_rand_180506142()
 {
 
 
 ;
 
-}start  state TestMachine_Init
-{entry  {
+}start 
+ state TestMachine_Init
+{
+entry  {
 TestMachine_Init_entry6();
 }
 exit  {
-TestMachine_Init_exit0_rand_1925431374();
+TestMachine_Init_exit0_rand_180506142();
 }
 }
 }
@@ -41,18 +43,20 @@ fun Xsender_Init_entry20()
 
 send this, x;
 }
-fun Xsender_Init_exit0_rand_1677905718()
+fun Xsender_Init_exit0_rand_1057684380()
 {
 
 
 ;
 
-}start  state Xsender_Init
-{entry  {
+}start 
+ state Xsender_Init
+{
+entry  {
 Xsender_Init_entry20();
 }
 exit  {
-Xsender_Init_exit0_rand_1677905718();
+Xsender_Init_exit0_rand_1057684380();
 }
 }
 }

@@ -16,18 +16,20 @@ fun TestMachine_Init_entry6()
 
 TestMachine_foo(1, 3, x);
 }
-fun TestMachine_Init_exit0_rand_2097401038()
+fun TestMachine_Init_exit0_rand_589839363()
 {
 
 
 ;
 
-}start  state TestMachine_Init
-{entry  {
+}start 
+ state TestMachine_Init
+{
+entry  {
 TestMachine_Init_entry6();
 }
 exit  {
-TestMachine_Init_exit0_rand_2097401038();
+TestMachine_Init_exit0_rand_589839363();
 }
 }
 }

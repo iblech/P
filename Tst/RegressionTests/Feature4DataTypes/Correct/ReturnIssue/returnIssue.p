@@ -29,25 +29,27 @@ fun Manager_bar2(Manager_bar2_Settings: int, Manager_bar2_Settings1: int): int
 
 return ((0 + default(int)));
 }
-fun Manager_Init_entry0_rand_1402982002()
+fun Manager_Init_entry0_rand_436459538()
 {
 
 
 ;
 
 }
-fun Manager_Init_exit0_rand_1480448283()
+fun Manager_Init_exit0_rand_127900520()
 {
 
 
 ;
 
-}start  state Manager_Init
-{entry  {
-Manager_Init_entry0_rand_1402982002();
+}start 
+ state Manager_Init
+{
+entry  {
+Manager_Init_entry0_rand_436459538();
 }
 exit  {
-Manager_Init_exit0_rand_1480448283();
+Manager_Init_exit0_rand_127900520();
 }
 }
 }

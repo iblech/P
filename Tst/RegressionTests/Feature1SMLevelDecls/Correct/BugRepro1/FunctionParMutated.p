@@ -8,15 +8,15 @@ var PING_y: int;
 
 fun PING_Func1(PING_Func1_i: int, PING_Func1_j: int): int
 {
-var _tmp10: bool;
-var _tmp11: bool;
-var _tmp12: bool;
-var _tmp13: bool;
-var _tmp9: bool;
+var Tmp10: bool;
+var Tmp11: bool;
+var Tmp12: bool;
+var Tmp13: bool;
+var Tmp9: bool;
 
 
-_tmp9 = (PING_Func1_j == 1);
-if(_tmp9)
+Tmp9 = (PING_Func1_j == 1);
+if(Tmp9)
 {
 
 PING_Func1_i = (PING_Func1_i + 1);
@@ -31,18 +31,18 @@ else
 
 }
 
-_tmp10 = (PING_Func1_j == 2);
-if(_tmp10)
+Tmp10 = (PING_Func1_j == 2);
+if(Tmp10)
 {
 
-_tmp11 = (PING_Func1_i == 3);
-assert _tmp11;
+Tmp11 = (PING_Func1_i == 3);
+assert Tmp11;
 PING_Func1_i = (PING_Func1_i + 1);
-_tmp12 = (PING_Func1_i == 4);
-assert _tmp12;
+Tmp12 = (PING_Func1_i == 4);
+assert Tmp12;
 send this, Ping, PING_Func1_i;
-_tmp13 = (PING_Func1_i == 4);
-assert _tmp13;
+Tmp13 = (PING_Func1_i == 4);
+assert Tmp13;
 return (PING_Func1_i);
 
 }
@@ -57,38 +57,38 @@ else
 }
 fun PING_Func2(PING_Func2_v: int): int
 {
-var _tmp14: bool;
-var _tmp15: bool;
+var Tmp14: bool;
+var Tmp15: bool;
 
 
 PING_Func2_v = (PING_Func2_v + 1);
-_tmp14 = (PING_Func2_v == 3);
-assert _tmp14;
+Tmp14 = (PING_Func2_v == 3);
+assert Tmp14;
 PING_x = PING_Func1(PING_Func2_v, 2);
-_tmp15 = (PING_x == 4);
-assert _tmp15;
+Tmp15 = (PING_x == 4);
+assert Tmp15;
 }
 fun PING_Ping_Init_do_Success17()
 {
-var _tmp16: bool;
+var Tmp16: bool;
 
 
 PING_x = PING_Func1(1, 1);
-_tmp16 = (PING_x == 2);
-assert _tmp16;
+Tmp16 = (PING_x == 2);
+assert Tmp16;
 PING_y = PING_Func2(PING_x);
 }
 fun PING_Ping_Init_do_Ping22()
 {
-var _tmp17: bool;
-var _tmp18: bool;
+var Tmp17: bool;
+var Tmp18: bool;
 
 
-_tmp17 = (PING_x == 4);
-assert _tmp17;
+Tmp17 = (PING_x == 4);
+assert Tmp17;
 PING_x = (PING_x + 1);
-_tmp18 = (PING_x == 5);
-assert _tmp18;
+Tmp18 = (PING_x == 5);
+assert Tmp18;
 }
 fun PING_Ping_Init_entry14()
 {
@@ -96,18 +96,20 @@ fun PING_Ping_Init_entry14()
 
 raise Success;
 }
-fun PING_Ping_Init_exit0_rand_1014272797()
+fun PING_Ping_Init_exit0_rand_1022442686()
 {
 
 
 ;
 
-}start  state PING_Ping_Init
-{entry  {
+}start 
+ state PING_Ping_Init
+{
+entry  {
 PING_Ping_Init_entry14();
 }
 exit  {
-PING_Ping_Init_exit0_rand_1014272797();
+PING_Ping_Init_exit0_rand_1022442686();
 }
 on Success do   {
 PING_Ping_Init_do_Success17();

@@ -64,259 +64,259 @@ event E13;
 machine DownloadManagerMachine
 {
 
-fun DownloadManagerMachine_Begin_do_BeginDownload0_rand_622921163()
+fun DownloadManagerMachine_Begin_do_BeginDownload0_rand_298443339()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Begin_do_E60_rand_1995558601()
+fun DownloadManagerMachine_Begin_do_E60_rand_1596823691()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_773959568()
+fun DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_2138062283()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0_rand_1498502178()
+fun DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0_rand_2005008693()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_1944347789()
+fun DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_1049534219()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1446128605()
+fun DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1889396930()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_1134738580()
+fun DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_280523894()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_979085603()
+fun DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_1649659613()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_null0_rand_2022726871()
+fun DownloadManagerMachine_CloneArtifactPart_do_null0_rand_716058077()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1039560926()
+fun DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1631989998()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationComplete0_rand_1584013612()
+fun DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationComplete0_rand_1563683808()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_948858648()
+fun DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_236159132()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_1645463893()
+fun DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_2084411337()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_E10_rand_1213572110()
+fun DownloadManagerMachine_CloneArtifactPart_do_E10_rand_1205752664()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_E50_rand_510950067()
+fun DownloadManagerMachine_CloneArtifactPart_do_E50_rand_181201178()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_do_E130_rand_785299061()
+fun DownloadManagerMachine_CloneArtifactPart_do_E130_rand_1949928296()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Downloading_do_CancelDownload0_rand_1436088030()
+fun DownloadManagerMachine_Downloading_do_CancelDownload0_rand_290705306()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0_rand_1463865497()
+fun DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0_rand_1792231560()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_549258334()
+fun DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_1452709218()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_827681257()
+fun DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_2125677040()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_1470347971()
+fun DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_125761961()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_rand_415461137()
+fun DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_rand_1420311889()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_rand_13087921()
+fun DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_rand_1907806926()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_rand_692114099()
+fun DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_rand_1597004219()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Canceling_do_E20_rand_1963918588()
+fun DownloadManagerMachine_Canceling_do_E20_rand_143052815()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Canceling_do_E80_rand_32756178()
+fun DownloadManagerMachine_Canceling_do_E80_rand_1086845158()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Canceling_do_E110_rand_227331048()
+fun DownloadManagerMachine_Canceling_do_E110_rand_355864639()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Begin_entry0_rand_209305573()
+fun DownloadManagerMachine_Begin_entry0_rand_476934465()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Begin_exit0_rand_472554386()
+fun DownloadManagerMachine_Begin_exit0_rand_38496328()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_entry0_rand_1601632767()
+fun DownloadManagerMachine_QueryingArtifacts_entry0_rand_30480861()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_exit0_rand_611636213()
+fun DownloadManagerMachine_QueryingArtifacts_exit0_rand_244501247()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_entry0_rand_1371020952()
+fun DownloadManagerMachine_CloneArtifactPart_entry0_rand_220087322()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_exit0_rand_1830750367()
+fun DownloadManagerMachine_CloneArtifactPart_exit0_rand_1612938133()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Downloading_entry0_rand_295224936()
+fun DownloadManagerMachine_Downloading_entry0_rand_1189698491()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Downloading_exit0_rand_846232320()
+fun DownloadManagerMachine_Downloading_exit0_rand_1147423575()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Canceling_entry0_rand_562558575()
+fun DownloadManagerMachine_Canceling_entry0_rand_202229648()
 {
 
 
 ;
 
 }
-fun DownloadManagerMachine_Canceling_exit0_rand_674791895()
+fun DownloadManagerMachine_Canceling_exit0_rand_1748509776()
 {
 
 
@@ -329,161 +329,173 @@ fun DownloadManagerMachine_Complete_entry121()
 
 raise halt;
 }
-fun DownloadManagerMachine_Complete_exit0_rand_1728748540()
+fun DownloadManagerMachine_Complete_exit0_rand_1925519062()
 {
 
 
 ;
 
-}start  state DownloadManagerMachine_Begin
-{entry  {
-DownloadManagerMachine_Begin_entry0_rand_209305573();
+}start 
+ state DownloadManagerMachine_Begin
+{
+entry  {
+DownloadManagerMachine_Begin_entry0_rand_476934465();
 }
 exit  {
-DownloadManagerMachine_Begin_exit0_rand_472554386();
+DownloadManagerMachine_Begin_exit0_rand_38496328();
 }
 on BeginDownload do   {
-DownloadManagerMachine_Begin_do_BeginDownload0_rand_622921163();
+DownloadManagerMachine_Begin_do_BeginDownload0_rand_298443339();
 }
 
 on E6 do   {
-DownloadManagerMachine_Begin_do_E60_rand_1995558601();
+DownloadManagerMachine_Begin_do_E60_rand_1596823691();
 }
 }
+
  state DownloadManagerMachine_QueryingArtifacts
-{entry  {
-DownloadManagerMachine_QueryingArtifacts_entry0_rand_1601632767();
+{
+entry  {
+DownloadManagerMachine_QueryingArtifacts_entry0_rand_30480861();
 }
 exit  {
-DownloadManagerMachine_QueryingArtifacts_exit0_rand_611636213();
+DownloadManagerMachine_QueryingArtifacts_exit0_rand_244501247();
 }
 on CancelDownload do   {
-DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_773959568();
+DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_2138062283();
 }
 
 on QueryArtifactsOperationComplete do   {
-DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0_rand_1498502178();
+DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0_rand_2005008693();
 }
 
 on BeginClonePart do   {
-DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_1944347789();
+DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_1049534219();
 }
 
 on BeginDownloadInternal do   {
-DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1446128605();
+DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1889396930();
 }
 
 on DownloadCompleteInternal do   {
-DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_1134738580();
+DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_280523894();
 }
 }
+
  state DownloadManagerMachine_CloneArtifactPart
-{entry  {
-DownloadManagerMachine_CloneArtifactPart_entry0_rand_1371020952();
+{
+entry  {
+DownloadManagerMachine_CloneArtifactPart_entry0_rand_220087322();
 }
 exit  {
-DownloadManagerMachine_CloneArtifactPart_exit0_rand_1830750367();
+DownloadManagerMachine_CloneArtifactPart_exit0_rand_1612938133();
 }
 on halt do   {
-DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_979085603();
+DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_1649659613();
 }
 
 on null do   {
-DownloadManagerMachine_CloneArtifactPart_do_null0_rand_2022726871();
+DownloadManagerMachine_CloneArtifactPart_do_null0_rand_716058077();
 }
 
 on CancelDownload do   {
-DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1039560926();
+DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1631989998();
 }
 
 on ClonePartFromArtifactOperationComplete do   {
-DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationComplete0_rand_1584013612();
+DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationComplete0_rand_1563683808();
 }
 
 on BeginDownloadInternal do   {
-DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_948858648();
+DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_236159132();
 }
 
 on DownloadCompleteInternal do   {
-DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_1645463893();
+DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_2084411337();
 }
 
 on E1 do   {
-DownloadManagerMachine_CloneArtifactPart_do_E10_rand_1213572110();
+DownloadManagerMachine_CloneArtifactPart_do_E10_rand_1205752664();
 }
 
 on E5 do   {
-DownloadManagerMachine_CloneArtifactPart_do_E50_rand_510950067();
+DownloadManagerMachine_CloneArtifactPart_do_E50_rand_181201178();
 }
 
 on E13 do   {
-DownloadManagerMachine_CloneArtifactPart_do_E130_rand_785299061();
+DownloadManagerMachine_CloneArtifactPart_do_E130_rand_1949928296();
 }
 }
+
  state DownloadManagerMachine_Downloading
-{entry  {
-DownloadManagerMachine_Downloading_entry0_rand_295224936();
+{
+entry  {
+DownloadManagerMachine_Downloading_entry0_rand_1189698491();
 }
 exit  {
-DownloadManagerMachine_Downloading_exit0_rand_846232320();
+DownloadManagerMachine_Downloading_exit0_rand_1147423575();
 }
 on CancelDownload do   {
-DownloadManagerMachine_Downloading_do_CancelDownload0_rand_1436088030();
+DownloadManagerMachine_Downloading_do_CancelDownload0_rand_290705306();
 }
 
 on DownloadArtifactPartOperationComplete do   {
-DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0_rand_1463865497();
+DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0_rand_1792231560();
 }
 
 on DownloadCompleteInternal do   {
-DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_549258334();
+DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_1452709218();
 }
 }
+
  state DownloadManagerMachine_Canceling
-{entry  {
-DownloadManagerMachine_Canceling_entry0_rand_562558575();
+{
+entry  {
+DownloadManagerMachine_Canceling_entry0_rand_202229648();
 }
 exit  {
-DownloadManagerMachine_Canceling_exit0_rand_674791895();
+DownloadManagerMachine_Canceling_exit0_rand_1748509776();
 }
 on DownloadCompleteInternal do   {
-DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_827681257();
+DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_2125677040();
 }
 
 on QueryArtifactsOperationComplete do   {
-DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_1470347971();
+DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_125761961();
 }
 
 on ClonePartFromArtifactOperationComplete do   {
-DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_rand_415461137();
+DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_rand_1420311889();
 }
 
 on DownloadArtifactPartOperationComplete do   {
-DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_rand_13087921();
+DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_rand_1907806926();
 }
 
 on AttemptCancelDownloadOperationComplete do   {
-DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_rand_692114099();
+DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_rand_1597004219();
 }
 
 on E2 do   {
-DownloadManagerMachine_Canceling_do_E20_rand_1963918588();
+DownloadManagerMachine_Canceling_do_E20_rand_143052815();
 }
 
 on E8 do   {
-DownloadManagerMachine_Canceling_do_E80_rand_32756178();
+DownloadManagerMachine_Canceling_do_E80_rand_1086845158();
 }
 
 on E11 do   {
-DownloadManagerMachine_Canceling_do_E110_rand_227331048();
+DownloadManagerMachine_Canceling_do_E110_rand_355864639();
 }
 }
+
  state DownloadManagerMachine_Complete
-{entry  {
+{
+entry  {
 DownloadManagerMachine_Complete_entry121();
 }
 exit  {
-DownloadManagerMachine_Complete_exit0_rand_1728748540();
+DownloadManagerMachine_Complete_exit0_rand_1925519062();
 }
 }
 }
@@ -491,25 +503,27 @@ DownloadManagerMachine_Complete_exit0_rand_1728748540();
 main machine MainMachine
 {
 
-fun MainMachine_Init_entry0_rand_425917507()
+fun MainMachine_Init_entry0_rand_134676873()
 {
 
 
 ;
 
 }
-fun MainMachine_Init_exit0_rand_474295912()
+fun MainMachine_Init_exit0_rand_1969991829()
 {
 
 
 ;
 
-}start  state MainMachine_Init
-{entry  {
-MainMachine_Init_entry0_rand_425917507();
+}start 
+ state MainMachine_Init
+{
+entry  {
+MainMachine_Init_entry0_rand_134676873();
 }
 exit  {
-MainMachine_Init_exit0_rand_474295912();
+MainMachine_Init_exit0_rand_1969991829();
 }
 }
 }

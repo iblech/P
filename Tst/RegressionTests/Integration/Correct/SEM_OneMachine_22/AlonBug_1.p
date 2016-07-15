@@ -19,11 +19,11 @@ assert false;
 }
 fun Program_Call_entry18()
 {
-var _tmp585: bool;
+var Tmp585: bool;
 
 
-_tmp585 = (Program_i == 0);
-if(_tmp585)
+Tmp585 = (Program_i == 0);
+if(Tmp585)
 {
 
 raise E;
@@ -44,16 +44,20 @@ fun Program_Call_exit28()
 assert false;
 ;
 
-}start  state Program_Init
-{entry  {
+}start 
+ state Program_Init
+{
+entry  {
 Program_Init_entry10();
 }
 exit  {
 Program_Init_exit12();
 }
 on E push Program_Call;}
+
  state Program_Call
-{entry  {
+{
+entry  {
 Program_Call_entry18();
 }
 exit  {

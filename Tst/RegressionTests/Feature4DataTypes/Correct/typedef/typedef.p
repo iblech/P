@@ -7,20 +7,20 @@ var Main_compVal1: (int, (int, bool));
 
 fun Main_S1_do_test22(Main_S1_do_test22_payload: ((int, (int, bool)), seq[(int, (int, bool))]))
 {
-var _tmp369: bool;
-var _tmp370: bool;
-var _tmp371: bool;
-var _tmp372: bool;
+var Tmp369: bool;
+var Tmp370: bool;
+var Tmp371: bool;
+var Tmp372: bool;
 
 
-_tmp369 = (Main_S1_do_test22_payload.0.0 == 1);
-assert _tmp369;
-_tmp370 = (Main_S1_do_test22_payload.0.1.0 == 100);
-assert _tmp370;
-_tmp371 = (Main_S1_do_test22_payload.0.1.1 == false);
-assert _tmp371;
-_tmp372 = (sizeof(Main_S1_do_test22_payload.1) == 1);
-assert _tmp372;
+Tmp369 = (Main_S1_do_test22_payload.0.0 == 1);
+assert Tmp369;
+Tmp370 = (Main_S1_do_test22_payload.0.1.0 == 100);
+assert Tmp370;
+Tmp371 = (Main_S1_do_test22_payload.0.1.1 == false);
+assert Tmp371;
+Tmp372 = (sizeof(Main_S1_do_test22_payload.1) == 1);
+assert Tmp372;
 }
 fun Main_S1_entry12()
 {
@@ -33,18 +33,20 @@ Main_compVal2.0 = Main_compVal1;
 Main_compVal2.1 += (0, Main_compVal1);
 send this, test, Main_compVal2;
 }
-fun Main_S1_exit0_rand_1375730172()
+fun Main_S1_exit0_rand_758263229()
 {
 
 
 ;
 
-}start  state Main_S1
-{entry  {
+}start 
+ state Main_S1
+{
+entry  {
 Main_S1_entry12();
 }
 exit  {
-Main_S1_exit0_rand_1375730172();
+Main_S1_exit0_rand_758263229();
 }
 on test do  (payload: ((int, (int, bool)), seq[(int, (int, bool))])) {
 Main_S1_do_test22(payload);
