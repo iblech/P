@@ -3,10 +3,10 @@
     module Common=
 
         (* Exception for everything that we don't want to do *)
-        exception Not_defined;
+        exception NotDefined;
 
         (* Type exception for everything we don't want to type *)
-        exception Type_exception of string;
+        exception TypeException of string;
 
 
 

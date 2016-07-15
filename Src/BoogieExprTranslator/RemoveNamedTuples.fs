@@ -5,15 +5,15 @@ module RemoveNamedTuples =
   open Helper
   open ProgramTyping
 
-  let rec process_type ty =
+  let rec processType ty =
     match ty with
-    | Type.NamedTuple ts -> Type.Tuple (List.map (fun (a,b) -> process_type b) ts)
-    | Seq t -> Seq (process_type t)
-    | Map(t1,t2) -> Map(process_type t1, process_type t2)
-    | Type.Tuple ts -> Type.Tuple (List.map (fun a -> process_type a) ts)
+    | Type.NamedTuple ts -> Type.Tuple (List.map (fun (a,b) -> processType b) ts)
+    | Seq t -> Seq (processType t)
+    | Map(t1,t2) -> Map(processType t1, processType t2)
+    | Type.Tuple ts -> Type.Tuple (List.map (fun a -> processType a) ts)
     | _ -> ty
 
-  let rec process_expr G expr =
+  let rec processExpr G expr =
     match expr with
     | Nil
     | ConstInt _
@@ -22,103 +22,103 @@ module RemoveNamedTuples =
     | This
     | Nondet
     | Expr.Var _ -> expr
-    | Default t -> Default (process_type t)
-    | Bin(op, e1, e2) -> Bin(op, process_expr G e1 , process_expr G e2)
-    | Un(op, e) -> Un(op, process_expr G e)
-    | Expr.Dot(e,i) -> Expr.Dot(process_expr G e, i)
+    | Default t -> Default (processType t)
+    | Bin(op, e1, e2) -> Bin(op, processExpr G e1 , processExpr G e2)
+    | Un(op, e) -> Un(op, processExpr G e)
+    | Expr.Dot(e,i) -> Expr.Dot(processExpr G e, i)
     | Expr.NamedDot(e, f) ->
     begin
       let (Type.NamedTuple(ts)) = typeof e G in
-      let index = lookup_named_field_index f ts in
-        Expr.Dot(process_expr G e , index)
+      let index = lookupNamedFieldIndex f ts in
+        Expr.Dot(processExpr G e , index)
     end
-    | Cast(e, t) -> Cast(process_expr G e, process_type t)
-    | Tuple(es) -> Tuple(List.map (fun e -> process_expr G e) es)
-    | NamedTuple(es) -> Tuple(List.map (fun (f,e) -> process_expr G e) es)
-    | New(s, e) -> New(s, process_expr G e)
-    | Call(callee, args) -> Call(callee, List.map (fun e -> process_expr G e) args)
+    | Cast(e, t) -> Cast(processExpr G e, processType t)
+    | Tuple(es) -> Tuple(List.map (fun e -> processExpr G e) es)
+    | NamedTuple(es) -> Tuple(List.map (fun (f,e) -> processExpr G e) es)
+    | New(s, e) -> New(s, processExpr G e)
+    | Call(callee, args) -> Call(callee, List.map (fun e -> processExpr G e) args)
 
-  let rec process_lval G lval =
+  let rec processLval G lval =
     match lval with
     | Var _ -> lval
-    | Dot(l, i) -> Dot(process_lval G l, i)
+    | Dot(l, i) -> Dot(processLval G l, i)
     | NamedDot(l, f) -> 
     begin
-      let (Type.NamedTuple(ts)) = typeof_lval l G in
-      Dot(process_lval G l, lookup_named_field_index f ts)
+      let (Type.NamedTuple(ts)) = typeofLval l G in
+      Dot(processLval G l, lookupNamedFieldIndex f ts)
     end
-    | Index(l, e) -> Index(process_lval G l, process_expr G e)
+    | Index(l, e) -> Index(processLval G l, processExpr G e)
 
-  let rec process_stmt G st =
+  let rec processStmt G st =
     match st with
-    | Assign(l, e) -> Assign(process_lval G l, process_expr G e)
-    | Insert (l, e1, e2) -> Insert(process_lval G l, process_expr G e1, process_expr G e2)
-    | Remove (l, e) -> Remove(process_lval G l, process_expr G e)
-    | Assume e -> Assume (process_expr G e)
-    | Assert e -> Assert (process_expr G e)
+    | Assign(l, e) -> Assign(processLval G l, processExpr G e)
+    | Insert (l, e1, e2) -> Insert(processLval G l, processExpr G e1, processExpr G e2)
+    | Remove (l, e) -> Remove(processLval G l, processExpr G e)
+    | Assume e -> Assume (processExpr G e)
+    | Assert e -> Assert (processExpr G e)
     | NewStmt(_, Nil) -> st
-    | NewStmt(s, e)-> NewStmt(s, (process_expr G e))
-    | Raise(e1, Nil) -> Raise((process_expr G e1), Nil)
-    | Raise(e1, e2) -> Raise((process_expr G e1), (process_expr G e2))
-    | Send (e1, e2, Nil) -> Send((process_expr G e1), (process_expr G e2), Nil)
-    | Send (e1, e2, e3) -> Send((process_expr G e1), (process_expr G e2), (process_expr G e3))
+    | NewStmt(s, e)-> NewStmt(s, (processExpr G e))
+    | Raise(e1, Nil) -> Raise((processExpr G e1), Nil)
+    | Raise(e1, e2) -> Raise((processExpr G e1), (processExpr G e2))
+    | Send (e1, e2, Nil) -> Send((processExpr G e1), (processExpr G e2), Nil)
+    | Send (e1, e2, e3) -> Send((processExpr G e1), (processExpr G e2), (processExpr G e3))
     | Skip -> st
-    | While(c, s) -> While((process_expr G c), (process_stmt G s))
-    | Ite(c, i, e) -> Ite((process_expr G c), (process_stmt G i), (process_stmt G e))
-    | SeqStmt(l) -> SeqStmt(List.map (process_stmt G) l)
+    | While(c, s) -> While((processExpr G c), (processStmt G s))
+    | Ite(c, i, e) -> Ite((processExpr G c), (processStmt G i), (processStmt G e))
+    | SeqStmt(l) -> SeqStmt(List.map (processStmt G) l)
     | Receive(_) -> st 
     | Pop -> st
     | Return(None) -> st
-    | Return(Some(e)) -> Return (Some (process_expr G e))
-    | Monitor(e1, e2) -> Monitor((process_expr G e1), (process_expr G e2))
-    | FunStmt(s, el, None) -> FunStmt(s, (List.map (process_expr G) el), None)
-    | FunStmt(s, el, v) -> FunStmt(s, (List.map (process_expr G) el), v)
+    | Return(Some(e)) -> Return (Some (processExpr G e))
+    | Monitor(e1, e2) -> Monitor((processExpr G e1), (processExpr G e2))
+    | FunStmt(s, el, None) -> FunStmt(s, (List.map (processExpr G) el), None)
+    | FunStmt(s, el, v) -> FunStmt(s, (List.map (processExpr G) el), v)
 
-  let process_env G =
-    Map.map (fun key value -> process_type value) G
+  let processEnv G =
+    Map.map (fun key value -> processType value) G
 
-  let process_vd (vd: VarDecl) = 
-    new VarDecl(vd.Name, (process_type vd.Type))
+  let processVd (vd: VarDecl) = 
+    new VarDecl(vd.Name, (processType vd.Type))
   
-  let process_ed (ed: EventDecl) = 
+  let processEd (ed: EventDecl) = 
     match ed.Type with 
     | None -> ed
-    | Some(t) -> new EventDecl(ed.Name, ed.QC, Some(process_type t))
+    | Some(t) -> new EventDecl(ed.Name, ed.QC, Some(processType t))
 
  ///Return a new FunDecl with all named tuples removed.
-  let remove_named_tuples_fn G (f: FunDecl) = 
-    let G' = merge_maps G f.VarMap
-    let formals = List.map process_vd f.Formals
+  let removeNamedTuplesFn G (f: FunDecl) = 
+    let G' = mergeMaps G f.VarMap
+    let formals = List.map processVd f.Formals
     let retType = 
       match f.RetType with
       | None -> None
-      | Some(t) -> Some(process_type(t))
-    let locals = List.map process_vd f.Locals
-    let stmts = List.map (process_stmt G') f.Body
+      | Some(t) -> Some(processType(t))
+    let locals = List.map processVd f.Locals
+    let stmts = List.map (processStmt G') f.Body
     let envVars = 
       match f.EnvVars with
       | None -> None  
-      | Some(ls) -> Some(List.map process_vd ls)
+      | Some(ls) -> Some(List.map processVd ls)
     new FunDecl(f.Name, formals, retType, locals, stmts, f.IsModel, f.IsPure, f.EnvEmpty, envVars)
 
   ///Return a new MachineDecl with all named tuples removed. 
-  let remove_named_tuples_machine G (m:MachineDecl) = 
+  let removeNamedTuplesMachine G (m:MachineDecl) = 
     let funs = 
       let map = ref Map.empty in
         List.iter (fun(f: FunDecl) -> map := Map.add f.Name (if f.RetType.IsSome then f.RetType.Value else Type.Null) !map) m.Functions
       !map 
-    let G' = merge_maps (merge_maps G m.VarMap) funs
-    let globals = List.map process_vd m.Globals
-    let fList = List.map (remove_named_tuples_fn G') m.Functions 
+    let G' = mergeMaps (mergeMaps G m.VarMap) funs
+    let globals = List.map processVd m.Globals
+    let fList = List.map (removeNamedTuplesFn G') m.Functions 
     new MachineDecl(m.Name, m.StartState, globals, fList, m.States, m.IsMonitor, m.MonitorList, m.QC, m.IsModel)
 
   ///Return a new ProgramDecl with all named tuples removed.  
-  let remove_named_tuples_program (prog: ProgramDecl) = 
+  let removeNamedTuplesProgram (prog: ProgramDecl) = 
     let G =           
       let map = ref Map.empty in
         List.iter (fun(f: FunDecl) -> map := Map.add f.Name (if f.RetType.IsSome then f.RetType.Value else Type.Null) !map) prog.StaticFuns
       !map 
-    let eList = List.map process_ed prog.Events
-    let mList = List.map (remove_named_tuples_machine G) prog.Machines
-    let fList = List.map (remove_named_tuples_fn G) prog.StaticFuns
+    let eList = List.map processEd prog.Events
+    let mList = List.map (removeNamedTuplesMachine G) prog.Machines
+    let fList = List.map (removeNamedTuplesFn G) prog.StaticFuns
     new ProgramDecl(prog.MainMachine, mList, eList, fList)

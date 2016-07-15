@@ -81,16 +81,16 @@ module Syntax =
 
   [<Serializable>]
   type FunDecl(name: string, formals: VarDecl list, rettype: Type option, 
-                  locals: VarDecl list, body: Stmt list, is_model: bool, is_pure: bool, env_empty: bool, env_vars: VarDecl list option) =
+                  locals: VarDecl list, body: Stmt list, isModel: bool, isPure: bool, envEmpty: bool, envVars: VarDecl list option) =
     member this.Name = name
     member this.Formals = formals
     member this.RetType = rettype
     member this.Locals = locals
     member this.Body = body
-    member this.IsModel = is_model
-    member this.IsPure = is_pure
-    member this.EnvEmpty = env_empty
-    member this.EnvVars = env_vars
+    member this.IsModel = isModel
+    member this.IsPure = isPure
+    member this.EnvEmpty = envEmpty
+    member this.EnvVars = envVars
 
 //Implicitly assumes that there are no conflicts in the names of locals and formals.
     member this.VarMap = 
@@ -115,12 +115,12 @@ module Syntax =
       | Push of string * string
       | Call of string * string * string
 
-    let get_event td =
+    let getEvent td =
       match td with
       | Push(e, _) -> e
       | Call(e, _, _)  -> e
 
-    let get_dest td =
+    let getDest td =
       match td with
       | Push(_, s) -> s
       | Call(_, s, _)  -> s
@@ -132,7 +132,7 @@ module Syntax =
       | Ignore of string
       | Call of string * string
 
-    let get_event td =
+    let getEvent td =
       match td with
       | Defer e-> e
       | Ignore e -> e
@@ -148,19 +148,19 @@ module Syntax =
     member this.Dos = dos
    
   [<Serializable>]
-  type MachineDecl(name: string, start_state: string, globals: VarDecl list, 
+  type MachineDecl(name: string, startState: string, globals: VarDecl list, 
                       functions: FunDecl list, states: StateDecl list, 
-                      is_monitor: bool, monitors_list: string List, 
-                      qc: Card option, is_model: bool) =
+                      isMonitor: bool, monitorsList: string List, 
+                      qc: Card option, isModel: bool) =
     member this.Name = name
-    member this.StartState = start_state
+    member this.StartState = startState
     member this.Globals = globals
     member this.Functions = functions
     member this.States = states
-    member this.IsMonitor = is_monitor
-    member this.MonitorList = monitors_list
+    member this.IsMonitor = isMonitor
+    member this.MonitorList = monitorsList
     member this.QC = qc;
-    member this.IsModel = is_model
+    member this.IsModel = isModel
 
     member this.StateMap =
       let map = ref Map.empty in
@@ -180,11 +180,11 @@ module Syntax =
   [<Serializable>]
   [<AllowNullLiteral>]
   type ProgramDecl(mainmachine: string, machines: MachineDecl list, 
-                      events: EventDecl list, static_funs: FunDecl list) =
+                      events: EventDecl list, staticFuns: FunDecl list) =
     member this.MainMachine = mainmachine
     member this.Machines = machines
     member this.Events = events
-    member this.StaticFuns = static_funs
+    member this.StaticFuns = staticFuns
     
     member this.MachineMap =
       let map = ref Map.empty in

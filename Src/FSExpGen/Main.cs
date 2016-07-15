@@ -34,11 +34,11 @@ namespace Microsoft.P_FS_Boogie
                         try
                         {
                             prog = fsExpGen.genFSExpression(line + ".txt");
-                            prog = RemoveNamedTuples.remove_named_tuples_program(prog);
-                            prog = RemoveSideEffects.remove_side_effects_program(prog);
+                            prog = RemoveNamedTuples.removeNamedTuplesProgram (prog);
+                            prog = RemoveSideEffects.removeSideEffectsProgram(prog);
                             Save(prog, line + ".dat"); //Debug
-                            ProgramTyping.typecheck_program(prog);
-                            Helper.print_prog(prog, sw);
+                            ProgramTyping.typecheckProgram(prog);
+                            Helper.printProg(prog, sw);
                         }
                         
                         catch (Exception e)

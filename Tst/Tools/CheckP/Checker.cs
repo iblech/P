@@ -880,8 +880,17 @@ namespace CheckP
                             if (line1 != line2)
                             {
                                 //Modified. S1 becomes M1_S1
-                                var lastWord1 = line1.Split(' ').Last();
-                                var lastWord2 = line2.Split(' ').Last();
+                                var words1 = line1.Split(' ');
+                                var words2 = line2.Split(' ');
+                                if (words1.Length != words2.Length)
+                                    return true;
+                                for(int i = 0; i < words2.Length - 1; i++)
+                                {
+                                    if (words1[i] != words2[i])
+                                        return true;
+                                }
+                                var lastWord1 = words1.Last();
+                                var lastWord2 = words2.Last();
                                 if(!lastWord2.EndsWith(lastWord1))
                                     return true;
                             }
