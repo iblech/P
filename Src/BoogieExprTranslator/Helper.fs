@@ -116,7 +116,7 @@ module Helper=
   let print_uop op =
     match op with
     | Not -> "!"
-    | Neg -> "~"
+    | Neg -> "-"
     | Keys -> "keys"
     | Values -> "values"
     | Sizeof -> "sizeof"
@@ -170,12 +170,12 @@ module Helper=
     let tup = Type.Tuple([for v in env do yield v.Type])
     print_type tup
 
-  let print_anon_fun f argType envType action has_params env_non_empty=      
-    let pl_decl = if has_params then sprintf "(payload: %s)" (print_type argType) else ""
+  let print_anon_fun f argType envType action ev_has_params fn_has_params env_non_empty=      
+    let pl_decl = if ev_has_params then sprintf "(payload: %s)" (print_type argType) else ""
     let env_decl = if env_non_empty then sprintf "var env: %s;\nenv = " (print_env_type envType) else ""
     let param1 = if env_non_empty then (print_env_tup envType) else ""
-    let comma = if has_params && env_non_empty then ", " else ""
-    let param2 = if has_params then "payload" else ""
+    let comma = if fn_has_params && env_non_empty then ", " else ""
+    let param2 = if fn_has_params then "payload" else ""
     let restore = if env_non_empty then (print_restore_env envType) else ""
     sprintf "%s %s {\n%s%s(%s%s%s);\n%s}\n" action pl_decl env_decl f param1 comma param2 restore
 
@@ -193,17 +193,18 @@ module Helper=
       match action with
       | "exit" -> false
       | _ -> not arg.IsEmpty 
-    print_anon_fun fn argType envType action has_params (not fd.EnvEmpty)
+    print_anon_fun fn argType envType action has_params has_params (not fd.EnvEmpty)
 
   ///print_event_action <program> <event name> <machine name> <function name>
   let print_event_action (prog: ProgramDecl) cm action ev fn =
     let e = (Map.find ev prog.EventMap)
     let fd = if (prog.FunMap.ContainsKey fn) then prog.FunMap.[fn]
              else  (prog.MachineMap.[cm].FunMap.[fn]) 
-    let envType = if fd.EnvEmpty then List.Empty else fd.EnvVars.Value   
+    let envType = if fd.EnvEmpty then List.Empty else fd.EnvVars.Value
+    let fn_has_params = if fd.EnvEmpty then (fd.Formals.Length = 1) else fd.Formals.Length = 2
     match e.Type with
-      | Some(t) -> print_anon_fun fd.Name t envType action true (not fd.EnvEmpty)
-      | None -> print_anon_fun fd.Name Type.Null envType action false (not fd.EnvEmpty)
+      | Some(t) -> print_anon_fun fd.Name t envType action true fn_has_params (not fd.EnvEmpty)
+      | None -> print_anon_fun fd.Name Type.Null envType action false fn_has_params (not fd.EnvEmpty)
 
   ///print_cases <program> <event name> <machine name> <function name>
   let print_cases prog cm (ev, fn) =     
@@ -212,28 +213,28 @@ module Helper=
     
   let rec print_stmt prog cm s =
     match s with
-    | Assign(l, e) -> sprintf "%s = %s;\n" (print_lval l) (print_expr e)
-    | Insert(l, e1, e2) -> sprintf "%s += (%s, %s);\n" (print_lval l) (print_expr e1) (print_expr e2)
-    | Remove(l, e) -> sprintf "%s -= %s;\n" (print_lval l) (print_expr e)
-    | Assert(e) -> sprintf "assert %s;\n" (print_expr e)
-    | Assume(e) -> sprintf "assume %s;\n" (print_expr e)
-    | NewStmt(s, Nil) -> sprintf "new %s();\n" s
-    | NewStmt(s, e) -> sprintf "new %s(%s);\n" s (print_expr e)
-    | Raise(e1, Nil) -> sprintf "raise %s;\n" (print_expr e1)
-    | Raise(e1, e2) -> sprintf "raise %s, %s;\n" (print_expr e1) (print_expr e2)
-    | Send (e1, e2, Nil) -> sprintf "send %s, %s;\n" (print_expr e1) (print_expr e2) 
-    | Send (e1, e2, e3) -> sprintf "send %s, %s, %s;\n" (print_expr e1) (print_expr e2) (print_expr e3)
+    | Assign(l, e) -> sprintf "%s = %s;" (print_lval l) (print_expr e)
+    | Insert(l, e1, e2) -> sprintf "%s += (%s, %s);" (print_lval l) (print_expr e1) (print_expr e2)
+    | Remove(l, e) -> sprintf "%s -= %s;" (print_lval l) (print_expr e)
+    | Assert(e) -> sprintf "assert %s;" (print_expr e)
+    | Assume(e) -> sprintf "assume %s;" (print_expr e)
+    | NewStmt(s, Nil) -> sprintf "new %s();" s
+    | NewStmt(s, e) -> sprintf "new %s(%s);" s (print_expr e)
+    | Raise(e1, Nil) -> sprintf "raise %s;" (print_expr e1)
+    | Raise(e1, e2) -> sprintf "raise %s, %s;" (print_expr e1) (print_expr e2)
+    | Send (e1, e2, Nil) -> sprintf "send %s, %s;" (print_expr e1) (print_expr e2) 
+    | Send (e1, e2, e3) -> sprintf "send %s, %s, %s;" (print_expr e1) (print_expr e2) (print_expr e3)
     | Skip -> ";\n"
     | While(c, s) -> sprintf "while(%s)\n{\n%s\n}\n" (print_expr c) (print_stmt prog cm s)
     | Ite(c, i, e) -> sprintf "if(%s)\n{\n%s\n}\nelse\n{\n%s\n}\n" (print_expr c) (print_stmt prog cm i) (print_stmt prog cm e)
-    | SeqStmt(l) -> sprintf "\n%s\n\n" (print_list (print_stmt prog cm) l "\n")
+    | SeqStmt(l) -> sprintf "\n%s\n" (print_list (print_stmt prog cm) l "\n")
     | Receive(l) -> sprintf "receive\n{\n%s\n}\n" (print_list (print_cases prog cm) l "\n")
-    | Pop -> "pop;\n"
-    | Return(None) -> "return;\n"
-    | Return(Some(e)) -> sprintf "return (%s);\n" (print_expr e)
-    | Monitor(e1, e2) -> sprintf "monitor (%s), (%s)" (print_expr e1) (print_expr e2)
-    | FunStmt(s, el, None) -> sprintf "%s(%s);\n" s (print_list print_expr el ", ")
-    | FunStmt(s, el, v) -> sprintf "%s = %s(%s);\n" v.Value s (print_list print_expr el ", ")
+    | Pop -> "pop;"
+    | Return(None) -> "return;"
+    | Return(Some(e)) -> sprintf "return (%s);" (print_expr e)
+    | Monitor(e1, e2) -> sprintf "monitor (%s), (%s);" (print_expr e1) (print_expr e2)
+    | FunStmt(s, el, None) -> sprintf "%s(%s);" s (print_list print_expr el ", ")
+    | FunStmt(s, el, v) -> sprintf "%s = %s(%s);" v.Value s (print_list print_expr el ", ")
 
   let print_do prog cm (d: Syntax.DoDecl.T) = 
     match d with
@@ -305,7 +306,7 @@ module Helper=
     let exit = (print_entry_exit s.ExitAction "exit")
     let dos = (print_list (print_do prog cm) s.Dos "\n")
     let trans = (print_list (print_trans prog cm) s.Transitions "\n")
-    sprintf "%s state %s\n{%s%s%s%s}" temp s.Name entry exit dos trans
+    sprintf "\n%s state %s\n{\n%s%s%s%s}" temp s.Name entry exit dos trans
 
   let print_machine (prog: ProgramDecl) (m: Syntax.MachineDecl) =
     let main = if (m.Name = prog.MainMachine) then "main " else ""
@@ -321,7 +322,8 @@ module Helper=
 
   let print_prog (prog: Syntax.ProgramDecl) (sw: System.IO.TextWriter) =
     begin
-      match (print_list print_event prog.Events ";\n") with
+      let events = List.filter (fun(x:EventDecl) -> x.Name <> "null" && x.Name <>"halt") prog.Events
+      match (print_list print_event events ";\n") with
       | "" -> sw.Write("")
       | s -> sw.WriteLine(sprintf "%s;" s)
       sw.WriteLine (print_list (print_function prog "") prog.StaticFuns "\n")

@@ -1,5 +1,3 @@
-event halt;
-event null;
 event ArtifactManagerGoalStateAcheived;
 event ArtifactManagerGoalStateNotAcheived;
 event CreateAssemblyManager;
@@ -66,84 +64,263 @@ event E13;
 machine DownloadManagerMachine
 {
 
-fun DownloadManagerMachine_Begin_entry0_rand_1995240114()
+fun DownloadManagerMachine_Begin_do_BeginDownload0_rand_622921163()
 {
 
 
 ;
-
 
 }
-fun DownloadManagerMachine_Begin_exit0_rand_1054830274()
+fun DownloadManagerMachine_Begin_do_E60_rand_1995558601()
 {
 
 
 ;
-
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_entry0_rand_625933573()
+fun DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_773959568()
 {
 
 
 ;
-
 
 }
-fun DownloadManagerMachine_QueryingArtifacts_exit0_rand_161044605()
+fun DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0_rand_1498502178()
 {
 
 
 ;
-
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_entry0_rand_108923361()
+fun DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_1944347789()
 {
 
 
 ;
-
 
 }
-fun DownloadManagerMachine_CloneArtifactPart_exit0_rand_1842395216()
+fun DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1446128605()
 {
 
 
 ;
-
 
 }
-fun DownloadManagerMachine_Downloading_entry0_rand_1164815944()
+fun DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_1134738580()
 {
 
 
 ;
-
 
 }
-fun DownloadManagerMachine_Downloading_exit0_rand_744407786()
+fun DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_979085603()
 {
 
 
 ;
-
 
 }
-fun DownloadManagerMachine_Canceling_entry0_rand_2045781533()
+fun DownloadManagerMachine_CloneArtifactPart_do_null0_rand_2022726871()
 {
 
 
 ;
-
 
 }
-fun DownloadManagerMachine_Canceling_exit0_rand_1940149471()
+fun DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1039560926()
 {
 
 
 ;
 
+}
+fun DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationComplete0_rand_1584013612()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_948858648()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_1645463893()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_CloneArtifactPart_do_E10_rand_1213572110()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_CloneArtifactPart_do_E50_rand_510950067()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_CloneArtifactPart_do_E130_rand_785299061()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Downloading_do_CancelDownload0_rand_1436088030()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0_rand_1463865497()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_549258334()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_827681257()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_1470347971()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_rand_415461137()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_rand_13087921()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_rand_692114099()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Canceling_do_E20_rand_1963918588()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Canceling_do_E80_rand_32756178()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Canceling_do_E110_rand_227331048()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Begin_entry0_rand_209305573()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Begin_exit0_rand_472554386()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_QueryingArtifacts_entry0_rand_1601632767()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_QueryingArtifacts_exit0_rand_611636213()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_CloneArtifactPart_entry0_rand_1371020952()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_CloneArtifactPart_exit0_rand_1830750367()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Downloading_entry0_rand_295224936()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Downloading_exit0_rand_846232320()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Canceling_entry0_rand_562558575()
+{
+
+
+;
+
+}
+fun DownloadManagerMachine_Canceling_exit0_rand_674791895()
+{
+
+
+;
 
 }
 fun DownloadManagerMachine_Complete_entry121()
@@ -151,270 +328,154 @@ fun DownloadManagerMachine_Complete_entry121()
 
 
 raise halt;
-
-
 }
-fun DownloadManagerMachine_Complete_exit0_rand_983336721()
+fun DownloadManagerMachine_Complete_exit0_rand_1728748540()
 {
 
 
 ;
-
-
-}
-fun DownloadManagerMachine_Begin_do_BeginDownload0_rand_139373274()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Begin_do_E60_rand_1166059474()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_1499596804()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0_rand_1548398686()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_838459878()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1983919543()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_503599365()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_1483232311()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_CloneArtifactPart_do_null0_rand_1813520007()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1614647316()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationComplete0_rand_685278571()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_859516496()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_1212960665()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_CloneArtifactPart_do_E10_rand_992019010()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_CloneArtifactPart_do_E50_rand_439379371()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_CloneArtifactPart_do_E130_rand_1298612248()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Downloading_do_CancelDownload0_rand_2020025440()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0_rand_159597385()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_1879618244()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_557486031()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_1604694232()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_rand_51664189()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_rand_1084789931()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_rand_1451390331()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Canceling_do_E20_rand_367504540()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Canceling_do_E80_rand_707372386()
-{
-
-
-;
-
-
-}
-fun DownloadManagerMachine_Canceling_do_E110_rand_886033839()
-{
-
-
-;
-
 
 }start  state DownloadManagerMachine_Begin
 {entry  {
-DownloadManagerMachine_Begin_entry0_rand_1995240114();
+DownloadManagerMachine_Begin_entry0_rand_209305573();
 }
 exit  {
-DownloadManagerMachine_Begin_exit0_rand_1054830274();
+DownloadManagerMachine_Begin_exit0_rand_472554386();
+}
+on BeginDownload do   {
+DownloadManagerMachine_Begin_do_BeginDownload0_rand_622921163();
+}
+
+on E6 do   {
+DownloadManagerMachine_Begin_do_E60_rand_1995558601();
 }
 }
  state DownloadManagerMachine_QueryingArtifacts
 {entry  {
-DownloadManagerMachine_QueryingArtifacts_entry0_rand_625933573();
+DownloadManagerMachine_QueryingArtifacts_entry0_rand_1601632767();
 }
 exit  {
-DownloadManagerMachine_QueryingArtifacts_exit0_rand_161044605();
+DownloadManagerMachine_QueryingArtifacts_exit0_rand_611636213();
+}
+on CancelDownload do   {
+DownloadManagerMachine_QueryingArtifacts_do_CancelDownload0_rand_773959568();
+}
+
+on QueryArtifactsOperationComplete do   {
+DownloadManagerMachine_QueryingArtifacts_do_QueryArtifactsOperationComplete0_rand_1498502178();
+}
+
+on BeginClonePart do   {
+DownloadManagerMachine_QueryingArtifacts_do_BeginClonePart0_rand_1944347789();
+}
+
+on BeginDownloadInternal do   {
+DownloadManagerMachine_QueryingArtifacts_do_BeginDownloadInternal0_rand_1446128605();
+}
+
+on DownloadCompleteInternal do   {
+DownloadManagerMachine_QueryingArtifacts_do_DownloadCompleteInternal0_rand_1134738580();
 }
 }
  state DownloadManagerMachine_CloneArtifactPart
 {entry  {
-DownloadManagerMachine_CloneArtifactPart_entry0_rand_108923361();
+DownloadManagerMachine_CloneArtifactPart_entry0_rand_1371020952();
 }
 exit  {
-DownloadManagerMachine_CloneArtifactPart_exit0_rand_1842395216();
+DownloadManagerMachine_CloneArtifactPart_exit0_rand_1830750367();
+}
+on halt do   {
+DownloadManagerMachine_CloneArtifactPart_do_halt0_rand_979085603();
+}
+
+on null do   {
+DownloadManagerMachine_CloneArtifactPart_do_null0_rand_2022726871();
+}
+
+on CancelDownload do   {
+DownloadManagerMachine_CloneArtifactPart_do_CancelDownload0_rand_1039560926();
+}
+
+on ClonePartFromArtifactOperationComplete do   {
+DownloadManagerMachine_CloneArtifactPart_do_ClonePartFromArtifactOperationComplete0_rand_1584013612();
+}
+
+on BeginDownloadInternal do   {
+DownloadManagerMachine_CloneArtifactPart_do_BeginDownloadInternal0_rand_948858648();
+}
+
+on DownloadCompleteInternal do   {
+DownloadManagerMachine_CloneArtifactPart_do_DownloadCompleteInternal0_rand_1645463893();
+}
+
+on E1 do   {
+DownloadManagerMachine_CloneArtifactPart_do_E10_rand_1213572110();
+}
+
+on E5 do   {
+DownloadManagerMachine_CloneArtifactPart_do_E50_rand_510950067();
+}
+
+on E13 do   {
+DownloadManagerMachine_CloneArtifactPart_do_E130_rand_785299061();
 }
 }
  state DownloadManagerMachine_Downloading
 {entry  {
-DownloadManagerMachine_Downloading_entry0_rand_1164815944();
+DownloadManagerMachine_Downloading_entry0_rand_295224936();
 }
 exit  {
-DownloadManagerMachine_Downloading_exit0_rand_744407786();
+DownloadManagerMachine_Downloading_exit0_rand_846232320();
+}
+on CancelDownload do   {
+DownloadManagerMachine_Downloading_do_CancelDownload0_rand_1436088030();
+}
+
+on DownloadArtifactPartOperationComplete do   {
+DownloadManagerMachine_Downloading_do_DownloadArtifactPartOperationComplete0_rand_1463865497();
+}
+
+on DownloadCompleteInternal do   {
+DownloadManagerMachine_Downloading_do_DownloadCompleteInternal0_rand_549258334();
 }
 }
  state DownloadManagerMachine_Canceling
 {entry  {
-DownloadManagerMachine_Canceling_entry0_rand_2045781533();
+DownloadManagerMachine_Canceling_entry0_rand_562558575();
 }
 exit  {
-DownloadManagerMachine_Canceling_exit0_rand_1940149471();
+DownloadManagerMachine_Canceling_exit0_rand_674791895();
+}
+on DownloadCompleteInternal do   {
+DownloadManagerMachine_Canceling_do_DownloadCompleteInternal0_rand_827681257();
+}
+
+on QueryArtifactsOperationComplete do   {
+DownloadManagerMachine_Canceling_do_QueryArtifactsOperationComplete0_rand_1470347971();
+}
+
+on ClonePartFromArtifactOperationComplete do   {
+DownloadManagerMachine_Canceling_do_ClonePartFromArtifactOperationComplete0_rand_415461137();
+}
+
+on DownloadArtifactPartOperationComplete do   {
+DownloadManagerMachine_Canceling_do_DownloadArtifactPartOperationComplete0_rand_13087921();
+}
+
+on AttemptCancelDownloadOperationComplete do   {
+DownloadManagerMachine_Canceling_do_AttemptCancelDownloadOperationComplete0_rand_692114099();
+}
+
+on E2 do   {
+DownloadManagerMachine_Canceling_do_E20_rand_1963918588();
+}
+
+on E8 do   {
+DownloadManagerMachine_Canceling_do_E80_rand_32756178();
+}
+
+on E11 do   {
+DownloadManagerMachine_Canceling_do_E110_rand_227331048();
 }
 }
  state DownloadManagerMachine_Complete
@@ -422,7 +483,7 @@ DownloadManagerMachine_Canceling_exit0_rand_1940149471();
 DownloadManagerMachine_Complete_entry121();
 }
 exit  {
-DownloadManagerMachine_Complete_exit0_rand_983336721();
+DownloadManagerMachine_Complete_exit0_rand_1728748540();
 }
 }
 }
@@ -430,27 +491,25 @@ DownloadManagerMachine_Complete_exit0_rand_983336721();
 main machine MainMachine
 {
 
-fun MainMachine_Init_entry0_rand_2086215392()
+fun MainMachine_Init_entry0_rand_425917507()
 {
 
 
 ;
-
 
 }
-fun MainMachine_Init_exit0_rand_1175300824()
+fun MainMachine_Init_exit0_rand_474295912()
 {
 
 
 ;
-
 
 }start  state MainMachine_Init
 {entry  {
-MainMachine_Init_entry0_rand_2086215392();
+MainMachine_Init_entry0_rand_425917507();
 }
 exit  {
-MainMachine_Init_exit0_rand_1175300824();
+MainMachine_Init_exit0_rand_474295912();
 }
 }
 }

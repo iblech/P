@@ -219,24 +219,14 @@ module RemoveSideEffects =
       begin
         let (c', d1, G') = remove_side_effects_expr c G in
           let (d2, G'') = remove_side_effects_stmt s G' in 
-            match s with
-            | SeqStmt(ls) -> (d1 @ [While(c', SeqStmt(d2 @ ls))], G'')
-            | _ -> (d1 @ [While(c', SeqStmt(d2 @ [s]))], G'') 
+            d1 @ [While(c', SeqStmt(d2))], G'' 
       end
     | Ite(c, i, e) -> 
        begin
         let (c', d1, G') = remove_side_effects_expr c G in
           let (d2, G'') = remove_side_effects_stmt i G' in 
             let (d3, G''') = remove_side_effects_stmt e G'' in 
-              let i' = 
-                match i with
-                | SeqStmt(ls) -> SeqStmt(d2 @ ls)
-                | _ -> SeqStmt(d2 @ [i])
-              let e' = 
-                match e with
-                | SeqStmt(ls) -> SeqStmt(d3 @ ls)
-                | _ -> SeqStmt(d3 @ [e])
-              d1 @ [Ite(c', i', e')], G'''
+              d1 @ [Ite(c', SeqStmt(d2), SeqStmt(d3))], G'''
       end
     | SeqStmt(l) -> remove_side_effects_stlist l G
     | Receive(_) -> [stmt], G

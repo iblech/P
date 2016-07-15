@@ -8,6 +8,7 @@ event Success;
 main machine PING {
     var x: int;
 	var y: int;
+    
     start state Ping_Init {
         entry {
 	    raise Success;   	   

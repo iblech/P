@@ -1,5 +1,3 @@
-event halt;
-event null;
 event E  assert 1;
 event E1  assert 1;
 event E2  assert 1;
@@ -27,67 +25,36 @@ var _tmp358: bool;
 
 
 M_y = 2;
-
 _tmp350 = (M_y == 2);
-
 assert _tmp350;
-
 M_y = default(int);
-
 _tmp351 = (M_y == 0);
-
 assert _tmp351;
-
 M_b = true;
-
 _tmp352 = (M_b == true);
-
 assert _tmp352;
-
 M_b = default(bool);
-
 _tmp353 = (M_b == false);
-
 assert _tmp353;
-
 M_e = E;
-
 _tmp354 = (M_e == E);
-
 assert _tmp354;
-
 M_e = default(event);
-
 _tmp355 = (M_e == null);
-
 assert _tmp355;
-
 M_mac = this;
-
 M_mac = default(machine);
-
 _tmp356 = (M_mac == null);
-
 assert _tmp356;
-
 M_a = true;
-
 M_a = default(any);
-
 _tmp357 = (M_a == null);
-
 assert _tmp357;
-
 _tmp358 = (M_a == null);
-
 if(_tmp358)
 {
 
 M_a = 1;
-
-M_a = 1;
-
-
 
 }
 else
@@ -95,31 +62,25 @@ else
 
 ;
 
-;
-
-
 
 }
 
 ;
 
 raise halt;
-
-
 }
-fun M_S_exit0_rand_2017427729()
+fun M_S_exit0_rand_638772294()
 {
 
 
 ;
-
 
 }start  state M_S
 {entry  {
 M_S_entry23();
 }
 exit  {
-M_S_exit0_rand_2017427729();
+M_S_exit0_rand_638772294();
 }
 }
 }

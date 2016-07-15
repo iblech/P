@@ -1,5 +1,3 @@
-event halt;
-event null;
 event local;
 event global: int;
 
@@ -11,27 +9,24 @@ fun MAIN_Init_entry16()
 
 
 send this, local;
-
 ;
 
 ;
-
 
 }
-fun MAIN_Init_exit0_rand_1812110743()
+fun MAIN_Init_exit0_rand_1849647623()
 {
 
 
 ;
-
 
 }start  state MAIN_Init
 {entry  {
 MAIN_Init_entry16();
 }
 exit  {
-MAIN_Init_exit0_rand_1812110743();
+MAIN_Init_exit0_rand_1849647623();
 }
-}
+ignore local;}
 }
 

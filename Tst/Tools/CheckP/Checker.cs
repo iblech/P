@@ -551,11 +551,11 @@ namespace CheckP
 
                 result = false;
             }
-
+            /*
             if (!DeleteTmpFile())
             {
                 result = false;
-            }
+            }*/
 
             if (result)
             {
@@ -879,7 +879,11 @@ namespace CheckP
                             string line2 = sr2.ReadLine();
                             if (line1 != line2)
                             {
-                                return true;
+                                //Modified. S1 becomes M1_S1
+                                var lastWord1 = line1.Split(' ').Last();
+                                var lastWord2 = line2.Split(' ').Last();
+                                if(!lastWord2.EndsWith(lastWord1))
+                                    return true;
                             }
 
                             if (line1 == null && line2 == null)

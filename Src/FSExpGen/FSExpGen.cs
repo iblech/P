@@ -1365,9 +1365,9 @@ namespace Microsoft.P_FS_Boogie
                     }
                     else
                     {
+                        symbolTable.InsideStaticFn = false;
                         var m = function.owner as P_Root.MachineDecl;
                         string n = getString(m.name);
-                        symbolTable.InsideStaticFn = false;
                         symbolTable.currentM = n;
                         var f = genFunDecl(function);
                         machineToFunList[n].Add(f);
@@ -1375,15 +1375,6 @@ namespace Microsoft.P_FS_Boogie
                 }
 
                 symbolTable.InsideStaticFn = false;
-
-                foreach (var state in program.States)
-                {
-                    var m = state.owner as P_Root.MachineDecl;
-                    string n = getString(m.name);
-                    symbolTable.currentM = n;
-                    var s = genStateDecl(state);
-                    machineToStateList[n].Add(s);
-                }
 
                 foreach (var doDecl in program.Dos)
                 {
@@ -1405,6 +1396,15 @@ namespace Microsoft.P_FS_Boogie
                     symbolTable.currentM = currentM;
                     var x = genTransDecl(trans);
                     statesToTransitions[n].Add(x);
+                }
+
+                foreach (var state in program.States)
+                {
+                    var m = state.owner as P_Root.MachineDecl;
+                    string n = getString(m.name);
+                    symbolTable.currentM = n;
+                    var s = genStateDecl(state);
+                    machineToStateList[n].Add(s);
                 }
 
                 foreach (var obs in program.Observes)

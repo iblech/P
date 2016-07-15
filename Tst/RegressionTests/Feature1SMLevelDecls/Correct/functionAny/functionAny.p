@@ -1,5 +1,3 @@
-event halt;
-event null;
 event x;
 
 main machine TestMachine
@@ -11,30 +9,25 @@ fun TestMachine_foo(TestMachine_foo_x: any, TestMachine_foo_y: int, TestMachine_
 
 
 return (0);
-
-
 }
 fun TestMachine_Init_entry6()
 {
 
 
 TestMachine_foo(1, 3, x);
-
-
 }
-fun TestMachine_Init_exit0_rand_223918300()
+fun TestMachine_Init_exit0_rand_2097401038()
 {
 
 
 ;
-
 
 }start  state TestMachine_Init
 {entry  {
 TestMachine_Init_entry6();
 }
 exit  {
-TestMachine_Init_exit0_rand_223918300();
+TestMachine_Init_exit0_rand_2097401038();
 }
 }
 }

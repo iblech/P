@@ -1,5 +1,3 @@
-event halt;
-event null;
 event E2  assert 2;
 event E1  assert 1;
 
@@ -13,9 +11,13 @@ var _tmp583: bool;
 
 
 _tmp583 = (Real1_test == false);
-
 assert _tmp583;
+}
+fun Real1_Real1_Init_on_E1_goto_Real1_Real1_S10_rand_127343269()
+{
 
+
+;
 
 }
 fun Real1_Real1_Init_entry11()
@@ -23,39 +25,24 @@ fun Real1_Real1_Init_entry11()
 
 
 send this, E1;
-
-
 }
 fun Real1_Real1_Init_exit16()
 {
 
 
 send this, E2;
-
-
 }
 fun Real1_Real1_S1_entry20()
 {
 
 
 Real1_test = true;
-
-
 }
-fun Real1_Real1_S1_exit0_rand_401149612()
+fun Real1_Real1_S1_exit0_rand_1607880408()
 {
 
 
 ;
-
-
-}
-fun Real1_Real1_Init_on_E1_goto_Real1_Real1_S10_rand_1541489158()
-{
-
-
-;
-
 
 }start  state Real1_Real1_Init
 {entry  {
@@ -64,14 +51,20 @@ Real1_Real1_Init_entry11();
 exit  {
 Real1_Real1_Init_exit16();
 }
+on E2 do   {
+Real1_Action2();
+}
+on E1 goto Real1_Real1_S1 with   {
+Real1_Real1_Init_on_E1_goto_Real1_Real1_S10_rand_127343269();
+}
 }
  state Real1_Real1_S1
 {entry  {
 Real1_Real1_S1_entry20();
 }
 exit  {
-Real1_Real1_S1_exit0_rand_401149612();
+Real1_Real1_S1_exit0_rand_1607880408();
 }
-}
+ignore E2;}
 }
 

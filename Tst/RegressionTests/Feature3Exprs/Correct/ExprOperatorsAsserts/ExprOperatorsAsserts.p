@@ -1,5 +1,3 @@
-event halt;
-event null;
 event E  assert 1;
 event E1  assert 1;
 event E2  assert 1;
@@ -51,483 +49,303 @@ fun M_foo(): int
 
 
 return (1);
-
-
 }
 fun M_GetT(): (seq[int], map[int, seq[int]])
 {
 
 
 return (M_t);
-
-
 }
 fun M_IncY(): int
 {
 
 
 M_y = (M_y + 1);
-
 return (M_y);
-
-
 }
 fun M_S_entry56()
 {
-var _tmp100: bool;
-var _tmp101: int;
-var _tmp102: seq[int];
-var _tmp103: bool;
-var _tmp104: int;
-var _tmp105: int;
-var _tmp106: int;
-var _tmp107: bool;
-var _tmp108: int;
-var _tmp109: int;
-var _tmp110: int;
-var _tmp111: int;
-var _tmp112: int;
-var _tmp113: int;
-var _tmp114: int;
-var _tmp115: int;
-var _tmp116: bool;
-var _tmp117: bool;
-var _tmp118: bool;
-var _tmp119: bool;
-var _tmp120: (seq[int], map[int, seq[int]]);
-var _tmp121: int;
-var _tmp122: bool;
-var _tmp123: int;
-var _tmp124: bool;
-var _tmp125: int;
-var _tmp126: bool;
-var _tmp127: int;
-var _tmp128: bool;
-var _tmp129: int;
-var _tmp130: bool;
-var _tmp131: int;
-var _tmp132: seq[int];
-var _tmp133: bool;
-var _tmp134: int;
-var _tmp135: seq[int];
-var _tmp136: bool;
-var _tmp137: int;
-var _tmp138: bool;
-var _tmp139: int;
-var _tmp140: bool;
-var _tmp141: int;
-var _tmp142: seq[int];
-var _tmp143: bool;
-var _tmp144: int;
-var _tmp145: seq[int];
-var _tmp146: bool;
-var _tmp147: int;
-var _tmp148: seq[int];
-var _tmp149: bool;
-var _tmp150: int;
-var _tmp151: seq[int];
-var _tmp152: bool;
-var _tmp153: (int, int);
-var _tmp154: (int, int);
-var _tmp155: (int, int);
-var _tmp156: (int, int);
-var _tmp157: (int, int);
-var _tmp158: (int, int);
-var _tmp159: (int, int);
-var _tmp160: (int, int);
-var _tmp161: (int, int);
-var _tmp162: bool;
-var _tmp163: (int, int);
-var _tmp164: (int, int);
-var _tmp165: (int, int);
-var _tmp166: bool;
+var _tmp0: bool;
+var _tmp1: bool;
+var _tmp10: bool;
+var _tmp11: bool;
+var _tmp12: bool;
+var _tmp13: bool;
+var _tmp14: bool;
+var _tmp15: bool;
+var _tmp16: bool;
+var _tmp17: bool;
+var _tmp18: bool;
+var _tmp19: bool;
+var _tmp2: bool;
+var _tmp20: bool;
+var _tmp21: int;
+var _tmp22: int;
+var _tmp23: bool;
+var _tmp24: bool;
+var _tmp25: int;
+var _tmp26: seq[int];
+var _tmp27: bool;
+var _tmp28: int;
+var _tmp29: int;
+var _tmp3: bool;
+var _tmp30: int;
+var _tmp31: bool;
+var _tmp32: int;
+var _tmp33: int;
+var _tmp34: int;
+var _tmp35: int;
+var _tmp36: int;
+var _tmp37: int;
+var _tmp38: int;
+var _tmp39: int;
+var _tmp4: bool;
+var _tmp40: bool;
+var _tmp41: bool;
+var _tmp42: bool;
+var _tmp43: bool;
+var _tmp44: (seq[int], map[int, seq[int]]);
+var _tmp45: int;
+var _tmp46: bool;
+var _tmp47: int;
+var _tmp48: bool;
+var _tmp49: int;
+var _tmp5: bool;
+var _tmp50: bool;
+var _tmp51: int;
+var _tmp52: bool;
+var _tmp53: int;
+var _tmp54: bool;
+var _tmp55: int;
+var _tmp56: seq[int];
+var _tmp57: bool;
+var _tmp58: int;
+var _tmp59: seq[int];
+var _tmp6: bool;
+var _tmp60: bool;
+var _tmp61: int;
+var _tmp62: bool;
+var _tmp63: int;
+var _tmp64: bool;
+var _tmp65: int;
+var _tmp66: seq[int];
+var _tmp67: bool;
+var _tmp68: int;
+var _tmp69: seq[int];
+var _tmp7: bool;
+var _tmp70: bool;
+var _tmp71: int;
+var _tmp72: seq[int];
+var _tmp73: bool;
+var _tmp74: int;
+var _tmp75: seq[int];
 var _tmp76: bool;
-var _tmp77: bool;
-var _tmp78: bool;
-var _tmp79: bool;
-var _tmp80: bool;
-var _tmp81: bool;
-var _tmp82: bool;
-var _tmp83: bool;
-var _tmp84: bool;
-var _tmp85: bool;
+var _tmp77: (int, int);
+var _tmp78: (int, int);
+var _tmp79: (int, int);
+var _tmp8: bool;
+var _tmp80: (int, int);
+var _tmp81: (int, int);
+var _tmp82: (int, int);
+var _tmp83: (int, int);
+var _tmp84: (int, int);
+var _tmp85: (int, int);
 var _tmp86: bool;
-var _tmp87: bool;
-var _tmp88: bool;
-var _tmp89: bool;
+var _tmp87: (int, int);
+var _tmp88: (int, int);
+var _tmp89: (int, int);
+var _tmp9: bool;
 var _tmp90: bool;
-var _tmp91: bool;
-var _tmp92: bool;
-var _tmp93: bool;
-var _tmp94: bool;
-var _tmp95: bool;
-var _tmp96: bool;
-var _tmp97: int;
-var _tmp98: int;
-var _tmp99: bool;
 
 
 M_tbool.0 = true;
-
 M_tbool.1 = !(M_tbool.0);
-
-_tmp76 = (M_tbool.1 == false);
-
-assert _tmp76;
-
-_tmp77 = (M_tbool.1 == false);
-
-assert (M_tbool.0 && _tmp77);
-
-_tmp78 = (M_tbool.1 == true);
-
-assert (M_tbool.0 || _tmp78);
-
-_tmp79 = (M_tbool.0 == M_tbool.1);
-
-assert !(_tmp79);
-
+_tmp0 = (M_tbool.1 == false);
+assert _tmp0;
+_tmp1 = (M_tbool.1 == false);
+assert (M_tbool.0 && _tmp1);
+_tmp2 = (M_tbool.1 == true);
+assert (M_tbool.0 || _tmp2);
+_tmp3 = (M_tbool.0 == M_tbool.1);
+assert !(_tmp3);
 M_ev = E;
-
-_tmp80 = (M_ev == null);
-
-assert !(_tmp80);
-
+_tmp4 = (M_ev == null);
+assert !(_tmp4);
 M_tt.0 = 1;
-
-M_tt.1 = ~(M_tt.0);
-
-_tmp81 = ((M_tt.0 + M_tt.1) == 0);
-
-assert _tmp81;
-
-_tmp82 = ((M_tt.0 - M_tt.1) == 2);
-
-assert _tmp82;
-
-_tmp83 = ((M_tt.0 * M_tt.1) == ~(1));
-
-assert _tmp83;
-
-_tmp84 = ((M_tt.0 / M_tt.1) == ~(1));
-
-assert _tmp84;
-
-_tmp85 = (((M_tt.0 * 5) / 2) == 2);
-
-assert _tmp85;
-
-_tmp86 = (M_tt.0 == M_tt.1);
-
-assert !(_tmp86);
-
+M_tt.1 = -(M_tt.0);
+_tmp5 = ((M_tt.0 + M_tt.1) == 0);
+assert _tmp5;
+_tmp6 = ((M_tt.0 - M_tt.1) == 2);
+assert _tmp6;
+_tmp7 = ((M_tt.0 * M_tt.1) == -(1));
+assert _tmp7;
+_tmp8 = ((M_tt.0 / M_tt.1) == -(1));
+assert _tmp8;
+_tmp9 = (((M_tt.0 * 5) / 2) == 2);
+assert _tmp9;
+_tmp10 = (M_tt.0 == M_tt.1);
+assert !(_tmp10);
 M_a = null;
-
-_tmp87 = (M_tt.1 == M_a);
-
-assert !(_tmp87);
-
-M_a = ~(1);
-
-_tmp88 = (M_tt.1 == M_a);
-
-assert _tmp88;
-
-_tmp89 = (M_a == M_ev);
-
-assert !(_tmp89);
-
+_tmp11 = (M_tt.1 == M_a);
+assert !(_tmp11);
+M_a = -(1);
+_tmp12 = (M_tt.1 == M_a);
+assert _tmp12;
+_tmp13 = (M_a == M_ev);
+assert !(_tmp13);
 M_a = null;
-
-_tmp90 = (M_mac == M_a);
-
-assert _tmp90;
-
+_tmp14 = (M_mac == M_a);
+assert _tmp14;
 M_a = 1;
-
 M_a = !(M_tbool.0);
-
-_tmp91 = (M_a == M_tbool.1);
-
-assert _tmp91;
-
+_tmp15 = (M_a == M_tbool.1);
+assert _tmp15;
 M_a = null;
-
-_tmp92 = (M_a == 1);
-
-assert !(_tmp92);
-
+_tmp16 = (M_a == 1);
+assert !(_tmp16);
 M_a = 1;
-
-_tmp93 = (M_a == 1);
-
-assert _tmp93;
-
+_tmp17 = (M_a == 1);
+assert _tmp17;
 M_s12 += (0, true);
-
-_tmp94 = M_s12[0];
-
-M_s12 += (1, !(_tmp94));
-
-_tmp95 = M_s12[1];
-
-_tmp96 = (_tmp95 == false);
-
-assert _tmp96;
-
+_tmp18 = M_s12[0];
+M_s12 += (1, !(_tmp18));
+_tmp19 = M_s12[1];
+_tmp20 = (_tmp19 == false);
+assert _tmp20;
 M_s2 += (0, 1);
-
-_tmp97 = M_s2[0];
-
-M_s2 += (1, ~(_tmp97));
-
-_tmp98 = M_s2[1];
-
-_tmp99 = (_tmp98 == ~(1));
-
-assert _tmp99;
-
+_tmp21 = M_s2[0];
+M_s2 += (1, -(_tmp21));
+_tmp22 = M_s2[1];
+_tmp23 = (_tmp22 == -(1));
+assert _tmp23;
 M_m1[0] = 1;
-
-_tmp100 = (0 in M_m1);
-
-assert _tmp100;
-
-_tmp102 = keys(M_m1);
-
-_tmp101 = _tmp102[0];
-
-M_i = _tmp101;
-
-_tmp103 = (M_i == 0);
-
-assert _tmp103;
-
+_tmp24 = (0 in M_m1);
+assert _tmp24;
+_tmp26 = keys(M_m1);
+_tmp25 = _tmp26[0];
+M_i = _tmp25;
+_tmp27 = (M_i == 0);
+assert _tmp27;
 M_m1[1] = 3;
-
-_tmp104 = M_m1[1];
-
-M_m1[2] = ~(_tmp104);
-
-_tmp105 = M_m1[1];
-
-_tmp106 = M_m1[2];
-
-_tmp107 = ((_tmp105 + _tmp106) == 0);
-
-assert _tmp107;
-
-_tmp108 = M_m1[0];
-
-_tmp109 = M_m1[1];
-
-assert (_tmp108 < _tmp109);
-
+_tmp28 = M_m1[1];
+M_m1[2] = -(_tmp28);
+_tmp29 = M_m1[1];
+_tmp30 = M_m1[2];
+_tmp31 = ((_tmp29 + _tmp30) == 0);
+assert _tmp31;
+_tmp32 = M_m1[0];
+_tmp33 = M_m1[1];
+assert (_tmp32 < _tmp33);
 M_m1[0] = 3;
-
-_tmp110 = M_m1[0];
-
-_tmp111 = M_m1[1];
-
-assert (_tmp110 <= _tmp111);
-
-_tmp112 = M_m1[1];
-
-_tmp113 = M_m1[2];
-
-assert (_tmp112 > _tmp113);
-
+_tmp34 = M_m1[0];
+_tmp35 = M_m1[1];
+assert (_tmp34 <= _tmp35);
+_tmp36 = M_m1[1];
+_tmp37 = M_m1[2];
+assert (_tmp36 > _tmp37);
 M_m1[4] = 3;
-
-_tmp114 = M_m1[1];
-
-_tmp115 = M_m1[4];
-
-assert (_tmp114 >= _tmp115);
-
+_tmp38 = M_m1[1];
+_tmp39 = M_m1[4];
+assert (_tmp38 >= _tmp39);
 M_m3[0] = true;
-
 M_m3[2] = false;
-
-_tmp116 = M_m3[0];
-
-_tmp117 = M_m3[2];
-
-_tmp118 = (_tmp116 == !(_tmp117));
-
-assert _tmp118;
-
-_tmp119 = (sizeof(M_m3) == 2);
-
-assert _tmp119;
-
+_tmp40 = M_m3[0];
+_tmp41 = M_m3[2];
+_tmp42 = (_tmp40 == !(_tmp41));
+assert _tmp42;
+_tmp43 = (sizeof(M_m3) == 2);
+assert _tmp43;
 M_s += (0, 1);
-
 M_tmp3[0] = M_s;
-
-_tmp120 = (M_s, M_tmp3);
-
-M_t = _tmp120;
-
+_tmp44 = (M_s, M_tmp3);
+M_t = _tmp44;
 M_t.0 += (0, 2);
-
-_tmp121 = M_t.0[0];
-
-_tmp122 = (_tmp121 == 2);
-
-assert _tmp122;
-
+_tmp45 = M_t.0[0];
+_tmp46 = (_tmp45 == 2);
+assert _tmp46;
 M_t.0 += (1, 2);
-
-_tmp123 = M_t.0[1];
-
-_tmp124 = (_tmp123 == 2);
-
-assert _tmp124;
-
+_tmp47 = M_t.0[1];
+_tmp48 = (_tmp47 == 2);
+assert _tmp48;
 M_t.0 += (0, 3);
-
-_tmp125 = M_t.0[0];
-
-_tmp126 = (_tmp125 == 3);
-
-assert _tmp126;
-
-_tmp127 = M_t.0[1];
-
-_tmp128 = (_tmp127 == 2);
-
-assert _tmp128;
-
-_tmp129 = M_s[0];
-
-_tmp130 = (_tmp129 == 1);
-
-assert _tmp130;
-
-_tmp132 = M_tmp3[0];
-
-_tmp131 = _tmp132[0];
-
-_tmp133 = (_tmp131 == 1);
-
-assert _tmp133;
-
-_tmp135 = M_t.1[0];
-
-_tmp134 = _tmp135[0];
-
-_tmp136 = (_tmp134 == 1);
-
-assert _tmp136;
-
+_tmp49 = M_t.0[0];
+_tmp50 = (_tmp49 == 3);
+assert _tmp50;
+_tmp51 = M_t.0[1];
+_tmp52 = (_tmp51 == 2);
+assert _tmp52;
+_tmp53 = M_s[0];
+_tmp54 = (_tmp53 == 1);
+assert _tmp54;
+_tmp56 = M_tmp3[0];
+_tmp55 = _tmp56[0];
+_tmp57 = (_tmp55 == 1);
+assert _tmp57;
+_tmp59 = M_t.1[0];
+_tmp58 = _tmp59[0];
+_tmp60 = (_tmp58 == 1);
+assert _tmp60;
 M_s += (0, 2);
-
-_tmp137 = M_s[0];
-
-_tmp138 = (_tmp137 == 2);
-
-_tmp139 = M_s[1];
-
-_tmp140 = (_tmp139 == 1);
-
-assert (_tmp138 && _tmp140);
-
-_tmp142 = M_tmp3[0];
-
-_tmp141 = _tmp142[0];
-
-_tmp143 = (_tmp141 == 1);
-
-assert _tmp143;
-
-_tmp145 = M_t.1[0];
-
-_tmp144 = _tmp145[0];
-
-_tmp146 = (_tmp144 == 1);
-
-assert _tmp146;
-
+_tmp61 = M_s[0];
+_tmp62 = (_tmp61 == 2);
+_tmp63 = M_s[1];
+_tmp64 = (_tmp63 == 1);
+assert (_tmp62 && _tmp64);
+_tmp66 = M_tmp3[0];
+_tmp65 = _tmp66[0];
+_tmp67 = (_tmp65 == 1);
+assert _tmp67;
+_tmp69 = M_t.1[0];
+_tmp68 = _tmp69[0];
+_tmp70 = (_tmp68 == 1);
+assert _tmp70;
 M_tmp3[0] = M_s;
-
-_tmp148 = M_tmp3[0];
-
-_tmp147 = _tmp148[0];
-
-_tmp149 = (_tmp147 == 2);
-
-assert _tmp149;
-
-_tmp151 = M_t.1[0];
-
-_tmp150 = _tmp151[0];
-
-_tmp152 = (_tmp150 == 1);
-
-assert _tmp152;
-
-_tmp153 = (0, 0);
-
-M_s4 += (0, _tmp153);
-
-_tmp154 = (1, 1);
-
-M_s4 += (1, _tmp154);
-
-_tmp155 = (2, 2);
-
-M_s4 += (2, _tmp155);
-
-_tmp156 = (1, 2);
-
-M_s8 += (0, _tmp156);
-
-_tmp157 = (2, 3);
-
-M_s8 += (1, _tmp157);
-
-_tmp158 = (3, 4);
-
-M_s8 += (2, _tmp158);
-
-_tmp159 = M_s4[0];
-
-_tmp160 = M_s8[1];
-
-_tmp161 = M_s8[2];
-
-_tmp162 = (((_tmp159.0 + _tmp160.1) - _tmp161.0) == 0);
-
-assert _tmp162;
-
-_tmp163 = M_s4[1];
-
-_tmp164 = M_s8[1];
-
-_tmp165 = M_s8[2];
-
-_tmp166 = (((_tmp163.0 * _tmp164.1) / _tmp165.0) == 1);
-
-assert _tmp166;
-
+_tmp72 = M_tmp3[0];
+_tmp71 = _tmp72[0];
+_tmp73 = (_tmp71 == 2);
+assert _tmp73;
+_tmp75 = M_t.1[0];
+_tmp74 = _tmp75[0];
+_tmp76 = (_tmp74 == 1);
+assert _tmp76;
+_tmp77 = (0, 0);
+M_s4 += (0, _tmp77);
+_tmp78 = (1, 1);
+M_s4 += (1, _tmp78);
+_tmp79 = (2, 2);
+M_s4 += (2, _tmp79);
+_tmp80 = (1, 2);
+M_s8 += (0, _tmp80);
+_tmp81 = (2, 3);
+M_s8 += (1, _tmp81);
+_tmp82 = (3, 4);
+M_s8 += (2, _tmp82);
+_tmp83 = M_s4[0];
+_tmp84 = M_s8[1];
+_tmp85 = M_s8[2];
+_tmp86 = (((_tmp83.0 + _tmp84.1) - _tmp85.0) == 0);
+assert _tmp86;
+_tmp87 = M_s4[1];
+_tmp88 = M_s8[1];
+_tmp89 = M_s8[2];
+_tmp90 = (((_tmp87.0 * _tmp88.1) / _tmp89.0) == 1);
+assert _tmp90;
 raise halt;
-
-
 }
-fun M_S_exit0_rand_419428920()
+fun M_S_exit0_rand_1424056736()
 {
 
 
 ;
 
-
-}start  state M_S
-{entry  {
+}start 
+ state M_S
+{
+entry  {
 M_S_entry56();
 }
 exit  {
-M_S_exit0_rand_419428920();
+M_S_exit0_rand_1424056736();
 }
 }
 }
@@ -538,33 +356,29 @@ var Test_ss: seq[int];
 
 fun Test_init_entry200(Test_init_entry200_payload: seq[int])
 {
-var _tmp167: int;
-var _tmp168: bool;
+var _tmp91: int;
+var _tmp92: bool;
 
 
 Test_ss = Test_init_entry200_payload;
-
-_tmp167 = Test_ss[0];
-
-_tmp168 = (_tmp167 == 3);
-
-assert _tmp168;
-
-
+_tmp91 = Test_ss[0];
+_tmp92 = (_tmp91 == 3);
+assert _tmp92;
 }
-fun Test_init_exit0_rand_2122308970()
+fun Test_init_exit0_rand_1558484730()
 {
 
 
 ;
 
-
-}start  state Test_init
-{entry (payload: seq[int]) {
+}start 
+ state Test_init
+{
+entry (payload: seq[int]) {
 Test_init_entry200(payload);
 }
 exit  {
-Test_init_exit0_rand_2122308970();
+Test_init_exit0_rand_1558484730();
 }
 }
 }
