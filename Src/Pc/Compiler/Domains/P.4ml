@@ -829,7 +829,8 @@ domain PStaticTyping extends PData
 	IsPrivateMachine ::= (ModuleDecl, String).
 	IsPublicMachine ::= (ModuleDecl, String).
 	IsPublicMachine(mod, mach.name) :- mod is ModuleDecl, MachineReceivesDecl(mach, ev), mach.mod = mod, no PrivateForModuleExpr(mod, ev).
-	IsPrivateMachine(mod, mach.name) :- mod is ModuleDecl, mach is MachineDecl, mach.mod = mod, no IsPublicMachine(mod, mach.name).
+	IsPrivateMachine(mod, mach.name) :- mod is ModuleDecl, mach is MachineDecl, mach.mod = mod, no IsPublicMachine(mod, mach.name);
+										mod is ModuleDecl, mach is MachineDecl, no MachineReceivesDecl(mach, _).
 	
 	/**************************************************************************/
 	/*		populate the sends, receives and creates list for each machine	  */
@@ -941,18 +942,25 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Cast can never succeed"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k = EMPTY.
 
-    TypeOf(c, e, t)   :- SubSE(c, e), e = New(n, _), MachineDecl(n, _, mt, _, _, _), mt != MONITOR, IsPrivateMachine(c.owner.mod, n), no MachineReceivesDecl(m, _), t = BaseType(REAL);
-    					 SubSE(c, e), e = New(n, _), MachineDecl(n, _, mt, _, _, _), mt != MONITOR, IsPrivateMachine(c.owner.mod, n), MachineReceivesDecl(m, _), t = toList(#InterfaceType, NIL, {ev | MachineReceivesDecl(m, ev) }), t : InterfaceType;
-						 SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _, _), MachineExportsDecl(_, n), TypeExpansion(NameType(n), t);
-						 SubSE(c, e), e = New(n, _), MachineDecl(n, _, _, _, _, _), MachineReceivesDecl(m, _), MachineExportsDecl(_, n), TypeExpansion(NameType(n), t).
+    TypeOf(c, e, t)   :- 
+	
+	SubSE(c, e), e = New(n, _), c.owner : MachineDecl, MachineDecl(n, c.owner.mod, mt, _, _, _), mt != MONITOR, IsPrivateMachine(c.owner.mod, n), no MachineReceivesDecl(m, _), t = BaseType(REAL);
+	SubSE(c, e), e = New(n, _), c.owner : ModuleDecl, MachineDecl(n, c.owner, mt, _, _, _), mt != MONITOR, IsPrivateMachine(c.owner.mod, n), no MachineReceivesDecl(m, _), t = BaseType(REAL);
+    SubSE(c, e), e = New(n, _), c.owner : MachineDecl, MachineDecl(n, c.owner.mod, mt, _, _, _), mt != MONITOR, IsPrivateMachine(c.owner.mod, n), MachineReceivesDecl(m, _), t = toList(#InterfaceType, NIL, {ev | MachineReceivesDecl(m, ev) }), t : InterfaceType;
+	SubSE(c, e), e = New(n, _), c.owner : ModuleDecl, MachineDecl(n, c.owner, mt, _, _, _), mt != MONITOR, IsPrivateMachine(c.owner.mod, n), MachineReceivesDecl(m, _), t = toList(#InterfaceType, NIL, {ev | MachineReceivesDecl(m, ev) }), t : InterfaceType;
+	SubSE(c, e), e = New(n, _), c.owner : MachineDecl, no MachineDecl(n, c.owner.mod, _, _, _, _), InterfaceTypeDecl(n, _, _), TypeExpansion(NameType(n), t);
+	SubSE(c, e), e = New(n, _), c.owner : ModuleDecl, no MachineDecl(n, c.owner, _, _, _, _), InterfaceTypeDecl(n, _, _), TypeExpansion(NameType(n), t);
+	SubSE(c, e), e = New(n, _), c.owner : MachineDecl, MachineDecl(n, c.owner.mod, _, _, _, _), MachineReceivesDecl(m, _), MachineExportsDecl(_, n), TypeExpansion(NameType(n), t).
+	SubSE(c, e), e = New(n, _), c.owner : ModuleDecl, MachineDecl(n, c.owner, _, _, _, _), MachineReceivesDecl(m, _), MachineExportsDecl(_, n), TypeExpansion(NameType(n), t).
 
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), MachineDecl(n, _, MONITOR, _, _, _).
 	[ rule_Classes = '"error, msg: Undefined machine or no machine exports the created interface"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), no MachineDecl(n, _, _, _, _, _), no MachineExportsDecl(_, n).
 	[ rule_Classes = '"error, msg: "new" of a machine is allowed only if the machine has only private events in its receive set"']
-    TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), m is MachineDecl(n, _, _, _, _, _), no IsPrivateMachine(c.owner.mod, n), no MachineExportsDecl(_, n).
-
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), toSymbol(c.owner) = #MachineDecl, e = New(n, _), m is MachineDecl(n, _, _, _, _, _), no IsPrivateMachine(c.owner.mod, n), no MachineExportsDecl(_, n).
+	[ rule_Classes = '"error, msg: "new" of a machine is allowed only if the machine has only private events in its receive set"']
+    TypeOf(c, e, ERROR)            :- SubSE(c, e), toSymbol(c.owner) = #ModuleDecl, e = New(n, _), m is MachineDecl(n, _, _, _, _, _), no IsPrivateMachine(c.owner, n), no MachineExportsDecl(_, n).
 	
 
     TypeOf(c, e, t2)               :- TypeOfArg2(c, e, _, t2), e : Field, t2 != ERROR.
