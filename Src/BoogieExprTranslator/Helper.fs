@@ -9,6 +9,7 @@ module Helper=
   let mergeMaps map1 map2 = 
     (Map.fold (fun acc key value -> Map.add key value acc) map1 map2)
 
+ 
   (* Helpers *)
   let rec lvalToExpr lval =
     match lval with

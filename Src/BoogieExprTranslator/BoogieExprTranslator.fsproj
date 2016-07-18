@@ -59,6 +59,7 @@
     <Compile Include="ProgramTyping.fs" />
     <Compile Include="RemoveNamedTuples.fs" />
     <Compile Include="RemoveSideEffects.fs" />
+    <Compile Include="Translator.fs" />
     <Compile Include="TestMain.fs" />
   </ItemGroup>
   <PropertyGroup>

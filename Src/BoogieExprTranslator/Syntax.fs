@@ -180,11 +180,12 @@ module Syntax =
   [<Serializable>]
   [<AllowNullLiteral>]
   type ProgramDecl(mainmachine: string, machines: MachineDecl list, 
-                      events: EventDecl list, staticFuns: FunDecl list) =
+                      events: EventDecl list, staticFuns: FunDecl list, maxFields: int) =
     member this.MainMachine = mainmachine
     member this.Machines = machines
     member this.Events = events
     member this.StaticFuns = staticFuns
+    member this.maxFields = maxFields
     
     member this.MachineMap =
       let map = ref Map.empty in
