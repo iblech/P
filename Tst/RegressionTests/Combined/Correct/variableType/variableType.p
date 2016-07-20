@@ -1,63 +1,24 @@
 event x;
+main machine TestMachine {
+	var x : int;
+	start state Init {
+		entry {
+			x = x + 1;
+		}
+	}
+	
+	fun foo (x : event) {
+		send this, x;
+	}
 
-main machine TestMachine
-{
-var TestMachine_x: int;
-
-fun TestMachine_foo(TestMachine_foo_x: event)
-{
-
-
-send this, TestMachine_foo_x;
-}
-fun TestMachine_Init_entry6()
-{
-
-
-TestMachine_x = (TestMachine_x + 1);
-}
-fun TestMachine_Init_exit0_rand_180506142()
-{
-
-
-;
-
-}start 
- state TestMachine_Init
-{
-entry  {
-TestMachine_Init_entry6();
-}
-exit  {
-TestMachine_Init_exit0_rand_180506142();
-}
-}
 }
 
-machine Xsender
-{
+machine Xsender {
 
-fun Xsender_Init_entry20()
-{
+	start state Init {
+		entry {
+			send this, x;
+		}
+	}
 
-
-send this, x;
 }
-fun Xsender_Init_exit0_rand_1057684380()
-{
-
-
-;
-
-}start 
- state Xsender_Init
-{
-entry  {
-Xsender_Init_entry20();
-}
-exit  {
-Xsender_Init_exit0_rand_1057684380();
-}
-}
-}
-

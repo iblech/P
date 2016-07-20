@@ -1,75 +1,25 @@
-event E2  assert 1;
-event E1  assert 1;
+// P semantics test: one machine, "halt" is raised and unhandled
 
-main machine Real1
-{
-var Real1_test: bool;
+event E2 assert 1;
+event E1 assert 1;
 
-fun Real1_Action2()
-{
-var Tmp586: bool;
-
-
-Tmp586 = (Real1_test == false);
-assert Tmp586;
+main machine Real1 {
+    var test: bool;  //init with "false"
+    start state Real1_Init {
+        entry { 
+		    send this, E1;
+			raise halt;
+        }
+		on E1 goto Real1_S1;
+        on E2 do Action2; 
+        exit {  send this, E2; }   //machine Real1 is halted after sending E2
+	}
+	state Real1_S1 {
+		entry {
+			test = true;
+		}
+    }
+	fun Action2() {
+		assert(test == false);  //unreachable
+    }
 }
-fun Real1_Real1_Init_on_E1_goto_Real1_Real1_S10_rand_498922131()
-{
-
-
-;
-
-}
-fun Real1_Real1_Init_entry10()
-{
-
-
-send this, E1;
-raise halt;
-}
-fun Real1_Real1_Init_exit15()
-{
-
-
-send this, E2;
-}
-fun Real1_Real1_S1_entry19()
-{
-
-
-Real1_test = true;
-}
-fun Real1_Real1_S1_exit0_rand_1551512501()
-{
-
-
-;
-
-}start 
- state Real1_Real1_Init
-{
-entry  {
-Real1_Real1_Init_entry10();
-}
-exit  {
-Real1_Real1_Init_exit15();
-}
-on E2 do   {
-Real1_Action2();
-}
-on E1 goto Real1_Real1_S1 with   {
-Real1_Real1_Init_on_E1_goto_Real1_Real1_S10_rand_498922131();
-}
-}
-
- state Real1_Real1_S1
-{
-entry  {
-Real1_Real1_S1_entry19();
-}
-exit  {
-Real1_Real1_S1_exit0_rand_1551512501();
-}
-}
-}
-

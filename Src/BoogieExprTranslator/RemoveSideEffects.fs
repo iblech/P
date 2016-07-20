@@ -5,7 +5,7 @@ module RemoveSideEffects =
   open Helper
   open ProgramTyping
 
-  /// Takes an expr as input, returns the re-written expr, a set of statements and updated environment 
+(*  /// Takes an expr as input, returns the re-written expr, a set of statements and updated environment 
   let rec removeSideEffectsExpr expr G =
     let (nexpr, stlist, nG) =
       match expr with
@@ -377,4 +377,6 @@ module RemoveSideEffects =
       !map 
     let mList = List.map (removeSideEffectsMachine G) prog.Machines
     let fList = List.map (removeSideEffectsFn G) prog.StaticFuns
-    new ProgramDecl(prog.MainMachine, mList, prog.Events, fList)
+    new ProgramDecl(prog.MainMachine, mList, prog.Events, fList, prog.maxFields)
+
+*)

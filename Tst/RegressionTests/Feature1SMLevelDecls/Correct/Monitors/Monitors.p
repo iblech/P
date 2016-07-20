@@ -1,34 +1,22 @@
+//this sample tests the new syntax for monitors.
 event local;
-event global: int;
+event global : int;
 
-main machine MAIN
-{
-
-fun MAIN_Init_entry16()
-{
-
-
-send this, local;
-;
-
-;
-
-}
-fun MAIN_Init_exit0_rand_638210305()
-{
-
-
-;
-
-}start 
- state MAIN_Init
-{
-entry  {
-MAIN_Init_entry16();
-}
-exit  {
-MAIN_Init_exit0_rand_638210305();
-}
-ignore local;}
+spec First monitors local {
+	var x : int;
+	start state Init {
+		on local do { x = x + 1; }
+		on global do (payload: int) { assert(x == 2); }
+	}
 }
 
+main machine MAIN {
+	start state Init {
+		entry {
+			send this, local;
+			monitor local;
+			monitor global, 5;
+		}
+		ignore local;
+	}
+}

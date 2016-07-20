@@ -1,68 +1,30 @@
+// This sample is testing the case when the deadlocked state is not the only state on the stack
+// State "Call" is deadlocked, b/c the Zing reports "passed", hence, "assert" on line 26
+// is not reachable, which means that the "Call" state is never popped
+// In the deadlocked state, stack contains Init and Call states 
 event E;
 
-main machine Program
-{
-var Program_i: int;
+main machine Program {
+	var i: int;
+	start state Init {
+			 entry { i = 0; raise E; }
 
-fun Program_Init_entry10()
-{
+		exit { assert (false); }  //unreachable
+		on E push Call;
+	}
 
-
-Program_i = 0;
-raise E;
+	state Call {
+		   entry { 
+			   if (i == 0) {
+				     raise E;
+					   
+			   }
+               else {
+					i = i + 1;
+			   }
+			}
+			ignore E;   
+			
+			exit { assert (false); ;}  //unreachable, which means that the state is not popped
+	}
 }
-fun Program_Init_exit12()
-{
-
-
-assert false;
-}
-fun Program_Call_entry18()
-{
-var Tmp585: bool;
-
-
-Tmp585 = (Program_i == 0);
-if(Tmp585)
-{
-
-raise E;
-
-}
-else
-{
-
-Program_i = (Program_i + 1);
-
-}
-
-}
-fun Program_Call_exit28()
-{
-
-
-assert false;
-;
-
-}start 
- state Program_Init
-{
-entry  {
-Program_Init_entry10();
-}
-exit  {
-Program_Init_exit12();
-}
-on E push Program_Call;}
-
- state Program_Call
-{
-entry  {
-Program_Call_entry18();
-}
-exit  {
-Program_Call_exit28();
-}
-ignore E;}
-}
-

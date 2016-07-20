@@ -67,7 +67,7 @@ module Syntax =
     | While of Expr * Stmt
     | Ite of Expr * Stmt * Stmt
     | SeqStmt of Stmt list
-    | Receive of (string * string) list 
+    | Receive of (string * Stmt) list 
     | Pop
     | Return of Expr option
     | Monitor of Expr * Expr  
@@ -81,7 +81,7 @@ module Syntax =
 
   [<Serializable>]
   type FunDecl(name: string, formals: VarDecl list, rettype: Type option, 
-                  locals: VarDecl list, body: Stmt list, isModel: bool, isPure: bool, envEmpty: bool, envVars: VarDecl list option) =
+               locals: VarDecl list, body: Stmt list, isModel: bool, isPure: bool) =
     member this.Name = name
     member this.Formals = formals
     member this.RetType = rettype
@@ -89,8 +89,6 @@ module Syntax =
     member this.Body = body
     member this.IsModel = isModel
     member this.IsPure = isPure
-    member this.EnvEmpty = envEmpty
-    member this.EnvVars = envVars
 
 //Implicitly assumes that there are no conflicts in the names of locals and formals.
     member this.VarMap = 
@@ -151,7 +149,7 @@ module Syntax =
   type MachineDecl(name: string, startState: string, globals: VarDecl list, 
                       functions: FunDecl list, states: StateDecl list, 
                       isMonitor: bool, monitorsList: string List, 
-                      qc: Card option, isModel: bool) =
+                      qc: Card option, isModel: bool, hasPush: bool) =
     member this.Name = name
     member this.StartState = startState
     member this.Globals = globals
@@ -161,6 +159,7 @@ module Syntax =
     member this.MonitorList = monitorsList
     member this.QC = qc;
     member this.IsModel = isModel
+    member this.HasPush = hasPush
 
     member this.StateMap =
       let map = ref Map.empty in
@@ -180,13 +179,21 @@ module Syntax =
   [<Serializable>]
   [<AllowNullLiteral>]
   type ProgramDecl(mainmachine: string, machines: MachineDecl list, 
-                      events: EventDecl list, staticFuns: FunDecl list, maxFields: int) =
+                      events: EventDecl list, eventsToMonitors: Map<string, string list>, staticFuns: FunDecl list, maxFields: int, hasDefer: bool, hasIgnore: bool) =
     member this.MainMachine = mainmachine
     member this.Machines = machines
     member this.Events = events
+    member this.EventsToMonitors = eventsToMonitors
     member this.StaticFuns = staticFuns
     member this.maxFields = maxFields
-    
+    member this.HasDefer = hasDefer
+    member this.HasIgnore = hasIgnore
+
+    member this.HasPush = Seq.exists (fun(md: MachineDecl) -> md.HasPush) this.Machines
+    member this.HasEventQCs = Seq.exists (fun(e: EventDecl) -> e.QC.IsSome) this.Events
+    member this.HasMachineQCs = Seq.exists (fun(md: MachineDecl) -> md.QC.IsSome) this.Machines
+
+
     member this.MachineMap =
       let map = ref Map.empty in
       List.iter (fun (machine: MachineDecl) -> map := Map.add machine.Name machine !map) this.Machines

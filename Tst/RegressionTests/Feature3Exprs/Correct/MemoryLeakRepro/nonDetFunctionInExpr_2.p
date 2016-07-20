@@ -1,59 +1,28 @@
+main machine M {
+	fun F() : int {
+	    if ($) {
+		    return 0;
+		} else {
+		    return 1;
+		}
+	}
+	fun foo() : int
+    {
+       return 1;
+    }   
+	
+	var t: (a: seq [int], b: map[int, seq[int]]);
+	var i: int;
+	
+    start state S {
+	    entry {
 
-main machine M
-{
-var M_t: (seq[int], map[int, seq[int]]);
-var M_i: int;
-
-fun M_F(): int
-{
-var Tmp169: bool;
-
-
-Tmp169 = $;
-if(Tmp169)
-{
-
-return (0);
-
+			t.a += (0,2);
+			t.a += (1,2);
+			i = F();
+			t.a -=(i);                 //no memory leak
+			
+			//t.a -= (foo());          //memory leak due to this line
+		}
+	}
 }
-else
-{
-
-return (1);
-
-}
-
-}
-fun M_foo(): int
-{
-
-
-return (1);
-}
-fun M_S_entry20()
-{
-
-
-M_t.0 += (0, 2);
-M_t.0 += (1, 2);
-M_i = M_F();
-M_t.0 -= M_i;
-}
-fun M_S_exit0_rand_822714489()
-{
-
-
-;
-
-}start 
- state M_S
-{
-entry  {
-M_S_entry20();
-}
-exit  {
-M_S_exit0_rand_822714489();
-}
-}
-}
-

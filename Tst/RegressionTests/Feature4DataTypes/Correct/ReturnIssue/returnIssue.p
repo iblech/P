@@ -1,56 +1,33 @@
+//Testing return types 
+type ArgType = int;
+type ResultType = int;
 
-main machine Manager
-{
+main machine Manager {
+    start state Init
+    {
 
-fun Manager_foo()
-{
-var Manager_foo_s: int;
+    }
+   
+    fun foo()
+    {
+        var s : ResultType;
+		s = bar0();
+        s = bar1(1);
+		s = bar2(0, 0);
+    }
 
+	fun bar0() : ResultType
+    {
+        return default(ResultType);
+    }
 
-Manager_foo_s = Manager_bar0();
-Manager_foo_s = Manager_bar1(1);
-Manager_foo_s = Manager_bar2(0, 0);
+    fun bar1(Settings : int) : ResultType
+    {
+        return default(ResultType);
+    }
+
+    fun bar2(Settings : int, Settings1: ArgType) : ResultType
+    {
+        return 0 + default(ArgType);
+    }
 }
-fun Manager_bar0(): int
-{
-
-
-return (default(int));
-}
-fun Manager_bar1(Manager_bar1_Settings: int): int
-{
-
-
-return (default(int));
-}
-fun Manager_bar2(Manager_bar2_Settings: int, Manager_bar2_Settings1: int): int
-{
-
-
-return ((0 + default(int)));
-}
-fun Manager_Init_entry0_rand_436459538()
-{
-
-
-;
-
-}
-fun Manager_Init_exit0_rand_127900520()
-{
-
-
-;
-
-}start 
- state Manager_Init
-{
-entry  {
-Manager_Init_entry0_rand_436459538();
-}
-exit  {
-Manager_Init_exit0_rand_127900520();
-}
-}
-}
-

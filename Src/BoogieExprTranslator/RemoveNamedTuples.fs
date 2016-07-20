@@ -5,7 +5,7 @@ module RemoveNamedTuples =
   open Helper
   open ProgramTyping
 
-  let rec processType ty =
+(*  let rec processType ty =
     match ty with
     | Type.NamedTuple ts -> Type.Tuple (List.map (fun (a,b) -> processType b) ts)
     | Seq t -> Seq (processType t)
@@ -95,11 +95,7 @@ module RemoveNamedTuples =
       | Some(t) -> Some(processType(t))
     let locals = List.map processVd f.Locals
     let stmts = List.map (processStmt G') f.Body
-    let envVars = 
-      match f.EnvVars with
-      | None -> None  
-      | Some(ls) -> Some(List.map processVd ls)
-    new FunDecl(f.Name, formals, retType, locals, stmts, f.IsModel, f.IsPure, f.EnvEmpty, envVars)
+    new FunDecl(f.Name, formals, retType, locals, stmts, f.IsModel, f.IsPure)
 
   ///Return a new MachineDecl with all named tuples removed. 
   let removeNamedTuplesMachine G (m:MachineDecl) = 
@@ -110,7 +106,7 @@ module RemoveNamedTuples =
     let G' = mergeMaps (mergeMaps G m.VarMap) funs
     let globals = List.map processVd m.Globals
     let fList = List.map (removeNamedTuplesFn G') m.Functions 
-    new MachineDecl(m.Name, m.StartState, globals, fList, m.States, m.IsMonitor, m.MonitorList, m.QC, m.IsModel)
+    new MachineDecl(m.Name, m.StartState, globals, fList, m.States, m.IsMonitor, m.MonitorList, m.QC, m.IsModel, m.HasPush)
 
   ///Return a new ProgramDecl with all named tuples removed.  
   let removeNamedTuplesProgram (prog: ProgramDecl) = 
@@ -121,4 +117,5 @@ module RemoveNamedTuples =
     let eList = List.map processEd prog.Events
     let mList = List.map (removeNamedTuplesMachine G) prog.Machines
     let fList = List.map (removeNamedTuplesFn G) prog.StaticFuns
-    new ProgramDecl(prog.MainMachine, mList, eList, fList)
+    new ProgramDecl(prog.MainMachine, mList, eList, prog.EventsToMonitors, fList, prog.maxFields, prog.HasDefer, prog.HasIgnore)
+*)

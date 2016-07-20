@@ -1,30 +1,23 @@
-event MyEvent: (seq[(int)]);
+
+type SOME_Type = (
+    SizeInBytes : SomeType
+);
+type SomeType = int;
+
+type MessageType = 
+(
+    List : seq[SOME_Type]
+);
+
+
+event MyEvent : MessageType;
+
+
 
 main machine MainMachine
 {
-
-fun MainMachine_Init_entry0_rand_1207451712()
-{
-
-
-;
-
-}
-fun MainMachine_Init_exit0_rand_63563184()
-{
-
-
-;
-
-}start 
- state MainMachine_Init
-{
-entry  {
-MainMachine_Init_entry0_rand_1207451712();
-}
-exit  {
-MainMachine_Init_exit0_rand_63563184();
-}
-}
+    start state Init
+    {
+    }
 }
 

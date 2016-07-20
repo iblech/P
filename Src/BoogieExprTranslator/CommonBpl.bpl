@@ -67,6 +67,46 @@ procedure RaiseEvent(mid:int, event: int, payload: PrtRef)
    MachineInboxStorePayload[mid][head] := payload;   
 }
 
+procedure AssertEventCard(mid: int, event: int)
+{
+   var head: int;
+   var tail: int;
+   var ptr : int;
+   var curr: int
+   var count: int;
+   
+   head := MachineInboxHead[mid];
+   tail := MachineInboxTail[mid];
+   ptr  := head;
+   count := 0;
+
+   while(ptr <= tail)
+   {
+    	curr := MachineInboxStoreEvent[mid][ptr];
+    	if(curr == event)
+    	{
+    		count := count + 1;
+    	}
+   }
+   //Add queue constraints for specific events.
+}
+
+procedure AssertMachineQueueSize(mid: int)
+{
+	var head: int;
+	var tail: int;
+    var size: int;
+    var c: [string]int;
+
+    head := MachineInboxHead[mid];
+    tail := MachineInboxTail[mid];
+    size := (tail - head) + 1;
+
+    c = qc[mid];
+    if(c)
+}
+
+
 procedure Enqueue(mid:int, event: int, payload: PrtRef) 
 {
    var tail: int;
@@ -74,8 +114,11 @@ procedure Enqueue(mid:int, event: int, payload: PrtRef)
    tail := MachineInboxTail[mid] + 1;
    MachineInboxTail[mid] := tail;
 
+   AssertEventCard(mid, event);
+   AssertMachineQueueSize(mid);
+
    MachineInboxStoreEvent[mid][tail] := event;
-   MachineInboxStorePayload[mid][tail] := payload;   
+   MachineInboxStorePayload[mid][tail] := payload;
 }
 
 
@@ -94,42 +137,42 @@ procedure Dequeue(mid: int, deferEvents: [int]bool, ignoreEvents: [int]bool, reg
    while(ptr <= tail) 
    {
       event := MachineInboxStoreEvent[mid][ptr];
-	  if(event >= 0 && ignoreEvents[event]) 
-	  {
-	  	 // dequeue
-		 if(ptr == head) 
-		 {
-		    MachineInboxHead[mid] := head + 1;
-		 } 
-		 else if(ptr == tail) 
-		 {
-		    MachineInboxTail[mid] := tail - 1;
-		 }
-		 else
-		 {
-		    MachineInboxStoreEvent[mid] := 0 - 1;		 
-		 }
-	  }
-	  else if(event >= 0 && !deferEvents[event] && registeredEvents[event])
-	  {
-	     // dequeue
-		 if(ptr == head) 
-		 {
-		    MachineInboxHead[mid] := head + 1;
-		 } 
-		 else if(ptr == tail) 
-		 {
-		    MachineInboxTail[mid] := tail - 1;
-		 }
-		 else
-		 {
-		    MachineInboxStoreEvent[mid] := 0 - 1;		 
-		 }
-		 payload := MachineInboxStorePayload[mid][ptr];
-		 break;
-	  }   
+      if(event >= 0 && ignoreEvents[event]) 
+      {
+         // dequeue
+         if(ptr == head) 
+         {
+            MachineInboxHead[mid] := head + 1;
+         } 
+         else if(ptr == tail) 
+         {
+            MachineInboxTail[mid] := tail - 1;
+         }
+         else
+         {
+            MachineInboxStoreEvent[mid] := 0 - 1;        
+         }
+      }
+      else if(event >= 0 && !deferEvents[event] && registeredEvents[event])
+      {
+         // dequeue
+         if(ptr == head) 
+         {
+            MachineInboxHead[mid] := head + 1;
+         } 
+         else if(ptr == tail) 
+         {
+            MachineInboxTail[mid] := tail - 1;
+         }
+         else
+         {
+            MachineInboxStoreEvent[mid] := 0 - 1;        
+         }
+         payload := MachineInboxStorePayload[mid][ptr];
+         break;
+      }   
       ptr := ptr + 1;   
-	  event := 0 - 1;
+      event := 0 - 1;
    }
 
    // block
@@ -151,28 +194,28 @@ procedure MachineThread(mid: int)
    
    while(true) 
    {
-	  call event, payload := Dequeue(mid, **, **, **);
+      call event, payload := Dequeue(mid, **, **, **);
       if(DoAction(event)) 
-	  {
-	     call action();
-	  } 
-	  else if(GotoWith(event)) 
-	  {
-	     call ExitAction();
-		 call WithAction();
-		 CurrState := New_State;
+      {
+         call action();
+      } 
+      else if(GotoWith(event)) 
+      {
+         call ExitAction();
+         call WithAction();
+         CurrState := New_State;
          call EntryAction(mid, CurrState);
-	  } 
-	  else if(Push(event)) 
-	  {
-	     StateStackPush(CurrState);
-		 CurrState := New_State;
+      } 
+      else if(Push(event)) 
+      {
+         StateStackPush(CurrState);
+         CurrState := New_State;
          call EntryAction(mid, CurrState);
-	  }
-	  else 
-	  {
-	    assume false;
-	  }
+      }
+      else 
+      {
+        assume false;
+      }
    }
 }
 

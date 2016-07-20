@@ -24,7 +24,7 @@ module Main =
       System.Console.WriteLine(pFile);
       let prog = getProgram pFile
       let OpFile = new System.IO.StreamWriter(pFile)
-      printProg prog OpFile
+      //printProg prog OpFile
       OpFile.Close()
     end
 

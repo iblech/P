@@ -4,7 +4,7 @@ module ProgramTyping =
   open Common
   open Helper
 
-    (* Typing *)
+(*  (* Typing *)
   ///If not b, raise Type exception with message s.
   let typeAssert b s =
     if (not b) then 
@@ -138,7 +138,6 @@ module ProgramTyping =
         | Type.Map(t1, t2) -> t2
         | _ -> raise NotDefined
       end
-
 
   ///typecheckExpr <program> <Referencing Environment> <current machine> <expression>
   let rec typecheckExpr (prog:ProgramDecl) G cm expr =
@@ -477,4 +476,4 @@ module ProgramTyping =
       !map 
     (List.iter (typecheckMachine prog G) prog.Machines) 
     (List.iter (typecheckFun prog G "") prog.StaticFuns) 
-   
+   *)
