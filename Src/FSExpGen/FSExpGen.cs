@@ -44,6 +44,9 @@ namespace Microsoft.P_FS_Boogie
             eventsToDecls = new Dictionary<string, Syntax.EventDecl>();
         private Dictionary<string, List<string>> 
             eventToMonitorList = new Dictionary<string, List<string>>();
+        private Dictionary<string, List<int>> 
+            functionsToRefParams = new Dictionary<string, List<int>>();
+
         private string mainMachine = null;
         private SymbolTable symbolTable = new SymbolTable();
         private int maxFields = 0;
@@ -193,6 +196,7 @@ namespace Microsoft.P_FS_Boogie
         {
             symbolTable.NewScope(name);
             functionsToLocals[symbolTable.currentF] = new List<Syntax.VarDecl>();
+            functionsToRefParams[symbolTable.currentF] = new List<int>();
         }
 
         private void ExitScope()
@@ -791,6 +795,8 @@ namespace Microsoft.P_FS_Boogie
 
             var env = symbolTable.IncludeSurroundingScopes();
             var envVarDecl = new Syntax.VarDecl(name + "_env", env.Item1);
+            //Added this envVarDecl to PARENT FUNCTION - as NewScope() 
+            //is called below.
             functionsToLocals[symbolTable.currentF].Add(envVarDecl);
             args.Add(envVarDecl);
             retExp = new FSharpOption<Syntax.Expr>(env.Item2 as Syntax.Expr);
@@ -1021,7 +1027,6 @@ namespace Microsoft.P_FS_Boogie
             temperature = char.ToUpper(temperature[0]) + temperature.Substring(1);
             var name = getQualifiedName(state.name as P_Root.QualifiedName);
             var owner = getString((state.owner as P_Root.MachineDecl).name);
-            name = owner + '_' + name;
             FSharpOption<string> entryAction = null;
             FSharpOption<string> exitAction = null;
 
@@ -1048,6 +1053,7 @@ namespace Microsoft.P_FS_Boogie
                 var s = symbolTable.GetFunName(getString(state.exitFun));
                 exitAction = new FSharpOption<string>(s);
             }
+            name = owner + '_' + name;
             var transitions = ListModule.OfSeq(statesToTransitions[name]);
             var Dos = ListModule.OfSeq(statesToDos[name]);
             return new Syntax.StateDecl(name, temperature, entryAction, exitAction, transitions, Dos);
@@ -1074,6 +1080,27 @@ namespace Microsoft.P_FS_Boogie
             } while (x != null);
 
             return lst;
+        }
+
+        private FSharpList<Syntax.VarDecl> getFunParams(P_Root.NmdTupType p, string owner)
+        {
+            var lst = new List<Syntax.VarDecl>();
+            var x = p;
+            int i = 0;
+            do
+            {
+                var f = x.hd as P_Root.NmdTupTypeField;
+                var d = genVar(f, owner);
+                if(f.qual.Symbol.ToString() == "REF")
+                {
+                    functionsToRefParams[symbolTable.currentF].Add(i);
+                }
+                lst.Add(d);
+                x = x.tl as P_Root.NmdTupType;
+                i++;
+            } while (x != null);
+
+            return ListModule.OfSeq(lst);
         }
 
         private Syntax.FunDecl genFunDecl(P_Root.FunDecl d)
@@ -1148,7 +1175,7 @@ namespace Microsoft.P_FS_Boogie
 
         //A(sad?) Departure from Design. 
         //We generate the name of the AnonFunction, and also a FunDecl to
-        //that effect, add it to the appropriate list, and return the name.
+        //that effect and add it to the appropriate list.
         private void genAnonFunDecl(P_Root.AnonFunDecl d, ref string name)
         {
             FSharpOption<Syntax.Type> retType = null;
@@ -1161,11 +1188,11 @@ namespace Microsoft.P_FS_Boogie
             if (ln == 0)
                 name += ("_rand_" + r.Next());
 
+            NewScope(name);
+            name = symbolTable.GetFunName(name);
             //Get args
             var args = new List<Syntax.VarDecl>();
             args.Add(getAnonFunParams(d.envVars as P_Root.NmdTupType, name));
-
-            NewScope(name);
 
             //Get Locals
             if (d.locals.Symbol.ToString() != "NIL")
@@ -1222,21 +1249,26 @@ namespace Microsoft.P_FS_Boogie
             var src = (t.src as P_Root.StateDecl);
             var machName = getString((src.owner as P_Root.MachineDecl).name);
             symbolTable.currentM = machName;
-            var owner = machName + '_' + getQualifiedName(src.name as P_Root.QualifiedName);
+            var owner = getQualifiedName(src.name as P_Root.QualifiedName);
             var dst = machName + '_' + getQualifiedName(t.dst as P_Root.QualifiedName);
             if (t.action.Symbol.ToString() == "PUSH")
             {
+                owner = machName + '_' + owner;
+                owner = machName + '_' + owner;
                 return Syntax.TransDecl.T.NewPush(trig, dst);
             }
             else if (t.action is P_Root.AnonFunDecl)
             {
                 var action = owner + "_on_" + trig + "_goto_" + dst;
+                owner = machName + '_' + owner;
                 genAnonFunDecl(t.action as P_Root.AnonFunDecl, ref action);
                 return Syntax.TransDecl.T.NewCall(trig, dst, action);
             }
             else
             {
                 var action = symbolTable.GetFunName(getString(t.action));
+                owner = machName + '_' + owner;
+                dst = machName + '_' + dst;
                 return Syntax.TransDecl.T.NewCall(trig, dst, action);
             }
         }
@@ -1245,7 +1277,7 @@ namespace Microsoft.P_FS_Boogie
         {
             var st = (d.src as P_Root.StateDecl);
             var machName = getString((st.owner as P_Root.MachineDecl).name);
-            var owner = machName + '_' + getQualifiedName(st.name as P_Root.QualifiedName);
+            var owner = getQualifiedName(st.name as P_Root.QualifiedName);
             symbolTable.currentM = machName;
             var trig = genTrig(d.trig);
             if (d.action.Symbol.ToString() == "DEFER")
