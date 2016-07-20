@@ -10,12 +10,14 @@ domain PData
     /*************************************************************/    
     Qualifier       ::= { NONE, REF, XFER}.
     
+	StringList		::= new (hd: String, tl: any StringList + { NIL }).
+	IntegerList		::= new (hd: Integer, tl: any IntegerList + { NIL }).
+	EnumTypeDef		::= new (name: String, elems: any StringList, values: any IntegerList + { NIL }).
 	TypeDef         ::= new (name: String, type: any TypeExpr).
 	ModelType       ::= new (name: String).
 
-    //// The BaseType REAL is the type of real machines.
 	NameType        ::= new (name: String).
-    BaseType        ::= new ({ NULL, BOOL, INT, EVENT, REAL, ANY }).
+    BaseType        ::= new ({ NULL, BOOL, INT, EVENT, MACHINE, ANY }).
     TupType         ::= new (hd: any TypeExpr, tl: any TupType + { NIL }).
     NmdTupType      ::= new (hd: any NmdTupTypeField, tl: any NmdTupType + { NIL }).
     SeqType         ::= new (x: any TypeExpr).
@@ -59,7 +61,8 @@ domain PData
 	Cases	 ::= new (trig: String + { NULL, HALT }, action: any AnonFunDecl, cases: any Cases + { NIL }).
 	Receive  ::= new (cases: any Cases, label: Natural, info: any SourceInfo).
 	Assert   ::= new (arg: any Expr, msg: String + { NIL }, info: any SourceInfo). 
-	Print    ::= new (msg: String, info: any SourceInfo).
+	Segments ::= new (formatArg: Natural, str: String, tl: any Segments + { NIL }).
+	Print    ::= new (msg: String, segs: any Segments + { NIL }, args: any Exprs + { NIL }, info: any SourceInfo).
 	
     Stmt ::= NewStmt + Raise + Send + Monitor + FunStmt + NulStmt + BinStmt + Return + While + Ite + Seq + Receive + Assert + Print. 
 
@@ -232,9 +235,12 @@ domain PStaticTyping extends PData
 	TypeDefError ::= (name: String).
 
 	[rule_Classes = '"error, msg: undefined type"']
-	TypeDefError(name) :- AllTypeExprs(type), type = NameType(name), no TypeDef(name, _).
+	TypeDefError(name) :- AllTypeExprs(type), type = NameType(name), no TypeDef(name, _), no EnumTypeDef(name, _, _).
 	[rule_Classes = '"error, msg: multiple type definitions for a type name"']
-	TypeDefError(name) :- TypeDef(name, type1), TypeDef(name, type2), type1 != type2.
+	TypeDefError(name) :- TypeDef(name, type1), TypeDef(name, type2), type1 != type2;
+	                      EnumTypeDef(name, list1, _), EnumTypeDef(name, list2, _), list1 != list2;
+						  EnumTypeDef(name, _, list1), EnumTypeDef(name, _, list2), list1 != list2;
+						  TypeDef(name, _), EnumTypeDef(name, _, _).
 
 	TypeDefDepends ::= sub (typeDef: TypeDef, type: NameType).
 	NameTypeDepends ::= (name1: String, name2: String).
@@ -243,14 +249,36 @@ domain PStaticTyping extends PData
 	[rule_Classes = '"error, msg: type depends on itself"']
 	TypeDefError(name) :- NameTypeDepends(name, name).
 
+	EnumTypeDefElem ::= (EnumTypeDef, StringList, IntegerList + { NIL }).
+	EnumTypeDefElem(d, list1, list2) :- d is EnumTypeDef(_, list1, list2).
+	EnumTypeDefElem(d, list1, NIL) :- EnumTypeDefElem(d, StringList(_, list1), NIL), list1: StringList.
+	EnumTypeDefElem(d, list1, list2) :- EnumTypeDefElem(d, StringList(_, list1), IntegerList(_, list2)), list1: StringList.
+
+	[rule_Classes = '"error, msg: multiple enum elements with the same name"']
+	TypeDefError(name) :- EnumTypeDefElem(def, list1, _), EnumTypeDefElem(def, list2, _), list1 != list2, list1.hd = list2.hd, name = def.name.
+	[rule_Classes = '"error, msg: enum element names of different enum types must be disjoint"']
+	TypeDefError(name) :- EnumTypeDefElem(def1, list1, _), EnumTypeDefElem(def2, list2, _), def1 != def2, list1.hd = list2.hd, name = def1.name.
+	[rule_Classes = '"error, msg: enum element names must be disjoint from event names"']
+	TypeDefError(name) :- EventDecl(name, _, _), EnumTypeDefElem(_, StringList(name, _), _).
+	[rule_Classes = '"error, msg: at least one enum element should be numbered 0"']
+	TypeDefError(name) :- d is EnumTypeDef(name, _, _), no EnumTypeElemIndex(d, _, _, _, 0).
+
+	EnumTypeElemIndex ::= (EnumTypeDef, StringList, IntegerList + { NIL }, String, Integer).
+	EnumTypeElemIndex(d, list, NIL, str, i) :- EnumTypeDefElem(d, list, NIL), list = StringList(str, NIL), i = lstLength(#StringList, d.elems) - 1.
+	EnumTypeElemIndex(d, list, NIL, str, i) :- EnumTypeDefElem(d, list, NIL), list = StringList(str, list'), 
+											   EnumTypeElemIndex(d, list', NIL, _, j), i = j - 1.
+  	EnumTypeElemIndex(d, list1, list2, str, i) :- EnumTypeDefElem(d, list1, list2), 
+												  list1 = StringList(str, _), list2 = IntegerList(i, _).
+
 	TypeExpansion ::= (type: TypeExpr, eType: TypeExpr).
 	TypeExpansion(BaseType(NULL), BaseType(NULL)).
 	TypeExpansion(BaseType(BOOL), BaseType(BOOL)).
 	TypeExpansion(BaseType(INT), BaseType(INT)).
 	TypeExpansion(BaseType(EVENT), BaseType(EVENT)).
-	TypeExpansion(BaseType(REAL), BaseType(REAL)).
+	TypeExpansion(BaseType(MACHINE), BaseType(MACHINE)).
 	TypeExpansion(BaseType(ANY), BaseType(ANY)).
 	TypeExpansion(type, type)  :- TypeDef(typeName, _), ModelType(typeName), no TypeDefError(typeName), type = NameType(typeName).
+	TypeExpansion(type, type)  :- EnumTypeDef(typeName, _, _), no TypeDefError(typeName), type = NameType(typeName).
 	TypeExpansion(type, eType) :- TypeDef(typeName, typeExpr), no ModelType(typeName), no TypeDefError(typeName), type = NameType(typeName), TypeExpansion(typeExpr, eType).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, NIL), TypeExpansion(hd, hd'), eType = TupType(hd', NIL).
 	TypeExpansion(type, eType) :- AllTypeExprs(type), type = TupType(hd, tl), tl != NIL, TypeExpansion(hd, hd'), TypeExpansion(tl, tl'), eType = TupType(hd', tl').
@@ -314,6 +342,7 @@ domain PStaticTyping extends PData
 	SubSE(c, e) :- SubSE(c, Assert(e, _, _)).
 	SubSE(c, es) :- SubSE(c, FunStmt(_, es, _, _, _)), es: Exprs.
 	SubSE(c, e) :- SubSE(c, FunStmt(_, _, e, _, _)), e: Name.
+	SubSE(c, es) :- SubSE(c, Print(_, _, es, _)), es: Exprs.
 	SubSE(c, e) :- SubSE(c, Monitor(e, _, _)).
 	SubSE(c, e) :- SubSE(c, Monitor(_, e, _)), e: Expr.
 	SubSE(c, e1), SubSE(c, e2) :- SubSE(c, Send(e1, e2, _, _, _)).
@@ -342,7 +371,7 @@ domain PStaticTyping extends PData
     TypeOf(c, e, BaseType(NULL))  :- SubSE(c, e), e = NulApp(NULL).
     TypeOf(c, e, BaseType(EVENT)) :- SubSE(c, e), e = NulApp(HALT).
 	
-    TypeOf(c, e, BaseType(REAL))  :- SubSE(c, e), e = NulApp(THIS).
+    TypeOf(c, e, BaseType(MACHINE))  :- SubSE(c, e), e = NulApp(THIS).
     
 	TypeOf(c, e, BaseType(BOOL))  :- SubSE(c, e), e = NulApp(NONDET).
 
@@ -358,7 +387,7 @@ domain PStaticTyping extends PData
 
     TypeOf(c, e, t1)              :- TypeOfArg1(c, e, t1), e : NamedTuple.
 
-	// Names can hide other names in the following order: local variable hides machine variable hides event
+	// Names can hide other names in the following order: local variable hides machine variable hides (event name + enum name)
     IsLocalVar ::= (TypingContext, String, TypeExpr).
     IsLocalVar(c, n, et) :- SubSE(c, e), e = Name(n), TypeOfLocalVar(c, n, t), TypeExpansion(t, et).
 
@@ -371,13 +400,16 @@ domain PStaticTyping extends PData
     IsEventCnst(c, n, BaseType(NULL)) :- SubSE(c, e), e = Name(n), EventDecl(n, _, NIL), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _). 
     IsEventCnst(c, n, pt)             :- SubSE(c, e), e = Name(n), EventDecl(n, _, t), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _), TypeExpansion(t, pt).
 
+	IsEnumCnst ::= (TypingContext, String, TypeExpr).
+	IsEnumCnst(c, n, t) :- SubSE(c, e), e = Name(n), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _), EnumTypeDefElem(d, StringList(n, _), _), t = NameType(d.name).
+
 	TypeOf(c, e, et)              :- SubSE(c, e), e = Name(n), IsLocalVar(c, n, et).
     TypeOf(c, e, et)              :- SubSE(c, e), e = Name(n), IsMachineVar(c, n, _, et).
     TypeOf(c, e, BaseType(EVENT)) :- SubSE(c, e), e = Name(n), IsEventCnst(c, n, _).
-
+	TypeOf(c, e, t)               :- SubSE(c, e), e = Name(n), IsEnumCnst(c, n, t).
 
 	[ rule_Classes = '"error, msg: Undefined symbol"']
-    TypeOf(c, e, ERROR)           :- SubSE(c, e), e = Name(n), no EventDecl(n, _, _), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _). 
+    TypeOf(c, e, ERROR)           :- SubSE(c, e), e = Name(n), no EventDecl(n, _, _), no VarDecl(n, c.owner, _), no TypeOfLocalVar(c, n, _), no EnumTypeDefElem(_,StringList(n, _), _). 
     
     TypeOf(c, e, BaseType(BOOL))  :- TypeOfArg1(c, e, t1), e = UnApp(NOT, _), t1 = BaseType(BOOL). 
 	[ rule_Classes = '"error, msg: Operator expected a boolean value"']
@@ -405,8 +437,8 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Cast can never succeed"']
     TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e = Cast(_, t2), TypeExpansion(t2, t2'), TypeRel(t1, t2', k), k = EMPTY.
 
-    TypeOf(c, e, BaseType(REAL))   :- SubSE(c, e), e = New(n, _), MachineDecl(n, REAL, _, _, _).
-    TypeOf(c, e, BaseType(REAL))   :- SubSE(c, e), e = New(n, _), MachineDecl(n, MODEL, _, _, _).
+    TypeOf(c, e, BaseType(MACHINE))   :- SubSE(c, e), e = New(n, _), MachineDecl(n, REAL, _, _, _).
+    TypeOf(c, e, BaseType(MACHINE))   :- SubSE(c, e), e = New(n, _), MachineDecl(n, MODEL, _, _, _).
 	[ rule_Classes = '"error, msg: Monitor cannot be created"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = New(n, _), MachineDecl(n, MONITOR, _, _, _).
 	[ rule_Classes = '"error, msg: Undefined machine type"']
@@ -628,7 +660,7 @@ domain PStaticTyping extends PData
 	//// (3) Non-mutating statements
     TypeOf(c, e, NIL)              :- SubSE(c, e), e = Seq(_, _).
     
-	TypeOf(c, e, NIL)              :- SubSE(c, e), e = Print(_, _).
+	TypeOf(c, e, NIL)              :- SubSE(c, e), e = Print(_, _, _, _).
 
     TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e = Assert(_, _, _), t1 = BaseType(BOOL).
 	[ rule_Classes = '"error, msg: "assert" expects a boolean value"']
@@ -669,16 +701,16 @@ domain PStaticTyping extends PData
 
 	//// Rules for send.
     TypeOf(c, e, NIL)              :- TypeOfArg1(c, e, t1), e = Send(_, _, NIL, _, _),                           ///// < send has NIL payload,
-	                                  t1 = BaseType(REAL),                                                 ///// < arg1 is a machine type,
+	                                  t1 = BaseType(MACHINE),                                                 ///// < arg1 is a machine type,
 	                                  CommStmtPLType(c, e, plt), TypeRel(BaseType(NULL), plt, SUB).        ///// < arg2 event type contains null.
 
     TypeOf(c, e, NIL)              :- TypeOfArg3(c, e, t1, t2, t3), e : Send,                             ///// < send has non-NIL payload,             
-	                                  t1 = BaseType(REAL),                                                ///// < arg1 is a machine type,
+	                                  t1 = BaseType(MACHINE),                                                ///// < arg1 is a machine type,
 	                                  CommStmtPLType(c, e, plt), TypeRel(t3, evt, SUB).                   ///// < and t3 is a subtype of plt.
 
 	//// Error rules for send.
 	[ rule_Classes = '"error, msg: argument 1 of "send" expects a machine value"']
-    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Send, t1 != BaseType(REAL).
+    TypeOf(c, e, ERROR)            :- TypeOfArg1(c, e, t1), e : Send, t1 != BaseType(MACHINE).
 
 	[ rule_Classes = '"error, msg: argument 2 of "send" expects an event value"']
     TypeOf(c, e, ERROR)            :- SubSE(c, e), e = Send(_, e2, _, _, _), TypeOf(c, e2, t2), t2 != BaseType(EVENT).
@@ -1179,7 +1211,7 @@ domain PStaticTyping extends PData
        SubSE(c, e), e = Monitor(_, e', _),       e' = NulApp(FAIRNONDET);    
        SubSE(c, e), e = Assert(e', _, _),        e' = NulApp(FAIRNONDET);
        SubSE(c, e), e = BinStmt(_, e', e'', _),  e'' = NulApp(FAIRNONDET), toSymbol(e') != #Name.
-						 	                                          
+	                                       
     /*************************************************************/
     /*                      Type Comparability                   */
     /*************************************************************/
@@ -1224,6 +1256,18 @@ domain PStaticTyping extends PData
     // For convenience, the NIL type is incomparable to all types, except itself.
     TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NIL, t != NIL.
     TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = NIL, t != NIL.
+	
+	// Each model type has empty intersection with all types except itself and ANY
+	TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NameType(name), ModelType(name), t != s, t != BaseType(ANY).
+	TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = NameType(name), ModelType(name), t != s, t != BaseType(ANY). 
+	
+	// Each enum type with no integer values has empty intersection with all types except itself and ANY
+	TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NameType(name), EnumTypeDef(name, _, NIL), t != s, t != BaseType(ANY).
+	TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = NameType(name), EnumTypeDef(name, _, NIL), t != s, t != BaseType(ANY). 
+
+	// Each enum type with integer values has empty intersection with all types except itself and ANY and INT
+	TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = NameType(name), EnumTypeDef(name, _, x), x != NIL, t != s, t != BaseType(ANY), t != BaseType(INT).
+	TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = NameType(name), EnumTypeDef(name, _, x), x != NIL, t != s, t != BaseType(ANY), t != BaseType(INT). 
     
     // The NULL type has empty intersections with NonNullBase and complex types.
     NonNullBase ::= (TypeExpr).
@@ -1236,14 +1280,19 @@ domain PStaticTyping extends PData
     TypeRel(s, t, EMPTY)   :- CompTypeRel(s, t), s : ComplexType, t = BaseType(NULL).
     TypeRel(t, s, EMPTY)   :- CompTypeRel(t, s), s : ComplexType, t = BaseType(NULL).
         
-    // NonNullBase types have empty intersections with all types, except themselves and ANY.
-    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), NonNullBase(s), s != t, t != BaseType(ANY).
-    TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), NonNullBase(s), s != t, t != BaseType(ANY).
+    // BaseType(BOOL) has empty intersections with all types, except themselves and ANY.
+    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = BaseType(BOOL), s != t, t != BaseType(ANY).
+    TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = BaseType(BOOL), s != t, t != BaseType(ANY).
+
+	// BaseType(INT) has empty intersections with all types, except themselves and ANY.
+	// Relationship to NameType(_) has been dealt with above.
+    TypeRel(s, t, EMPTY) :- CompTypeRel(s, t), s = BaseType(INT), s != t, t != BaseType(ANY), toSymbol(t) != #NameType.
+    TypeRel(t, s, EMPTY) :- CompTypeRel(t, s), s = BaseType(INT), s != t, t != BaseType(ANY), toSymbol(t) != #NameType.
 
     // NullBase types have empty intersections with all types, except themselves, ANY, and NULL.
     NullBase    ::= (TypeExpr).
 	NullBase(type) :- type = BaseType(EVENT).
-	NullBase(type) :- type = BaseType(REAL).    
+	NullBase(type) :- type = BaseType(MACHINE).    
     TypeRel(s, t, EMPTY)    :- CompTypeRel(s, t), NullBase(s), NonNullBase(t).
     TypeRel(t, s, EMPTY)    :- CompTypeRel(t, s), NullBase(s), NonNullBase(t).
     
@@ -1334,6 +1383,10 @@ domain PStaticTyping extends PData
     TypeRel(s, t, SUB) :-  CompTypeRel(s, t), s = BaseType(NULL), NullBase(t).
     TypeRel(t, s, SUP) :-  CompTypeRel(t, s), s = BaseType(NULL), NullBase(t).
     
+	// Enum types with values are a subtype of int
+	TypeRel(s, t, SUB) :- CompTypeRel(s, t), s = NameType(name), EnumTypeDef(name, _, x), x != NIL, t = BaseType(INT).
+	TypeRel(t, s, SUP) :- CompTypeRel(t, s), s = NameType(name), EnumTypeDef(name, _, x), x != NIL, t = BaseType(INT).
+
     // Sequences are subtype related if their inner types are subtype related.
     TypeRel(s, t, SUB)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUB). 
     TypeRel(s, t, SUP)    :- CompTypeRel(s, t), s = SeqType(s'), t = SeqType(t'), TypeRel(s', t', SUP). 
@@ -1388,15 +1441,13 @@ domain PStaticTyping extends PData
 	[ rule_Classes = '"error, msg: Payload type for event must be subtype of payload type of case function;"']
 	PayloadError(cases) :- SubSE(_, cases), cases: Cases, EventPayloadType(cases.trig, et), PayloadVar(cases, _, _, _, ft),
 						   TypeRel(et, ft, k), et != ft, k != SUB. 
-	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
-	PayloadError(n) :- SubSE(c, n), n = New(name, NIL), ConstructorType(m, _, ft), m.name = name, type = BaseType(NULL), 
-					   TypeRel(type, ft, k), type != ft, k != SUB.
+	[ rule_Classes = '"error, msg: Entry function of start state expects an argument;"']
+	PayloadError(n) :- SubSE(c, n), n = New(name, NIL), ConstructorType(m, _, ft), m.name = name, ft != BaseType(ANY), ft != BaseType(NULL).
 	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
 	PayloadError(n) :- SubSE(c, n), n = New(name, _), ConstructorType(m, _, ft), m.name = name, TypeOfArg1(c, n, type), type: TypeExpr, 
 					   TypeRel(type, ft, k), type != ft, k != SUB.
-	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
-	PayloadError(n) :- SubSE(c, n), n = NewStmt(name, NIL, _), ConstructorType(m, _, ft), m.name = name, type = BaseType(NULL),
-					   TypeRel(type, ft, k), type != ft, k != SUB.	
+	[ rule_Classes = '"error, msg: Entry function of start state expects an argument;"']
+	PayloadError(n) :- SubSE(c, n), n = NewStmt(name, NIL, _), ConstructorType(m, _, ft), m.name = name, ft != BaseType(ANY), ft != BaseType(NULL).
 	[ rule_Classes = '"error, msg: Payload type of constructor must be subtype of payload type of entry function of start state;"']
 	PayloadError(n) :- SubSE(c, n), n = NewStmt(name, _, _), ConstructorType(m, _, ft), m.name = name, TypeOfArg1(c, n, type), type: TypeExpr,
 					   TypeRel(type, ft, k), type != ft, k != SUB.	
