@@ -256,7 +256,7 @@ namespace Microsoft.Pc
         public static AST<FuncTerm> PTypeBool = AddArgs(Factory.Instance.MkFuncTerm(Factory.Instance.MkId("BaseType")), Factory.Instance.MkId("BOOL"));
         public static AST<FuncTerm> PTypeInt = AddArgs(Factory.Instance.MkFuncTerm(Factory.Instance.MkId("BaseType")), Factory.Instance.MkId("INT"));
         public static AST<FuncTerm> PTypeEvent = AddArgs(Factory.Instance.MkFuncTerm(Factory.Instance.MkId("BaseType")), Factory.Instance.MkId("EVENT"));
-        public static AST<FuncTerm> PTypeReal = AddArgs(Factory.Instance.MkFuncTerm(Factory.Instance.MkId("BaseType")), Factory.Instance.MkId("REAL"));
+        public static AST<FuncTerm> PTypeMachine = AddArgs(Factory.Instance.MkFuncTerm(Factory.Instance.MkId("BaseType")), Factory.Instance.MkId("MACHINE"));
         public static AST<FuncTerm> PTypeAny = AddArgs(Factory.Instance.MkFuncTerm(Factory.Instance.MkId("BaseType")), Factory.Instance.MkId("ANY"));
 
         public const string SM_EVENT = "SM_EVENT";
@@ -291,6 +291,7 @@ namespace Microsoft.Pc
         }
 
         public Dictionary<string, EventInfo> allEvents;
+        public Dictionary<string, List<Tuple<string, int>>> allEnums;
         public Dictionary<string, MachineInfo> allMachines;
         public Dictionary<string, FunInfo> allStaticFuns;
         public string mainMachineName;
@@ -364,6 +365,7 @@ namespace Microsoft.Pc
             }
 
             allEvents = new Dictionary<string, EventInfo>();
+            allEnums = new Dictionary<string, List<Tuple<string, int>>>();
             allEvents[HaltEvent] = new EventInfo(1, false, PTypeNull.Node);
             allEvents[NullEvent] = new EventInfo(1, false, PTypeNull.Node);
             allMachines = new Dictionary<string, MachineInfo>();
@@ -393,6 +395,44 @@ namespace Microsoft.Pc
                         var maxInstancesAssumed = ((Id)ft.Function).Name == "AssumeMaxInstances";
                         allEvents[name] = new EventInfo(maxInstances, maxInstancesAssumed, payloadType);
                     }
+                }
+            }
+
+            terms = GetBin(factBins, "EnumTypeDef");
+            foreach (var term in terms.Select(x => x.Item2))
+            {
+                using (var it = term.Node.Args.GetEnumerator())
+                {
+                    it.MoveNext();
+                    var name = ((Cnst)it.Current).GetStringValue();
+                    it.MoveNext();
+                    FuncTerm strIter = it.Current as FuncTerm;
+                    it.MoveNext();
+                    FuncTerm valIter = it.Current as FuncTerm;
+                    var constants = new List<Tuple<string, int>>();
+                    if (valIter == null)
+                    {
+                        var val = 0;
+                        while (strIter != null)
+                        {
+                            var constant = (GetArgByIndex(strIter, 0) as Cnst).GetStringValue();
+                            constants.Add(Tuple.Create<string, int>(constant, val));
+                            strIter = GetArgByIndex(strIter, 1) as FuncTerm;
+                            val++;
+                        }
+                    }
+                    else
+                    {
+                        while (strIter != null)
+                        {
+                            var constant = (GetArgByIndex(strIter, 0) as Cnst).GetStringValue();
+                            var val = (GetArgByIndex(valIter, 0) as Cnst).GetNumericValue();
+                            constants.Add(Tuple.Create<string, int>(constant, (int)val.Numerator));
+                            strIter = GetArgByIndex(strIter, 1) as FuncTerm;
+                            valIter = GetArgByIndex(valIter, 1) as FuncTerm;
+                        }
+                    }
+                    allEnums[name] = constants;
                 }
             }
 
@@ -1074,6 +1114,11 @@ namespace Microsoft.Pc
             return MkZingDot("Main", string.Format("{0}_SM_EVENT", eventName));
         }
 
+        private static AST<Node> MkZingEnum(string enumName)
+        {
+            return MkZingDot("Main", string.Format("{0}_SM_ENUM", enumName));
+        }
+
         private static AST<Node> MkZingState(string stateName)
         {
             return MkZingDot("Main", string.Format("{0}_SM_STATE", stateName));
@@ -1380,6 +1425,13 @@ namespace Microsoft.Pc
             {
                 fields.Add(MkZingVarDecl(string.Format("{0}_SM_EVENT", eventName), SmEvent, ZingData.Cnst_Static));
             }
+            foreach (var enumName in allEnums.Keys)
+            {
+                foreach (var tuple in allEnums[enumName])
+                {
+                    fields.Add(MkZingVarDecl(string.Format("{0}_SM_ENUM", tuple.Item1), ZingData.Cnst_Int, ZingData.Cnst_Static));
+                }
+            }
             foreach (var machine in allMachines.Values)
             {
                 foreach (var stateName in machine.stateNameToStateInfo.Keys)
@@ -1479,6 +1531,14 @@ namespace Microsoft.Pc
 
                 var assignStmt = MkZingAssign(MkZingEvent(eventName), rhs);
                 runBodyStmts.Add(assignStmt);
+            }
+            foreach (var enumName in allEnums.Keys)
+            {
+                foreach (var tuple in allEnums[enumName])
+                {
+                    var assignStmt = MkZingAssign(MkZingEnum(tuple.Item1), Factory.Instance.MkCnst(tuple.Item2));
+                    runBodyStmts.Add(assignStmt);
+                }
             }
             foreach (var machineName in allMachines.Keys)
             {
@@ -2220,7 +2280,10 @@ namespace Microsoft.Pc
             }
             else if (funName == PData.Con_Print.Node.Name)
             {
-                yield break;
+                foreach (var a in ZingUnfold(ctxt, GetArgByIndex(ft, 2)))
+                {
+                    yield return a;
+                }
             }
             else if (funName == PData.Con_BinStmt.Node.Name)
             {
@@ -2558,11 +2621,20 @@ namespace Microsoft.Pc
             {
                 retVal = MkZingIdentifier(name);
             }
-            else
+            else 
             {
                 var tmpVar = ctxt.GetTmpVar(PrtValue, "tmp");
-                ctxt.AddSideEffect(MkZingAssign(tmpVar, MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(PTypeEvent.Node))));
-                ctxt.AddSideEffect(MkZingCallStmt(MkZingCall(MkZingDot(PRT_VALUE, "PrtPrimSetEvent"), tmpVar, MkZingEvent(name))));
+                var type = LookupType(ctxt, ft);
+                if (PTypeEvent.Equals(Factory.Instance.ToAST(type)))
+                {
+                    ctxt.AddSideEffect(MkZingAssign(tmpVar, MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(PTypeEvent.Node))));
+                    ctxt.AddSideEffect(MkZingCallStmt(MkZingCall(MkZingDot(PRT_VALUE, "PrtPrimSetEvent"), tmpVar, MkZingEvent(name))));
+                }
+                else
+                {
+                    ctxt.AddSideEffect(MkZingAssign(tmpVar, MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(type))));
+                    ctxt.AddSideEffect(MkZingCallStmt(MkZingCall(MkZingDot(PRT_VALUE, "PrtPrimSetInt"), tmpVar, MkZingEnum(name))));
+                }
                 retVal = tmpVar;
             }
             ctxt.lastEval = retVal;
@@ -2776,7 +2848,7 @@ namespace Microsoft.Pc
             }
             else if (op == PData.Cnst_This.Node.Name)
             {
-                var machineType = PTypeReal;
+                var machineType = PTypeMachine;
                 var tmpVar = ctxt.GetTmpVar(PrtValue, "tmp");
                 ctxt.AddSideEffect(MkZingAssign(tmpVar, MkZingCall(PrtMkDefaultValue, typeContext.PTypeToZingExpr(machineType.Node))));
                 ctxt.AddSideEffect(MkZingCallStmt(MkZingCall(MkZingDot(PRT_VALUE, "PrtPrimSetMachine"), tmpVar, MkZingIdentifier("myHandle"))));
@@ -3255,7 +3327,23 @@ namespace Microsoft.Pc
         ZingTranslationInfo FoldPrint(FuncTerm ft, IEnumerable<ZingTranslationInfo> children, ZingFoldContext ctxt)
         {
             string msg = (GetArgByIndex(ft, 0) as Cnst).GetStringValue();
-            return new ZingTranslationInfo(MkZingTrace(msg));
+            List<AST<Node>> stmts = new List<AST<Node>>();
+            stmts.Add(MkZingTrace(msg));
+            List<AST<Node>> args = new List<AST<Node>>();
+            foreach (var child in children)
+            {
+                args.Add(child.node);
+            }
+            FuncTerm seg = GetArgByIndex(ft, 1) as FuncTerm;
+            while (seg != null)
+            {
+                int formatArg = (int) (GetArgByIndex(seg, 0) as Cnst).GetNumericValue().Numerator;
+                string str = (GetArgByIndex(seg, 1) as Cnst).GetStringValue();
+                seg = GetArgByIndex(seg, 2) as FuncTerm;
+                stmts.Add(MkZingCallStmt(MkZingCall(MkZingDot("PRT_VALUE", "Print"), args[formatArg])));
+                stmts.Add(MkZingTrace(str));
+            }
+            return new ZingTranslationInfo(MkZingSeq(stmts));
         }
 
         ZingTranslationInfo FoldBinStmt(FuncTerm ft, IEnumerable<ZingTranslationInfo> children, ZingFoldContext ctxt)
@@ -3638,7 +3726,6 @@ namespace Microsoft.Pc
 
         internal class TypeTranslationContext
         {
-            private int foreignTypeCount;
             private int fieldCount;
             private int typeCount;
             private List<AST<Node>> fieldNameInitialization;
@@ -3650,7 +3737,6 @@ namespace Microsoft.Pc
             public TypeTranslationContext(PToZing pToZing)
             {
                 this.pToZing = pToZing;
-                foreignTypeCount = 0;
                 fieldCount = 0;
                 typeCount = 0;
                 fieldNameInitialization = new List<AST<Node>>();
@@ -3700,7 +3786,6 @@ namespace Microsoft.Pc
             {
                 fieldNameInitialization.Add(n);
             }
-
 
             private void AddTypeInitialization(AST<Node> n)
             {
@@ -3757,10 +3842,10 @@ namespace Microsoft.Pc
                         AddTypeInitialization(MkZingAssign(tmpVar, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkPrimitiveType"), MkZingDot("PRT_TYPE_KIND", "PRT_KIND_EVENT"))));
                         return tmpVar;
                     }
-                    else if (primitiveType == "REAL")
+                    else if (primitiveType == "MACHINE")
                     {
                         var tmpVar = GetType();
-                        AddTypeInitialization(MkZingAssign(tmpVar, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkPrimitiveType"), MkZingDot("PRT_TYPE_KIND", "PRT_KIND_REAL"))));
+                        AddTypeInitialization(MkZingAssign(tmpVar, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkPrimitiveType"), MkZingDot("PRT_TYPE_KIND", "PRT_KIND_MACHINE"))));
                         return tmpVar;
                     }
                     else 
@@ -3774,8 +3859,7 @@ namespace Microsoft.Pc
                 else if (typeKind == "NameType")
                 {
                     var tmpVar = GetType();
-                    AddTypeInitialization(MkZingAssign(tmpVar, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkForeignType"), Factory.Instance.MkCnst(foreignTypeCount))));
-                    foreignTypeCount++;
+                    AddTypeInitialization(MkZingAssign(tmpVar, MkZingCall(MkZingDot("PRT_TYPE", "PrtMkPrimitiveType"), MkZingDot("PRT_TYPE_KIND", "PRT_KIND_INT"))));
                     return tmpVar;
                 }
                 else if (typeKind == "TupType")

@@ -155,9 +155,10 @@
                 return caseEventStack.Pop();
             }
 
-            public void AddCase(P_Root.IArgType_Cases__0 e, P_Root.IArgType_Cases__1 a)
+            public void AddCase(P_Root.IArgType_Cases__0 e, P_Root.IArgType_Cases__1 a, Span caseSpan)
             {
                 casesList = P_Root.MkCases(e, a, casesList);
+                casesList.Span = caseSpan;
             }
 
             public void AddPayloadVar(P_Root.UserCnstKind qualKind, string name, Span span)
@@ -175,7 +176,7 @@
                 var field = P_Root.MkNmdTupTypeField(
                                     P_Root.MkUserCnst(qualKind),
                                     P_Root.MkString(string.Format("_payload_{0}", parser.GetNextPayloadVarLabel())), 
-                                    (P_Root.IArgType_NmdTupTypeField__2) parser.MkBaseType(P_Root.UserCnstKind.ANY, Span.Unknown));
+                                    (P_Root.IArgType_NmdTupTypeField__2) parser.MkBaseType(P_Root.UserCnstKind.NULL, Span.Unknown));
                 contextLocalVarDecl = P_Root.MkNmdTupType(field, contextLocalVarDecl);
             }
 
@@ -497,8 +498,8 @@
             }
             else
             {
-                var nulStmt = P_Root.MkNulStmt(MkUserCnst(P_Root.UserCnstKind.SKIP, new Span()));
-                stmtStack.Push(nulStmt);
+                var skipStmt = P_Root.MkNulStmt(MkUserCnst(P_Root.UserCnstKind.SKIP, new Span()));
+                stmtStack.Push(skipStmt);
             }
         }
 
@@ -896,13 +897,46 @@
             stmtStack.Push(assertStmt);
         }
 
-        private void PushPrint(string msg, Span msgSpan, Span span)
+        private void PushPrint(string msg, Span msgSpan, Span span, bool hasArgs)
         {
-            var printStmt = P_Root.MkPrint();
-            printStmt.msg = MkString(msg, msgSpan);
-            printStmt.Span = span;
-            printStmt.info = MkSourceInfo(span);
-            stmtStack.Push(printStmt);
+            P_Root.IArgType_Print__2 args = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
+            int numArgs = 0;
+            if (hasArgs)
+            {
+                args = (P_Root.IArgType_Print__2)exprsStack.Pop();
+                P_Root.Exprs iter = args as P_Root.Exprs;
+                while (iter != null)
+                {
+                    numArgs++;
+                    iter = iter.tail as P_Root.Exprs;
+                }
+            }
+            List<string> segments;
+            List<int> formatArgs;
+            if (ParseFormatString(msg, numArgs, msgSpan, out segments, out formatArgs))
+            {
+                var printStmt = P_Root.MkPrint();
+                printStmt.msg = MkString(segments[0], msgSpan);
+                P_Root.IArgType_Print__1 segs = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
+                for (int i = formatArgs.Count-1; i >= 0; i--)
+                {
+                    var seg = P_Root.MkSegments();
+                    seg.formatArg = MkNumeric(formatArgs[i], msgSpan);
+                    seg.str = MkString(segments[i + 1], msgSpan);
+                    seg.tl = (P_Root.IArgType_Segments__2)segs;
+                    segs = seg;
+                }
+                printStmt.segs = segs;
+                printStmt.args = args;
+                printStmt.info = MkSourceInfo(span);
+                printStmt.Span = span;
+                stmtStack.Push(printStmt);
+            }
+            else
+            {
+                var skipStmt = P_Root.MkNulStmt(MkUserCnst(P_Root.UserCnstKind.SKIP, new Span()));
+                stmtStack.Push(skipStmt);
+            }
         }
 
         private void PushBinStmt(P_Root.UserCnstKind op, Span span)
@@ -1290,6 +1324,44 @@
             parseProgram.TypeDefs.Add(typeDef);
         }
 
+        P_Root.IArgType_StringList__1 enumElemList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
+        P_Root.IArgType_IntegerList__1 enumElemValList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
+
+        void AddEnumElem(string name, Span nameSpan)
+        {
+            enumElemList = P_Root.MkStringList(MkString(name, nameSpan), enumElemList);
+        }
+
+        void AddEnumElem(string name, Span nameSpan, string intStr, Span intStrSpan)
+        {
+            int val;
+            if (int.TryParse(intStr, out val))
+            {
+                enumElemList = P_Root.MkStringList(MkString(name, nameSpan), enumElemList);
+                enumElemValList = P_Root.MkIntegerList(MkNumeric(val, intStrSpan), enumElemValList);
+            }
+            else
+            {
+                var errFlag = new Flag(
+                     SeverityKind.Error,
+                     intStrSpan,
+                     Constants.BadSyntax.ToString(string.Format("Bad int constant {0}", intStr)),
+                     Constants.BadSyntax.Code,
+                     parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
+            }
+        }
+
+        void AddEnumTypeDef(string name, Span nameSpan, Span enumTypeDefSpan)
+        {
+            P_Root.EnumTypeDef enumTypeDef = P_Root.MkEnumTypeDef(MkString(name, nameSpan), (P_Root.StringList)enumElemList, (P_Root.IArgType_EnumTypeDef__2)enumElemValList);
+            enumElemList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
+            enumElemValList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
+            enumTypeDef.Span = enumTypeDefSpan;
+            parseProgram.EnumTypeDefs.Add(enumTypeDef);
+        }
+
         private void AddGroup()
         {
             groupStack.Pop();
@@ -1507,7 +1579,7 @@
                     MkUserCnst(valKind, valSpan)));
         }
 
-        private void AddCaseAnonyAction(Span entrySpan, Span exitSpan)
+        private void AddCaseAnonyAction(Span caseSpan, Span entrySpan, Span exitSpan)
         {
             var stmt = (P_Root.IArgType_AnonFunDecl__3)stmtStack.Pop();
             P_Root.IArgType_AnonFunDecl__0 owner =
@@ -1525,7 +1597,7 @@
             var caseEventList = localVarStack.Pop();
             foreach (var e in caseEventList)
             {
-                localVarStack.AddCase((P_Root.IArgType_Cases__0)e, anonAction);
+                localVarStack.AddCase((P_Root.IArgType_Cases__0)e, anonAction, caseSpan);
             }
         }
 
@@ -1963,7 +2035,7 @@
                 kind == P_Root.UserCnstKind.NULL ||
                 kind == P_Root.UserCnstKind.BOOL ||
                 kind == P_Root.UserCnstKind.INT ||
-                kind == P_Root.UserCnstKind.REAL ||
+                kind == P_Root.UserCnstKind.MACHINE ||
                 kind == P_Root.UserCnstKind.EVENT ||
                 kind == P_Root.UserCnstKind.ANY);
 
@@ -1993,6 +2065,88 @@
             var num = P_Root.MkNumeric(i);
             num.Span = span;
             return num;
+        }
+
+        private bool ParseFormatString(string s, int numArgs, Span span, out List<string> segments, out List<int> formatArgs)
+        {
+            segments = null;
+            formatArgs = null;
+            var ss = new List<string>();
+            var ns = new List<int>();
+            int i = 0;
+            string curr = "";
+            while (i < s.Length)
+            {
+                if ((s[i] == '{' || s[i] == '}') && i + 1 == s.Length)
+                {
+                    goto error;
+                }
+                if (s[i] == '{')
+                {
+                    i = i + 1;
+                    if (s[i] == '{')
+                    {
+                        curr += '{';
+                    }
+                    else
+                    {
+                        int j = i;
+                        while (j - i < 3 && j < s.Length && char.IsDigit(s[j]))
+                        {
+                            j++;
+                        }
+                        int n;
+                        if (i < j && j < s.Length && s[j] == '}' && int.TryParse(s.Substring(i, j-i), out n))
+                        {
+                            if (n >= numArgs)
+                            {
+                                goto error;
+                            }
+                            ss.Add(curr);
+                            ns.Add(n);
+                            curr = "";
+                            i = j;
+                        }
+                        else
+                        {
+                            goto error;
+                        }
+                    }
+                }
+                else if (s[i] == '}')
+                {
+                    i = i + 1;
+                    if (s[i] == '}')
+                    {
+                        curr += '}';
+                    }
+                    else
+                    {
+                        goto error;
+                    }
+                }
+                else
+                {
+                    curr += s[i];
+                }
+                i++;
+            }
+            ss.Add(curr);
+            segments = ss;
+            formatArgs = ns;
+            Contract.Assert(0 < segments.Count && segments.Count == formatArgs.Count + 1);
+            return true;
+
+            error:
+            var errFlag = new Flag(
+                            SeverityKind.Error,
+                            span,
+                            Constants.BadSyntax.ToString(string.Format("Bad format string {0}", s)),
+                            Constants.BadSyntax.Code,
+                            parseSource);
+            parseFailed = true;
+            parseFlags.Add(errFlag);
+            return false;
         }
 
         private void ResetState()

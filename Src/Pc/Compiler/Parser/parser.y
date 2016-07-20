@@ -9,7 +9,7 @@
 }
 
 %token INT BOOL ANY SEQ MAP ID
-%token TYPE INCLUDE MAIN EVENT MACHINE MONITOR ASSUME SPEC
+%token TYPE INCLUDE MAIN EVENT MACHINE MONITOR ASSUME SPEC ENUM
 
 %token VAR START HOT COLD MODEL STATE FUN ACTION GROUP MONITORS
 
@@ -56,6 +56,7 @@ TopDeclList
 TopDecl
     : IncludeDecl
 	| TypeDefDecl
+	| EnumTypeDefDecl
 	| EventDecl
 	| MachineDecl
 	| FunDecl
@@ -84,6 +85,21 @@ Annotation
 TypeDefDecl
 	: TYPE ID ASSIGN Type SEMICOLON			{ AddTypeDef($2.str, ToSpan(@2), ToSpan(@1)); }
 	| MODEL TYPE ID ASSIGN Type SEMICOLON   { AddModelTypeDef($3.str, ToSpan(@3), ToSpan(@1)); }
+	;
+
+EnumTypeDefDecl
+	: ENUM ID LCBRACE EnumElemList RCBRACE	{ AddEnumTypeDef($2.str, ToSpan(@2), ToSpan(@1)); }
+	| ENUM ID LCBRACE NumberedEnumElemList RCBRACE	{ AddEnumTypeDef($2.str, ToSpan(@2), ToSpan(@1)); }
+	;
+
+EnumElemList
+	: ID						{ AddEnumElem($1.str, ToSpan(@1)); }									
+	| ID COMMA EnumElemList		{ AddEnumElem($1.str, ToSpan(@1)); }
+	;
+
+NumberedEnumElemList
+	: ID ASSIGN INT									{ AddEnumElem($1.str, ToSpan(@1), $3.str, ToSpan(@3)); }									
+	| ID ASSIGN INT COMMA NumberedEnumElemList		{ AddEnumElem($1.str, ToSpan(@1), $3.str, ToSpan(@3)); }
 	;
 
 /******************* Include Declarations *******************/ 
@@ -320,7 +336,7 @@ Type
 	| BOOL                                  { PushTypeExpr(MkBaseType(P_Root.UserCnstKind.BOOL,    ToSpan(@1))); }
 	| INT                                   { PushTypeExpr(MkBaseType(P_Root.UserCnstKind.INT,     ToSpan(@1))); }
 	| EVENT                                 { PushTypeExpr(MkBaseType(P_Root.UserCnstKind.EVENT,   ToSpan(@1))); }
-	| MACHINE                               { PushTypeExpr(MkBaseType(P_Root.UserCnstKind.REAL,    ToSpan(@1))); }						
+	| MACHINE                               { PushTypeExpr(MkBaseType(P_Root.UserCnstKind.MACHINE, ToSpan(@1))); }						
 	| ANY                                   { PushTypeExpr(MkBaseType(P_Root.UserCnstKind.ANY,     ToSpan(@1))); }
 	| ID                                    { PushNameType($1.str, ToSpan(@1)); }
 	| SEQ LBRACKET Type RBRACKET            { PushSeqType(ToSpan(@1)); }
@@ -354,7 +370,8 @@ Stmt
 	| LCBRACE StmtList RCBRACE                                { }
 	| ASSERT Exp SEMICOLON                                    { PushAssert(ToSpan(@1));                                  }
 	| ASSERT Exp COMMA STR SEMICOLON                          { PushAssert($4.str.Substring(1,$4.str.Length-2), ToSpan(@4), ToSpan(@1)); }
-	| PRINT STR SEMICOLON                                     { PushPrint($2.str.Substring(1,$2.str.Length-2), ToSpan(@2), ToSpan(@1));  }
+	| PRINT STR SEMICOLON									  { PushPrint($2.str.Substring(1,$2.str.Length-2), ToSpan(@2), ToSpan(@1), false);  }
+	| PRINT STR COMMA ExprArgList SEMICOLON                   { PushPrint($2.str.Substring(1,$2.str.Length-2), ToSpan(@2), ToSpan(@1), true);  }
 	| RETURN SEMICOLON                                        { PushReturn(false, ToSpan(@1));                           }
 	| RETURN Exp SEMICOLON                                    { PushReturn(true, ToSpan(@1));                            }
 	| Exp ASSIGN Exp SEMICOLON                                { PushBinStmt(P_Root.UserCnstKind.ASSIGN, ToSpan(@1));     }
@@ -381,7 +398,7 @@ ReceiveStmt
 	;
 
 Case 
-	: CaseEventList PayloadVarDeclOrNone LCBRACE StmtBlock RCBRACE 		{ AddCaseAnonyAction(ToSpan(@3), ToSpan(@5)); }
+	: CaseEventList PayloadVarDeclOrNone LCBRACE StmtBlock RCBRACE 		{ AddCaseAnonyAction(ToSpan(@1), ToSpan(@3), ToSpan(@5)); }
 	;
 
 CaseEventList

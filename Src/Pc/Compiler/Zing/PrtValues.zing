@@ -39,7 +39,7 @@ class PRT_VALUE {
 				trace("{0}", value.ev.name);
 		}
 
-		if (tkind == PRT_TYPE_KIND.PRT_KIND_REAL)
+		if (tkind == PRT_TYPE_KIND.PRT_KIND_MACHINE)
 		{
 			if(isNullValue)
 				trace("null");
@@ -50,11 +50,6 @@ class PRT_VALUE {
 		if (tkind == PRT_TYPE_KIND.PRT_KIND_INT)
 		{
 			trace("{0}", value.nt);
-		}
-
-		if (tkind == PRT_TYPE_KIND.PRT_KIND_FORGN)
-		{
-		    trace("${0}", value.nt);
 		}
 
 		if (tkind == PRT_TYPE_KIND.PRT_KIND_MAP)
@@ -196,14 +191,11 @@ class PRT_VALUE {
 		if (tkind == PRT_TYPE_KIND.PRT_KIND_EVENT)
 			return (vkind == PRT_TYPE_KIND.PRT_KIND_EVENT || isNullValue);
 
-		if (tkind == PRT_TYPE_KIND.PRT_KIND_REAL)
-			return (vkind == PRT_TYPE_KIND.PRT_KIND_REAL || isNullValue);
+		if (tkind == PRT_TYPE_KIND.PRT_KIND_MACHINE)
+			return (vkind == PRT_TYPE_KIND.PRT_KIND_MACHINE || isNullValue);
 
 		if (tkind == PRT_TYPE_KIND.PRT_KIND_INT)
 			return vkind == PRT_TYPE_KIND.PRT_KIND_INT;
-
-		if (tkind == PRT_TYPE_KIND.PRT_KIND_FORGN)
-		    return vkind == PRT_TYPE_KIND.PRT_KIND_FORGN && type.typeTag == value.type.typeTag;
 
 		if (tkind == PRT_TYPE_KIND.PRT_KIND_MAP)
 		{
@@ -291,7 +283,7 @@ class PRT_VALUE {
 		if (kind == PRT_TYPE_KIND.PRT_KIND_EVENT)
 			return value.ev == null;
 
-		if (kind == PRT_TYPE_KIND.PRT_KIND_REAL)
+		if (kind == PRT_TYPE_KIND.PRT_KIND_MACHINE)
 			return value.mach == null;
 
 		if (kind == PRT_TYPE_KIND.PRT_KIND_NULL)
@@ -344,15 +336,12 @@ class PRT_VALUE {
 		if (kind1 == PRT_TYPE_KIND.PRT_KIND_EVENT)
 			return value1.ev == value2.ev;
 
-		if (kind1 == PRT_TYPE_KIND.PRT_KIND_REAL)
+		if (kind1 == PRT_TYPE_KIND.PRT_KIND_MACHINE)
 			return value1.mach == value2.mach;
 
 		if (kind1 == PRT_TYPE_KIND.PRT_KIND_INT)
 			return value1.nt == value2.nt;
 		
-		if (kind1 == PRT_TYPE_KIND.PRT_KIND_FORGN)
-		    return type1.typeTag == type2.typeTag && value1.nt == value2.nt;
-
 		if (kind1 == PRT_TYPE_KIND.PRT_KIND_MAP)
 		{
 			retVal = value1.map.Equals(value2.map);
