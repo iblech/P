@@ -5,7 +5,7 @@ module RemoveSideEffects =
   open Helper
   open ProgramTyping
 
-(*  /// Takes an expr as input, returns the re-written expr, a set of statements and updated environment 
+ /// Takes an expr as input, returns the re-written expr, a set of statements and updated environment 
   let rec removeSideEffectsExpr expr G =
     let (nexpr, stlist, nG) =
       match expr with
@@ -355,7 +355,7 @@ module RemoveSideEffects =
     let G' = mergeMaps G f.VarMap
     let stList, G'' = removeSideEffectsStlist f.Body G'
     let newVars = f.Locals @ (getNewVars G' G'')
-    new FunDecl(f.Name, f.Formals, f.RetType, newVars, stList, f.IsModel, f.IsPure, f.EnvEmpty, f.EnvVars)
+    new FunDecl(f.Name, f.Formals, f.RetType, newVars, stList, f.IsModel, f.IsPure)
 
   ///Return a new MachineDecl with all statements 
   ///causing only one side effect at most.
@@ -366,7 +366,7 @@ module RemoveSideEffects =
       !map 
     let G' = mergeMaps (mergeMaps G m.VarMap) funs
     let fList = List.map (removeSideEffectsFn G') m.Functions 
-    new MachineDecl(m.Name, m.StartState, m.Globals, fList, m.States, m.IsMonitor, m.MonitorList, m.QC, m.IsModel)
+    new MachineDecl(m.Name, m.StartState, m.Globals, fList, m.States, m.IsMonitor, m.MonitorList, m.QC, m.IsModel, m.HasPush)
 
   ///Return a new ProgramDecl with all statements causing 
   ///only one side effect at most.
@@ -377,6 +377,4 @@ module RemoveSideEffects =
       !map 
     let mList = List.map (removeSideEffectsMachine G) prog.Machines
     let fList = List.map (removeSideEffectsFn G) prog.StaticFuns
-    new ProgramDecl(prog.MainMachine, mList, prog.Events, fList, prog.maxFields)
-
-*)
+    new ProgramDecl(prog.MainMachine, mList, prog.Events, prog.EventsToMonitors, fList, prog.maxFields, prog.HasDefer, prog.HasIgnore)

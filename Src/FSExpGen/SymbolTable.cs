@@ -16,7 +16,7 @@ namespace Microsoft.P_FS_Boogie
             new Dictionary<string, HashSet<string>>();
 
         public string currentM { get; set; }
-        public string currentF { get { if (tbls.Count > 0) return tbls.Peek().Item1; else return null; } }
+        public string currentF { get { if (tbls.Count > 0) return GetFunName(tbls.Peek().Item1); else return null; } }
         public bool InsideStaticFn { get; set; } = false;
         //public Syntax.Expr.NamedTuple tupExpr { get; private set; }
         //public Syntax.Type.NamedTuple tupType { get; private set; }

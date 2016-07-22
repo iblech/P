@@ -9,7 +9,7 @@ module Translator =
   open ProgramTyping
   open RemoveSideEffects
   open System.IO
-(*
+
   (* Translation of normalized side-effect-free programs to Boogie *)
 
   let Typmap = ref Map.empty
@@ -268,8 +268,8 @@ module Translator =
         end
     let l1 = [!regEvents] @ (if hasIgnore then [!igEvents] else []) 
               @ (if hasDefer then [!defEvents] else [])
-    let l2 = ["registeredEvents"] @ (if hasIgnore then ["ignoredEvents"] else []) 
-              @ (if hasDefer then ["deferredEvents"] else [])
+    let l2 = ["registerEvents"] @ (if hasIgnore then ["ignoreEvents"] else []) 
+              @ (if hasDefer then ["deferEvents"] else [])
     
     List.zip l1 l2
   
@@ -298,11 +298,11 @@ module Translator =
         match srcExitAction with
         | None -> ignore true
         | Some(ea) -> fprintfn sw "       call %s();" ea
-        fprintfn sw "       call %s();" f
+        fprintfn sw "       call %s(payload);" f
         fprintfn sw "       CurrState := %d;" (Map.find d stateToInt)
         match dstEntryAction with
         | None -> ignore true
-        | Some(ea) -> fprintfn sw "       call %s();" ea   
+        | Some(ea) -> fprintfn sw "       call %s(payload);" ea   
         fprintfn sw "    }"
       end
     |TransDecl.T.Push(e, d) ->  
@@ -474,4 +474,3 @@ module Translator =
     let s = IO.File.ReadAllLines("CommonBpl.bpl") in
     Array.iter (fun s -> fprintfn sw "%s" s) s
     0 // return an integer exit code
-*)

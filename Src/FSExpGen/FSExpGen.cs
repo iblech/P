@@ -7,7 +7,6 @@ using Microsoft.Formula.API.Generators;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.P2Boogie;
-using System.Text.RegularExpressions;
 
 namespace Microsoft.P_FS_Boogie
 {
@@ -44,8 +43,8 @@ namespace Microsoft.P_FS_Boogie
             eventsToDecls = new Dictionary<string, Syntax.EventDecl>();
         private Dictionary<string, List<string>> 
             eventToMonitorList = new Dictionary<string, List<string>>();
-        private Dictionary<string, List<int>> 
-            functionsToRefParams = new Dictionary<string, List<int>>();
+        private Dictionary<string, List<Tuple<int, string, Syntax.Type>>> 
+            functionsToRefParams = new Dictionary<string, List<Tuple<int, string, Syntax.Type>>>();
 
         private string mainMachine = null;
         private SymbolTable symbolTable = new SymbolTable();
@@ -58,6 +57,7 @@ namespace Microsoft.P_FS_Boogie
         {
             options.analyzeOnly = true;
             options.profile = true;
+            options.test = true;
             compiler = new Compiler(options);
         }
 
@@ -196,7 +196,7 @@ namespace Microsoft.P_FS_Boogie
         {
             symbolTable.NewScope(name);
             functionsToLocals[symbolTable.currentF] = new List<Syntax.VarDecl>();
-            functionsToRefParams[symbolTable.currentF] = new List<int>();
+            functionsToRefParams[name] = new List<Tuple<int, string, Syntax.Type>>();
         }
 
         private void ExitScope()
@@ -1093,7 +1093,7 @@ namespace Microsoft.P_FS_Boogie
                 var d = genVar(f, owner);
                 if(f.qual.Symbol.ToString() == "REF")
                 {
-                    functionsToRefParams[symbolTable.currentF].Add(i);
+                    functionsToRefParams[symbolTable.currentF].Add(new Tuple<int, string, Syntax.Type>(i, d.Name, d.Type));
                 }
                 lst.Add(d);
                 x = x.tl as P_Root.NmdTupType;
@@ -1249,26 +1249,21 @@ namespace Microsoft.P_FS_Boogie
             var src = (t.src as P_Root.StateDecl);
             var machName = getString((src.owner as P_Root.MachineDecl).name);
             symbolTable.currentM = machName;
-            var owner = getQualifiedName(src.name as P_Root.QualifiedName);
+            var owner = machName + '_' + getQualifiedName(src.name as P_Root.QualifiedName);
             var dst = machName + '_' + getQualifiedName(t.dst as P_Root.QualifiedName);
             if (t.action.Symbol.ToString() == "PUSH")
             {
-                owner = machName + '_' + owner;
-                owner = machName + '_' + owner;
                 return Syntax.TransDecl.T.NewPush(trig, dst);
             }
             else if (t.action is P_Root.AnonFunDecl)
             {
                 var action = owner + "_on_" + trig + "_goto_" + dst;
-                owner = machName + '_' + owner;
                 genAnonFunDecl(t.action as P_Root.AnonFunDecl, ref action);
                 return Syntax.TransDecl.T.NewCall(trig, dst, action);
             }
             else
             {
                 var action = symbolTable.GetFunName(getString(t.action));
-                owner = machName + '_' + owner;
-                dst = machName + '_' + dst;
                 return Syntax.TransDecl.T.NewCall(trig, dst, action);
             }
         }

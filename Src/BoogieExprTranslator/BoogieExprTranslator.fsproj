@@ -51,6 +51,7 @@
   <ItemGroup>
     <Compile Include="Syntax.fs" />
     <Compile Include="Common.fs" />
+    <Compile Include="RemoveRefs.fs" />
     <Compile Include="Helper.fs" />
     <None Include="App.config" />
     <None Include="CommonBpl.bpl">

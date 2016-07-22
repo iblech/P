@@ -5,7 +5,7 @@ module RemoveNamedTuples =
   open Helper
   open ProgramTyping
 
-(*  let rec processType ty =
+  let rec processType ty =
     match ty with
     | Type.NamedTuple ts -> Type.Tuple (List.map (fun (a,b) -> processType b) ts)
     | Seq t -> Seq (processType t)
@@ -118,4 +118,3 @@ module RemoveNamedTuples =
     let mList = List.map (removeNamedTuplesMachine G) prog.Machines
     let fList = List.map (removeNamedTuplesFn G) prog.StaticFuns
     new ProgramDecl(prog.MainMachine, mList, eList, prog.EventsToMonitors, fList, prog.maxFields, prog.HasDefer, prog.HasIgnore)
-*)

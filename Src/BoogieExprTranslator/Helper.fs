@@ -74,7 +74,7 @@ module Helper=
   let lookupNamedFieldIndex f ts =
     List.findIndex (fun (a,b) -> a = f) ts
    
-(*  (* Printing functions *)
+  (* Printing functions *)
   ///printList <printing function> <list> <seperator between elements>
   let rec printList fn ls sep=
     match ls with
@@ -330,7 +330,7 @@ module Helper=
       sw.WriteLine (printList (printFunction prog "") prog.StaticFuns "\n")
       sw.WriteLine (printList (printMachine prog) prog.Machines "\n")           
     end
-*)  
+ 
   let tupleSize t =
     match t with
     | Type.Tuple ls -> (List.length ls)
