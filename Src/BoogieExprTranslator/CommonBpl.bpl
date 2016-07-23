@@ -44,6 +44,7 @@ function {:constructor} Cons(state: int, stack: StateStackType): StateStackType;
 
 var {:thread_local} StateStack: StateStackType;
 var {:thread_local} CurrState: int;
+var {:thread_local} thisMid  : int;
 
 procedure StateStackPush(state: int) 
 {

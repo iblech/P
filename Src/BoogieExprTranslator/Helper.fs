@@ -153,65 +153,6 @@ module Helper=
     | Lval.NamedDot(v, f) -> sprintf "%s.%s" (printLval v) f
     | Lval.Index(l, e) -> sprintf "%s[%s]" (printLval l) (printExpr e) 
   
-  let printEnvTup (envType: VarDecl list) = 
-    let tup = Expr.Tuple([for v in envType do yield Expr.Var(v.Name)])
-    printExpr tup  
-
-  let printRestoreEnv (envType: VarDecl list) =
-    match envType with
-    | [] -> ""
-    | ls -> 
-      begin
-        let names = [for v in ls do yield v.Name] |>
-                    Seq.mapi (fun i x -> i,x) |> List.ofSeq
-        sprintf "%s;\n" (printList (fun(i, s)-> sprintf "%s=env.%d" s i) names ";\n")
-      end
-
-  let printEnvType (env: VarDecl list) = 
-    let tup = Type.Tuple([for v in env do yield v.Type])
-    printType tup
-
-  let printAnonFun f argType envType action evHasParams fnHasParams envNonEmpty=      
-    let plDecl = if evHasParams then sprintf "(payload: %s)" (printType argType) else ""
-    let envDecl = if envNonEmpty then sprintf "var env: %s;\nenv = " (printEnvType envType) else ""
-    let param1 = if envNonEmpty then (printEnvTup envType) else ""
-    let comma = if fnHasParams && envNonEmpty then ", " else ""
-    let param2 = if fnHasParams then "payload" else ""
-    let restore = if envNonEmpty then (printRestoreEnv envType) else ""
-    sprintf "%s %s {\n%s%s(%s%s%s);\n%s}\n" action plDecl envDecl f param1 comma param2 restore
-
-  let printAction (prog: ProgramDecl) cm fn action = 
-    let fd = if (prog.FunMap.ContainsKey fn) then prog.FunMap.[fn]
-             else  (prog.MachineMap.[cm].FunMap.[fn]) 
-    let envType = if fd.EnvEmpty then List.Empty else fd.EnvVars.Value
-    let arg = 
-      match fd.EnvEmpty, fd.Formals.IsEmpty with
-      | true, true -> List.Empty
-      | true, false -> fd.Formals
-      | false, _ ->  List.tail fd.Formals
-    let argType = if (arg.IsEmpty) then Type.Null else (List.head arg).Type
-    let hasParams = 
-      match action with
-      | "exit" -> false
-      | _ -> not arg.IsEmpty 
-    printAnonFun fn argType envType action hasParams hasParams (not fd.EnvEmpty)
-
-  ///printEventAction <program> <event name> <machine name> <function name>
-  let printEventAction (prog: ProgramDecl) cm action ev fn =
-    let e = (Map.find ev prog.EventMap)
-    let fd = if (prog.FunMap.ContainsKey fn) then prog.FunMap.[fn]
-             else  (prog.MachineMap.[cm].FunMap.[fn]) 
-    let envType = if fd.EnvEmpty then List.Empty else fd.EnvVars.Value
-    let fnHasParams = if fd.EnvEmpty then (fd.Formals.Length = 1) else fd.Formals.Length = 2
-    match e.Type with
-      | Some(t) -> printAnonFun fd.Name t envType action true fnHasParams (not fd.EnvEmpty)
-      | None -> printAnonFun fd.Name Type.Null envType action false fnHasParams (not fd.EnvEmpty)
-
-  ///printCases <program> <event name> <machine name> <function name>
-  let printCases prog cm (ev, fn) =     
-    let action = sprintf "case %s: " ev 
-    printEventAction prog cm action ev fn
-    
   let rec printStmt prog cm s =
     match s with
     | Assign(l, e) -> sprintf "%s = %s;" (printLval l) (printExpr e)
@@ -236,24 +177,36 @@ module Helper=
     | Monitor(e1, e2) -> sprintf "monitor (%s), (%s);" (printExpr e1) (printExpr e2)
     | FunStmt(s, el, None) -> sprintf "%s(%s);" s (printList printExpr el ", ")
     | FunStmt(s, el, v) -> sprintf "%s = %s(%s);" v.Value s (printList printExpr el ", ")
+    
+  ///printEventAction <program> <event name> <machine name> <function name>
+  and printCases (prog: ProgramDecl) cm (ev, st) =     
+    let evType = match (Map.find ev prog.EventMap).Type with
+                 | None -> "(payload: null)"
+                 | Some(t) -> sprintf "(payload: %s)" (printType t)
+    sprintf "case %s: %s {\n%s\n}" ev evType (printStmt prog cm st)
 
-  let printDo prog cm (d: Syntax.DoDecl.T) = 
+  let printDo (prog: ProgramDecl) (d: Syntax.DoDecl.T) = 
     match d with
     | Syntax.DoDecl.T.Defer(s) -> (sprintf "defer %s;" s)
     | Syntax.DoDecl.T.Ignore(s) -> (sprintf "ignore %s;" s)
     | Syntax.DoDecl.T.Call(e, f) -> 
       begin
-        let action = sprintf "on %s do " e
-        printEventAction prog cm action e f
+        let evType = match (Map.find e prog.EventMap).Type with
+                     | None -> "(payload: null)"
+                     | Some(t) -> sprintf "(payload: %s)" (printType t)
+        sprintf "on %s do %s {\n%s(payload);\n}" e evType f
       end
 
-  let printTrans prog cm (t: Syntax.TransDecl.T) =
+  let printTrans (prog: ProgramDecl) (t: Syntax.TransDecl.T) =
     match t with 
     | Syntax.TransDecl.T.Push(e, d) -> (sprintf "on %s push %s;" e d)
     | Syntax.TransDecl.T.Call(e, d, f) -> 
       begin
-        let action = sprintf "on %s goto %s with " e d 
-        printEventAction prog cm action e f
+        let evType = match (Map.find e prog.EventMap).Type with
+                     | None -> "(payload: null)"
+                     | Some(t) -> sprintf "(payload: %s)" (printType t)
+    
+        sprintf "on %s goto %s with %s {\n%s(payload);\n}" e d evType f
       end
 
   let (|InvariantEqual|_|) (str:string) arg = 
@@ -297,16 +250,24 @@ module Helper=
       | _ -> ""
     
     let printEntryExit (ea: string option) action= 
-      if ea.IsSome then begin
-        let fn = ea.Value
-        printAction prog cm fn action
-      end
-      else ""
-    
+      match action, ea with
+      | _, None -> ""
+      | "entry", Some(a) -> 
+        begin
+          let fd = if (prog.FunMap.ContainsKey a) then prog.FunMap.[a]
+                   else  (prog.MachineMap.[cm].FunMap.[a]) 
+          if fd.Formals.Length > 1 then
+            sprintf "entry (payload: %s) {\n%s(payload);\n}" (printType fd.Formals.Head.Type) a
+          else
+            sprintf "entry %s;" a
+        end
+      | "exit", Some(a) -> sprintf "exit %s;" a
+      | _,_ -> raise NotDefined   
+
     let entry = (printEntryExit s.EntryAction "entry")
     let exit = (printEntryExit s.ExitAction "exit")
-    let dos = (printList (printDo prog cm) s.Dos "\n")
-    let trans = (printList (printTrans prog cm) s.Transitions "\n")
+    let dos = (printList (printDo prog) s.Dos "\n")
+    let trans = (printList (printTrans prog) s.Transitions "\n")
     sprintf "\n%s state %s\n{\n%s%s%s%s}" temp s.Name entry exit dos trans
 
   let printMachine (prog: ProgramDecl) (m: Syntax.MachineDecl) =

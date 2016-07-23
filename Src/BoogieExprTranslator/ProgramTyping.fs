@@ -349,38 +349,7 @@ module ProgramTyping =
   let typecheckSend (prog: Syntax.ProgramDecl) G cm M ev arg = 
     typeAssert (isSubtype (typecheckExpr prog G cm M) Type.Machine) (sprintf "%s is not a machine!" (printExpr M))
     typecheckEventWithArgs prog G cm ev arg
-  
-  ///Check if a case is valid.
-  ///typecheckCase <program> <Referencing Environment> <current machine> <event> <action>  
-  //This is a special case. We have to exclude the environment arg of the anon function.
-  let typecheckCase (prog: ProgramDecl) cm e f= 
-    let ev = prog.EventMap.[e]
-    let fd = if (prog.FunMap.ContainsKey f) then prog.FunMap.[f]
-             else  (prog.MachineMap.[cm].FunMap.[f]) 
-    let len = fd.Formals.Length
-    match ev.Type, fd.EnvEmpty with
-    | None, true -> 
-      begin
-        if len <> 0 then raise (TypeException (sprintf "Error in case statement: The event %s must take provide an argument"  e))
-      end
-    | None, false -> 
-      begin
-        if len <> 1 then raise (TypeException (sprintf "Error in case statement: The event %s must take provide an argument"  e))
-      end
-
-    | Some(t), false -> 
-      begin
-        if len <> 2 then raise (TypeException (sprintf "Error in case statement: The event %s must provide an argument"  e))
-        let arg = List.item 1 fd.Formals
-        typeAssert (isSubtype t arg.Type) (sprintf "Invalid argument to %s: expects %s, not %s" f (printType arg.Type) (printType t))
-      end
-    | Some(t), true -> 
-      begin
-        if len <> 1 then raise (TypeException (sprintf "Error in case statement: The event %s must not provide an argument"  e))
-        let arg = List.item 0 fd.Formals
-        typeAssert (isSubtype t arg.Type) (sprintf "Invalid argument to %s: expects %s, not %s" f (printType arg.Type) (printType t))
-      end
-  
+ 
   ///Type check statements.
   ///typecheckStmt <program> <Referencing Environment> <current machine> <current function> <statement>
   let rec typecheckStmt prog G cm cf st =
@@ -426,7 +395,7 @@ module ProgramTyping =
         (typecheckStmt prog G cm cf e)
       end
     | SeqStmt(lst) -> (List.iter (fun s -> (typecheckStmt prog G cm cf s)) lst)
-    | Receive(lst) -> (List.iter(fun(e, a) -> (typecheckCase prog cm e a)) lst)
+    | Receive(lst) -> List.iter (fun(e, st) -> typecheckStmt prog G cm cf st) lst
     //ToDo add dynamic check that the event will accept the arg given.
     | Monitor(e, arg) -> (typecheckEventWithArgs prog G cm e arg)
     | Return(Some(e)) -> 

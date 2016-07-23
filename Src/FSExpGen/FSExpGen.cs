@@ -192,11 +192,12 @@ namespace Microsoft.P_FS_Boogie
             return -1;
         }
 
-        private void NewScope(string name)
+        private void NewScope(string name, bool insideAnonFun = false)
         {
             symbolTable.NewScope(name);
             functionsToLocals[symbolTable.currentF] = new List<Syntax.VarDecl>();
-            functionsToRefParams[name] = new List<Tuple<int, string, Syntax.Type>>();
+            if(!insideAnonFun)
+                functionsToRefParams[symbolTable.currentF] = new List<Tuple<int, string, Syntax.Type>>();
         }
 
         private void ExitScope()
@@ -797,16 +798,19 @@ namespace Microsoft.P_FS_Boogie
             var envVarDecl = new Syntax.VarDecl(name + "_env", env.Item1);
             //Added this envVarDecl to PARENT FUNCTION - as NewScope() 
             //is called below.
-            functionsToLocals[symbolTable.currentF].Add(envVarDecl);
-            args.Add(envVarDecl);
-            retExp = new FSharpOption<Syntax.Expr>(env.Item2 as Syntax.Expr);
-            locals.AddRange(env.Item3);
-            body.AddRange(env.Item4);
+            if(env.Item1.Item.Length > 0)
+            {
+                functionsToLocals[symbolTable.currentF].Add(envVarDecl);
+                args.Add(envVarDecl);
+                retExp = new FSharpOption<Syntax.Expr>(env.Item2 as Syntax.Expr);
+                locals.AddRange(env.Item3);
+                body.AddRange(env.Item4);
+            }
 
             if (env.Item1.Item.Length > maxFields)
                 maxFields = env.Item1.Item.Length;
 
-            NewScope(name);
+            NewScope(name, true);
 
             //Get Locals
             if (d.locals.Symbol.ToString() != "NIL")
@@ -843,10 +847,14 @@ namespace Microsoft.P_FS_Boogie
             var stmtList = new List<Syntax.Stmt>();
             var argList = new List<Syntax.Expr>();
             argList.Add(Syntax.Expr.NewVar("payload"));
-            argList.Add(Syntax.Expr.NewVar(name + "_env"));
-            stmtList.Add(Syntax.Stmt.NewAssign(Syntax.Lval.NewVar(name + "_env"), env.Item2));
-            stmtList.Add(Syntax.Stmt.NewFunStmt(name, ListModule.OfSeq(argList),
-                new FSharpOption<string>(name + "_env")));
+            FSharpOption<string> retVar = null;
+
+            if (env.Item1.Item.Length > 0)
+            {
+                argList.Add(env.Item2);
+                retVar = new FSharpOption<string>(name + "_env");
+            }
+            stmtList.Add(Syntax.Stmt.NewFunStmt(name, ListModule.OfSeq(argList), retVar));
             stmtList.AddRange(env.Item4);
             return Syntax.Stmt.NewSeqStmt(ListModule.OfSeq(stmtList));
         }
@@ -1253,6 +1261,7 @@ namespace Microsoft.P_FS_Boogie
             var dst = machName + '_' + getQualifiedName(t.dst as P_Root.QualifiedName);
             if (t.action.Symbol.ToString() == "PUSH")
             {
+                hasPush = true;
                 return Syntax.TransDecl.T.NewPush(trig, dst);
             }
             else if (t.action is P_Root.AnonFunDecl)
@@ -1277,10 +1286,12 @@ namespace Microsoft.P_FS_Boogie
             var trig = genTrig(d.trig);
             if (d.action.Symbol.ToString() == "DEFER")
             {
+                hasDefer = true;
                 return Syntax.DoDecl.T.NewDefer(trig);
             }
             else if (d.action.Symbol.ToString() == "IGNORE")
             {
+                hasIgnore = true;
                 return Syntax.DoDecl.T.NewIgnore(trig);
             }
             else if (d.action is P_Root.AnonFunDecl)
