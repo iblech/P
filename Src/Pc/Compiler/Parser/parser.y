@@ -89,11 +89,17 @@ TypeDefDecl
 
 EnumTypeDefDecl
 	: ENUM ID LCBRACE EnumElemList RCBRACE	{ AddEnumTypeDef($2.str, ToSpan(@2), ToSpan(@1)); }
+	| ENUM ID LCBRACE NumberedEnumElemList RCBRACE	{ AddEnumTypeDef($2.str, ToSpan(@2), ToSpan(@1)); }
 	;
 
 EnumElemList
 	: ID						{ AddEnumElem($1.str, ToSpan(@1)); }									
 	| ID COMMA EnumElemList		{ AddEnumElem($1.str, ToSpan(@1)); }
+	;
+
+NumberedEnumElemList
+	: ID ASSIGN INT									{ AddEnumElem($1.str, ToSpan(@1), $3.str, ToSpan(@3)); }									
+	| ID ASSIGN INT COMMA NumberedEnumElemList		{ AddEnumElem($1.str, ToSpan(@1), $3.str, ToSpan(@3)); }
 	;
 
 /******************* Include Declarations *******************/ 
@@ -392,7 +398,7 @@ ReceiveStmt
 	;
 
 Case 
-	: CaseEventList PayloadVarDeclOrNone LCBRACE StmtBlock RCBRACE 		{ AddCaseAnonyAction(ToSpan(@3), ToSpan(@5)); }
+	: CaseEventList PayloadVarDeclOrNone LCBRACE StmtBlock RCBRACE 		{ AddCaseAnonyAction(ToSpan(@1), ToSpan(@3), ToSpan(@5)); }
 	;
 
 CaseEventList

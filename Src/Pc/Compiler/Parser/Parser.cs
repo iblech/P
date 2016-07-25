@@ -155,9 +155,10 @@
                 return caseEventStack.Pop();
             }
 
-            public void AddCase(P_Root.IArgType_Cases__0 e, P_Root.IArgType_Cases__1 a)
+            public void AddCase(P_Root.IArgType_Cases__0 e, P_Root.IArgType_Cases__1 a, Span caseSpan)
             {
                 casesList = P_Root.MkCases(e, a, casesList);
+                casesList.Span = caseSpan;
             }
 
             public void AddPayloadVar(P_Root.UserCnstKind qualKind, string name, Span span)
@@ -175,7 +176,7 @@
                 var field = P_Root.MkNmdTupTypeField(
                                     P_Root.MkUserCnst(qualKind),
                                     P_Root.MkString(string.Format("_payload_{0}", parser.GetNextPayloadVarLabel())), 
-                                    (P_Root.IArgType_NmdTupTypeField__2) parser.MkBaseType(P_Root.UserCnstKind.ANY, Span.Unknown));
+                                    (P_Root.IArgType_NmdTupTypeField__2) parser.MkBaseType(P_Root.UserCnstKind.NULL, Span.Unknown));
                 contextLocalVarDecl = P_Root.MkNmdTupType(field, contextLocalVarDecl);
             }
 
@@ -1324,15 +1325,39 @@
         }
 
         P_Root.IArgType_StringList__1 enumElemList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
+        P_Root.IArgType_IntegerList__1 enumElemValList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
+
         void AddEnumElem(string name, Span nameSpan)
         {
             enumElemList = P_Root.MkStringList(MkString(name, nameSpan), enumElemList);
         }
 
+        void AddEnumElem(string name, Span nameSpan, string intStr, Span intStrSpan)
+        {
+            int val;
+            if (int.TryParse(intStr, out val))
+            {
+                enumElemList = P_Root.MkStringList(MkString(name, nameSpan), enumElemList);
+                enumElemValList = P_Root.MkIntegerList(MkNumeric(val, intStrSpan), enumElemValList);
+            }
+            else
+            {
+                var errFlag = new Flag(
+                     SeverityKind.Error,
+                     intStrSpan,
+                     Constants.BadSyntax.ToString(string.Format("Bad int constant {0}", intStr)),
+                     Constants.BadSyntax.Code,
+                     parseSource);
+                parseFailed = true;
+                parseFlags.Add(errFlag);
+            }
+        }
+
         void AddEnumTypeDef(string name, Span nameSpan, Span enumTypeDefSpan)
         {
-            P_Root.EnumTypeDef enumTypeDef = P_Root.MkEnumTypeDef(MkString(name, nameSpan), (P_Root.StringList)enumElemList);
+            P_Root.EnumTypeDef enumTypeDef = P_Root.MkEnumTypeDef(MkString(name, nameSpan), (P_Root.StringList)enumElemList, (P_Root.IArgType_EnumTypeDef__2)enumElemValList);
             enumElemList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
+            enumElemValList = P_Root.MkUserCnst(P_Root.UserCnstKind.NIL);
             enumTypeDef.Span = enumTypeDefSpan;
             parseProgram.EnumTypeDefs.Add(enumTypeDef);
         }
@@ -1554,7 +1579,7 @@
                     MkUserCnst(valKind, valSpan)));
         }
 
-        private void AddCaseAnonyAction(Span entrySpan, Span exitSpan)
+        private void AddCaseAnonyAction(Span caseSpan, Span entrySpan, Span exitSpan)
         {
             var stmt = (P_Root.IArgType_AnonFunDecl__3)stmtStack.Pop();
             P_Root.IArgType_AnonFunDecl__0 owner =
@@ -1572,7 +1597,7 @@
             var caseEventList = localVarStack.Pop();
             foreach (var e in caseEventList)
             {
-                localVarStack.AddCase((P_Root.IArgType_Cases__0)e, anonAction);
+                localVarStack.AddCase((P_Root.IArgType_Cases__0)e, anonAction, caseSpan);
             }
         }
 
@@ -1993,7 +2018,7 @@
             var field = P_Root.MkNmdTupTypeField(
                                    P_Root.MkUserCnst(P_Root.UserCnstKind.NONE),
                                    P_Root.MkString("_payload_skip"),
-                                   (P_Root.IArgType_NmdTupTypeField__2)MkBaseType(P_Root.UserCnstKind.ANY, Span.Unknown));
+                                   (P_Root.IArgType_NmdTupTypeField__2)MkBaseType(P_Root.UserCnstKind.NULL, Span.Unknown));
             var decl = P_Root.MkAnonFunDecl(owner, P_Root.MkUserCnst(P_Root.UserCnstKind.NIL), P_Root.MkUserCnst(P_Root.UserCnstKind.NIL), stmt, (P_Root.IArgType_AnonFunDecl__4)P_Root.MkNmdTupType(field, P_Root.MkUserCnst(P_Root.UserCnstKind.NIL)));
             decl.Span = span;
             parseProgram.AnonFunctions.Add(decl);
