@@ -15,7 +15,7 @@ module FlattenStmtLists =
     | NewStmt(_)
     | Raise(_)
     | Send(_)
-    | Skip
+    | Skip(_)
     | Pop
     | Return(_)
     | Monitor(_)
