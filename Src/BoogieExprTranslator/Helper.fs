@@ -166,7 +166,7 @@ module Helper=
     | Raise(e1, e2) -> sprintf "raise %s, %s;" (printExpr e1) (printExpr e2)
     | Send (e1, e2, Nil) -> sprintf "send %s, %s;" (printExpr e1) (printExpr e2) 
     | Send (e1, e2, e3) -> sprintf "send %s, %s, %s;" (printExpr e1) (printExpr e2) (printExpr e3)
-    | Skip -> ";\n"
+    | Skip(_) -> ";\n"
     | While(c, s) -> sprintf "while(%s)\n{\n%s\n}\n" (printExpr c) (printStmt prog cm s)
     | Ite(c, i, e) -> sprintf "if(%s)\n{\n%s\n}\nelse\n{\n%s\n}\n" (printExpr c) (printStmt prog cm i) (printStmt prog cm e)
     | SeqStmt(l) -> sprintf "\n%s\n" (printList (printStmt prog cm) l "\n")

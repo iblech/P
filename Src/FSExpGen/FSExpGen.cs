@@ -1182,7 +1182,7 @@ namespace Microsoft.P_FS_Boogie
 
 
         //A(sad?) Departure from Design. 
-        //We generate the name of the AnonFunction, and also a FunDecl to
+        //We generate the name of the AnonFunction, a FunDecl to
         //that effect and add it to the appropriate list.
         private void genAnonFunDecl(P_Root.AnonFunDecl d, ref string name)
         {
@@ -1195,6 +1195,7 @@ namespace Microsoft.P_FS_Boogie
             name += ln;
             if (ln == 0)
                 name += ("_rand_" + r.Next());
+
 
             NewScope(name);
             name = symbolTable.GetFunName(name);

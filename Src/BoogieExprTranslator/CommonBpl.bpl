@@ -17,6 +17,9 @@ procedure {:inline} InsertMap(map: PrtRef, key: PrtRef, value: PrtRef)  returns 
 procedure {:inline} RemoveMap(map: PrtRef, key: PrtRef)  returns (nmap: PrtRef);
 
 
+//The global counter for machines.
+var machineCounter : int;
+
 // The Queues
 
 // MachineId -> index -> EventId
@@ -31,6 +34,21 @@ var MachineInboxHead: [int]int;
 // MachineId -> tail index
 var MachineInboxTail: [int]int;
 
+//Queue Constraints
+var machineToQCAssert: [int] int;
+var machineToQCAssume: [int] int;
+var machineEvToQCount: [int][int]int;
+
+
+//mid
+var {:thread_local} thisMid : int;
+
+//For raised events.
+var {:thread_local} eventRaised: bool;
+var {:thread_local} raisedEvent: int;
+var {:thread_local} raisedEventPl: PrtRef;
+
+
 procedure {:inline} InitializeInbox(mid: int)
 {
    assume MachineInboxHead[mid] == 1;
@@ -44,7 +62,7 @@ function {:constructor} Cons(state: int, stack: StateStackType): StateStackType;
 
 var {:thread_local} StateStack: StateStackType;
 var {:thread_local} CurrState: int;
-var {:thread_local} thisMid  : int;
+
 
 procedure StateStackPush(state: int) 
 {
@@ -57,39 +75,17 @@ procedure StateStackPop returns (state: int)
    return stack#Cons(StateStack);
 }
 
-procedure RaiseEvent(mid:int, event: int, payload: PrtRef) 
-{
-   var head: int;
-
-   head := MachineInboxHead[mid] - 1;
-   MachineInboxHead[mid] := head;
-
-   MachineInboxStoreEvent[mid][head] := event;
-   MachineInboxStorePayload[mid][head] := payload;   
-}
-
 procedure AssertEventCard(mid: int, event: int)
 {
    var head: int;
    var tail: int;
-   var ptr : int;
-   var curr: int
    var count: int;
    
    head := MachineInboxHead[mid];
    tail := MachineInboxTail[mid];
-   ptr  := head;
-   count := 0;
+   count := machineEvToQCount[mid][event];
 
-   while(ptr <= tail)
-   {
-    	curr := MachineInboxStoreEvent[mid][ptr];
-    	if(curr == event)
-    	{
-    		count := count + 1;
-    	}
-   }
-   //Add queue constraints for specific events.
+   //Queue constraints for specific events.
 }
 
 procedure AssertMachineQueueSize(mid: int)
@@ -97,127 +93,44 @@ procedure AssertMachineQueueSize(mid: int)
 	var head: int;
 	var tail: int;
     var size: int;
-    var c: [string]int;
+    var qc: int;
 
     head := MachineInboxHead[mid];
     tail := MachineInboxTail[mid];
     size := (tail - head) + 1;
 
-    c = qc[mid];
-    if(c)
-}
+	qc := machineToQCAssert[mid];
+	if(qc > 0)
+	{
+       assert (size <= qc);
+	}
 
+    qc := machineToQCAssume[mid];
+	if(qc > 0)
+	{
+       assume (size <= qc);
+	}
+}
 
 procedure Enqueue(mid:int, event: int, payload: PrtRef) 
 {
+   var q: int;
    var tail: int;
 
    tail := MachineInboxTail[mid] + 1;
    MachineInboxTail[mid] := tail;
-
-   AssertEventCard(mid, event);
-   AssertMachineQueueSize(mid);
-
+   
+   q := machineEvToQCount[mid][event] + 1;
+   machineEvToQCount[mid][event] := q;
    MachineInboxStoreEvent[mid][tail] := event;
    MachineInboxStorePayload[mid][tail] := payload;
+
+   call AssertEventCard(mid, event);
+   call AssertMachineQueueSize(mid);
 }
 
-
-procedure Dequeue(mid: int, deferEvents: [int]bool, ignoreEvents: [int]bool, registeredEvents: [int]bool ) returns (event: int, payload: PrtRef)
+procedure send(mid: int, event: int, payload: PrtRef)
 {
-   var ptr: int;
-   var head: int;
-   var tail: int;
-
-   head := MachineInboxHead[mid];
-   tail := MachineInboxTail[mid];
-
-   ptr := head;
-   event := 0 - 1;
-
-   while(ptr <= tail) 
-   {
-      event := MachineInboxStoreEvent[mid][ptr];
-      if(event >= 0 && ignoreEvents[event]) 
-      {
-         // dequeue
-         if(ptr == head) 
-         {
-            MachineInboxHead[mid] := head + 1;
-         } 
-         else if(ptr == tail) 
-         {
-            MachineInboxTail[mid] := tail - 1;
-         }
-         else
-         {
-            MachineInboxStoreEvent[mid] := 0 - 1;        
-         }
-      }
-      else if(event >= 0 && !deferEvents[event] && registeredEvents[event])
-      {
-         // dequeue
-         if(ptr == head) 
-         {
-            MachineInboxHead[mid] := head + 1;
-         } 
-         else if(ptr == tail) 
-         {
-            MachineInboxTail[mid] := tail - 1;
-         }
-         else
-         {
-            MachineInboxStoreEvent[mid] := 0 - 1;        
-         }
-         payload := MachineInboxStorePayload[mid][ptr];
-         break;
-      }   
-      ptr := ptr + 1;   
-      event := 0 - 1;
-   }
-
-   // block
-   assume event >= 0;
+	monitor(mid, event, payload);
+	enqueue(mid, event, payload);
 }
-
-/*
-procedure MachineThread(mid: int) 
-{
-   var event: int;
-   var payload: PrtRef;
-
-   // Initialize
-   StateStack := Nil();
-   CurrState := start_state;
-   call InitializeInbox(mid);
-
-   call EntryAction(mid, CurrState);
-   
-   while(true) 
-   {
-      call event, payload := Dequeue(mid, **, **, **);
-      if(DoAction(event)) 
-      {
-         call action();
-      } 
-      else if(GotoWith(event)) 
-      {
-         call ExitAction();
-         call WithAction();
-         CurrState := New_State;
-         call EntryAction(mid, CurrState);
-      } 
-      else if(Push(event)) 
-      {
-         StateStackPush(CurrState);
-         CurrState := New_State;
-         call EntryAction(mid, CurrState);
-      }
-      else 
-      {
-        assume false;
-      }
-   }
-}
-
-*/

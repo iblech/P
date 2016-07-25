@@ -136,7 +136,7 @@ module RemoveRefParams =
         let vl3, stl3, e3' = (removeRefParamsExpr fd funToRefParams e3)
         vl1 @ vl2 @ vl3, stl1 @ stl2 @ stl3 @ [Send(e1', e2', e3')]
       end
-    | Skip -> [], [stmt]
+    | Skip(_) -> [], [stmt]
     | While(c, s) ->
       begin
         let vlc, stlc, c' = (removeRefParamsExpr fd funToRefParams c)

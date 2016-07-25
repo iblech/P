@@ -63,7 +63,7 @@ module Syntax =
     | NewStmt of string * Expr
     | Raise of Expr * Expr
     | Send of Expr * Expr * Expr
-    | Skip
+    | Skip of int
     | While of Expr * Stmt
     | Ite of Expr * Stmt * Stmt
     | SeqStmt of Stmt list
@@ -175,6 +175,7 @@ module Syntax =
       let map = ref Map.empty in
       List.iter (fun (var: VarDecl) -> map := Map.add var.Name var.Type !map) this.Globals
       !map       
+      
    
   [<Serializable>]
   [<AllowNullLiteral>]

@@ -214,7 +214,7 @@ module RemoveSideEffects =
             let (e3', d3, G''') = removeSideEffectsExpr e3 G'' in 
             (d1 @ d2 @ d3 @ [Send(e1', e2', e3')], G''')
       end
-    | Skip -> [stmt], G
+    | Skip(_) -> [stmt], G
     | While(c, s) -> 
       begin
         let (c', d1, G') = removeSideEffectsExpr c G in

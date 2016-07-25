@@ -421,7 +421,7 @@ module ProgramTyping =
           else "")
       end
     | Pop -> ignore true
-    | Skip -> ignore true //A fancy way of generating unit.
+    | Skip(_) -> ignore true //A fancy way of generating unit.
 
   let typecheckFun (prog: ProgramDecl) G cm (f: FunDecl) =
     let G' = (mergeMaps G f.VarMap)
