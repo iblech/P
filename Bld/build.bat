@@ -25,8 +25,8 @@ if "%Configuration%"=="" set Configuration=Debug
 set Platform=%2
 if "%Platform%"=="" set Platform=x86
 
-git submodule init
-git submodule update
+REM git submodule init
+REM git submodule update
 cd ext\zing
 
 echo msbuild  Zing.sln /p:Platform=%Platform% /p:Configuration=Release
@@ -62,7 +62,7 @@ del Src\PrtDist\Core\NodeManager_s.c
 
 echo msbuild P.sln /p:Platform=%Platform% /p:Configuration=%Configuration%
 msbuild  P.sln /p:Platform=%Platform% /p:Configuration=%Configuration% /t:Clean
-msbuild P.sln /p:Platform=%Platform% /p:Configuration=%Configuration%
+msbuild P.sln /p:Platform=%Platform% /p:Configuration=%Configuration% /p:SOLVER=NOSOLVER
 
 :exit
 popd
