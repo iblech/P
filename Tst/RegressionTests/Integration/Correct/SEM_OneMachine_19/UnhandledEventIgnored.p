@@ -1,28 +1,91 @@
-// P semantics test: one machine, "ignore" of an unhandled event
-// Compare this test to SendInExitUnhandledEvent.p
+event E2  assert 2;
+event E1  assert 1;
 
-event E2 assert 2;
-event E1 assert 1;
+main machine Real1
+{
+var Real1_test: bool;
 
-main machine Real1 {
-    var test: bool;  //init with "false"
-    start state Real1_Init {
-        entry { 
-			send this, E1;
-        }
-		on E1 goto Real1_S1;
-        on E2 do Action2; 
-		
-        exit {  send this, E2; }
-	}
-	state Real1_S1 {
-		entry {
-			test = true;
-		}
-		//to prevent "unhandled event" exception for E2
-		ignore E2;
-    }
-	fun Action2() {
-		assert(test == false);  //unreachable
-    }
+fun Real1_Action2()
+{
+var Tmp650: bool;
+
+
+;
+
+Tmp650 = (Real1_test == false);
+assert Tmp650;
 }
+fun Real1_Real1_Init_do_E2(payload: null)
+{
+
+
+Real1_Action2();
+}
+fun Real1_Real1_Init_on_E1_goto_Real1_Real1_S10_rand_1764207226(Real1_Real1_Init_on_E1_goto_Real1_Real1_S10_rand_1764207226__payload_skip: any)
+{
+
+
+;
+
+;
+
+return;
+}
+fun Real1_Real1_Init_entry11(Real1_Real1_Init_entry11__payload_0: null)
+{
+
+
+;
+
+send this, E1;
+return;
+}
+fun Real1_Real1_Init_exit16(Real1_Real1_Init_exit16__payload_1: null)
+{
+
+
+;
+
+send this, E2;
+return;
+}
+fun Real1_Real1_S1_entry20(Real1_Real1_S1_entry20__payload_2: null)
+{
+
+
+;
+
+Real1_test = true;
+return;
+}
+fun Real1_Real1_S1_exit0_rand_923300198(Real1_Real1_S1_exit0_rand_923300198__payload_skip: any)
+{
+
+
+;
+
+;
+
+return;
+}start 
+ state Real1_Real1_Init
+{
+entry (payload: null) {
+Real1_Real1_Init_entry11(payload);
+}exit {
+Real1_Real1_Init_exit16(null);
+}on E2 do (payload: null) {
+Real1_Real1_Init_do_E2(payload);
+}on E1 goto Real1_Real1_S1 with (payload: null) {
+Real1_Real1_Init_on_E1_goto_Real1_Real1_S10_rand_1764207226(payload);
+}}
+
+ state Real1_Real1_S1
+{
+entry (payload: null) {
+Real1_Real1_S1_entry20(payload);
+}exit {
+Real1_Real1_S1_exit0_rand_923300198(null);
+}ignore E2;}
+}
+

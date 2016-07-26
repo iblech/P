@@ -196,7 +196,6 @@ namespace Microsoft.P_FS_Boogie
         private void NewScope(string name)
         {
             symbolTable.NewScope(name);
-            name = symbolTable.GetFunName(symbolTable.currentF);
             functionsToLocals[name] = new List<Syntax.VarDecl>();    
             functionsToRefParams[name] = new List<Tuple<int, string, Syntax.Type>>();
         }
@@ -216,7 +215,7 @@ namespace Microsoft.P_FS_Boogie
             {
                 return Syntax.Type.Bool;
             }
-            else if (t._0.Symbol.ToString() == "REAL")
+            else if (t._0.Symbol.ToString() == "MACHINE")
             {
                 return Syntax.Type.Machine;
             }
@@ -738,7 +737,7 @@ namespace Microsoft.P_FS_Boogie
         private Syntax.Stmt.Return genReturnStmt(P_Root.Return s)
         {
             FSharpOption<Syntax.Expr> e = null;
-            var refParams = functionsToRefParams[symbolTable.GetFunName(symbolTable.currentF)];
+            var refParams = functionsToRefParams[symbolTable.currentF];
             var retList = new List<Syntax.Expr>();
 
             foreach (var x in refParams)
@@ -806,25 +805,22 @@ namespace Microsoft.P_FS_Boogie
             FSharpOption<Syntax.Type> retType = null;
             FSharpOption<Syntax.Expr> retExp = null;
             List<Syntax.Stmt> body = new List<Syntax.Stmt>();
+            var args = new List<Syntax.VarDecl>();
 
             var ln = getLineNumber(d.body as P_Root.Stmt);
             name += ln;
             if (ln == 0)
                 name += ("_rand_" + r.Next());
 
-            //Get args
-            var args = new List<Syntax.VarDecl>();
-            args.Add(getAnonFunParams(d.envVars as P_Root.NmdTupType, name));
-
-            var env = symbolTable.IncludeSurroundingScopes();
+            var env = symbolTable.IncludeSurroundingScopes(name);
             var envVarDecl = new Syntax.VarDecl(name + "_env", env.Item1);
             //Added this envVarDecl to PARENT FUNCTION - as NewScope() 
             //is called below.
             if(env.Item1.Item.Length > 0)
             {
-                var cf = symbolTable.GetFunName(symbolTable.currentF);
+                var cf = symbolTable.currentF;
                 functionsToLocals[cf].Add(envVarDecl);
-                args.Add(new Syntax.VarDecl("env", env.Item1));
+                args.Add(new Syntax.VarDecl(name + "_env", env.Item1));
                 retExp = new FSharpOption<Syntax.Expr>(env.Item2 as Syntax.Expr);
                 retType = new FSharpOption<Syntax.Type>(env.Item1);
                 body.AddRange(env.Item4);
@@ -835,6 +831,9 @@ namespace Microsoft.P_FS_Boogie
 
             NewScope(name);
             
+            //Get args            
+            args.Insert(0, getAnonFunParams(d.envVars as P_Root.NmdTupType, name));
+
             //Get Locals
             functionsToLocals[name].AddRange(env.Item3);
             if (d.locals.Symbol.ToString() != "NIL")
@@ -1106,8 +1105,8 @@ namespace Microsoft.P_FS_Boogie
         {
             string temperature = state.temperature.Symbol.ToString();
             temperature = char.ToUpper(temperature[0]) + temperature.Substring(1);
-            var name = getQualifiedName(state.name as P_Root.QualifiedName);
             var owner = getString((state.owner as P_Root.MachineDecl).name);
+            var name = owner + '_' + getQualifiedName(state.name as P_Root.QualifiedName);
             FSharpOption<string> entryAction = null;
             FSharpOption<string> exitAction = null;
 
@@ -1121,7 +1120,7 @@ namespace Microsoft.P_FS_Boogie
             {
                 //A special case. We generate a FunDecl 
                 //which calls the function in question.
-                var action = owner + '_' + name + "_entry";
+                var action = name + "_entry";
                 var funName = symbolTable.GetFunName(getString(state.entryAction));
                 var @params = new FSharpList<Syntax.VarDecl>(new Syntax.VarDecl("payload", Syntax.Type.Null),
                     FSharpList<Syntax.VarDecl>.Empty);
@@ -1142,7 +1141,7 @@ namespace Microsoft.P_FS_Boogie
             {
                 //A special case. We generate a FunDecl 
                 //which calls the function in question.
-                var action = owner + '_' + name + "_exit";
+                var action = name + "_exit";
                 var funName = symbolTable.GetFunName(getString(state.exitFun));
                 var @params = new FSharpList<Syntax.VarDecl>(new Syntax.VarDecl("payload", Syntax.Type.Null),
                     FSharpList<Syntax.VarDecl>.Empty);
@@ -1152,7 +1151,6 @@ namespace Microsoft.P_FS_Boogie
                 machineToFunList[symbolTable.currentM].Add(fd);
                 exitAction = new FSharpOption<string>(action);
             }
-            name = owner + '_' + name;
             var transitions = ListModule.OfSeq(statesToTransitions[name]);
             var Dos = ListModule.OfSeq(statesToDos[name]);
             return new Syntax.StateDecl(name, temperature, entryAction, exitAction, transitions, Dos);
@@ -1192,7 +1190,7 @@ namespace Microsoft.P_FS_Boogie
                 var d = genVar(f, owner);
                 if(f.qual.Symbol.ToString() == "REF")
                 {
-                    var cf = symbolTable.GetFunName(symbolTable.currentF);
+                    var cf = symbolTable.currentF;
                     functionsToRefParams[cf].Add(new Tuple<int, string, Syntax.Type>(i, d.Name, d.Type));
                 }
                 lst.Add(d);
@@ -1225,7 +1223,7 @@ namespace Microsoft.P_FS_Boogie
 
         private Syntax.FunDecl genFunDecl(P_Root.FunDecl d)
         {
-            var name = getString(d.name);
+            var name = symbolTable.GetFunName(getString(d.name));
             NewScope(name);
             name =symbolTable.GetFunName(name);
             bool is_model = false;
@@ -1318,7 +1316,6 @@ namespace Microsoft.P_FS_Boogie
                 symbolTable.AddMachFun(symbolTable.currentM, name); 
 
             NewScope(name);
-            name = symbolTable.GetFunName(name);
             //Get args
             var args = new List<Syntax.VarDecl>();
             args.Add(getAnonFunParams(d.envVars as P_Root.NmdTupType, name));
@@ -1378,7 +1375,7 @@ namespace Microsoft.P_FS_Boogie
             var src = (t.src as P_Root.StateDecl);
             var machName = getString((src.owner as P_Root.MachineDecl).name);
             symbolTable.currentM = machName;
-            var owner = getQualifiedName(src.name as P_Root.QualifiedName);
+            var owner = machName + '_' + getQualifiedName(src.name as P_Root.QualifiedName);
             var dst = machName + '_' + getQualifiedName(t.dst as P_Root.QualifiedName);
             if (t.action.Symbol.ToString() == "PUSH")
             {
@@ -1395,7 +1392,7 @@ namespace Microsoft.P_FS_Boogie
             {
                 //A special case. We generate a FunDecl 
                 //which calls the function in question.
-                var action = machName + '_' + owner + "_on_" + trig + "_goto_" + dst;
+                var action = owner + "_on_" + trig + "_goto_" + dst;
                 var funName = symbolTable.GetFunName(getString(t.action));
                 var @params = new FSharpList<Syntax.VarDecl>(new Syntax.VarDecl("payload", Syntax.Type.Null),
                     FSharpList<Syntax.VarDecl>.Empty);
@@ -1411,7 +1408,7 @@ namespace Microsoft.P_FS_Boogie
         {
             var st = (d.src as P_Root.StateDecl);
             var machName = getString((st.owner as P_Root.MachineDecl).name);
-            var owner = getQualifiedName(st.name as P_Root.QualifiedName);
+            var owner = machName + '_' + getQualifiedName(st.name as P_Root.QualifiedName);
             symbolTable.currentM = machName;
             var trig = genTrig(d.trig);
             if (d.action.Symbol.ToString() == "DEFER")
@@ -1434,7 +1431,7 @@ namespace Microsoft.P_FS_Boogie
             {
                 //A special case. We generate a FunDecl 
                 //which calls the function in question.
-                var action = machName + '_' + owner + "_do_" + trig;
+                var action = owner + "_do_" + trig;
                 var funName = symbolTable.GetFunName(getString(d.action));
                 var @params = new FSharpList<Syntax.VarDecl>(new Syntax.VarDecl("payload", Syntax.Type.Null),
                     FSharpList<Syntax.VarDecl>.Empty);

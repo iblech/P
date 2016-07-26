@@ -1,9 +1,11 @@
 C:\Users\t-suchav\P\Tst\RegressionTests\Combined\Correct\variableType
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\AlonBug
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\bug1
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\bug3
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\bug4
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\BugRepro1
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\BugReproManyEvents
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\DataPurity
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\functionAny
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\Groups
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\MaxInstances_2
@@ -14,6 +16,14 @@ C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\PingPong
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\StaticFunctions_1
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\linear1
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\LinearPingPong
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\NondetFun
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\receive1
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\receive12
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\receive13
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\receive14
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\receive15
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\receive16
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\receive6
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\ref1
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\SEM_OneMachine_33
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature2Stmts\Correct\SEM_ONeMachine_34
@@ -22,8 +32,8 @@ C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\cast1
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\cast2
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\ExprOperatorsAsserts
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\MemoryLeakRepro
+C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\NestedFun
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\NonDetFunctionInExpr_1
-C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\NonDetFunctionInExpr_2
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\anyTypeNullValue
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\ForeignTypes
 C:\Users\t-suchav\P\Tst\RegressionTests\Feature4DataTypes\Correct\nestedTypedef

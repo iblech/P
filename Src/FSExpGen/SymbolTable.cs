@@ -67,21 +67,8 @@ namespace Microsoft.P_FS_Boogie
             return f;
         }
 
-        public string GetOwner(string s)
-        {
-            foreach (var tbl in tbls)
-            {
-                if (tbl.Item2.ContainsKey(s))
-                    return tbl.Item1;
-            }
-
-            if (!InsideStaticFn && machinesToVars[currentM].ContainsKey(s))
-                return currentM;
-            return null;
-        }
-
         public Tuple<Syntax.Type.Tuple, Syntax.Expr.Tuple, 
-            List<Syntax.VarDecl>, List<Syntax.Stmt>> IncludeSurroundingScopes()
+            List<Syntax.VarDecl>, List<Syntax.Stmt>> IncludeSurroundingScopes(string fName)
         {
             var typLst = new List<Syntax.Type>();
             var expLst = new List<Syntax.Expr>();
@@ -97,7 +84,7 @@ namespace Microsoft.P_FS_Boogie
                     expLst.Add(Syntax.Expr.NewVar(name));
                     vdLst.Add(new Syntax.VarDecl(name, v.Value));
                     vaLst.Add(Syntax.Stmt.NewAssign(Syntax.Lval.NewVar(name),
-                        Syntax.Expr.NewDot(Syntax.Expr.NewVar("env"), i)));
+                        Syntax.Expr.NewDot(Syntax.Expr.NewVar(fName + "_env"), i)));
                     i++;
                 }
             }

@@ -1,27 +1,84 @@
-// This sample tests case when exit actions are not executed
 event E;
 
-main machine Program {
-		     var i: int;
-	start state Init {
-			 entry { i = 0; raise E; }
-		//this assert is unreachable:
-		//after the Call state is popped with (i == 3), the queue is empty,
-		// machine keeps waiting for an event, and exit actions are never executed
-		exit { assert (false); }  
-		on E push Call;
-	}
+main machine Program
+{
+var Program_i: int;
 
-	state Call {
-		   entry { 
-			 if (i == 3) {
-				    pop; 
-			}
-            else
-			    {
-					i = i + 1;
-			    }
-			     raise E;   //Call is popped
-			 }
-	}
+fun Program_Init_entry7(Program_Init_entry7__payload_0: null)
+{
+
+
+;
+
+Program_i = 0;
+;
+
+raise E;
+return;
 }
+fun Program_Init_exit11(Program_Init_exit11__payload_1: null)
+{
+
+
+;
+
+assert false;
+return;
+}
+fun Program_Call_entry17(Program_Call_entry17__payload_2: null)
+{
+var Tmp0: bool;
+
+
+;
+
+Tmp0 = (Program_i == 3);
+if(Tmp0)
+{
+
+;
+
+pop;
+
+}
+else
+{
+
+;
+
+Program_i = (Program_i + 1);
+
+}
+
+;
+
+raise E;
+return;
+}
+fun Program_Call_exit0_rand_1350625623(Program_Call_exit0_rand_1350625623__payload_skip: any)
+{
+
+
+;
+
+;
+
+return;
+}start 
+ state Program_Init
+{
+entry (payload: null) {
+Program_Init_entry7(payload);
+}exit {
+Program_Init_exit11(null);
+}on E push Program_Call;}
+
+ state Program_Call
+{
+entry (payload: null) {
+Program_Call_entry17(payload);
+}exit {
+Program_Call_exit0_rand_1350625623(null);
+}}
+}
+

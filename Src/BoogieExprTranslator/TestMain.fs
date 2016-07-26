@@ -1,14 +1,17 @@
 ﻿namespace Microsoft.P2Boogie
 module Main = 
-  open System.Runtime.Serialization;
-  open System.Runtime.Serialization.Formatters;
-  open System.Runtime.Serialization.Formatters.Binary;
-  open System.IO;
+  open System.Runtime.Serialization
+  open System.Runtime.Serialization.Formatters
+  open System.Runtime.Serialization.Formatters.Binary
+  open System.IO
+  open System
 
   open Syntax
   open Helper
   open ProgramTyping
   open RemoveSideEffects
+  open Translator
+  open System.CodeDom.Compiler
   
   let getProgram pFile = 
     begin
@@ -31,7 +34,9 @@ module Main =
 
   [<EntryPoint>]
   let main argv = 
-    printProgram argv.[0]
+    let t = new StreamWriter(argv.[1])
+    let sw = new IndentedTextWriter(t, "   ") 
+    translateProg (getProgram argv.[0]) sw
     //File.ReadLines(argv.[0]) |> Seq.iter (printProgram)
 (*
     let file = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\PingPong\PingPong.p"
@@ -42,5 +47,4 @@ module Main =
     typecheckProgram prog
 *)
   
-    0
 

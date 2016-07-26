@@ -117,7 +117,7 @@ module RemoveRefParams =
     | Assert e -> 
       begin
         let vl, stl, e' = (removeRefParamsExpr funToRefParams funToRetType e)
-        vl, stl @ [Assume(e')]
+        vl, stl @ [Assert(e')]
       end
     | NewStmt(s, e)->
       begin

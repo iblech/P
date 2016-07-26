@@ -7,8 +7,7 @@ module Translator =
   open Helper
   open Common
   open ProgramTyping
-  open RemoveSideEffects
-  open System.IO
+  open System.CodeDom.Compiler
 
   (* Translation of normalized side-effect-free programs to Boogie *)
 
@@ -80,7 +79,8 @@ module Translator =
 
   let typesAsserted = ref Set.empty
 
-  let translateAssign sw G evMap lval expr  =
+  let translateAssign (sw: IndentedTextWriter) G evMap lval expr  =
+    let level = ref sw.Indent
     let genRhsValue e G =
         let rhsVar = "tmpRhsValue" in
         fprintfn sw "%s := %s;" rhsVar (translateExpr G evMap e)
@@ -185,13 +185,14 @@ module Translator =
     | true -> fprintfn sw "call %s := RemoveSeq(%s, PrtFieldInt(%s));" v v (translateExpr G evMap e1)
     | false -> fprintfn sw "call %s := RemoveMap(%s, PrtFieldInt(%s));" v v (translateExpr G evMap e1)
 
-  let rec translateStmt sw G evMap stmt =
+  let rec translateStmt (sw: IndentedTextWriter) G evMap stmt =
+    let level = ref sw.Indent
     let translateCase (e, st) =
       fprintfn sw "if(event == %d)" (Map.find e evMap)
       fprintfn sw "{"
-      //ToDo level++;
+      level := !level + 1
       translateStmt sw G evMap st
-      //ToDo level--;
+      level := !level - 1
       fprintfn sw "}"
     match stmt with
     | Assign(l, e) -> translateAssign sw G evMap l e
@@ -216,24 +217,24 @@ module Translator =
       begin
         fprintfn sw "while(PrtFieldBool(%s))" (translateExpr G evMap c)
         fprintfn sw "{"
-        //ToDo level++;
+        level := !level + 1
         translateStmt sw G evMap st
-        //ToDo level--;
+        level := !level - 1
         fprintfn sw "}"
       end
     | Ite(c, i, e) ->
       begin
         fprintfn sw "if(PrtFieldBool(%s))" (translateExpr G evMap c)
         fprintfn sw "{"
-        //ToDo level++;
+        level := !level + 1
         translateStmt sw G evMap i
-        //ToDo level--;
+        level := !level - 1
         fprintfn sw "}"
         fprintfn sw "else"
         fprintfn sw "{"
-        //ToDo level++;
+        level := !level + 1
         translateStmt sw G evMap e
-        //ToDo level--;
+        level := !level - 1
         fprintfn sw "}"     
       end
     | SeqStmt(ls) -> List.iter (translateStmt sw G evMap) ls
@@ -369,35 +370,38 @@ module Translator =
     List.zip l1 l2
   
   let printEvDict sw (evDict, name)= 
-    Map.iter (fun k v ->(fprintf sw "    %s[%d] = %b;" name k v)) evDict 
+    Map.iter (fun k v ->(fprintfn sw "%s[%d] := %b;" name k v)) evDict 
 
-  let translateFunction sw G evMap (fd: FunDecl) = 
+  let translateFunction (sw: IndentedTextWriter) G evMap (fd: FunDecl) = 
+    let level = ref sw.Indent
     let formals = fd.Formals |> List.map (fun(v: VarDecl) -> v.Name + ": PrtRef") |> String.concat ", "
     let ret = if fd.RetType.IsSome then " returns (ret: PrtRef)" else ""
     fprintfn sw "procedure %s(%s)%s" fd.Name formals ret
     fprintfn sw "{"
-    //ToDo level++;
-    fprintf sw "// Initialize locals."
+    level := !level + 1
+    fprintfn sw "// Initialize locals."
     getVars "" fd.Locals |> List.iter (fprintfn sw "%s")
     getDefaults fd.Locals |> List.iter (translateStmt sw G evMap)
     List.iter (translateStmt sw G evMap) fd.Body
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
   
-  let translateDos sw events (d: DoDecl.T) =
+  let translateDos (sw: IndentedTextWriter) events (d: DoDecl.T) =
+    let level = ref sw.Indent
     match d with 
     | DoDecl.T.Call(e, f) -> 
       begin
         fprintfn sw "    if(event == %d)" (Map.find e events)
         fprintfn sw "    {"
-        //ToDo level++;
+        level := !level + 1
         fprintfn sw "       call %s(payload);" f
-        //ToDo level--;
+        level := !level - 1
         fprintfn sw "    }"
       end
     | _ -> ignore true
-  
-  let translateTransitions sw (mach: MachineDecl) src stateToInt events (t: TransDecl.T) =
+
+  let translateTransitions (sw: IndentedTextWriter) (mach: MachineDecl) src stateToInt events (t: TransDecl.T) =
+    let level = ref sw.Indent
     match t with 
     | TransDecl.T.Call(e, d, f) -> 
       begin
@@ -405,7 +409,7 @@ module Translator =
         let dstEntryAction = mach.StateMap.[d].EntryAction
         fprintfn sw "    if(event == %d)" (Map.find e events)
         fprintfn sw "    {"
-        //ToDo level++;
+        level := !level + 1;  
         match srcExitAction with
         | None -> ignore true
         | Some(ea) -> fprintfn sw "       call %s();" ea
@@ -414,7 +418,7 @@ module Translator =
         match dstEntryAction with
         | None -> ignore true
         | Some(ea) -> fprintfn sw "       call %s(payload);" ea   
-        //ToDo level--;
+        level := !level - 1
         fprintfn sw "    }"
       end
     |TransDecl.T.Push(e, d) ->  
@@ -422,13 +426,13 @@ module Translator =
         let dstEntryAction = mach.StateMap.[d].EntryAction
         fprintfn sw "    if(event == %d)" (Map.find e events)
         fprintfn sw "    {"
-        //ToDo level++;
+        level := !level + 1
         fprintfn sw "       StateStackPush(%d);" (Map.find src stateToInt)
         fprintfn sw "       CurrState = %d;" (Map.find d stateToInt)
         match dstEntryAction with
         | None -> ignore true
         | Some(ea) -> fprintfn sw "       call %s(payload);" ea   
-        //ToDo level--;
+        level := !level - 1
         fprintfn sw "    }"
       end
   
@@ -448,10 +452,11 @@ module Translator =
     let ht = List.fold (fun acc t -> acc || (haltHandledInTrans t)) false state.Transitions  
     ht || hd
 
-  let translateState sw mach stateToInt hasDefer hasIgnore events (state: StateDecl) =
+  let translateState (sw: IndentedTextWriter) mach stateToInt hasDefer hasIgnore events (state: StateDecl) =
+    let level = ref sw.Indent
     fprintfn sw "   if(CurrState == %d)" (Map.find state.Name stateToInt)
     fprintfn sw "   {"
-    //ToDo level++;
+    level := !level + 1
     (getEventMaps state.Dos state.Transitions hasDefer hasIgnore events) |> List.iter (printEvDict sw)
     List.iter (translateDos sw events) state.Dos
     List.iter (translateTransitions sw mach state.Name stateToInt events) state.Transitions
@@ -459,27 +464,28 @@ module Translator =
       begin
         fprintfn sw "      if(event == %d)" (Map.find "halt" events)
         fprintfn sw "      {"
-        //ToDo level++;
+        level := !level + 1
         fprintfn sw "         return;"
-        //ToDo level--;
+        level := !level - 1
         fprintfn sw "      }"
       end
     //Raise exception for unhandled event.
     fprintfn sw "      else" 
     fprintfn sw "      {"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "          assert false;" //ToDo Assert or assume?
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "      }"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "    }"
     fprintf sw "   else "
 
-  let createNewMachineFunction sw G evMap (md: MachineDecl) e = 
+  let createNewMachineFunction (sw: IndentedTextWriter) G evMap (md: MachineDecl) = 
+    let level = ref sw.Indent
     let m = md.Name
     fprintfn sw "procedure newMachine_%s(entryArg: PrtRef) returns (m: PrtRef)" m
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "machineCounter := machineCounter + 1;"
     fprintfn sw "call InitializeInbox(machineCounter);"
     fprintfn sw "// For raised events"
@@ -493,13 +499,14 @@ module Translator =
     fprintfn sw "machineToQCAssert[machineCounter] := %s;" (fst qc)
     fprintfn sw "machineToQCAssume[machineCounter] := %s;" (snd qc)
     Map.iter (fun k v -> (fprintfn sw "machineEvToQCount[machineCounter][%d] := 0;" v)) evMap
-    fprintfn sw "async call MachineThread_%s(machineCounter, %s);" m (translateExpr G evMap e)
+    fprintfn sw "async call MachineThread_%s(machineCounter, entryArg);" m
     fprintfn sw "m := PrtConstructFromMachineID(machineCounter);"
     fprintfn sw "return;"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
 
-  let translateMachine sw G evMap hasDefer hasIgnore (md: MachineDecl) = 
+  let translateMachine (sw: IndentedTextWriter) G evMap hasDefer hasIgnore (md: MachineDecl) =
+    let level = ref sw.Indent
     let stateToInt =  [for i in md.States do yield i.Name] |> Seq.mapi (fun i x -> x,i) |> Map.ofSeq
     let state = md.StateMap.[md.StartState]
     
@@ -515,7 +522,7 @@ module Translator =
     (* The actual machine thread *)
     fprintfn sw "procedure MachineThread_%s(mid: int, entryArg: PrtRef)" md.Name
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "   var event: int;"
     fprintfn sw "   var payload: PrtRef;"
     fprintfn sw "   // Initialize"
@@ -535,21 +542,22 @@ module Translator =
 
     fprintfn sw "   while(true)"
     fprintfn sw "   {"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "      call event, payload := Dequeue(mid);"
     List.iter (translateState sw md stateToInt hasDefer hasIgnore evMap) md.States
     fprintfn sw ""
     fprintfn sw "      {"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "         assume false;"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "      }"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "   }"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
 
-  let printAssertEventCard sw evToInt (evToDecl: Map<string, EventDecl>) = 
+  let printAssertEventCard (sw: IndentedTextWriter) evToInt (evToDecl: Map<string, EventDecl>) = 
+    let level = ref sw.Indent
     let printEventQC e = 
       match (Map.find e evToDecl).QC with
       | None -> ignore true
@@ -557,24 +565,24 @@ module Translator =
         begin
           fprintfn sw "if(event == %d)" (Map.find e evToInt)
           fprintfn sw "{"
-          //ToDo level++;
+          level := !level + 1
           fprintfn sw "assume (count <= %d);" i
-          //ToDo level--;
+          level := !level - 1
           fprintfn sw "}"
         end
       | Some(Card.Assert(i)) -> 
         begin
           fprintfn sw "if(event == %d)" (Map.find e evToInt)
           fprintfn sw "{"
-          //ToDo level++;
+          level := !level + 1
           fprintfn sw "assert (count <= %d);" i
-          //ToDo level--;
+          level := !level - 1
           fprintfn sw "}"
         end
 
     fprintfn sw  "procedure AssertEventCard(mid: int, event: int)"
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "var head: int;"
     fprintfn sw "var tail: int;"
     fprintfn sw "var count: int;"
@@ -585,26 +593,28 @@ module Translator =
     
     fprintfn sw "//Queue constraints for specific events."
     Map.iter (fun k v -> (printEventQC k)) evToDecl
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
    
-  let createMonitorFunction sw evMap evToMon monToInt = 
+  let createMonitorFunction (sw: IndentedTextWriter) evMap evToMon monToInt = 
+    let level = ref sw.Indent
     let printMonitorSt ev monLst = 
       let e = (Map.find ev evMap)
       fprintfn sw "if(event == %d)" e
       fprintfn sw "{"
-      //ToDo level++;
+      level := !level + 1
       List.iter (fun(m) -> fprintfn sw "Enqueue(%d, %d, payload);" (Map.find m monToInt) e) monLst
-      //ToDo level--;
+      level := !level - 1
       fprintfn sw "}"
     fprintfn sw "procedure monitor(event: int, payload: PrtRef)"
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     Map.iter printMonitorSt evToMon
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
   
-  let createAssertPayloadDynamicType sw evToInt (evToDecl: Map<string, EventDecl>) = 
+  let createAssertPayloadDynamicType (sw: IndentedTextWriter) evToInt (evToDecl: Map<string, EventDecl>) = 
+    let level = ref sw.Indent
     let printAssertion e =  
       match (Map.find e evToDecl).Type with
       | None -> ignore true
@@ -613,38 +623,40 @@ module Translator =
         begin
           fprintfn sw "if(evID == %d)" (Map.find e evToInt)
           fprintfn sw "{"
-          //ToDo level++;
+          level := !level + 1
           fprintfn sw "assert PrtDynamicType(payload) == %s;" (translateType t)
-          //ToDo level--;
+          level := !level - 1
           fprintfn sw "}"
         end
     fprintfn sw "// Asserts that the payload supplied to an event variable is of the"
     fprintfn sw "// correct type. If yes, returns the integer corresponding to the event."
     fprintfn sw "procedure AssertPayloadDynamicType(event: PrtRef, payload: PrtRef) returns (evId: int)"
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "evID := PrtFieldInt(event);"
     Map.iter (fun k v -> printAssertion k) evToInt
     fprintfn sw "return;"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
 
-  let createDeque sw hasDefer hasIgnore = 
+  let createDeque (sw: IndentedTextWriter) hasDefer hasIgnore = 
+    let level = ref sw.Indent
     fprintfn sw "procedure Dequeue(mid: int) returns (event: int, payload: PrtRef)"
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "var ptr: int;"
     fprintfn sw "var head: int;"
     fprintfn sw "var tail: int;"
+    fprintfn sw "var q: int;"
     
     fprintfn sw "if(eventRaised)"
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "eventRaised := false;"
     fprintfn sw "event := raisedEvent;"
-    fprintfn sw "payload := raisedEventPl"
+    fprintfn sw "payload := raisedEventPl;"
     fprintfn sw "return;"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
 
 
@@ -656,74 +668,80 @@ module Translator =
 
     fprintfn sw "while(ptr <= tail) "
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "event := MachineInboxStoreEvent[mid][ptr];"
     if hasIgnore then
       begin 
         fprintfn sw "if(event >= 0 && ignoreEvents[event]) "
         fprintfn sw "{"
-        //ToDo level++;
+        level := !level + 1
         fprintfn sw "// dequeue"
+        fprintfn sw "q := machineEvToQCount[thisMid][event];"
+        fprintfn sw "machineEvToQCount[thisMid][event] := q - 1;"
         fprintfn sw "if(ptr == head)"
         fprintfn sw "{"
-        //ToDo level++;
+        level := !level + 1
         fprintfn sw "MachineInboxHead[mid] := head + 1;"
-        //ToDo level--;
+        level := !level - 1
         fprintfn sw "}"
         fprintfn sw "else if(ptr == tail) "
         fprintfn sw "{"
-        //ToDo level++;
+        level := !level + 1
         fprintfn sw "MachineInboxTail[mid] := tail - 1;"
-        //ToDo level--;
+        level := !level - 1
         fprintfn sw "}"
         fprintfn sw "else"
         fprintfn sw "{"
-        //ToDo level++;
+        level := !level + 1
         fprintfn sw "MachineInboxStoreEvent[mid][ptr] := 0 - 1;"
-        //ToDo level--;
+        level := !level - 1
         fprintfn sw "}"
-        //ToDo level--;
+        fprintfn sw ""
+        level := !level - 1
         fprintfn sw "}"
         fprintf sw "else "
       end
     let cond = if hasDefer then "if(event >= 0 && !deferEvents[event] && registeredEvents[event])" else "if(event >= 0 && registeredEvents[event])"
     fprintfn sw "%s" cond
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "// dequeue"
+    fprintfn sw "q := machineEvToQCount[thisMid][event];"
+    fprintfn sw "machineEvToQCount[thisMid][event] := q - 1;"
     fprintfn sw "if(ptr == head)"
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "MachineInboxHead[mid] := head + 1;"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
     fprintfn sw "else if(ptr == tail) "
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "MachineInboxTail[mid] := tail - 1;"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
     fprintfn sw "else"
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "MachineInboxStoreEvent[mid][ptr] := 0 - 1;"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
     fprintfn sw "payload := MachineInboxStorePayload[mid][ptr];"
     fprintfn sw "break;"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
     fprintfn sw "ptr := ptr + 1;"
     fprintfn sw "event := 0 - 1;"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
 
     fprintfn sw "// block"
     fprintfn sw "assume event >= 0;"
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
 
-  let translateProg (prog: ProgramDecl) (sw: TextWriter) = 
+  let translateProg (prog: ProgramDecl) (sw: IndentedTextWriter) = 
+    let level = ref sw.Indent
   (* Top-level types *)
     fprintfn sw "type PrtType;";
     fprintfn sw "const unique %s: PrtType;" (translateType Null)
@@ -816,27 +834,16 @@ module Translator =
     List.iter (fprintfn sw "%s") dicts
 
     (*Temp RHS vars *)
-    fprintfn sw "var tmpRhsValue{:thread_local}: PrtRef;"
+    fprintfn sw "var{:thread_local} tmpRhsValue: PrtRef;"
     for i = 0 to prog.maxFields-1 do
-        fprintfn sw "var tmpRhsValue_%d{:thread_local}: PrtRef;" i
+        fprintfn sw "var{:thread_local} tmpRhsValue_%d: PrtRef;" i
         
     let monitorToInt = prog.Machines |> List.filter (fun (md: MachineDecl) -> md.IsMonitor) |> List.map (fun(md: MachineDecl) -> md.Name) |> Seq.mapi (fun i x -> (x, i)) |> Map.ofSeq
-    let counterSize = monitorToInt |> Map.toSeq |> Seq.length 
     
     let evMap = prog.EventMap |> Map.toSeq |> Seq.map fst |> Seq.mapi (fun i x -> (x,i)) |> Map.ofSeq
     
     createMonitorFunction sw evMap prog.EventsToMonitors monitorToInt
     createAssertPayloadDynamicType sw evMap prog.EventMap
-
-    (*fprintfn sw "procedure main() {"
-    Map.iter (fun k v -> fprintfn sw "  var %s: PrtRef; // %s" k (printType v)) G
-    List.iter (fun s -> 
-        begin
-        fprintfn swComment "%s" (printStmt s)
-        translateStmt s G 
-        end
-    ) stmtlist *)
-    //fprintfn sw "}"
 
     (* Equals *)
     printEquals sw prog.maxFields
@@ -858,6 +865,9 @@ module Translator =
     (* Static functions *)
     List.iter (translateFunction sw G evMap) prog.StaticFuns
     
+    (* New machine creation *)
+    List.iter (createNewMachineFunction sw G evMap) prog.Machines
+
     (* Machines *)
     List.iter (translateMachine sw G evMap prog.HasDefer prog.HasIgnore) prog.Machines
 
@@ -865,7 +875,7 @@ module Translator =
     
     fprintfn sw "procedure {:entrypoint} main()" 
     fprintfn sw "{"
-    //ToDo level++;
+    level := !level + 1
     fprintfn sw "machineCounter := 0;"
     
     //Start monitors 
@@ -874,7 +884,7 @@ module Translator =
     //Start main machine
     fprintfn sw "call tmpRhsValue := newMachine_%s(null);" prog.MainMachine
 
-    //ToDo level--;
+    level := !level - 1
     fprintfn sw "}"
     
     0 // return an integer exit code
