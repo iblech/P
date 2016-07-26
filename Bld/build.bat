@@ -25,8 +25,8 @@ if "%Configuration%"=="" set Configuration=Debug
 set Platform=%2
 if "%Platform%"=="" set Platform=x86
 
-REM git submodule init
-REM git submodule update
+git submodule init
+git submodule update
 cd ext\zing
 
 echo msbuild  Zing.sln /p:Platform=%Platform% /p:Configuration=Release
