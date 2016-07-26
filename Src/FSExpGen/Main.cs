@@ -18,8 +18,6 @@ namespace Microsoft.P_FS_Boogie
             int w = 0;
             using (var sr = new StreamReader(args[0]))
             {
-                //line = @"C:\Users\t-suchav\Desktop\yo.p";
-                //line = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature3Exprs\Correct\NonDetFunctionInExpr_2\nonDetFunctionInExpr_2.p";
                 Syntax.ProgramDecl prog = null;
                 while ((line = sr.ReadLine()) != null)
                 {
@@ -34,11 +32,11 @@ namespace Microsoft.P_FS_Boogie
                         try
                         {
                             prog = fsExpGen.genFSExpression(line + ".txt");
-                            //prog = RemoveNamedTuples.removeNamedTuplesProgram (prog);
-                            //prog = RemoveSideEffects.removeSideEffectsProgram(prog);
+                            prog = RemoveNamedTuples.removeNamedTuplesProgram (prog);
+                            prog = RemoveSideEffects.removeSideEffectsProgram(prog);
                             Save(prog, line + ".dat"); //Debug
-                            //ProgramTyping.typecheckProgram(prog);
-                            //Helper.printProg(prog, sw);
+                            ProgramTyping.typecheckProgram(prog);
+                            Helper.printProg(prog, sw);
                         }
                         
                         catch (Exception e)

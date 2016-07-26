@@ -24,14 +24,15 @@ module Main =
       System.Console.WriteLine(pFile);
       let prog = getProgram pFile
       let OpFile = new System.IO.StreamWriter(pFile)
-      //printProg prog OpFile
+      printProg prog OpFile
       OpFile.Close()
     end
 
 
   [<EntryPoint>]
   let main argv = 
-    File.ReadLines(argv.[0]) |> Seq.iter (printProgram)
+    printProgram argv.[0]
+    //File.ReadLines(argv.[0]) |> Seq.iter (printProgram)
 (*
     let file = @"C:\Users\t-suchav\P\Tst\RegressionTests\Feature1SMLevelDecls\Correct\PingPong\PingPong.p"
     let prog = removeSideEffectsProgram (getProgram file) 
@@ -40,5 +41,6 @@ module Main =
     printProg prog System.Console.Out
     typecheckProgram prog
 *)
+  
     0
 

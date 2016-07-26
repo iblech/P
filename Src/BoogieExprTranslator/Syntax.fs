@@ -179,8 +179,9 @@ module Syntax =
    
   [<Serializable>]
   [<AllowNullLiteral>]
-  type ProgramDecl(mainmachine: string, machines: MachineDecl list, 
+  type ProgramDecl(fileName: string, mainmachine: string, machines: MachineDecl list, 
                       events: EventDecl list, eventsToMonitors: Map<string, string list>, staticFuns: FunDecl list, maxFields: int, hasDefer: bool, hasIgnore: bool) =
+    member this.FileName = fileName
     member this.MainMachine = mainmachine
     member this.Machines = machines
     member this.Events = events

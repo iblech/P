@@ -256,12 +256,12 @@ module Helper=
         begin
           let fd = if (prog.FunMap.ContainsKey a) then prog.FunMap.[a]
                    else  (prog.MachineMap.[cm].FunMap.[a]) 
-          if fd.Formals.Length > 1 then
+          if fd.Formals.Length = 1 then
             sprintf "entry (payload: %s) {\n%s(payload);\n}" (printType fd.Formals.Head.Type) a
           else
-            sprintf "entry %s;" a
+            raise NotDefined
         end
-      | "exit", Some(a) -> sprintf "exit %s;" a
+      | "exit", Some(a) -> sprintf "exit {\n%s(null);\n}" a
       | _,_ -> raise NotDefined   
 
     let entry = (printEntryExit s.EntryAction "entry")

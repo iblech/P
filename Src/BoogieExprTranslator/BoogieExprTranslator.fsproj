@@ -52,8 +52,8 @@
     <Compile Include="Syntax.fs" />
     <Compile Include="Common.fs" />
     <Compile Include="FlattenStmtLists.fs" />
-    <Compile Include="RemoveRefs.fs" />
     <Compile Include="Helper.fs" />
+    <Compile Include="RemoveRefs.fs" />
     <None Include="App.config" />
     <None Include="CommonBpl.bpl">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>

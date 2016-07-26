@@ -7,6 +7,7 @@ using Microsoft.Formula.API.Generators;
 using Microsoft.FSharp.Collections;
 using Microsoft.FSharp.Core;
 using Microsoft.P2Boogie;
+using System.IO;
 
 namespace Microsoft.P_FS_Boogie
 {
@@ -51,7 +52,7 @@ namespace Microsoft.P_FS_Boogie
         private int maxFields = 0;
         private bool hasDefer = false;
         private bool hasIgnore = false;
-
+        private string fileName = null;
 
         public FSharpExpGen(CommandLineOptions options)
         {
@@ -192,12 +193,12 @@ namespace Microsoft.P_FS_Boogie
             return -1;
         }
 
-        private void NewScope(string name, bool insideAnonFun = false)
+        private void NewScope(string name)
         {
             symbolTable.NewScope(name);
-            functionsToLocals[symbolTable.currentF] = new List<Syntax.VarDecl>();
-            if(!insideAnonFun)
-                functionsToRefParams[symbolTable.currentF] = new List<Tuple<int, string, Syntax.Type>>();
+            name = symbolTable.GetFunName(symbolTable.currentF);
+            functionsToLocals[name] = new List<Syntax.VarDecl>();    
+            functionsToRefParams[name] = new List<Tuple<int, string, Syntax.Type>>();
         }
 
         private void ExitScope()
@@ -665,8 +666,8 @@ namespace Microsoft.P_FS_Boogie
             if (s.op.Symbol.ToString() == "POP")
                 return Syntax.Stmt.Pop;
             else if (s.op.Symbol.ToString() == "SKIP")
-                return Syntax.Stmt.Skip;
-            return Syntax.Stmt.Skip;
+                return Syntax.Stmt.NewSkip(-1);
+            return Syntax.Stmt.NewSkip(-1);
         }
 
         private Syntax.Stmt genBinStmt(P_Root.BinStmt s)
@@ -737,26 +738,48 @@ namespace Microsoft.P_FS_Boogie
         private Syntax.Stmt.Return genReturnStmt(P_Root.Return s)
         {
             FSharpOption<Syntax.Expr> e = null;
+            var refParams = functionsToRefParams[symbolTable.GetFunName(symbolTable.currentF)];
+            var retList = new List<Syntax.Expr>();
+
+            foreach (var x in refParams)
+            {
+                retList.Add(Syntax.Expr.NewVar(x.Item2));
+            }
+            
             if (s.expr.Symbol.ToString() != "NIL")
             {
                 var expr = genExpr(s.expr as P_Root.Expr);
-                e = new FSharpOption<Syntax.Expr>(expr);
+                if(refParams.Count > 0)
+                {
+                    retList.Insert(0, expr);
+                    e = new FSharpOption<Syntax.Expr>(Syntax.Expr.NewTuple(ListModule.OfSeq(retList)));
+                }
+                else    
+                    e = new FSharpOption<Syntax.Expr>(expr);
             }
+            else if(refParams.Count > 0)
+            {
+                e = new FSharpOption<Syntax.Expr>(Syntax.Expr.NewTuple(ListModule.OfSeq(retList)));
+            }
+
             return Syntax.Stmt.NewReturn(e) as Syntax.Stmt.Return;
         }
 
         private Syntax.Stmt.While genWhileStmt(P_Root.While s)
         {
             var c = genExpr(s.cond as P_Root.Expr);
-            var st = genStmt(s.body as P_Root.Stmt);
+            var stLst = genStmt(s.body as P_Root.Stmt);
+            var st = Syntax.Stmt.NewSeqStmt(ListModule.OfSeq(stLst));
             return Syntax.Stmt.NewWhile(c, st) as Syntax.Stmt.While;
         }
 
         private Syntax.Stmt.Ite genIteStmt(P_Root.Ite s)
         {
             var c = genExpr(s.cond as P_Root.Expr);
-            var t = genStmt(s.@true as P_Root.Stmt);
-            var f = genStmt(s.@false as P_Root.Stmt);
+            var tLst = genStmt(s.@true as P_Root.Stmt);
+            var fLst = genStmt(s.@false as P_Root.Stmt);
+            var t = Syntax.Stmt.NewSeqStmt(ListModule.OfSeq(tLst));
+            var f = Syntax.Stmt.NewSeqStmt(ListModule.OfSeq(fLst));
             return Syntax.Stmt.NewIte(c, t, f) as Syntax.Stmt.Ite;
         }
 
@@ -766,12 +789,12 @@ namespace Microsoft.P_FS_Boogie
             var x = s;
             do
             {
-                lst.Add(genStmt(x.s1 as P_Root.Stmt));
+                lst.AddRange(genStmt(x.s1 as P_Root.Stmt));
                 if(x.s2 is P_Root.Seq) //Recursion - we have [s1, [s2, ... ]]
                     x = (x.s2 as P_Root.Seq);
                 else //s2 is not a seq statement. Base case - We have [s1, s2]
                 {
-                    lst.Add(genStmt(x.s2 as P_Root.Stmt));
+                    lst.AddRange(genStmt(x.s2 as P_Root.Stmt));
                     break;
                 }
             }
@@ -782,7 +805,6 @@ namespace Microsoft.P_FS_Boogie
         {
             FSharpOption<Syntax.Type> retType = null;
             FSharpOption<Syntax.Expr> retExp = null;
-            List<Syntax.VarDecl> locals = new List<Syntax.VarDecl>();
             List<Syntax.Stmt> body = new List<Syntax.Stmt>();
 
             var ln = getLineNumber(d.body as P_Root.Stmt);
@@ -800,22 +822,24 @@ namespace Microsoft.P_FS_Boogie
             //is called below.
             if(env.Item1.Item.Length > 0)
             {
-                functionsToLocals[symbolTable.currentF].Add(envVarDecl);
-                args.Add(envVarDecl);
+                var cf = symbolTable.GetFunName(symbolTable.currentF);
+                functionsToLocals[cf].Add(envVarDecl);
+                args.Add(new Syntax.VarDecl("env", env.Item1));
                 retExp = new FSharpOption<Syntax.Expr>(env.Item2 as Syntax.Expr);
-                locals.AddRange(env.Item3);
+                retType = new FSharpOption<Syntax.Type>(env.Item1);
                 body.AddRange(env.Item4);
             }
 
             if (env.Item1.Item.Length > maxFields)
                 maxFields = env.Item1.Item.Length;
 
-            NewScope(name, true);
-
+            NewScope(name);
+            
             //Get Locals
+            functionsToLocals[name].AddRange(env.Item3);
             if (d.locals.Symbol.ToString() != "NIL")
             {
-                locals.AddRange(genVars(d.locals as P_Root.NmdTupType, name));
+                functionsToLocals[name].AddRange(genVars(d.locals as P_Root.NmdTupType, name));
             }
 
             //Get Body Statements
@@ -825,12 +849,13 @@ namespace Microsoft.P_FS_Boogie
             }
             else
             {
-                body.Add(genStmt(d.body as P_Root.Stmt));
+                body.AddRange(genStmt(d.body as P_Root.Stmt));
             }
             body.Add(Syntax.Stmt.NewReturn(retExp));
 
             //Make the Function Declaration.
-            var fd = new Syntax.FunDecl(name, ListModule.OfSeq(args), retType, ListModule.OfSeq(locals),
+            var fd = new Syntax.FunDecl(name, ListModule.OfSeq(args), retType,
+                ListModule.OfSeq(functionsToLocals[name]),
                 ListModule.OfSeq(body), false, false);
 
             //Add it to the relevant machine's table
@@ -887,63 +912,111 @@ namespace Microsoft.P_FS_Boogie
             return Syntax.Stmt.NewAssert(arg) as Syntax.Stmt.Assert;
         }
 
-        private Syntax.Stmt genStmt(P_Root.Stmt s)
+        private List<Syntax.Stmt> genStmt(P_Root.Stmt s)
         {
+            var ln = getLineNumber(s);
             if (s is P_Root.NewStmt)
             {
-                return genNewStmt(s as P_Root.NewStmt);
+                var st = genNewStmt(s as P_Root.NewStmt);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.Raise)
             {
-                return genRaiseStmt(s as P_Root.Raise);
+                var st = genRaiseStmt(s as P_Root.Raise);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.Send)
             {
-                return genSendStmt(s as P_Root.Send);
+                var st = genSendStmt(s as P_Root.Send);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.Monitor)
             {
-                return genMonitorStmt(s as P_Root.Monitor);
+                var st = genMonitorStmt(s as P_Root.Monitor);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.FunStmt)
             {
-                return genFunStmt(s as P_Root.FunStmt);
+                var st = genFunStmt(s as P_Root.FunStmt);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.NulStmt)
             {
-                return genNulStmt(s as P_Root.NulStmt);
+                var st = genNulStmt(s as P_Root.NulStmt);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.BinStmt)
             {
-                return genBinStmt(s as P_Root.BinStmt);
+                var st = genBinStmt(s as P_Root.BinStmt);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.Return)
             {
-                return genReturnStmt(s as P_Root.Return);
+                var st = genReturnStmt(s as P_Root.Return);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.While)
             {
-                return genWhileStmt(s as P_Root.While);
+                var st = genWhileStmt(s as P_Root.While);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.Ite)
             {
-                return genIteStmt(s as P_Root.Ite);
+                var st = genIteStmt(s as P_Root.Ite);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.Seq)
             {
                 var lst = genStmtList(s as P_Root.Seq);
-                return Syntax.Stmt.NewSeqStmt(ListModule.OfSeq(lst))
-                as Syntax.Stmt.SeqStmt;
+                return lst;
             }
             else if (s is P_Root.Receive)
             {
-                return genReceiveStmt(s as P_Root.Receive);
+                var st = genReceiveStmt(s as P_Root.Receive);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
             else if (s is P_Root.Assert)
             {
-                return genAssertStmt(s as P_Root.Assert);
+                var st = genAssertStmt(s as P_Root.Assert);
+                var lst = new List<Syntax.Stmt>();
+                lst.Add(Syntax.Stmt.NewSkip(ln));
+                lst.Add(st);
+                return lst;
             }
-            return Syntax.Stmt.Skip;
+            return null;
         }
 
         private Syntax.EventDecl genEventDecl(P_Root.EventDecl d)
@@ -1046,8 +1119,17 @@ namespace Microsoft.P_FS_Boogie
             }
             else if (state.entryAction is P_Root.String)
             {
-                var s = symbolTable.GetFunName(getString(state.entryAction));
-                entryAction = new FSharpOption<string>(s);
+                //A special case. We generate a FunDecl 
+                //which calls the function in question.
+                var action = owner + '_' + name + "_entry";
+                var funName = symbolTable.GetFunName(getString(state.entryAction));
+                var @params = new FSharpList<Syntax.VarDecl>(new Syntax.VarDecl("payload", Syntax.Type.Null),
+                    FSharpList<Syntax.VarDecl>.Empty);
+                var body = new FSharpList<Syntax.Stmt>(Syntax.Stmt.NewFunStmt(funName, FSharpList<Syntax.Expr>.Empty, null),
+                    FSharpList<Syntax.Stmt>.Empty);
+                var fd = new Syntax.FunDecl(action, @params, null, FSharpList<Syntax.VarDecl>.Empty, body, false, false);
+                machineToFunList[symbolTable.currentM].Add(fd);
+                entryAction = new FSharpOption<string>(action);
             }
 
             if (state.exitFun is P_Root.AnonFunDecl)
@@ -1058,8 +1140,17 @@ namespace Microsoft.P_FS_Boogie
             }
             else if (state.exitFun is P_Root.String)
             {
-                var s = symbolTable.GetFunName(getString(state.exitFun));
-                exitAction = new FSharpOption<string>(s);
+                //A special case. We generate a FunDecl 
+                //which calls the function in question.
+                var action = owner + '_' + name + "_exit";
+                var funName = symbolTable.GetFunName(getString(state.exitFun));
+                var @params = new FSharpList<Syntax.VarDecl>(new Syntax.VarDecl("payload", Syntax.Type.Null),
+                    FSharpList<Syntax.VarDecl>.Empty);
+                var body = new FSharpList<Syntax.Stmt>(Syntax.Stmt.NewFunStmt(funName, FSharpList<Syntax.Expr>.Empty, null),
+                    FSharpList<Syntax.Stmt>.Empty);
+                var fd = new Syntax.FunDecl(action, @params, null, FSharpList<Syntax.VarDecl>.Empty, body, false, false);
+                machineToFunList[symbolTable.currentM].Add(fd);
+                exitAction = new FSharpOption<string>(action);
             }
             name = owner + '_' + name;
             var transitions = ListModule.OfSeq(statesToTransitions[name]);
@@ -1101,7 +1192,8 @@ namespace Microsoft.P_FS_Boogie
                 var d = genVar(f, owner);
                 if(f.qual.Symbol.ToString() == "REF")
                 {
-                    functionsToRefParams[symbolTable.currentF].Add(new Tuple<int, string, Syntax.Type>(i, d.Name, d.Type));
+                    var cf = symbolTable.GetFunName(symbolTable.currentF);
+                    functionsToRefParams[cf].Add(new Tuple<int, string, Syntax.Type>(i, d.Name, d.Type));
                 }
                 lst.Add(d);
                 x = x.tl as P_Root.NmdTupType;
@@ -1111,14 +1203,36 @@ namespace Microsoft.P_FS_Boogie
             return ListModule.OfSeq(lst);
         }
 
+        private List<Syntax.VarDecl> genFunParams(P_Root.NmdTupType n, string owner)
+        {
+            var lst = new List<Syntax.VarDecl>();
+            var x = n;
+            int i = 0;
+            do
+            {
+                var p = x.hd as P_Root.NmdTupTypeField;
+                var d = genVar(p, owner);
+                if (p.qual.Symbol.ToString() == "REF")
+                    functionsToRefParams[owner].Add(
+                        new Tuple<int, string, Syntax.Type>(i, d.Name, d.Type));
+                lst.Add(d);
+                x = x.tl as P_Root.NmdTupType;
+                ++i;
+            } while (x != null);
+
+            return lst;
+        }
+
         private Syntax.FunDecl genFunDecl(P_Root.FunDecl d)
         {
-            var name = symbolTable.GetFunName(getString(d.name));
+            var name = getString(d.name);
             NewScope(name);
+            name =symbolTable.GetFunName(name);
             bool is_model = false;
             bool is_pure = false;
             FSharpOption<Syntax.Type> rettype = null;
             FSharpList<Syntax.VarDecl> @params = FSharpList<Syntax.VarDecl>.Empty;
+            var typLst = new List<Syntax.Type>();
             if (d.kind.Symbol.ToString() == "MODEL")
             {
                 is_model = true;
@@ -1127,38 +1241,44 @@ namespace Microsoft.P_FS_Boogie
             {
                 is_pure = true;
             }
-
-            NewScope(name);
-
             if (d.@params.Symbol.ToString() != "NIL")
             {
-                @params = ListModule.OfSeq(genVars(d.@params as P_Root.NmdTupType, name));
-            }
-            if (d.@return.Symbol.ToString() != "NIL")
-            {
-                var x = genTypeExpr(d.@return as P_Root.TypeExpr);
-                rettype = new FSharpOption<Syntax.Type>(x);
+                @params = ListModule.OfSeq(genFunParams(d.@params as P_Root.NmdTupType, name));
             }
             if (d.locals.Symbol.ToString() != "NIL")
             {
-                functionsToLocals[symbolTable.currentF].AddRange
+                functionsToLocals[name].AddRange
                     (genVars(d.locals as P_Root.NmdTupType, name));
             }
 
-            FSharpList<Syntax.Stmt> stmt = null;
+            var stmt = ListModule.OfSeq(genStmt(d.body as P_Root.Stmt));
 
-            if(d.body is P_Root.Seq)
+            //Return type.
+            foreach(var x in functionsToRefParams[name])
             {
-                stmt = ListModule.OfSeq(genStmtList(d.body as P_Root.Seq));
+                typLst.Add(x.Item3);
             }
-            else
+
+            if (d.@return.Symbol.ToString() != "NIL")
             {
-                var st = genStmt(d.body as P_Root.Stmt);
-                stmt = new FSharpList<Syntax.Stmt>(st, FSharpList<Syntax.Stmt>.Empty);
+                var x = genTypeExpr(d.@return as P_Root.TypeExpr);
+                if (typLst.Count > 0)
+                {
+                    typLst.Insert(0, x);
+                    rettype = new FSharpOption<Syntax.Type>(
+                        Syntax.Type.NewTuple(ListModule.OfSeq(typLst)));
+                }
+                else
+                    rettype = new FSharpOption<Syntax.Type>(x);
+            }
+            else if(typLst.Count > 0)
+            {
+                rettype = new FSharpOption<Syntax.Type>(
+                    Syntax.Type.NewTuple(ListModule.OfSeq(typLst)));
             }
 
             ExitScope();
-            var locals = ListModule.OfSeq(functionsToLocals[symbolTable.currentF]);
+            var locals = ListModule.OfSeq(functionsToLocals[name]);
             return new Syntax.FunDecl(name, @params, rettype, locals, stmt, is_model, is_pure);
         }
 
@@ -1180,7 +1300,6 @@ namespace Microsoft.P_FS_Boogie
             return new Syntax.VarDecl(name, type);
         }
 
-
         //A(sad?) Departure from Design. 
         //We generate the name of the AnonFunction, a FunDecl to
         //that effect and add it to the appropriate list.
@@ -1188,7 +1307,6 @@ namespace Microsoft.P_FS_Boogie
         {
             FSharpOption<Syntax.Type> retType = null;
             FSharpOption<Syntax.Expr> retExp = null;
-            List<Syntax.VarDecl> locals = new List<Syntax.VarDecl>();
             List<Syntax.Stmt> body = new List<Syntax.Stmt>();
 
             var ln = getLineNumber(d.body as P_Root.Stmt);
@@ -1196,6 +1314,8 @@ namespace Microsoft.P_FS_Boogie
             if (ln == 0)
                 name += ("_rand_" + r.Next());
 
+            if (!symbolTable.InsideStaticFn)
+                symbolTable.AddMachFun(symbolTable.currentM, name); 
 
             NewScope(name);
             name = symbolTable.GetFunName(name);
@@ -1206,7 +1326,7 @@ namespace Microsoft.P_FS_Boogie
             //Get Locals
             if (d.locals.Symbol.ToString() != "NIL")
             {
-                locals.AddRange(genVars(d.locals as P_Root.NmdTupType, name));
+                functionsToLocals[name].AddRange(genVars(d.locals as P_Root.NmdTupType, name));
             }
 
             //Get Body Statements
@@ -1216,12 +1336,12 @@ namespace Microsoft.P_FS_Boogie
             }
             else
             {
-                body.Add(genStmt(d.body as P_Root.Stmt));
+                body.AddRange(genStmt(d.body as P_Root.Stmt));
             }
             body.Add(Syntax.Stmt.NewReturn(retExp));
 
             //Make the Function Declaration.
-            var fd = new Syntax.FunDecl(name, ListModule.OfSeq(args), retType, ListModule.OfSeq(locals),
+            var fd = new Syntax.FunDecl(name, ListModule.OfSeq(args), retType, ListModule.OfSeq(functionsToLocals[name]),
                 ListModule.OfSeq(body), false, false);
 
             //Add it to the relevant machine's table
@@ -1258,7 +1378,7 @@ namespace Microsoft.P_FS_Boogie
             var src = (t.src as P_Root.StateDecl);
             var machName = getString((src.owner as P_Root.MachineDecl).name);
             symbolTable.currentM = machName;
-            var owner = machName + '_' + getQualifiedName(src.name as P_Root.QualifiedName);
+            var owner = getQualifiedName(src.name as P_Root.QualifiedName);
             var dst = machName + '_' + getQualifiedName(t.dst as P_Root.QualifiedName);
             if (t.action.Symbol.ToString() == "PUSH")
             {
@@ -1273,7 +1393,16 @@ namespace Microsoft.P_FS_Boogie
             }
             else
             {
-                var action = symbolTable.GetFunName(getString(t.action));
+                //A special case. We generate a FunDecl 
+                //which calls the function in question.
+                var action = machName + '_' + owner + "_on_" + trig + "_goto_" + dst;
+                var funName = symbolTable.GetFunName(getString(t.action));
+                var @params = new FSharpList<Syntax.VarDecl>(new Syntax.VarDecl("payload", Syntax.Type.Null),
+                    FSharpList<Syntax.VarDecl>.Empty);
+                var body = new FSharpList<Syntax.Stmt>(Syntax.Stmt.NewFunStmt(funName, FSharpList<Syntax.Expr>.Empty, null),
+                    FSharpList<Syntax.Stmt>.Empty);
+                var fd = new Syntax.FunDecl(action, @params, null, FSharpList<Syntax.VarDecl>.Empty, body, false, false);
+                machineToFunList[symbolTable.currentM].Add(fd);
                 return Syntax.TransDecl.T.NewCall(trig, dst, action);
             }
         }
@@ -1303,7 +1432,16 @@ namespace Microsoft.P_FS_Boogie
             }
             else
             {
-                var action = symbolTable.GetFunName(getString(d.action));
+                //A special case. We generate a FunDecl 
+                //which calls the function in question.
+                var action = machName + '_' + owner + "_do_" + trig;
+                var funName = symbolTable.GetFunName(getString(d.action));
+                var @params = new FSharpList<Syntax.VarDecl>(new Syntax.VarDecl("payload", Syntax.Type.Null),
+                    FSharpList<Syntax.VarDecl>.Empty);
+                var body = new FSharpList<Syntax.Stmt>(Syntax.Stmt.NewFunStmt(funName, FSharpList<Syntax.Expr>.Empty, null),
+                    FSharpList<Syntax.Stmt>.Empty);
+                var fd = new Syntax.FunDecl(action, @params, null, FSharpList<Syntax.VarDecl>.Empty, body, false, false);
+                machineToFunList[symbolTable.currentM].Add(fd);
                 return Syntax.DoDecl.T.NewCall(trig, action);
             }
         }
@@ -1571,15 +1709,23 @@ namespace Microsoft.P_FS_Boogie
             {
                 Environment.Exit(-1);
             }
+            fileName = Path.GetFullPath(inputFileName);
             genFSExprs();
             var evMonList = new List<Tuple<string, FSharpList<string>>>();
             foreach(var kv in eventToMonitorList)
             {
                 evMonList.Add(new Tuple<string, FSharpList<string>>(kv.Key, ListModule.OfSeq(kv.Value)));
             }     
-            return new Syntax.ProgramDecl(mainMachine,
+            var prog =  new Syntax.ProgramDecl(fileName, mainMachine,
                 ListModule.OfSeq(machines), ListModule.OfSeq(events), MapModule.OfSeq(evMonList),
                 ListModule.OfSeq(staticFunctions), maxFields, hasDefer, hasIgnore);
+            var map = new List<Tuple<string, FSharpList<Tuple<int, string, Syntax.Type>>>>();
+            foreach (var kv in functionsToRefParams)
+            {
+                map.Add(new Tuple<string, FSharpList<Tuple<int, string, Syntax.Type>>>
+                    (kv.Key, ListModule.OfSeq(kv.Value)));
+            }
+            return RemoveRefParams.removeRefParamsProgram(MapModule.OfSeq(map), prog);
         }
     }
 }

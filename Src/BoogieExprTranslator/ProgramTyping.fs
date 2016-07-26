@@ -220,7 +220,13 @@ module ProgramTyping =
         | Map(t1, t2) -> Seq(t2)
         | _ -> raise NotDefined
       end
-    | Expr.Un(Sizeof, e1) -> Int
+    | Expr.Un(Sizeof, e1) -> 
+      begin 
+        match typecheckExpr prog G cm e1 with
+        | Seq(_) -> Int
+        | Map(_) -> Int
+        | _ -> raise NotDefined
+      end
     | Expr.Dot(e, i) -> 
       begin
         let ts = typecheckExpr prog G cm e in
@@ -275,11 +281,7 @@ module ProgramTyping =
       let sName = (prog.MachineMap.[M]).StartState
       let ea = (prog.MachineMap.[M].StateMap.[sName]).EntryAction
       if (ea.IsSome) then begin
-        let e' = 
-          match e with
-          | Expr.Nil -> []
-          | _ -> [e]
-        if (typecheckCall prog G M ea.Value e').IsSome then raise NotDefined 
+        if (typecheckCall prog G M ea.Value [e]).IsSome then raise NotDefined 
         else Type.Machine
       end
       else begin
@@ -336,7 +338,7 @@ module ProgramTyping =
                        (printType (typecheckExpr prog G cm arg))))
         else (typeAssert (arg = Expr.Nil) (sprintf "Event %s takes no argument, but got %s" e (printExpr arg)))
       end
-    | Expr.Dot(_)| Expr.NamedDot(_) | Expr.Nil | Expr.Call(_) | Expr.Default(_) |     Expr.Cast(_) | Expr.Var(_) ->
+    | Expr.Dot(_)| Expr.NamedDot(_) | Expr.Nil | Expr.Call(_) | Expr.Default(_) | Expr.Cast(_) | Expr.Var(_) ->
       begin
         let t = typecheckExpr prog G cm event
         typeAssert (isSubtype t Type.Event) (sprintf "%s is not an event!" (printExpr event))
@@ -395,7 +397,7 @@ module ProgramTyping =
         (typecheckStmt prog G cm cf e)
       end
     | SeqStmt(lst) -> (List.iter (fun s -> (typecheckStmt prog G cm cf s)) lst)
-    | Receive(lst) -> List.iter (fun(e, st) -> typecheckStmt prog G cm cf st) lst
+    | Receive(lst) -> ignore true //No need because the statement list is auto-generated, and needs no typing. The actual statement block is bundled inside a function which is already type-checked.
     //ToDo add dynamic check that the event will accept the arg given.
     | Monitor(e, arg) -> (typecheckEventWithArgs prog G cm e arg)
     | Return(Some(e)) -> 
