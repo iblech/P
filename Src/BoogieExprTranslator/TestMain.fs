@@ -34,7 +34,8 @@ module Main =
 
   [<EntryPoint>]
   let main argv = 
-    let t = new StreamWriter(argv.[1])
+    use t = new StreamWriter(argv.[1])
+    //let t = System.Console.Out
     let sw = new IndentedTextWriter(t, "   ") 
     translateProg (getProgram argv.[0]) sw
     //File.ReadLines(argv.[0]) |> Seq.iter (printProgram)

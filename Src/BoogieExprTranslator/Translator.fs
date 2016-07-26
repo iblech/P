@@ -13,6 +13,7 @@ module Translator =
 
   let Typmap = ref Map.empty
   let TypmapIndex = ref 0
+  let (tmpVars: string list ref) = ref []
 
   let GetTypeIndex t = 
     if Map.containsKey t !Typmap then Map.find t !Typmap
@@ -45,7 +46,7 @@ module Translator =
     | Nil -> "null"
     | Expr.ConstInt(i) -> sprintf "PrtConstructFromInt(%d)" i 
     | Expr.ConstBool(b) -> if b then "PrtTrue" else "PrtFalse"
-    | Expr.This -> "PrtConstructFromMachineID(thisMid)" 
+    | Expr.This -> "PrtConstructFromMachineId(thisMid)" 
 //    | Expr.New(_,_) -> "PrtConstructFromMachine(1)" (* TODO: Fix *)
     | Expr.Default t when t = Null || t = Machine || t = Type.Event || t = Any -> "null"
     | Expr.Default Int -> "PrtConstructFromInt(0)"
@@ -144,7 +145,7 @@ module Translator =
         end
     | _, Expr.Bin(Eq, e1, e2) ->
         begin
-            fprintfn sw "call %s := PrtEquals(%s, %s);" (getLhsVar lval) (translateExpr G evMap e1) (translateExpr G evMap e2)
+            fprintfn sw "call %s := PrtConstructFromBool(PrtEquals(%s, %s));" (getLhsVar lval) (translateExpr G evMap e1) (translateExpr G evMap e2)
         end
     | _, Expr.Un(Keys, e) ->
         begin
@@ -162,8 +163,8 @@ module Translator =
       begin
         fprintfn sw "machineCounter := machineCounter + 1;"
         fprintfn sw "async call MachineThread_%s(machineCounter, %s);" m (translateExpr G evMap arg)
-        fprintfn sw "%s := PrtConstructFromMachineID(machineCounter);" v
-      end
+        fprintfn sw "%s := PrtConstructFromMachineId(machineCounter);" v
+      end   
     | Lval.Index(Lval.Var(lhsVar), e), _ when isSeq (typeofLval (Lval.Var(lhsVar)) G) ->
         begin
             fprintfn sw "call %s := WriteSeq(%s, PrtFieldInt(%s), %s);" lhsVar lhsVar (translateExpr G evMap e) (translateExpr G evMap expr)
@@ -199,6 +200,7 @@ module Translator =
     | Insert(Lval.Var(v), e1, e2) -> translateInsert sw G evMap v e1 e2
     | Remove(Lval.Var(v), e1) -> translateRemove sw G evMap v e1
     | Assume(e) -> fprintfn sw "assume PrtFieldBool(%s);" (translateExpr G evMap e)
+    | Assert(e) -> fprintfn sw "assert PrtFieldBool(%s);" (translateExpr G evMap e)
     | NewStmt(m, e) -> fprintfn sw "call tmpRhsValue := newMachine_%s(%s)" m (translateExpr G evMap e)     
     | Raise(e, a) ->
       begin
@@ -210,7 +212,7 @@ module Translator =
     | Send(m, e, arg) ->
       begin
         let plExpr = (translateExpr G evMap arg)
-      fprintfn sw "send(%s, %s, %s);" (translateMachineExpr m) (translateEventExpr evMap e plExpr) plExpr
+      fprintfn sw "call send(%s, %s, %s);" (translateMachineExpr m) (translateEventExpr evMap e plExpr) plExpr
       end
     | Skip(i) -> ignore true // TODO "assume {:line"
     | While(c, st) ->
@@ -324,7 +326,7 @@ module Translator =
         let ti = List.item i ts in
         fprintfn sw "  call AssertIsType%d(PrtFieldTuple%d(x));" (GetTypeIndex ti) i
     end
-    fprintfn sw "}"
+    fprintfn sw "}"   
   
   let getVars attr (vdList: VarDecl list) =
     List.map (fun(vd: VarDecl) -> sprintf "var%s %s: PrtRef; // %s" attr vd.Name (printType vd.Type)) vdList
@@ -427,8 +429,8 @@ module Translator =
         fprintfn sw "    if(event == %d)" (Map.find e events)
         fprintfn sw "    {"
         level := !level + 1
-        fprintfn sw "       StateStackPush(%d);" (Map.find src stateToInt)
-        fprintfn sw "       CurrState = %d;" (Map.find d stateToInt)
+        fprintfn sw "       call StateStackPush(%d);" (Map.find src stateToInt)
+        fprintfn sw "       CurrState := %d;" (Map.find d stateToInt)
         match dstEntryAction with
         | None -> ignore true
         | Some(ea) -> fprintfn sw "       call %s(payload);" ea   
@@ -500,7 +502,7 @@ module Translator =
     fprintfn sw "machineToQCAssume[machineCounter] := %s;" (snd qc)
     Map.iter (fun k v -> (fprintfn sw "machineEvToQCount[machineCounter][%d] := 0;" v)) evMap
     fprintfn sw "async call MachineThread_%s(machineCounter, entryArg);" m
-    fprintfn sw "m := PrtConstructFromMachineID(machineCounter);"
+    fprintfn sw "m := PrtConstructFromMachineId(machineCounter);"
     fprintfn sw "return;"
     level := !level - 1
     fprintfn sw "}"
@@ -630,7 +632,7 @@ module Translator =
         end
     fprintfn sw "// Asserts that the payload supplied to an event variable is of the"
     fprintfn sw "// correct type. If yes, returns the integer corresponding to the event."
-    fprintfn sw "procedure AssertPayloadDynamicType(event: PrtRef, payload: PrtRef) returns (evId: int)"
+    fprintfn sw "procedure AssertPayloadDynamicType(event: PrtRef, payload: PrtRef) returns (evID: int)"
     fprintfn sw "{"
     level := !level + 1
     fprintfn sw "evID := PrtFieldInt(event);"
@@ -701,7 +703,7 @@ module Translator =
         fprintfn sw "}"
         fprintf sw "else "
       end
-    let cond = if hasDefer then "if(event >= 0 && !deferEvents[event] && registeredEvents[event])" else "if(event >= 0 && registeredEvents[event])"
+    let cond = if hasDefer then "if(event >= 0 && !deferEvents[event] && registerEvents[event])" else "if(event >= 0 && registerEvents[event])"
     fprintfn sw "%s" cond
     fprintfn sw "{"
     level := !level + 1
@@ -834,9 +836,8 @@ module Translator =
     List.iter (fprintfn sw "%s") dicts
 
     (*Temp RHS vars *)
-    fprintfn sw "var{:thread_local} tmpRhsValue: PrtRef;"
-    for i = 0 to prog.maxFields-1 do
-        fprintfn sw "var{:thread_local} tmpRhsValue_%d: PrtRef;" i
+    tmpVars := "var tmpRhsValue: PrtRef;" ::
+    [for i = 0 to prog.maxFields-1 do yield (sprintf "var tmpRhsValue_%d: PrtRef;" i)]
         
     let monitorToInt = prog.Machines |> List.filter (fun (md: MachineDecl) -> md.IsMonitor) |> List.map (fun(md: MachineDecl) -> md.Name) |> Seq.mapi (fun i x -> (x, i)) |> Map.ofSeq
     
@@ -873,7 +874,7 @@ module Translator =
 
     (* The main function *)
     
-    fprintfn sw "procedure {:entrypoint} main()" 
+    fprintfn sw "procedure {:entrypoint} main() modifies machineCounter" 
     fprintfn sw "{"
     level := !level + 1
     fprintfn sw "machineCounter := 0;"

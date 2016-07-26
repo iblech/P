@@ -69,11 +69,10 @@ procedure StateStackPush(state: int)
    StateStack := Cons(state, StateStack);
 }
 
-procedure StateStackPop() returns (state: int)
+procedure StateStackPop()
 {
    assert StateStack != Nil();
-   state := state#Cons(StateStack);
-   stateStack := stack#Cons(StateStack);
+   StateStack := stack#Cons(StateStack);
    return;
 }
 
@@ -133,6 +132,6 @@ procedure Enqueue(mid:int, event: int, payload: PrtRef)
 
 procedure send(mid: int, event: int, payload: PrtRef)
 {
-	call monitor(mid, event, payload);
-	call enqueue(mid, event, payload);
+	call monitor(event, payload);
+	call Enqueue(mid, event, payload);
 }
