@@ -145,7 +145,7 @@ module Translator =
         end
     | _, Expr.Bin(Eq, e1, e2) ->
         begin
-            fprintfn sw "call %s := PrtConstructFromBool(PrtEquals(%s, %s));" (getLhsVar lval) (translateExpr G evMap e1) (translateExpr G evMap e2)
+            fprintfn sw "call %s := PrtEquals(%s, %s);" (getLhsVar lval) (translateExpr G evMap e1) (translateExpr G evMap e2)
         end
     | _, Expr.Un(Keys, e) ->
         begin
@@ -195,6 +195,7 @@ module Translator =
       translateStmt sw G evMap st
       level := !level - 1
       fprintfn sw "}"
+      fprintfn sw "else "
     match stmt with
     | Assign(l, e) -> translateAssign sw G evMap l e
     | Insert(Lval.Var(v), e1, e2) -> translateInsert sw G evMap v e1 e2
@@ -242,8 +243,14 @@ module Translator =
     | SeqStmt(ls) -> List.iter (translateStmt sw G evMap) ls
     | Receive(ls) -> 
       begin
-        fprintfn sw "call event, payload := Dequeue(thisMid);"
+        fprintfn sw "call event, payload := Dequeue();"
         List.iter translateCase ls
+        fprintfn sw ""
+        fprintfn sw "{"
+        level := !level + 1
+        fprintfn sw "assert false;"
+        level := !level - 1
+        fprintfn sw "}"
       end
     | Pop -> fprintfn sw "call StateStackPop();"
     | Return(None) -> fprintfn sw "return;"
@@ -273,20 +280,20 @@ module Translator =
 
   let printEquals sw maxFields =
     fprintfn sw "// Equals
-  procedure PrtEquals(a: PrtRef, b: PrtRef) returns (v: bool)
+  procedure PrtEquals(a: PrtRef, b: PrtRef) returns (v: PrtRef)
   {
     var ta, tb: PrtType;
 
-    if(a == b) { v := true; return; }
+    if(a == b) { v := PrtTrue; return; }
 
     ta := PrtDynamicType(a);
     tb := PrtDynamicType(b);
 
-    if(ta != tb) { v := false; return; }
-    if(ta == PrtTypeInt) { v := (PrtFieldInt(a) == PrtFieldInt(b)); return; }
-    if(ta == PrtTypeBool) { v := (PrtFieldBool(a) == PrtFieldBool(b)); return; }
-    if(ta == PrtTypeMachine) { v := (PrtFieldMachine(a) == PrtFieldMachine(b)); return; }
-    if(ta == PrtTypeEvent) { v := (PrtFieldEvent(a) == PrtFieldEvent(b)); return; }
+    if(ta != tb) { v := PrtFalse; return; }
+    if(ta == PrtTypeInt) { v := PrtConstructFromBool(PrtFieldInt(a) == PrtFieldInt(b)); return; }
+    if(ta == PrtTypeBool) { v := PrtConstructFromBool(PrtFieldBool(a) == PrtFieldBool(b)); return; }
+    if(ta == PrtTypeMachine) { v := PrtConstructFromBool(PrtFieldMachine(a) == PrtFieldMachine(b)); return; }
+    if(ta == PrtTypeEvent) { v := PrtConstructFromBool(PrtFieldEvent(a) == PrtFieldEvent(b)); return; }
     "
   
     for i = 1 to maxFields do
@@ -298,10 +305,10 @@ module Translator =
   }        
     "
     for i = 1 to maxFields do
-      fprintfn sw "procedure PrtEqualsTuple%d(x: PrtRef, y: PrtRef) returns (v: bool) {" i
+      fprintfn sw "procedure PrtEqualsTuple%d(x: PrtRef, y: PrtRef) returns (v: PrtRef) {" i
       for j = 0 to (i-1) do
       fprintfn sw "  call v := PrtEquals(PrtFieldTuple%d(x), PrtFieldTuple%d(y));" j j
-      if j <> (i-1) then fprintfn sw "  if(!v) { return; }"
+      if j <> (i-1) then fprintfn sw "  if(v == PrtFalse) { return; }"
       fprintfn sw "}"
  
   let printTypeCheck sw t =
@@ -383,6 +390,7 @@ module Translator =
     level := !level + 1
     fprintfn sw "// Initialize locals."
     getVars "" fd.Locals |> List.iter (fprintfn sw "%s")
+    !tmpVars |> List.iter (fprintfn sw "%s")
     getDefaults fd.Locals |> List.iter (translateStmt sw G evMap)
     List.iter (translateStmt sw G evMap) fd.Body
     level := !level - 1
@@ -393,14 +401,14 @@ module Translator =
     match d with 
     | DoDecl.T.Call(e, f) -> 
       begin
-        fprintfn sw "    if(event == %d)" (Map.find e events)
+        fprintfn sw "    if(event == %d) //%s" (Map.find e events) e
         fprintfn sw "    {"
         level := !level + 1
         fprintfn sw "       call %s(payload);" f
         level := !level - 1
         fprintfn sw "    }"
       end
-    | _ -> ignore true
+    | DoDecl.T.Ignore(e) ->  fprintfn sw "    if(event == %d)//%s {}" (Map.find e events) e
 
   let translateTransitions (sw: IndentedTextWriter) (mach: MachineDecl) src stateToInt events (t: TransDecl.T) =
     let level = ref sw.Indent
@@ -409,7 +417,7 @@ module Translator =
       begin
         let srcExitAction = mach.StateMap.[src].ExitAction
         let dstEntryAction = mach.StateMap.[d].EntryAction
-        fprintfn sw "    if(event == %d)" (Map.find e events)
+        fprintfn sw "    if(event == %d) // %s" (Map.find e events) e
         fprintfn sw "    {"
         level := !level + 1;  
         match srcExitAction with
@@ -422,11 +430,12 @@ module Translator =
         | Some(ea) -> fprintfn sw "       call %s(payload);" ea   
         level := !level - 1
         fprintfn sw "    }"
+        fprintf sw "else "
       end
     |TransDecl.T.Push(e, d) ->  
       begin
         let dstEntryAction = mach.StateMap.[d].EntryAction
-        fprintfn sw "    if(event == %d)" (Map.find e events)
+        fprintfn sw "    if(event == %d) // %s" (Map.find e events) e
         fprintfn sw "    {"
         level := !level + 1
         fprintfn sw "       call StateStackPush(%d);" (Map.find src stateToInt)
@@ -436,6 +445,7 @@ module Translator =
         | Some(ea) -> fprintfn sw "       call %s(payload);" ea   
         level := !level - 1
         fprintfn sw "    }"
+        fprintf sw "else "
       end
   
   let haltHandled (state: StateDecl) = 
@@ -464,15 +474,16 @@ module Translator =
     List.iter (translateTransitions sw mach state.Name stateToInt events) state.Transitions
     if (not (haltHandled state)) then
       begin
-        fprintfn sw "      if(event == %d)" (Map.find "halt" events)
+        fprintfn sw "      if(event == %d) //halt" (Map.find "halt" events)
         fprintfn sw "      {"
         level := !level + 1
         fprintfn sw "         return;"
         level := !level - 1
         fprintfn sw "      }"
+        fprintfn sw "      else" 
       end
     //Raise exception for unhandled event.
-    fprintfn sw "      else" 
+    fprintfn sw ""
     fprintfn sw "      {"
     level := !level + 1
     fprintfn sw "          assert false;" //ToDo Assert or assume?
@@ -545,7 +556,7 @@ module Translator =
     fprintfn sw "   while(true)"
     fprintfn sw "   {"
     level := !level + 1
-    fprintfn sw "      call event, payload := Dequeue(mid);"
+    fprintfn sw "      call event, payload := Dequeue();"
     List.iter (translateState sw md stateToInt hasDefer hasIgnore evMap) md.States
     fprintfn sw ""
     fprintfn sw "      {"
@@ -565,7 +576,7 @@ module Translator =
       | None -> ignore true
       | Some(Card.Assume(i)) ->
         begin
-          fprintfn sw "if(event == %d)" (Map.find e evToInt)
+          fprintfn sw "if(event == %d) //%s" (Map.find e evToInt) e
           fprintfn sw "{"
           level := !level + 1
           fprintfn sw "assume (count <= %d);" i
@@ -574,7 +585,7 @@ module Translator =
         end
       | Some(Card.Assert(i)) -> 
         begin
-          fprintfn sw "if(event == %d)" (Map.find e evToInt)
+          fprintfn sw "if(event == %d) //%s" (Map.find e evToInt) e
           fprintfn sw "{"
           level := !level + 1
           fprintfn sw "assert (count <= %d);" i
@@ -602,7 +613,7 @@ module Translator =
     let level = ref sw.Indent
     let printMonitorSt ev monLst = 
       let e = (Map.find ev evMap)
-      fprintfn sw "if(event == %d)" e
+      fprintfn sw "if(event == %d) //%s" e ev
       fprintfn sw "{"
       level := !level + 1
       List.iter (fun(m) -> fprintfn sw "Enqueue(%d, %d, payload);" (Map.find m monToInt) e) monLst
@@ -643,7 +654,7 @@ module Translator =
 
   let createDeque (sw: IndentedTextWriter) hasDefer hasIgnore = 
     let level = ref sw.Indent
-    fprintfn sw "procedure Dequeue(mid: int) returns (event: int, payload: PrtRef)"
+    fprintfn sw "procedure Dequeue() returns (event: int, payload: PrtRef)"
     fprintfn sw "{"
     level := !level + 1
     fprintfn sw "var ptr: int;"
@@ -662,8 +673,8 @@ module Translator =
     fprintfn sw "}"
 
 
-    fprintfn sw "head := MachineInboxHead[mid];"
-    fprintfn sw "tail := MachineInboxTail[mid];"
+    fprintfn sw "head := MachineInboxHead[thisMid];"
+    fprintfn sw "tail := MachineInboxTail[thisMid];"
 
     fprintfn sw "ptr := head;"
     fprintfn sw "event := 0 - 1;"
@@ -671,7 +682,7 @@ module Translator =
     fprintfn sw "while(ptr <= tail) "
     fprintfn sw "{"
     level := !level + 1
-    fprintfn sw "event := MachineInboxStoreEvent[mid][ptr];"
+    fprintfn sw "event := MachineInboxStoreEvent[thisMid][ptr];"
     if hasIgnore then
       begin 
         fprintfn sw "if(event >= 0 && ignoreEvents[event]) "
@@ -683,19 +694,19 @@ module Translator =
         fprintfn sw "if(ptr == head)"
         fprintfn sw "{"
         level := !level + 1
-        fprintfn sw "MachineInboxHead[mid] := head + 1;"
+        fprintfn sw "MachineInboxHead[thisMid] := head + 1;"
         level := !level - 1
         fprintfn sw "}"
         fprintfn sw "else if(ptr == tail) "
         fprintfn sw "{"
         level := !level + 1
-        fprintfn sw "MachineInboxTail[mid] := tail - 1;"
+        fprintfn sw "MachineInboxTail[thisMid] := tail - 1;"
         level := !level - 1
         fprintfn sw "}"
         fprintfn sw "else"
         fprintfn sw "{"
         level := !level + 1
-        fprintfn sw "MachineInboxStoreEvent[mid][ptr] := 0 - 1;"
+        fprintfn sw "MachineInboxStoreEvent[thisMid][ptr] := 0 - 1;"
         level := !level - 1
         fprintfn sw "}"
         fprintfn sw ""
@@ -713,22 +724,22 @@ module Translator =
     fprintfn sw "if(ptr == head)"
     fprintfn sw "{"
     level := !level + 1
-    fprintfn sw "MachineInboxHead[mid] := head + 1;"
+    fprintfn sw "MachineInboxHead[thisMid] := head + 1;"
     level := !level - 1
     fprintfn sw "}"
     fprintfn sw "else if(ptr == tail) "
     fprintfn sw "{"
     level := !level + 1
-    fprintfn sw "MachineInboxTail[mid] := tail - 1;"
+    fprintfn sw "MachineInboxTail[thisMid] := tail - 1;"
     level := !level - 1
     fprintfn sw "}"
     fprintfn sw "else"
     fprintfn sw "{"
     level := !level + 1
-    fprintfn sw "MachineInboxStoreEvent[mid][ptr] := 0 - 1;"
+    fprintfn sw "MachineInboxStoreEvent[thisMid][ptr] := 0 - 1;"
     level := !level - 1
     fprintfn sw "}"
-    fprintfn sw "payload := MachineInboxStorePayload[mid][ptr];"
+    fprintfn sw "payload := MachineInboxStorePayload[thisMid][ptr];"
     fprintfn sw "break;"
     level := !level - 1
     fprintfn sw "}"
@@ -874,15 +885,16 @@ module Translator =
 
     (* The main function *)
     
-    fprintfn sw "procedure {:entrypoint} main() modifies machineCounter" 
+    fprintfn sw "procedure {:entrypoint} main()" 
     fprintfn sw "{"
     level := !level + 1
+    fprintfn sw "var tmpRhsValue: PrtRef;"
     fprintfn sw "machineCounter := 0;"
-    
     //Start monitors 
-    Map.iter (fun k v -> (fprintfn sw "call newMachine_%s(null);" k)) monitorToInt
+    Map.iter (fun k v -> (fprintfn sw "call tmpRhsValue := newMachine_%s(null);" k)) monitorToInt
     
     //Start main machine
+    
     fprintfn sw "call tmpRhsValue := newMachine_%s(null);" prog.MainMachine
 
     level := !level - 1

@@ -76,6 +76,30 @@ procedure StateStackPop()
    return;
 }
 
+procedure Probe(event: int) (returns handlerState: int)
+{
+   handlerState := CurrState;
+   if(registerEvents[handlerState][event])
+   {
+      return;
+   }
+   //Extra add on
+   var s: StateStackType;
+   s := StateStack;
+   while(s != Nil()) 
+   {
+      handlerState := state#Cons(StateStack);
+      s := stack#Cons(StateStack);
+	  if(registerEvents[handlerState][event])
+	  {
+         return;
+      }
+   }
+   assert false; //No handler
+   return;
+}
+
+
 procedure AssertEventCard(mid: int, event: int)
 {
    var head: int;
