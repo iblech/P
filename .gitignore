@@ -268,3 +268,5 @@ Src/PrtDist/Samples/PingPong/program.h
 /Bld/PRT_CONTAINER_LOG_1.txt
 *.dat
 *.sh
+
+*.zip
