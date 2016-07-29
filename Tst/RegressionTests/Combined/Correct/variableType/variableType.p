@@ -21,7 +21,7 @@ fun TestMachine_Init_entry6(TestMachine_Init_entry6__payload_0: null)
 TestMachine_x = (TestMachine_x + 1);
 return;
 }
-fun TestMachine_Init_exit0_rand_216821592(TestMachine_Init_exit0_rand_216821592__payload_skip: any)
+fun TestMachine_Init_exit0_rand_269193514(TestMachine_Init_exit0_rand_269193514__payload_skip: any)
 {
 
 
@@ -36,7 +36,7 @@ return;
 entry (payload: null) {
 TestMachine_Init_entry6(payload);
 }exit {
-TestMachine_Init_exit0_rand_216821592(null);
+TestMachine_Init_exit0_rand_269193514(null);
 }}
 }
 
@@ -52,7 +52,7 @@ fun Xsender_Init_entry20(Xsender_Init_entry20__payload_1: null)
 send this, x;
 return;
 }
-fun Xsender_Init_exit0_rand_1996946611(Xsender_Init_exit0_rand_1996946611__payload_skip: any)
+fun Xsender_Init_exit0_rand_986906981(Xsender_Init_exit0_rand_986906981__payload_skip: any)
 {
 
 
@@ -67,7 +67,7 @@ return;
 entry (payload: null) {
 Xsender_Init_entry20(payload);
 }exit {
-Xsender_Init_exit0_rand_1996946611(null);
+Xsender_Init_exit0_rand_986906981(null);
 }}
 }
 

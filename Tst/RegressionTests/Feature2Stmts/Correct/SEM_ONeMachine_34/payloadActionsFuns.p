@@ -116,7 +116,7 @@ Tmp99 = (MachOS_BOOL == true);
 assert Tmp99;
 return;
 }
-fun MachOS_Init_do_halt0_rand_1313220688(MachOS_Init_do_halt0_rand_1313220688_payload: any)
+fun MachOS_Init_do_halt0_rand_1490502383(MachOS_Init_do_halt0_rand_1490502383_payload: any)
 {
 
 
@@ -162,7 +162,7 @@ Tmp102 = (MachOS_m, MachOS_s);
 send this, myMapSeq, Tmp102;
 return;
 }
-fun MachOS_Init_exit0_rand_105004822(MachOS_Init_exit0_rand_105004822__payload_skip: any)
+fun MachOS_Init_exit0_rand_646941550(MachOS_Init_exit0_rand_646941550__payload_skip: any)
 {
 
 
@@ -177,7 +177,7 @@ return;
 entry (payload: null) {
 MachOS_Init_entry34(payload);
 }exit {
-MachOS_Init_exit0_rand_105004822(null);
+MachOS_Init_exit0_rand_646941550(null);
 }on myTuple do (payload: (int, bool)) {
 MachOS_Init_do_myTuple44(payload);
 }
@@ -191,7 +191,7 @@ on myMapSeq do (payload: (map[int, int], seq[bool])) {
 MachOS_Init_do_myMapSeq49(payload);
 }
 on halt do (payload: null) {
-MachOS_Init_do_halt0_rand_1313220688(payload);
+MachOS_Init_do_halt0_rand_1490502383(payload);
 }}
 }
 

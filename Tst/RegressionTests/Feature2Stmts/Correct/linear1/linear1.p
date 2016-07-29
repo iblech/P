@@ -73,7 +73,7 @@ Tmp44 = (M_S_entry17_y == 0);
 assert Tmp44;
 return;
 }
-fun M_S_exit0_rand_1340878547(M_S_exit0_rand_1340878547__payload_skip: any)
+fun M_S_exit0_rand_1874064281(M_S_exit0_rand_1874064281__payload_skip: any)
 {
 
 
@@ -88,7 +88,7 @@ return;
 entry (payload: null) {
 M_S_entry17(payload);
 }exit {
-M_S_exit0_rand_1340878547(null);
+M_S_exit0_rand_1874064281(null);
 }}
 }
 

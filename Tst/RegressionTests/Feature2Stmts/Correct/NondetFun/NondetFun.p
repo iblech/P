@@ -121,7 +121,7 @@ while(Tmp54)
 assert (Test_x <= 5);
 return;
 }
-fun Test_Init_exit0_rand_1093650984(Test_Init_exit0_rand_1093650984__payload_skip: any)
+fun Test_Init_exit0_rand_57172423(Test_Init_exit0_rand_57172423__payload_skip: any)
 {
 
 
@@ -136,7 +136,7 @@ return;
 entry (payload: null) {
 Test_Init_entry28(payload);
 }exit {
-Test_Init_exit0_rand_1093650984(null);
+Test_Init_exit0_rand_57172423(null);
 }}
 }
 

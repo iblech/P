@@ -33,7 +33,7 @@ Tmp116 = (A_S_entry5_x == 6);
 assert Tmp116;
 return;
 }
-fun A_S_exit0_rand_299573349(A_S_exit0_rand_299573349__payload_skip: any)
+fun A_S_exit0_rand_1650292394(A_S_exit0_rand_1650292394__payload_skip: any)
 {
 
 
@@ -48,7 +48,7 @@ return;
 entry (payload: null) {
 A_S_entry5(payload);
 }exit {
-A_S_exit0_rand_299573349(null);
+A_S_exit0_rand_1650292394(null);
 }}
 }
 

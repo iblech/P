@@ -505,7 +505,7 @@ assert Tmp210;
 raise halt;
 return;
 }
-fun M_S_exit0_rand_2049403183(M_S_exit0_rand_2049403183__payload_skip: any)
+fun M_S_exit0_rand_635999076(M_S_exit0_rand_635999076__payload_skip: any)
 {
 
 
@@ -520,7 +520,7 @@ return;
 entry (payload: null) {
 M_S_entry56(payload);
 }exit {
-M_S_exit0_rand_2049403183(null);
+M_S_exit0_rand_635999076(null);
 }}
 }
 
@@ -544,7 +544,7 @@ Tmp212 = (Tmp211 == 3);
 assert Tmp212;
 return;
 }
-fun Test_init_exit0_rand_2085560844(Test_init_exit0_rand_2085560844__payload_skip: any)
+fun Test_init_exit0_rand_271478836(Test_init_exit0_rand_271478836__payload_skip: any)
 {
 
 
@@ -559,7 +559,7 @@ return;
 entry (payload: seq[int]) {
 Test_init_entry200(payload);
 }exit {
-Test_init_exit0_rand_2085560844(null);
+Test_init_exit0_rand_271478836(null);
 }}
 }
 

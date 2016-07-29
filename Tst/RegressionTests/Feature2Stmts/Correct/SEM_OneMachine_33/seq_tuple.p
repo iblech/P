@@ -42,7 +42,7 @@ Entry_mac = Tmp84;
 send Entry_mac, seqpayload, Entry_l;
 return;
 }
-fun Entry_init_exit0_rand_2089077094(Entry_init_exit0_rand_2089077094__payload_skip: any)
+fun Entry_init_exit0_rand_1253847031(Entry_init_exit0_rand_1253847031__payload_skip: any)
 {
 
 
@@ -57,7 +57,7 @@ return;
 entry (payload: null) {
 Entry_init_entry12(payload);
 }exit {
-Entry_init_exit0_rand_2089077094(null);
+Entry_init_exit0_rand_1253847031(null);
 }}
 }
 
@@ -67,7 +67,7 @@ var test_ii: seq[int];
 var test_rec: seq[int];
 var test_i: int;
 
-fun test_init_on_seqpayload_goto_test_testitnow0_rand_1239587183(test_init_on_seqpayload_goto_test_testitnow0_rand_1239587183__payload_skip: any)
+fun test_init_on_seqpayload_goto_test_testitnow0_rand_645293356(test_init_on_seqpayload_goto_test_testitnow0_rand_645293356__payload_skip: any)
 {
 
 
@@ -98,7 +98,7 @@ Tmp87 = (test_init_entry30_payload.1 == 1);
 assert Tmp87;
 return;
 }
-fun test_init_exit0_rand_1713588890(test_init_exit0_rand_1713588890__payload_skip: any)
+fun test_init_exit0_rand_1876467334(test_init_exit0_rand_1876467334__payload_skip: any)
 {
 
 
@@ -140,7 +140,7 @@ test_i = (test_i - 1);
 
 return;
 }
-fun test_testitnow_exit0_rand_1483773154(test_testitnow_exit0_rand_1483773154__payload_skip: any)
+fun test_testitnow_exit0_rand_1324252278(test_testitnow_exit0_rand_1324252278__payload_skip: any)
 {
 
 
@@ -155,9 +155,9 @@ return;
 entry (payload: (seq[int], int)) {
 test_init_entry30(payload);
 }exit {
-test_init_exit0_rand_1713588890(null);
+test_init_exit0_rand_1876467334(null);
 }on seqpayload goto test_testitnow with (payload: seq[int]) {
-test_init_on_seqpayload_goto_test_testitnow0_rand_1239587183(payload);
+test_init_on_seqpayload_goto_test_testitnow0_rand_645293356(payload);
 }}
 
  state test_testitnow
@@ -165,7 +165,7 @@ test_init_on_seqpayload_goto_test_testitnow0_rand_1239587183(payload);
 entry (payload: seq[int]) {
 test_testitnow_entry39(payload);
 }exit {
-test_testitnow_exit0_rand_1483773154(null);
+test_testitnow_exit0_rand_1324252278(null);
 }}
 }
 

@@ -10,7 +10,7 @@ fun XX()
 main machine M
 {
 
-fun M_S_entry0_rand_86336892(M_S_entry0_rand_86336892__payload_skip: any)
+fun M_S_entry0_rand_846956422(M_S_entry0_rand_846956422__payload_skip: any)
 {
 
 
@@ -20,7 +20,7 @@ fun M_S_entry0_rand_86336892(M_S_entry0_rand_86336892__payload_skip: any)
 
 return;
 }
-fun M_S_exit0_rand_1716689873(M_S_exit0_rand_1716689873__payload_skip: any)
+fun M_S_exit0_rand_529716469(M_S_exit0_rand_529716469__payload_skip: any)
 {
 
 
@@ -33,9 +33,9 @@ return;
  state M_S
 {
 entry (payload: any) {
-M_S_entry0_rand_86336892(payload);
+M_S_entry0_rand_846956422(payload);
 }exit {
-M_S_exit0_rand_1716689873(null);
+M_S_exit0_rand_529716469(null);
 }}
 }
 

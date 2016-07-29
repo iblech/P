@@ -120,7 +120,7 @@ Tmp60 = (A_x == 2);
 assert Tmp60;
 return;
 }
-fun A_Init_exit0_rand_1287968382(A_Init_exit0_rand_1287968382__payload_skip: any)
+fun A_Init_exit0_rand_1558344141(A_Init_exit0_rand_1558344141__payload_skip: any)
 {
 
 
@@ -135,7 +135,7 @@ return;
 entry (payload: null) {
 A_Init_entry11(payload);
 }exit {
-A_Init_exit0_rand_1287968382(null);
+A_Init_exit0_rand_1558344141(null);
 }}
 }
 
@@ -253,7 +253,7 @@ Tmp66 = (B_Init_entry34_y == B_Init_entry34_payload1);
 assert Tmp66;
 return;
 }
-fun B_Init_exit0_rand_1228645213(B_Init_exit0_rand_1228645213__payload_skip: any)
+fun B_Init_exit0_rand_579018567(B_Init_exit0_rand_579018567__payload_skip: any)
 {
 
 
@@ -268,7 +268,7 @@ return;
 entry (payload: machine) {
 B_Init_entry34(payload);
 }exit {
-B_Init_exit0_rand_1228645213(null);
+B_Init_exit0_rand_579018567(null);
 }}
 }
 

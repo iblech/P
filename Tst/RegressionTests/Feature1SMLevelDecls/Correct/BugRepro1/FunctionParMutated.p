@@ -145,7 +145,7 @@ fun PING_Ping_Init_entry13(PING_Ping_Init_entry13__payload_0: null)
 raise Success;
 return;
 }
-fun PING_Ping_Init_exit0_rand_301749859(PING_Ping_Init_exit0_rand_301749859__payload_skip: any)
+fun PING_Ping_Init_exit0_rand_1461603504(PING_Ping_Init_exit0_rand_1461603504__payload_skip: any)
 {
 
 
@@ -160,7 +160,7 @@ return;
 entry (payload: null) {
 PING_Ping_Init_entry13(payload);
 }exit {
-PING_Ping_Init_exit0_rand_301749859(null);
+PING_Ping_Init_exit0_rand_1461603504(null);
 }on Success do (payload: null) {
 PING_Ping_Init_do_Success16(payload);
 }

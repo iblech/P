@@ -21,7 +21,7 @@ A_Init_entry11_b = Tmp69;
 send A_Init_entry11_b, F;
 return;
 }
-fun A_Init_exit0_rand_179137217(A_Init_exit0_rand_179137217__payload_skip: any)
+fun A_Init_exit0_rand_87883443(A_Init_exit0_rand_87883443__payload_skip: any)
 {
 
 
@@ -36,7 +36,7 @@ return;
 entry (payload: null) {
 A_Init_entry11(payload);
 }exit {
-A_Init_exit0_rand_179137217(null);
+A_Init_exit0_rand_87883443(null);
 }}
 }
 
@@ -70,7 +70,7 @@ fun B_Init_entry20(B_Init_entry20__payload_1: null)
 raise Unit;
 return;
 }
-fun B_Init_exit0_rand_804742240(B_Init_exit0_rand_804742240__payload_skip: any)
+fun B_Init_exit0_rand_917378774(B_Init_exit0_rand_917378774__payload_skip: any)
 {
 
 
@@ -112,7 +112,7 @@ B_X_entry28__payload_3 = B_X_entry28_case_F29_env.0;
 
 return;
 }
-fun B_X_exit0_rand_107570206(B_X_exit0_rand_107570206__payload_skip: any)
+fun B_X_exit0_rand_1791221156(B_X_exit0_rand_1791221156__payload_skip: any)
 {
 
 
@@ -127,7 +127,7 @@ return;
 entry (payload: null) {
 B_Init_entry20(payload);
 }exit {
-B_Init_exit0_rand_804742240(null);
+B_Init_exit0_rand_917378774(null);
 }on F do (payload: null) {
 B_Init_do_F23(payload);
 }on Unit push B_X;}
@@ -137,7 +137,7 @@ B_Init_do_F23(payload);
 entry (payload: null) {
 B_X_entry28(payload);
 }exit {
-B_X_exit0_rand_107570206(null);
+B_X_exit0_rand_1791221156(null);
 }on F do (payload: null) {
 B_X_do_F32(payload);
 }}

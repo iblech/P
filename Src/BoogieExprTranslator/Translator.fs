@@ -14,6 +14,7 @@ module Translator =
   let Typmap = ref Map.empty
   let TypmapIndex = ref 0
   let (tmpVars: string list ref) = ref []
+  let (monitorToStartState: Map<string, int> ref) = ref Map.empty
 
   let GetTypeIndex t = 
     if Map.containsKey t !Typmap then Map.find t !Typmap
@@ -215,7 +216,8 @@ module Translator =
         let plExpr = (translateExpr G evMap arg)
       fprintfn sw "call send(%s, %s, %s);" (translateMachineExpr m) (translateEventExpr evMap e plExpr) plExpr
       end
-    | Skip(i) -> ignore true // TODO "assume {:line"
+    | Skip(_,-1,_) -> ignore true
+    | Skip(f, l, c) -> fprintfn sw "assume {:sourceloc \"%s\", %d, %d} true;" f l c
     | While(c, st) ->
       begin
         fprintfn sw "while(PrtFieldBool(%s))" (translateExpr G evMap c)
@@ -342,9 +344,9 @@ module Translator =
     List.fold (fun ls (vd: VarDecl) -> ls @ [Stmt.Assign(Lval.Var(vd.Name), Expr.Default(vd.Type))]) [] vdList 
 
   let getEventMaps d trans hasDefer hasIgnore (events: Map<string, int>) = 
-    let regEvents = ref (events |> Map.toSeq |> Seq.map (fun (k, v) -> (v, false)) |> Map.ofSeq) 
-    let igEvents  = ref (events |> Map.toSeq |> Seq.map (fun (k, v) -> (v, false)) |> Map.ofSeq)  
-    let defEvents = ref (events |> Map.toSeq |> Seq.map (fun (k, v) -> (v, false)) |> Map.ofSeq) 
+    let regEvents = ref(events |> Map.toSeq |> Seq.map (fun (k, v) -> (v, false)) |> Map.ofSeq) 
+    let igEvents  = ref(events |> Map.toSeq |> Seq.map (fun (k, v) -> (v, false)) |> Map.ofSeq) 
+    let defEvents = ref(events |> Map.toSeq |> Seq.map (fun (k, v) -> (v, false)) |> Map.ofSeq) 
     for l in d do
       match l with
       | DoDecl.T.Ignore(e) -> 
@@ -378,8 +380,8 @@ module Translator =
     
     List.zip l1 l2
   
-  let printEvDict sw (evDict, name)= 
-    Map.iter (fun k v ->(fprintfn sw "%s[%d] := %b;" name k v)) evDict 
+  let printEvDict sw (state: int) (evDict, name)= 
+    Map.iter (fun k v ->(fprintfn sw "%s[%d][%d] := %b;" name state k v)) evDict 
 
   let translateFunction (sw: IndentedTextWriter) G evMap (fd: FunDecl) = 
     let level = ref sw.Indent
@@ -408,7 +410,7 @@ module Translator =
         level := !level - 1
         fprintfn sw "    }"
       end
-    | DoDecl.T.Ignore(e) ->  fprintfn sw "    if(event == %d)//%s {}" (Map.find e events) e
+    | DoDecl.T.Ignore(e) ->  fprintfn sw "    if(event == %d) {} //%s" (Map.find e events) e
 
   let translateTransitions (sw: IndentedTextWriter) (mach: MachineDecl) src stateToInt events (t: TransDecl.T) =
     let level = ref sw.Indent
@@ -469,7 +471,6 @@ module Translator =
     fprintfn sw "   if(CurrState == %d)" (Map.find state.Name stateToInt)
     fprintfn sw "   {"
     level := !level + 1
-    (getEventMaps state.Dos state.Transitions hasDefer hasIgnore events) |> List.iter (printEvDict sw)
     List.iter (translateDos sw events) state.Dos
     List.iter (translateTransitions sw mach state.Name stateToInt events) state.Transitions
     if (not (haltHandled state)) then
@@ -545,10 +546,12 @@ module Translator =
     fprintfn sw "   thisMid := mid;"
     fprintfn sw "   // Initialize machine variables."
     md.Globals |> getDefaults |> List.iter (translateStmt sw G evMap)
+    
+    fprintfn sw "  // Set mappings of registered, deferred and ignored events."
+    
+    for st in md.States do
+      (getEventMaps st.Dos st.Transitions hasDefer hasIgnore evMap) |> List.iter (printEvDict sw stateToInt.[st.Name])
 
-    getEventMaps state.Dos state.Transitions hasDefer hasIgnore evMap
-     |> List.iter (printEvDict sw)
-        
     match state.EntryAction with
     | Some(ea) -> fprintfn sw "   call %s(entryArg);" ea
     | None -> ignore true
@@ -568,6 +571,83 @@ module Translator =
     fprintfn sw "   }"
     level := !level - 1
     fprintfn sw "}"
+  
+  /// A special case for translating monitors. There's no enque/deque
+  /// or deferred events or push transitions. Some statement translations will differ too.
+  let createMonitor (sw: IndentedTextWriter) G evMap (md: MachineDecl) = 
+    let level = ref sw.Indent
+    let stateToInt =  [for i in md.States do yield i.Name] |> Seq.mapi (fun i x -> x,i) |> Map.ofSeq
+    
+    let translateMonitorTrans src (t: TransDecl.T)  =
+      match t with
+      | TransDecl.T.Call(e, d, f) -> 
+        begin 
+          let srcExitAction = md.StateMap.[src].ExitAction
+          let dstEntryAction = md.StateMap.[d].EntryAction
+          fprintfn sw "    if(event == %d) // %s" (Map.find e evMap) e
+          fprintfn sw "    {"
+          level := !level + 1;  
+          match srcExitAction with
+          | None -> ignore true
+          | Some(ea) -> fprintfn sw "       call %s();" ea
+          fprintfn sw "       call %s(payload);" f
+          fprintfn sw "       %s_CurrState := %d;" md.Name (Map.find d stateToInt) 
+          match dstEntryAction with
+          | None -> ignore true
+          | Some(ea) -> fprintfn sw "       call %s(payload);" ea   
+          level := !level - 1
+          fprintfn sw "    }"
+          fprintf sw "else "
+        end
+      | _ -> raise NotDefined
+    let translateMonitorDo (d: DoDecl.T) = 
+      match d with
+      | DoDecl.T.Ignore(e) -> 
+          fprintfn sw "    if(event == %d) {} // %s " (Map.find e evMap) e
+      | _ -> raise NotDefined
+
+    let translateMonitorState (st: StateDecl) =  
+      fprintfn sw "if(%s_CurrState == %d) // %s" md.Name (Map.find st.Name stateToInt) st.Name
+      fprintfn sw "{"
+      level := !level + 1  
+      List.iter translateMonitorDo st.Dos
+      List.iter (translateMonitorTrans st.Name) st.Transitions
+      level := !level - 1
+      fprintfn sw "}"
+
+    let translateMonitorStmt st = 
+
+    let translateMonitorFunction (fd: FunDecl) = 
+      let formals = fd.Formals |> List.map (fun(v: VarDecl) -> v.Name + ": PrtRef") |> String.concat ", "
+      let ret = if fd.RetType.IsSome then " returns (ret: PrtRef)" else ""
+      fprintfn sw "procedure %s(%s)%s" fd.Name formals ret
+      fprintfn sw "{"
+      level := !level + 1
+      fprintfn sw "// Initialize locals."
+      getVars "" fd.Locals |> List.iter (fprintfn sw "%s")
+      !tmpVars |> List.iter (fprintfn sw "%s")
+      getDefaults fd.Locals |> List.iter (translateStmt sw G evMap)
+      List.iter translateMonitorStmt fd.Body
+      level := !level - 1
+      fprintfn sw "}"
+
+    
+    fprintfn sw "procedure Monitor_%s(event: int, payload: PrtRef)" md.Name
+    fprintfn sw "{"
+    level := !level + 1
+    List.iter translateMonitorState md.States
+    level := !level - 1
+    fprintfn sw "}"
+    monitorToStartState := Map.add md.Name (Map.find md.StartState stateToInt) 
+      !monitorToStartState
+    
+    
+    
+
+
+
+
+
 
   let printAssertEventCard (sw: IndentedTextWriter) evToInt (evToDecl: Map<string, EventDecl>) = 
     let level = ref sw.Indent
@@ -714,7 +794,7 @@ module Translator =
         fprintfn sw "}"
         fprintf sw "else "
       end
-    let cond = if hasDefer then "if(event >= 0 && !deferEvents[event] && registerEvents[event])" else "if(event >= 0 && registerEvents[event])"
+    let cond = if hasDefer then "if(event >= 0 && !deferEvents[event])" else "if(event >= 0)"
     fprintfn sw "%s" cond
     fprintfn sw "{"
     level := !level + 1
@@ -836,11 +916,13 @@ module Translator =
     fprintfn sw ""
 
     (* Machine Globals *)
-    prog.Machines |> List.map (fun(md: MachineDecl) -> md.Globals) |> List.map (getVars "{:thread_local}") |> List.fold (fun l v ->  l @ v) [] |> List.iter (fprintfn sw "%s")
+    prog.Machines |> List.filter (fun(md: MachineDecl) -> not md.IsMonitor) |> List.map (fun(md: MachineDecl) -> md.Globals) |> List.map (getVars "{:thread_local}") |> List.fold (fun l v ->  l @ v) [] |> List.iter (fprintfn sw "%s")
 
-    (* Registered, deferred, ignored events *)
+    (* Registered events *)
+    
+    (* deferred, ignored events *)
     let dicts = 
-      ["var{:thread_local} registerEvents: [int]bool;"] @ 
+      ["var{:thread_local} registerEvents: [int][int]bool;"] @ 
       (if prog.HasIgnore then ["var{:thread_local} ignoreEvents: [int]bool;"] else []) @
       (if prog.HasDefer then ["var{:thread_local} deferEvents: [int]bool;"] else [])
 
@@ -877,11 +959,16 @@ module Translator =
     (* Static functions *)
     List.iter (translateFunction sw G evMap) prog.StaticFuns
     
+    (* Monitors *)    
+
+
+    
     (* New machine creation *)
     List.iter (createNewMachineFunction sw G evMap) prog.Machines
 
     (* Machines *)
-    List.iter (translateMachine sw G evMap prog.HasDefer prog.HasIgnore) prog.Machines
+    List.filter (fun(m: MachineDecl) -> not m.IsMonitor) prog.Machines  
+    |> List.iter (translateMachine sw G evMap prog.HasDefer prog.HasIgnore)
 
     (* The main function *)
     

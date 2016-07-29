@@ -46,6 +46,10 @@ namespace Microsoft.P_FS_Boogie
             eventToMonitorList = new Dictionary<string, List<string>>();
         private Dictionary<string, List<Tuple<int, string, Syntax.Type>>> 
             functionsToRefParams = new Dictionary<string, List<Tuple<int, string, Syntax.Type>>>();
+        private Dictionary<P_Root.AnonFunDecl, string> anonFunToFileName = 
+            new Dictionary<P_Root.AnonFunDecl, string>();
+        private Dictionary<P_Root.FunDecl, string> FunToFileName =
+           new Dictionary<P_Root.FunDecl, string>();
 
         private string mainMachine = null;
         private SymbolTable symbolTable = new SymbolTable();
@@ -665,8 +669,8 @@ namespace Microsoft.P_FS_Boogie
             if (s.op.Symbol.ToString() == "POP")
                 return Syntax.Stmt.Pop;
             else if (s.op.Symbol.ToString() == "SKIP")
-                return Syntax.Stmt.NewSkip(-1);
-            return Syntax.Stmt.NewSkip(-1);
+                return Syntax.Stmt.NewSkip("",-1,-1);
+            return Syntax.Stmt.NewSkip("", -1, -1);
         }
 
         private Syntax.Stmt genBinStmt(P_Root.BinStmt s)
@@ -1551,6 +1555,7 @@ namespace Microsoft.P_FS_Boogie
             ClearAll();
             foreach (var program in parsedPrograms)
             {
+                var file = program.FileInfos;
                 foreach (var state in program.States)
                 {
                     var name = getString((state.owner as P_Root.MachineDecl).name)

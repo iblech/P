@@ -49,7 +49,7 @@ Tmp217 = (M_x.0.0 == 1);
 assert (Tmp216 || Tmp217);
 return;
 }
-fun M_S_exit0_rand_1676961516(M_S_exit0_rand_1676961516__payload_skip: any)
+fun M_S_exit0_rand_1539873910(M_S_exit0_rand_1539873910__payload_skip: any)
 {
 
 
@@ -64,7 +64,7 @@ return;
 entry (payload: null) {
 M_S_entry15(payload);
 }exit {
-M_S_exit0_rand_1676961516(null);
+M_S_exit0_rand_1539873910(null);
 }}
 }
 

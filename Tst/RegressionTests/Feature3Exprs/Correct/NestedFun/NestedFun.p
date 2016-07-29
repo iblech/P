@@ -32,7 +32,7 @@ Tmp214 = IntToFloat32(1000);
 Test_Init_entry19_f = AddFloat32(Test_Init_entry19_f, Tmp214);
 return;
 }
-fun Test_Init_exit0_rand_524284474(Test_Init_exit0_rand_524284474__payload_skip: any)
+fun Test_Init_exit0_rand_1668764986(Test_Init_exit0_rand_1668764986__payload_skip: any)
 {
 
 
@@ -47,7 +47,7 @@ return;
 entry (payload: null) {
 Test_Init_entry19(payload);
 }exit {
-Test_Init_exit0_rand_524284474(null);
+Test_Init_exit0_rand_1668764986(null);
 }}
 }
 

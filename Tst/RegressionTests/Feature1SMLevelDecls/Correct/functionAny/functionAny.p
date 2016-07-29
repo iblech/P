@@ -21,7 +21,7 @@ fun TestMachine_Init_entry6(TestMachine_Init_entry6__payload_0: null)
 TestMachine_foo(1, 3, x);
 return;
 }
-fun TestMachine_Init_exit0_rand_1288504890(TestMachine_Init_exit0_rand_1288504890__payload_skip: any)
+fun TestMachine_Init_exit0_rand_1175354269(TestMachine_Init_exit0_rand_1175354269__payload_skip: any)
 {
 
 
@@ -36,7 +36,7 @@ return;
 entry (payload: null) {
 TestMachine_Init_entry6(payload);
 }exit {
-TestMachine_Init_exit0_rand_1288504890(null);
+TestMachine_Init_exit0_rand_1175354269(null);
 }}
 }
 

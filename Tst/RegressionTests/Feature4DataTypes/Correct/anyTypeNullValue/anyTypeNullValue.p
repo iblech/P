@@ -13,15 +13,15 @@ var M_mac: machine;
 
 fun M_S_entry23(M_S_entry23__payload_0: null)
 {
-var Tmp395: bool;
-var Tmp396: bool;
-var Tmp397: bool;
-var Tmp398: bool;
-var Tmp399: bool;
-var Tmp400: bool;
-var Tmp401: bool;
-var Tmp402: bool;
-var Tmp403: bool;
+var Tmp218: bool;
+var Tmp219: bool;
+var Tmp220: bool;
+var Tmp221: bool;
+var Tmp222: bool;
+var Tmp223: bool;
+var Tmp224: bool;
+var Tmp225: bool;
+var Tmp226: bool;
 
 
 ;
@@ -29,43 +29,43 @@ var Tmp403: bool;
 M_y = 2;
 ;
 
-Tmp395 = (M_y == 2);
-assert Tmp395;
+Tmp218 = (M_y == 2);
+assert Tmp218;
 ;
 
 M_y = default(int);
 ;
 
-Tmp396 = (M_y == 0);
-assert Tmp396;
+Tmp219 = (M_y == 0);
+assert Tmp219;
 ;
 
 M_b = true;
 ;
 
-Tmp397 = (M_b == true);
-assert Tmp397;
+Tmp220 = (M_b == true);
+assert Tmp220;
 ;
 
 M_b = default(bool);
 ;
 
-Tmp398 = (M_b == false);
-assert Tmp398;
+Tmp221 = (M_b == false);
+assert Tmp221;
 ;
 
 M_e = E;
 ;
 
-Tmp399 = (M_e == E);
-assert Tmp399;
+Tmp222 = (M_e == E);
+assert Tmp222;
 ;
 
 M_e = default(event);
 ;
 
-Tmp400 = (M_e == null);
-assert Tmp400;
+Tmp223 = (M_e == null);
+assert Tmp223;
 ;
 
 M_mac = this;
@@ -74,8 +74,8 @@ M_mac = this;
 M_mac = default(machine);
 ;
 
-Tmp401 = (M_mac == null);
-assert Tmp401;
+Tmp224 = (M_mac == null);
+assert Tmp224;
 ;
 
 M_a = true;
@@ -84,12 +84,12 @@ M_a = true;
 M_a = default(any);
 ;
 
-Tmp402 = (M_a == null);
-assert Tmp402;
+Tmp225 = (M_a == null);
+assert Tmp225;
 ;
 
-Tmp403 = (M_a == null);
-if(Tmp403)
+Tmp226 = (M_a == null);
+if(Tmp226)
 {
 
 ;
@@ -116,7 +116,7 @@ else
 raise halt;
 return;
 }
-fun M_S_exit0_rand_1427004829(M_S_exit0_rand_1427004829__payload_skip: any)
+fun M_S_exit0_rand_1617685713(M_S_exit0_rand_1617685713__payload_skip: any)
 {
 
 
@@ -131,7 +131,7 @@ return;
 entry (payload: null) {
 M_S_entry23(payload);
 }exit {
-M_S_exit0_rand_1427004829(null);
+M_S_exit0_rand_1617685713(null);
 }}
 }
 

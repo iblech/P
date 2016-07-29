@@ -63,7 +63,7 @@ module Syntax =
     | NewStmt of string * Expr
     | Raise of Expr * Expr
     | Send of Expr * Expr * Expr
-    | Skip of int
+    | Skip of string * int * int
     | While of Expr * Stmt
     | Ite of Expr * Stmt * Stmt
     | SeqStmt of Stmt list

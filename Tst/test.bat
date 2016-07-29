@@ -7,7 +7,7 @@ REM cd %SCRIPTDIR%
 
 set Configuration=Debug
 
-REM "C:\Users\t-suchav\P\Src\FSExpGen\bin\Debug\FSExpGen.exe" "Correct.txt"
+REM "C:\Users\t-suchav\P\Src\FSExpGen\bin\Debug\FSExpGen.exe" "Crt.txt"
 
 msbuild  %SCRIPTDIR%\Tools\RunPTool\RunPTool.csproj /t:Rebuild /p:Configuration=%Configuration% /p:Platform=x86  /nologo
 if %ERRORLEVEL% neq 0 (

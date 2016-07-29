@@ -37,7 +37,7 @@ Real_ghost_machine = Tmp31;
 send Real_ghost_machine, E0;
 return;
 }
-fun Real_Real_Init_exit0_rand_943068439(Real_Real_Init_exit0_rand_943068439__payload_skip: any)
+fun Real_Real_Init_exit0_rand_1407502893(Real_Real_Init_exit0_rand_1407502893__payload_skip: any)
 {
 
 
@@ -52,7 +52,7 @@ return;
 entry (payload: null) {
 Real_Real_Init_entry11(payload);
 }exit {
-Real_Real_Init_exit0_rand_943068439(null);
+Real_Real_Init_exit0_rand_1407502893(null);
 }on E1 do (payload: null) {
 Real_Real_Init_do_E1(payload);
 }}
@@ -74,7 +74,7 @@ Ghost_real_machine = Ghost__Init_entry26_payload;
 send Ghost_real_machine, E1;
 return;
 }
-fun Ghost__Init_exit0_rand_2020458274(Ghost__Init_exit0_rand_2020458274__payload_skip: any)
+fun Ghost__Init_exit0_rand_2056787780(Ghost__Init_exit0_rand_2056787780__payload_skip: any)
 {
 
 
@@ -89,7 +89,7 @@ return;
 entry (payload: machine) {
 Ghost__Init_entry26(payload);
 }exit {
-Ghost__Init_exit0_rand_2020458274(null);
+Ghost__Init_exit0_rand_2056787780(null);
 }}
 }
 

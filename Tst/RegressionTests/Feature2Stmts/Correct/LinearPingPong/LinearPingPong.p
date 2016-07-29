@@ -7,7 +7,7 @@ main machine Client
 var Client_server: machine;
 var Client_count: int;
 
-fun Client_Init_on_SUCCESS_goto_Client_SendPing0_rand_1438425415(Client_Init_on_SUCCESS_goto_Client_SendPing0_rand_1438425415__payload_skip: any)
+fun Client_Init_on_SUCCESS_goto_Client_SendPing0_rand_660206246(Client_Init_on_SUCCESS_goto_Client_SendPing0_rand_660206246__payload_skip: any)
 {
 
 
@@ -17,7 +17,7 @@ fun Client_Init_on_SUCCESS_goto_Client_SendPing0_rand_1438425415(Client_Init_on_
 
 return;
 }
-fun Client_SendPing_on_PONG_goto_Client_SendPing0_rand_960946291(Client_SendPing_on_PONG_goto_Client_SendPing0_rand_960946291__payload_skip: any)
+fun Client_SendPing_on_PONG_goto_Client_SendPing0_rand_328729540(Client_SendPing_on_PONG_goto_Client_SendPing0_rand_328729540__payload_skip: any)
 {
 
 
@@ -44,7 +44,7 @@ Client_server = Tmp45;
 raise SUCCESS, 0;
 return;
 }
-fun Client_Init_exit0_rand_520761659(Client_Init_exit0_rand_520761659__payload_skip: any)
+fun Client_Init_exit0_rand_1503631531(Client_Init_exit0_rand_1503631531__payload_skip: any)
 {
 
 
@@ -83,7 +83,7 @@ else
 
 return;
 }
-fun Client_SendPing_exit0_rand_1869596435(Client_SendPing_exit0_rand_1869596435__payload_skip: any)
+fun Client_SendPing_exit0_rand_211597407(Client_SendPing_exit0_rand_211597407__payload_skip: any)
 {
 
 
@@ -98,9 +98,9 @@ return;
 entry (payload: null) {
 Client_Init_entry10(payload);
 }exit {
-Client_Init_exit0_rand_520761659(null);
+Client_Init_exit0_rand_1503631531(null);
 }on SUCCESS goto Client_SendPing with (payload: int) {
-Client_Init_on_SUCCESS_goto_Client_SendPing0_rand_1438425415(payload);
+Client_Init_on_SUCCESS_goto_Client_SendPing0_rand_660206246(payload);
 }}
 
  state Client_SendPing
@@ -108,9 +108,9 @@ Client_Init_on_SUCCESS_goto_Client_SendPing0_rand_1438425415(payload);
 entry (payload: int) {
 Client_SendPing_entry19(payload);
 }exit {
-Client_SendPing_exit0_rand_1869596435(null);
+Client_SendPing_exit0_rand_211597407(null);
 }on PONG goto Client_SendPing with (payload: int) {
-Client_SendPing_on_PONG_goto_Client_SendPing0_rand_960946291(payload);
+Client_SendPing_on_PONG_goto_Client_SendPing0_rand_328729540(payload);
 }}
 }
 
@@ -118,7 +118,7 @@ machine Server
 {
 var Server_client: machine;
 
-fun Server_Init_on_PING_goto_Server_SendPong0_rand_283696927(Server_Init_on_PING_goto_Server_SendPong0_rand_283696927__payload_skip: any)
+fun Server_Init_on_PING_goto_Server_SendPong0_rand_422913104(Server_Init_on_PING_goto_Server_SendPong0_rand_422913104__payload_skip: any)
 {
 
 
@@ -128,7 +128,7 @@ fun Server_Init_on_PING_goto_Server_SendPong0_rand_283696927(Server_Init_on_PING
 
 return;
 }
-fun Server_SendPong_on_PING_goto_Server_SendPong0_rand_1990448458(Server_SendPong_on_PING_goto_Server_SendPong0_rand_1990448458__payload_skip: any)
+fun Server_SendPong_on_PING_goto_Server_SendPong0_rand_436249519(Server_SendPong_on_PING_goto_Server_SendPong0_rand_436249519__payload_skip: any)
 {
 
 
@@ -147,7 +147,7 @@ fun Server_Init_entry33(Server_Init_entry33_x: machine)
 Server_client = Server_Init_entry33_x;
 return;
 }
-fun Server_Init_exit0_rand_841760087(Server_Init_exit0_rand_841760087__payload_skip: any)
+fun Server_Init_exit0_rand_394712305(Server_Init_exit0_rand_394712305__payload_skip: any)
 {
 
 
@@ -166,7 +166,7 @@ fun Server_SendPong_entry40(Server_SendPong_entry40_v: int)
 send Server_client, PONG, Server_SendPong_entry40_v;
 return;
 }
-fun Server_SendPong_exit0_rand_1393212475(Server_SendPong_exit0_rand_1393212475__payload_skip: any)
+fun Server_SendPong_exit0_rand_1949073574(Server_SendPong_exit0_rand_1949073574__payload_skip: any)
 {
 
 
@@ -181,9 +181,9 @@ return;
 entry (payload: machine) {
 Server_Init_entry33(payload);
 }exit {
-Server_Init_exit0_rand_841760087(null);
+Server_Init_exit0_rand_394712305(null);
 }on PING goto Server_SendPong with (payload: int) {
-Server_Init_on_PING_goto_Server_SendPong0_rand_283696927(payload);
+Server_Init_on_PING_goto_Server_SendPong0_rand_422913104(payload);
 }}
 
  state Server_SendPong
@@ -191,9 +191,9 @@ Server_Init_on_PING_goto_Server_SendPong0_rand_283696927(payload);
 entry (payload: int) {
 Server_SendPong_entry40(payload);
 }exit {
-Server_SendPong_exit0_rand_1393212475(null);
+Server_SendPong_exit0_rand_1949073574(null);
 }on PING goto Server_SendPong with (payload: int) {
-Server_SendPong_on_PING_goto_Server_SendPong0_rand_1990448458(payload);
+Server_SendPong_on_PING_goto_Server_SendPong0_rand_436249519(payload);
 }}
 }
 

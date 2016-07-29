@@ -7,23 +7,23 @@ var M_z: (int, int);
 
 fun M_bar()
 {
-var Tmp404: bool;
+var Tmp227: bool;
 
 
 ;
 
-Tmp404 = (M_z.0 == M_z.1);
-assert Tmp404;
+Tmp227 = (M_z.0 == M_z.1);
+assert Tmp227;
 }
 fun M_foo(M_foo_x: int, M_foo_y: int): (int, int)
 {
-var Tmp405: (int, int);
+var Tmp228: (int, int);
 
 
 ;
 
-Tmp405 = (M_foo_x, M_foo_y);
-return (Tmp405);
+Tmp228 = (M_foo_x, M_foo_y);
+return (Tmp228);
 }
 fun M_def(): int
 {
@@ -51,7 +51,7 @@ M_z = M_foo(M_x, M_y);
 M_bar();
 return;
 }
-fun M_Init_exit0_rand_556180059(M_Init_exit0_rand_556180059__payload_skip: any)
+fun M_Init_exit0_rand_1824476341(M_Init_exit0_rand_1824476341__payload_skip: any)
 {
 
 
@@ -66,7 +66,7 @@ return;
 entry (payload: null) {
 M_Init_entry12(payload);
 }exit {
-M_Init_exit0_rand_556180059(null);
+M_Init_exit0_rand_1824476341(null);
 }}
 }
 
